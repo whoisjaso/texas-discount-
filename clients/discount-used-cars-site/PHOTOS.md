@@ -4,7 +4,8 @@ Every picture on the site is a named slot in `src/data/media.ts`. A slot with
 no photo shows a drawn stand-in, so nothing is ever broken while images are
 pending. The team generates each image in ChatGPT from the prompts below and
 sends it back named with its number and slot (e.g. `00-hero.png`); Claude
-crops, compresses and maps it.
+crops, compresses and maps it. The team's working copy, with a status column,
+is the shared doc: https://claude.ai/code/artifact/c0d9d2fc-1a4d-469f-b04f-9cc5632937f2
 
 **Vehicles for sale always come from the dealer's own photos** (the lot,
 Facebook posts). The generated images are mood and brand pictures: no badges,
@@ -66,7 +67,9 @@ and live oaks on the RIGHT, a warm red-orange horizon, no vehicles.
 ## Body-type cards — square, same dark showroom, vehicle in the lower middle, top quarter empty and dark
 
 A real vehicle's photo replaces these automatically once that body type is in
-stock.
+stock. Make 06 first, then upload it with each of the others and add *"Same
+showroom, same lighting, same camera angle."* Leave out the golden-hour part of
+the house style line for these four.
 
 06 · `body-suv` — A black full-size three-row SUV, three-quarter front view, in
 a dark showroom with three long ceiling light strips reflecting on its roof and
@@ -82,6 +85,9 @@ the same dark showroom with ceiling light strips and a polished dark floor.
 in the same dark showroom with ceiling light strips and a polished dark floor.
 
 ## We Buy Cars band — landscape, dark and moody
+
+Make 11 first, then upload it with 12 and 13 and add *"Same asphalt, same dusk
+light, same camera height."*
 
 10 · `sell-band` (5:3) — A handshake over the open driver's door of a silver
 four-door sedan at golden hour. Only the two hands and forearms are visible, the
@@ -104,7 +110,9 @@ background.
 14 · `finder` — Three vehicles in white paint (a crew-cab pickup truck, a
 mid-size SUV and a four-door sedan), side profile facing left, staggered and
 overlapping from back to front, the pickup largest in front, on a transparent
-background, soft natural contact shadows. **Ask for a transparent PNG.**
+background, soft natural contact shadows. Photorealistic, studio lighting. No
+text, no logos, no badges or emblems, no licence plate lettering. **Ask for a
+transparent PNG** and skip the house style line.
 
 ## Status
 
