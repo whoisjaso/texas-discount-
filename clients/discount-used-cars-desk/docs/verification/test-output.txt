@@ -1,0 +1,237 @@
+
+ RUN  v4.1.6 /home/user/texas-discount-/clients/discount-used-cars-desk
+
+ ✓ src/__tests__/id-and-signature-on-130u.test.ts (17 tests) 3505ms
+     ✓ is exactly one sheet: the form, without the template's instruction page  571ms
+     ✓ arrives as its own page, at a size somebody can read  394ms
+     ✓ takes a PNG too  333ms
+     ✓ appends nothing when there is no photograph  1051ms
+     ✓ changes page one when a signature is supplied  431ms
+ ✓ src/__tests__/licence-ocr.test.ts (6 tests) 5837ms
+     ✓ returns the fields printed on the card  1422ms
+     ✓ reads a card photographed badly  1314ms
+     ✓ reads a card held sideways  2395ms
+     ✓ returns null for a photograph that is not an identity document  698ms
+ ✓ src/__tests__/fill-130u-template-inputs.test.ts (7 tests) 1848ms
+     ✓ does not print a purchase price or sale date for non-purchase paperwork  532ms
+     ✓ prints a complete business entity without inventing a personal ID  309ms
+stdout | src/__tests__/vtr-271-columns.test.ts > VTR-271 multi-box fields > puts each part of the grantor's name under its own printed box
+Warning: TT: undefined function: 32
+
+stdout | src/__tests__/vtr-271-columns.test.ts > VTR-271 multi-box fields > puts each part of the grantor's name under its own printed box
+Warning: TT: undefined function: 32
+
+ ✓ src/__tests__/fill-130u-typography.test.ts (1 test) 600ms
+     ✓ fills every text field with one black regular Helvetica appearance  595ms
+stdout | src/__tests__/vtr-271-columns.test.ts > VTR-271 multi-box fields > puts city, county, state and zip in four different boxes
+Warning: TT: undefined function: 32
+
+stdout | src/__tests__/vtr-271-columns.test.ts > VTR-271 multi-box fields > puts city, county, state and zip in four different boxes
+Warning: TT: undefined function: 32
+
+stdout | src/__tests__/vtr-271-columns.test.ts > VTR-271 multi-box fields > does not put the whole name in the first box, which was the bug
+Warning: TT: undefined function: 32
+
+stdout | src/__tests__/vtr-271-columns.test.ts > VTR-271 multi-box fields > does not put the whole name in the first box, which was the bug
+Warning: TT: undefined function: 32
+
+stdout | src/__tests__/vtr-271-columns.test.ts > VTR-271 multi-box fields > fills the dealership's own boxes separately too
+Warning: TT: undefined function: 32
+
+stdout | src/__tests__/vtr-271-columns.test.ts > VTR-271 multi-box fields > fills the dealership's own boxes separately too
+Warning: TT: undefined function: 32
+
+ ✓ src/__tests__/vtr-271-columns.test.ts (6 tests) 1247ms
+     ✓ puts each part of the grantor's name under its own printed box  569ms
+stdout | src/__tests__/the-name-stays-in-boxes.test.ts > the power of attorney, given real boxes > prints a two-word surname under Last Name rather than splitting it
+Warning: TT: undefined function: 32
+
+stdout | src/__tests__/the-name-stays-in-boxes.test.ts > the power of attorney, given real boxes > prints a two-word surname under Last Name rather than splitting it
+Warning: TT: undefined function: 32
+
+ ✓ src/__tests__/the-name-stays-in-boxes.test.ts (11 tests) 574ms
+     ✓ prints a two-word surname under Last Name rather than splitting it  561ms
+ ✓ src/__tests__/the-licence-reaches-the-deal.test.ts (7 tests) 505ms
+     ✓ puts both sides on the deal  431ms
+stdout | src/__tests__/buyers-guide.test.ts > buyers guide PDF > fills only odd pages of the official three-page template
+Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+
+stdout | src/__tests__/buyers-guide.test.ts > buyers guide PDF > fills only odd pages of the official three-page template
+Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+
+stdout | src/__tests__/buyers-guide.test.ts > buyers guide PDF > fills the official Spanish template for lang=es
+Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+
+stdout | src/__tests__/buyers-guide.test.ts > buyers guide PDF > fills the official Spanish template for lang=es
+Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+
+ ✓ src/__tests__/buyers-guide.test.ts (3 tests) 541ms
+     ✓ fills only odd pages of the official three-page template  453ms
+ ✓ src/__tests__/hold-confirm.test.tsx (15 tests) 461ms
+ ✓ src/__tests__/code-boxes.test.tsx (9 tests) 391ms
+stderr | src/__tests__/signing-readiness.test.tsx > the buyer reads loaded document content > refuses a stale signing click if content becomes unavailable before observer delivery
+An update to DocumentStage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ ✓ src/__tests__/signing-readiness.test.tsx (6 tests) 340ms
+ ✓ src/__tests__/no-hardcoded-dealer-facts.test.ts (27 tests) 11719ms
+     ✓ does not hardcode the phone number outside dealership-config  1571ms
+     ✓ does not hardcode the licence-record phone number outside dealership-config  1178ms
+     ✓ does not hardcode the street address outside dealership-config  1212ms
+     ✓ does not hardcode the postal code outside dealership-config  1069ms
+     ✓ does not hardcode the dealer licence outside dealership-config  1042ms
+     ✓ does not hardcode the dealer name (display and legal) outside dealership-config  1074ms
+     ✓ does not hardcode the Facebook page outside dealership-config  1109ms
+     ✓ does not hardcode the venue county outside dealership-config  1088ms
+     ✓ does not grow the number of places naming the dealership  973ms
+     ✓ never falls back to a real dealership's details behind an env var  1079ms
+ ✓ src/__tests__/official-template-output.test.ts (5 tests) 393ms
+ ✓ src/__tests__/official-pdf-routing.test.ts (3 tests) 166ms
+ ✓ src/__tests__/the-photograph-lands-before-it-is-read.test.ts (11 tests) 115ms
+stdout | src/__tests__/official-sheet-readiness.test.tsx > official signing sheet readiness > keeps a failed later PDF page unready even if the first page loaded
+Warning: Please use the `legacy` build in Node.js environments.
+
+stderr | src/__tests__/customerPortal.test.ts > encodeCompletedLink / decodeCompletedLink > omits signatures that exceed size limits
+[customerPortal] Dealer signature too large for URL (200001 chars). Omitted.
+
+ ✓ src/__tests__/official-sheet-readiness.test.tsx (5 tests) 362ms
+ ✓ src/__tests__/customerPortal.test.ts (11 tests) 86ms
+ ✓ src/__tests__/the-id-is-registered-or-it-is-not.test.ts (12 tests) 83ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts (74 tests) 83ms
+ ✓ src/__tests__/the-bill-of-sale-names-the-banks-lien.test.tsx (2 tests) 122ms
+ ✓ src/__tests__/billOfSale.test.ts (3 tests) 73ms
+ ✓ src/__tests__/typed-input-survives-refusal.test.ts (12 tests) 47ms
+ ✓ src/__tests__/sign-in-code-privacy.test.ts (12 tests) 39ms
+ ✓ src/__tests__/sms-delivery-reconciliation.test.ts (13 tests) 66ms
+ ✓ src/__tests__/every-sheet-carries-the-signer.test.ts (6 tests) 31ms
+ ✓ src/__tests__/no-banned-dashes.test.ts (2 tests) 57ms
+ ✓ src/__tests__/useDeviceTier.test.ts (9 tests) 63ms
+ ✓ src/__tests__/packet-live-updates.test.tsx (5 tests) 39ms
+ ✓ src/__tests__/packet-signing-text.test.ts (8 tests) 65ms
+stderr | src/__tests__/agreements-api.test.ts > GET /api/documents/agreements > redacts signing credentials from fallback select star responses
+[agreements GET] Supabase error: column does not exist 42703 undefined
+
+ ✓ src/__tests__/agreements-api.test.ts (26 tests) 39ms
+ ✓ src/__tests__/licence-reaches-the-paperwork.test.ts (9 tests) 33ms
+ ✓ src/__tests__/a-form-never-accepts-what-it-can-check.test.ts (12 tests) 27ms
+ ✓ src/__tests__/the-paper-says-what-the-sale-knows.test.ts (19 tests) 55ms
+ ✓ src/__tests__/a-default-is-an-answer-or-it-is-nothing.test.ts (11 tests) 35ms
+ ✓ src/__tests__/sale-funding.test.ts (26 tests) 52ms
+ ✓ src/__tests__/one-signing-secret-not-two.test.ts (17 tests) 20ms
+ ✓ src/__tests__/template-workflow.test.ts (14 tests) 24ms
+ ✓ src/__tests__/the-rebuilt-disclosure-says-what-the-state-says.test.ts (8 tests) 27ms
+ ✓ src/__tests__/every-state-has-a-shape.test.ts (11 tests) 29ms
+ ✓ src/__tests__/packet-signing-text-action-safety.test.ts (17 tests) 20ms
+ ✓ src/__tests__/public-inventory-mock-view.test.ts (15 tests) 19ms
+ ✓ src/__tests__/webdealer-copy-fields.test.ts (16 tests) 21ms
+ ✓ src/__tests__/feedback.test.ts (10 tests) 27ms
+ ✓ src/__tests__/typed-fields-behave.test.ts (32 tests) 28ms
+ ✓ src/__tests__/command-palette-search.test.ts (8 tests) 17ms
+ ✓ src/__tests__/nothing-is-typed-twice.test.ts (19 tests) 20ms
+ ✓ src/__tests__/saveAgreement.test.ts (7 tests) 8ms
+ ✓ src/__tests__/delete-a-sale.test.ts (14 tests) 34ms
+ ✓ src/__tests__/no-screen-is-a-dead-end.test.ts (13 tests) 22ms
+ ✓ src/__tests__/document-complete-api.test.ts (6 tests) 29ms
+ ✓ src/__tests__/vehicle-catalog.test.ts (14 tests) 13ms
+ ✓ src/__tests__/owner-notifications.test.ts (2 tests) 19ms
+ ✓ src/__tests__/sale-start.test.ts (30 tests) 25ms
+ ✓ src/__tests__/admin-route-permissions.test.ts (27 tests) 17ms
+ ✓ src/__tests__/bill-of-sale-lien.test.ts (2 tests) 17ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts (41 tests) 10ms
+ ✓ src/__tests__/signing-token-pdf-access.test.ts (8 tests) 15ms
+ ✓ src/__tests__/the-address-stays-in-pieces.test.ts (8 tests) 21ms
+ ✓ src/__tests__/auth-one-shell.test.ts (14 tests) 8ms
+ ✓ src/__tests__/brand-tokens-resolve.test.ts (11 tests) 24ms
+ ✓ src/__tests__/a-financed-car-always-carries-a-lien.test.ts (27 tests) 15ms
+stderr | src/__tests__/sms-provider.test.ts > sendSMS > returns error on Telnyx API failure (400)
+Telnyx SMS error: Blocked by carrier
+
+stderr | src/__tests__/sms-provider.test.ts > sendSMS > refuses an unreadable recipient without spending a send
+Telnyx SMS error: recipient is not a valid US number
+
+stderr | src/__tests__/sms-provider.test.ts > sendSMS > returns error on network failure
+Telnyx SMS error: Network timeout
+
+stderr | src/__tests__/sms-provider.test.ts > sendSMS > handles Telnyx error response without errors array
+Telnyx SMS error: Telnyx API error: 500
+
+ ✓ src/__tests__/sms-provider.test.ts (14 tests) 15ms
+ ✓ src/__tests__/document-normalize.test.ts (26 tests) 17ms
+ ✓ src/__tests__/documents-i18n.test.ts (13 tests) 6ms
+ ✓ src/__tests__/sale-flow.test.ts (24 tests) 17ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts (37 tests) 14ms
+ ✓ src/__tests__/rentalRenewal.test.ts (7 tests) 10ms
+ ✓ src/__tests__/haptics.test.ts (5 tests) 24ms
+ ✓ src/__tests__/admin-button-luxury.test.ts (7 tests) 5ms
+ ✓ src/__tests__/the-title-gate.test.ts (14 tests) 8ms
+ ✓ src/__tests__/the-address-finishes-itself.test.ts (19 tests) 10ms
+ ✓ src/__tests__/buyer-id.test.ts (14 tests) 9ms
+ ✓ src/__tests__/sign-in-code-consumption.test.ts (9 tests) 12ms
+stderr | src/__tests__/sms-send-normalises.test.ts > sendSMS normalises the recipient > refuses a number it cannot read, without spending a send
+Telnyx SMS error: recipient is not a valid US number
+
+stderr | src/__tests__/sms-send-normalises.test.ts > sendSMS normalises the recipient > does not leak the number into the error text
+Telnyx SMS error: recipient is not a valid US number
+
+ ✓ src/__tests__/sms-send-normalises.test.ts (5 tests) 12ms
+ ✓ src/__tests__/the-scanner-says-when-it-has-it.test.ts (12 tests) 7ms
+ ✓ src/__tests__/publicVehicle.test.ts (5 tests) 7ms
+ ✓ src/__tests__/frame-quality.test.ts (17 tests) 22ms
+ ✓ src/__tests__/packet-status-route.test.ts (4 tests) 12ms
+ ✓ src/__tests__/email-preview-render.test.ts (1 test) 13ms
+ ✓ src/__tests__/what-the-sale-needs-is-marked.test.ts (11 tests) 9ms
+ ✓ src/__tests__/past-sales-are-the-cars-we-sold.test.ts (18 tests) 11ms
+ ✓ src/__tests__/funnel-catalogue-guards.test.ts (6 tests) 12ms
+ ✓ src/__tests__/step-data-cas.test.ts (6 tests) 13ms
+ ✓ src/__tests__/team-access-request-boundary.test.ts (11 tests) 12ms
+ ✓ src/__tests__/the-car-that-is-not-on-the-lot.test.ts (19 tests) 13ms
+ ✓ src/__tests__/licence-front.test.ts (33 tests) 8ms
+ ✓ src/__tests__/every-document-prints-in-one-case.test.ts (9 tests) 12ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts (31 tests) 16ms
+ ✓ src/__tests__/current-admin-roster-authority.test.ts (5 tests) 8ms
+ ✓ src/__tests__/official-130u-delivery.test.ts (3 tests) 7ms
+ ✓ src/__tests__/customerWizard.test.ts (12 tests) 9ms
+ ✓ src/__tests__/an-address-is-four-things-not-one.test.ts (14 tests) 7ms
+ ✓ src/__tests__/a-licence-has-two-sides.test.ts (23 tests) 8ms
+ ✓ src/__tests__/capture-token.test.ts (8 tests) 7ms
+ ✓ src/__tests__/aamva.test.ts (15 tests) 7ms
+ ✓ src/__tests__/the-desk-has-two-ways-in.test.ts (15 tests) 8ms
+ ✓ src/__tests__/four-hundred-dollars-over-the-price.test.ts (14 tests) 9ms
+ ✓ src/__tests__/packet-status.test.ts (8 tests) 5ms
+ ✓ src/__tests__/inspection-acknowledgment-action.test.ts (3 tests) 6ms
+ ✓ src/__tests__/mobile-keyboards.test.ts (5 tests) 9ms
+ ✓ src/__tests__/power-of-attorney-form.test.ts (11 tests) 7ms
+ ✓ src/__tests__/early-return.test.ts (3 tests) 5ms
+ ✓ src/__tests__/admin-workspace.test.ts (9 tests) 5ms
+ ✓ src/__tests__/the-paperwork-outlives-the-desk.test.ts (12 tests) 9ms
+ ✓ src/__tests__/spanish-legal-review.test.ts (5 tests) 5ms
+ ✓ src/__tests__/reader-precedence.test.ts (11 tests) 7ms
+ ✓ src/__tests__/one-count-of-what-a-sale-owes.test.ts (7 tests) 7ms
+ ✓ src/__tests__/email-subject-title-case.test.ts (5 tests) 6ms
+ ✓ src/__tests__/title-case-leaves-prose-alone.test.ts (4 tests) 5ms
+ ✓ src/__tests__/sign-in-by-phone.test.ts (7 tests) 6ms
+ ✓ src/__tests__/sop-test-vectors.test.ts (8 tests) 6ms
+ ✓ src/__tests__/the-sign-box-is-centred.test.ts (2 tests) 4ms
+ ✓ src/__tests__/inspection-acknowledgment.test.ts (5 tests) 4ms
+ ✓ src/__tests__/extractCustomerColumns.test.ts (5 tests) 5ms
+ ✓ src/__tests__/customer-dob.test.ts (3 tests) 4ms
+ ✓ src/__tests__/the-desk-does-not-bounce.test.ts (4 tests) 4ms
+ ✓ src/__tests__/dealer-hours.test.ts (3 tests) 9ms
+ ✓ src/__tests__/portal-link-language.test.ts (2 tests) 4ms
+ ✓ src/__tests__/admin-ops-task-guide-luxury.test.ts (2 tests) 5ms
+ ✓ src/__tests__/next-dev-indicator-mobile-clean.test.ts (1 test) 4ms
+ ✓ src/__tests__/capture-route-locale.test.ts (2 tests) 4ms
+
+ Test Files  121 passed (121)
+      Tests  1415 passed (1415)
+   Start at  19:27:47
+   Duration  24.35s (transform 3.65s, setup 0ms, import 15.44s, tests 30.75s, environment 7.42s)
+

@@ -6,7 +6,7 @@ then read with PyMuPDF (text + AcroForm field values). The bhph-trade packet is 
 ================================================================================================
 CASH-OTD  (Cash, out the door, dealer files, insurance shown)  deal /admin/sales/preview-deals-2  [1440x900 walk]
   130-U_Delgado_812345.pdf  (2 pages, 21 filled form fields)
-      OK   legal name "Discount Used Cars and Trucks, LLC": 3x
+      OK   legal name "Discount Used Cars And Trucks, LLC": 3x
       OK   licence P145000: 2x
       OK   130-U box 21 Dealer GDN = P145000
       OK   130-U box 20 previous owner / seller printed name = legal name
@@ -14,24 +14,26 @@ CASH-OTD  (Cash, out the door, dealer files, insurance shown)  deal /admin/sales
       OK   odometer 89432: 2x (130-U box 9)
       OK   dates are the business date only: 10/01/2026
       OK   no dev host
-      OK   no Vega's / Triple J / private facts
+      OK   no fact from an earlier dealer, no private fact
+      OK   one casing of the legal name on the page
       OK   [Not set] only for genuinely missing facts: none
       OK   130-U box 33/34 lien: none: lien date field: empty
   Discount_BillOfSale_Maria_Delgado_20261001.pdf  (3 pages, 0 filled form fields)
-      OK   legal name "Discount Used Cars and Trucks, LLC": 3x
+      OK   legal name "Discount Used Cars And Trucks, LLC": 3x
       OK   licence P145000: 3x
       OK   county Harris (venue clause): 2x
       OK   odometer 89432: 4x
       OK   dates are the business date only: 10/01/2026
       OK   no dev host
-      OK   no Vega's / Triple J / private facts
+      OK   no fact from an earlier dealer, no private fact
+      OK   one casing of the legal name on the page
       OK   [Not set] only for genuinely missing facts: [Not set: website domain]
       OK   bill of sale: no lien section
       OK   bill of sale figures sum to the total: $3,663.06 - $0.00 + $336.94 = $4,000.00
 ================================================================================================
-CASH-BALANCE  (Cash, vehicle only, partial payment (balance and lien))  deal /admin/sales/preview-deals-9  [1440x900 walk]
+CASH-BALANCE  (Cash, vehicle only, partial payment (balance and lien))  deal /admin/sales/preview-deals-7  [1440x900 walk]
   130-U_Herrera_345678.pdf  (2 pages, 22 filled form fields)
-      OK   legal name "Discount Used Cars and Trucks, LLC": 4x
+      OK   legal name "Discount Used Cars And Trucks, LLC": 4x
       OK   licence P145000: 2x
       OK   130-U box 21 Dealer GDN = P145000
       OK   130-U box 20 previous owner / seller printed name = legal name
@@ -39,24 +41,26 @@ CASH-BALANCE  (Cash, vehicle only, partial payment (balance and lien))  deal /ad
       OK   odometer 64280: 2x (130-U box 9)
       OK   dates are the business date only: 10/01/2026
       OK   no dev host
-      OK   no Vega's / Triple J / private facts
+      OK   no fact from an earlier dealer, no private fact
+      OK   one casing of the legal name on the page
       OK   [Not set] only for genuinely missing facts: none
-      OK   130-U box 34 first lienholder = the dealer: Discount Used Cars and Trucks, LLC, 8108 Gulf Fwy, Houston TX 77017; lien date 10/01/2026
+      OK   130-U box 34 first lienholder = the dealer: Discount Used Cars And Trucks, LLC, 8108 Gulf Fwy, Houston TX 77017; lien date 10/01/2026
   Discount_BillOfSale_Luis_Herrera_20261001.pdf  (4 pages, 0 filled form fields)
-      OK   legal name "Discount Used Cars and Trucks, LLC": 5x
+      OK   legal name "Discount Used Cars And Trucks, LLC": 5x
       OK   licence P145000: 3x
       OK   county Harris (venue clause): 2x
       OK   odometer 64280: 4x
       OK   dates are the business date only: 10/01/2026
       OK   no dev host
-      OK   no Vega's / Triple J / private facts
+      OK   no fact from an earlier dealer, no private fact
+      OK   one casing of the legal name on the page
       OK   [Not set] only for genuinely missing facts: [Not set: website domain]
       OK   bill of sale: seller lien to the dealer: secured balance $326.75
       OK   bill of sale figures sum to the total: $3,500.00 - $0.00 + $326.75 = $3,826.75
 ================================================================================================
-BHPH  (Buy here pay here with a trade-in)  deal /admin/sales/preview-deals-17  [1440x900 walk]
+BHPH  (Buy here pay here with a trade-in)  deal /admin/sales/preview-deals-13  [1440x900 walk]
   130-U_Salinas_A98765.pdf  (2 pages, 22 filled form fields)
-      OK   legal name "Discount Used Cars and Trucks, LLC": 4x
+      OK   legal name "Discount Used Cars And Trucks, LLC": 4x
       OK   licence P145000: 2x
       OK   130-U box 21 Dealer GDN = P145000
       OK   130-U box 20 previous owner / seller printed name = legal name
@@ -64,34 +68,37 @@ BHPH  (Buy here pay here with a trade-in)  deal /admin/sales/preview-deals-17  [
       OK   odometer 118340: 2x (130-U box 9)
       OK   dates are the business date only: 10/01/2026
       OK   no dev host
-      OK   no Vega's / Triple J / private facts
+      OK   no fact from an earlier dealer, no private fact
+      OK   one casing of the legal name on the page
       OK   [Not set] only for genuinely missing facts: none
-      OK   130-U box 34 first lienholder = the dealer: Discount Used Cars and Trucks, LLC, 8108 Gulf Fwy, Houston TX 77017; lien date 10/01/2026
+      OK   130-U box 34 first lienholder = the dealer: Discount Used Cars And Trucks, LLC, 8108 Gulf Fwy, Houston TX 77017; lien date 10/01/2026
   Discount_BillOfSale_Andrea_Salinas_20261001.pdf  (4 pages, 0 filled form fields)
-      OK   legal name "Discount Used Cars and Trucks, LLC": 5x
+      OK   legal name "Discount Used Cars And Trucks, LLC": 5x
       OK   licence P145000: 3x
       OK   county Harris (venue clause): 2x
       OK   odometer 118340: 4x
       OK   dates are the business date only: 10/01/2026
       OK   no dev host
-      OK   no Vega's / Triple J / private facts
+      OK   no fact from an earlier dealer, no private fact
+      OK   one casing of the legal name on the page
       OK   [Not set] only for genuinely missing facts: [Not set: website domain]
       OK   bill of sale: seller lien to the dealer: secured balance $7,545.50
       OK   bill of sale figures sum to the total: $9,000.00 - $2,000.00 + $545.50 = $7,545.50
   Discount_Financing_Andrea_Salinas_20261001.pdf  (5 pages, 0 filled form fields)
-      OK   legal name "Discount Used Cars and Trucks, LLC": 2x
+      OK   legal name "Discount Used Cars And Trucks, LLC": 2x
       OK   licence P145000: 2x
       OK   county Harris (venue clause): 1x
       OK   odometer 118340: 1x
       OK   dates are the business date only: 10/01/2026
       OK   no dev host
-      OK   no Vega's / Triple J / private facts
+      OK   no fact from an earlier dealer, no private fact
+      OK   one casing of the legal name on the page
       OK   [Not set] only for genuinely missing facts: [Not set: website domain]
       OK   financing contract on a buy-here-pay-here deal only
 ================================================================================================
-BANK  (Bank financing (Chase Auto Finance))  deal /admin/sales/preview-deals-26  [1440x900 walk]
+BANK  (Bank financing (Chase Auto Finance))  deal /admin/sales/preview-deals-22  [1440x900 walk]
   130-U_Okafor_654321.pdf  (2 pages, 22 filled form fields)
-      OK   legal name "Discount Used Cars and Trucks, LLC": 3x
+      OK   legal name "Discount Used Cars And Trucks, LLC": 3x
       OK   licence P145000: 2x
       OK   130-U box 21 Dealer GDN = P145000
       OK   130-U box 20 previous owner / seller printed name = legal name
@@ -99,51 +106,56 @@ BANK  (Bank financing (Chase Auto Finance))  deal /admin/sales/preview-deals-26 
       OK   odometer 102587: 2x (130-U box 9)
       OK   dates are the business date only: 10/01/2026
       OK   no dev host
-      OK   no Vega's / Triple J / private facts
+      OK   no fact from an earlier dealer, no private fact
+      OK   one casing of the legal name on the page
       OK   [Not set] only for genuinely missing facts: none
       OK   130-U box 34 first lienholder = Chase Auto Finance, no dealer lien: Chase Auto Finance; lien date 10/01/2026; dealer address absent from the form
   Discount_BillOfSale_Daniel_Okafor_20261001.pdf  (4 pages, 0 filled form fields)
-      OK   legal name "Discount Used Cars and Trucks, LLC": 4x
+      OK   legal name "Discount Used Cars And Trucks, LLC": 4x
       OK   licence P145000: 3x
       OK   county Harris (venue clause): 2x
       OK   odometer 102587: 4x
       OK   dates are the business date only: 10/01/2026
       OK   no dev host
-      OK   no Vega's / Triple J / private facts
+      OK   no fact from an earlier dealer, no private fact
+      OK   one casing of the legal name on the page
       OK   [Not set] only for genuinely missing facts: [Not set: website domain]
       OK   bill of sale: lienholder Chase Auto Finance, no seller lien
       OK   bill of sale figures sum to the total: $14,500.00 - $0.00 + $1,014.25 = $15,514.25
   OK   no dealer financing contract on the bank deal
 ================================================================================================
-BUYER-FILES  (Buyer files, no insurance shown)  deal /admin/sales/preview-deals-33  [1440x900 walk]
+BUYER-FILES  (Buyer files, no insurance shown)  deal /admin/sales/preview-deals-30  [1440x900 walk]
   Discount_BillOfSale_Rosa_Villarreal_20261001.pdf  (3 pages, 0 filled form fields)
-      OK   legal name "Discount Used Cars and Trucks, LLC": 3x
+      OK   legal name "Discount Used Cars And Trucks, LLC": 3x
       OK   licence P145000: 3x
       OK   county Harris (venue clause): 2x
       OK   odometer 95710: 4x
       OK   dates are the business date only: 10/01/2026
       OK   no dev host
-      OK   no Vega's / Triple J / private facts
+      OK   no fact from an earlier dealer, no private fact
+      OK   one casing of the legal name on the page
       OK   [Not set] only for genuinely missing facts: [Not set: website domain]
       OK   bill of sale: no lien section
       OK   bill of sale figures sum to the total: $10,251.29 - $0.00 + $748.71 = $11,000.00
   Discount_InsuranceAcknowledgment_Rosa_Villarreal_20261001.pdf  (2 pages, 0 filled form fields)
-      OK   legal name "Discount Used Cars and Trucks, LLC": 5x
+      OK   legal name "Discount Used Cars And Trucks, LLC": 5x
       OK   licence P145000: 1x
       n/a  county: this acknowledgment has no venue clause (same as the reference)
       OK   no conflicting odometer (document prints none)
       OK   dates are the business date only: 10/01/2026
       OK   no dev host
-      OK   no Vega's / Triple J / private facts
+      OK   no fact from an earlier dealer, no private fact
+      OK   one casing of the legal name on the page
       OK   [Not set] only for genuinely missing facts: [Not set: website domain]
   Discount_VehicleResponsibility_Rosa_Villarreal_20261001.pdf  (2 pages, 0 filled form fields)
-      OK   legal name "Discount Used Cars and Trucks, LLC": 4x
+      OK   legal name "Discount Used Cars And Trucks, LLC": 4x
       OK   licence P145000: 1x
       n/a  county: this acknowledgment has no venue clause (same as the reference)
       OK   no conflicting odometer (document prints none)
       OK   dates are the business date only: 10/01/2026
       OK   no dev host
-      OK   no Vega's / Triple J / private facts
+      OK   no fact from an earlier dealer, no private fact
+      OK   one casing of the legal name on the page
       OK   [Not set] only for genuinely missing facts: [Not set: website domain]
   OK   no 130-U when the buyer files; vehicle responsibility + insurance acknowledgment present: True
 
@@ -152,43 +164,49 @@ OVERALL: ALL AUTOMATED CHECKS PASS
 ================================================================================================
 READ BY EYE: the bhph-trade packet (packet-pages/, 11 pages at 110 dpi)
 ================================================================================================
-Bill of sale p1: ink-only letterhead (black DISCOUNT / USED CARS AND TRUCKS LLC logo, 0 coloured
-  pixels on the page). Seller block: Discount Used Cars and Trucks, LLC, 8108 Gulf Fwy, Houston, TX
-  77017, (713) 900-5050, [Not set: website domain], Texas Dealer License P145000. Date 10/01/2026.
-  2017 Ford Explorer XLT, Blue, SUV, mileage 118340, VIN 1FM5K8D82HGA98765.
+Bill of sale p1: black-ink letterhead (the ink DISCOUNT / USED CARS AND TRUCKS LLC logo; 0
+  coloured pixels on the page). Seller block: Discount Used Cars And Trucks, LLC, 8108 Gulf Fwy,
+  Houston, TX 77017, (713) 900-5050, [Not set: website domain], Texas Dealer License P145000.
+  Date 10/01/2026. 2017 Ford Explorer XLT, Blue, SUV, mileage 118340, VIN 1FM5K8D82HGA98765.
   Vehicle Price $9,000.00 - Net Trade-In $2,000.00 + Fees & Tax $545.50 = Total Due $7,545.50.
-Bill of sale p2: trade-in 2012 Honda Civic LX, allowance $2,000.00 / payoff $0.00. Itemisation:
-  balance after trade $7,000.00; sales tax $437.50 (6.25% of $7,000); title $33.00; documentary
-  fee $0.00; registration $75.00; total $7,545.50. Federal odometer disclosure 118340, actual.
-Bill of sale p3: Seller Lien / Balance Owed, lienholder Discount Used Cars and Trucks, LLC,
-  8108 Gulf Fwy, Houston, TX 77017, lien date 10/01/2026. Venue: Harris County, Texas.
-  (The red "Secured Balance" and "Balance secured by seller lien" lines are the document's
-  existing "red = still open" convention, unchanged from the reference; the letterhead is ink.)
-130-U p1: box 9 odometer 118340; box 19 Harris; box 20 previous owner "Discount Used Cars and
-  Trucks, LLC" (exact licensed casing), Houston TX; box 21 GDN P145000; box 33 first lien date
-  10/01/2026; box 34 first lienholder Discount Used Cars and Trucks, LLC, 8108 Gulf Fwy, Houston
-  TX 77017; seller printed name = legal name; dates 10/01/2026; buyer signature drawn.
+Bill of sale p3: lienholder Discount Used Cars And Trucks, LLC, 8108 Gulf Fwy, Houston, TX
+  77017, lien date 10/01/2026. Governing law: "... shall be resolved in Harris County, Texas."
+  The county now comes from dealership.county through the {dealerCounty} message token; the
+  printed words are the same as before.
+130-U p1: box 9 odometer 118340; box 19 Harris; box 20 previous owner "Discount Used Cars And
+  Trucks, LLC", Houston, TX; box 21 GDN P145000; box 33 first lien date 10/01/2026; box 34
+  first lienholder Discount Used Cars And Trucks, LLC, 8108 Gulf Fwy, Houston, TX 77017;
+  seller printed name = legal name; dates 10/01/2026; buyer signature drawn.
 Retail installment contract p1-p5: same ink letterhead; mileage 118340; APR 25.98% (held at the
-  ceiling, payment recomputed to $329.11 x 35 + $328.97); amount financed $8,170.50; finance
-  charge $3,677.32; total of payments $11,847.82; venue Harris County; dealer signature line
-  "Discount Representative. DL# P145000"; date 10/01/2026.
+  ceiling, $329.11 x 35 + final $328.97); amount financed $8,170.50; finance charge $3,677.32;
+  total of payments $11,847.82; venue Harris County (now read from dealership.county); dealer
+  signature line "Discount Representative. DL# P145000"; date 10/01/2026.
 Odometer: 118340 on the bill of sale (4x), the 130-U (box 9) and the contract. Identical.
+
+One casing of the legal name: every document in all five packets prints "Discount Used Cars
+  And Trucks, LLC" and none prints the lower-case "and" form, so the bill of sale, the 130-U and
+  the contract agree word for word.
 
 [Not set] markers seen across all five packets: only "[Not set: website domain]" (letterheads and
   seller blocks). The documentary fee prints as $0.00 on the documents (the desk screen shows
   "[Not set: doc fee]" on the review step and the "Dealer Details Missing" banner lists
   Documentary fee, Authorised signer, Website domain). The authorised signer has no printed
   name on any document: the seller lines read "Seller (Dealer). DL# P145000" and
-  "Discount Representative", as in the reference.
+  "Discount Representative", as in the reference desk.
 
-PRE-EXISTING (same numbers in the Vega's reference packet, not caused by the port):
+Colour: the letterhead pages (bill of sale p1, contract p1, both 130-U pages) have 0 coloured
+  pixels. The only colour in the packet is the reference desk's red on open balances (bill of
+  sale p2-p4) and the rust down-payment figure on the contract (p2).
+
+PRE-EXISTING (the same figures print from the reference desk; money math and document rules are
+fixed, so these are reported, not changed):
   - Buy here pay here with a trade-in: the bill of sale credits the $2,000 trade and taxes
     $7,000 ($437.50, secured balance $7,545.50), while the retail installment contract
     itemises the full $9,000 cash price with $562.50 tax and no trade-in line, less the
     $1,500 down = $8,170.50 financed. The bill of sale's seller-lien balance also ignores the
-    $1,500 down payment. Money math is fixed by the SOP, so this is reported, not changed.
+    $1,500 down payment.
   - 130-U box 36 (trade-in) is left blank on the trade-in deal.
   - The contract prints the down payment in a rust colour (#8A3A1C, ContractPreview.tsx).
   - The vehicle-responsibility form prints a hard-coded $100.00 late-handling fee
     (LATE_HANDLING_FEE_USD in src/lib/documents/vehicleResponsibility.ts), a policy figure
-    from the reference that the owner has not confirmed.
+    the owner has not confirmed.
