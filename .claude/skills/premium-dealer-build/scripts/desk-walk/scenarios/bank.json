@@ -1,0 +1,91 @@
+{
+ "car": "2018 Honda CR-V EX",
+ "language": "en",
+ "title": "Clean title",
+ "first": "Daniel",
+ "last": "Okafor",
+ "phone": "7135550191",
+ "street": "9102 Galveston Rd",
+ "city": "Houston",
+ "zip": "77034",
+ "county": "Harris",
+ "answers": {
+  "funding": {
+   "text": "Bank Financing"
+  },
+  "paid": [
+   {
+    "fill": "main input",
+    "value": "14500"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "price": [
+   {
+    "button": "No"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "plan:registration": {
+   "button": "We Do"
+  },
+  "plate": {
+   "button": "No plate yet"
+  },
+  "plan:title-signer": {
+   "button": "The Buyer, Here Today"
+  },
+  "plan:inspection": {
+   "button": "Already Passed"
+  },
+  "plan:insurance": {
+   "button": "Yes, Shown Today"
+  },
+  "odometerStatus": {
+   "button": "Yes, That Is The Real Mileage"
+  },
+  "tradeIn": {
+   "text": "No"
+  },
+  "conditionType": {
+   "text": "As-Is"
+  },
+  "countyOfResidence": {
+   "button": "Next",
+   "exact": true
+  },
+  "applicationType": {
+   "text": "Title And Registration"
+  },
+  "applicantType": {
+   "text": "A Person"
+  },
+  "emptyWeight": [
+   {
+    "fill": "main input",
+    "value": "3340"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "carryingCapacity": {
+   "button": "Next",
+   "exact": true
+  },
+  "issuingState": {
+   "button": "Next",
+   "exact": true
+  },
+  "lender": {
+   "text": "Chase Auto Finance"
+  }
+ }
+}

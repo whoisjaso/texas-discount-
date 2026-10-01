@@ -1,0 +1,24 @@
+{
+  "car": "2021 Chevrolet Malibu LT", "language": "en", "title": "Clean title",
+  "first": "Luis", "last": "Herrera", "phone": "7135550173",
+  "street": "8810 Coronation Dr", "city": "Houston", "zip": "77034", "county": "Harris",
+  "answers": {
+    "funding": {"button": "Cash", "exact": true},
+    "paid": [{"fill": "main input", "value": "3500"}, {"button": "Next", "exact": true}],
+    "price": [{"button": "No"}, {"button": "Next", "exact": true}],
+    "plan:registration": {"button": "We Do"},
+    "plate": {"button": "No plate yet"},
+    "plan:title-signer": {"button": "The Buyer, Here Today"},
+    "plan:inspection": {"button": "Already Passed"},
+    "plan:insurance": {"button": "Yes, Shown Today"},
+    "odometerStatus": {"button": "Yes, That Is The Real Mileage"},
+    "paymentMethod": {"text": "Zelle"},
+    "tradeIn": {"text": "No"},
+    "conditionType": {"text": "As-Is"},
+    "countyOfResidence": {"button": "Next", "exact": true},
+    "applicationType": {"text": "Title And Registration"},
+    "applicantType": {"text": "A Person"},
+    "emptyWeight": [{"fill": "main input", "value": "3100"}, {"button": "Next", "exact": true}],
+    "issuingState": {"button": "Next", "exact": true}
+  }
+}

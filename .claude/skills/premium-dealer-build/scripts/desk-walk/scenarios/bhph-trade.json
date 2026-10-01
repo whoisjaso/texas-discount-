@@ -1,0 +1,154 @@
+{
+ "car": "2017 Ford Explorer XLT",
+ "language": "en",
+ "title": "Clean title",
+ "first": "Andrea",
+ "last": "Salinas",
+ "phone": "7135550188",
+ "street": "7400 Metz St",
+ "city": "Houston",
+ "zip": "77034",
+ "county": "Harris",
+ "answers": {
+  "funding": {
+   "text": "Buy Here Pay Here"
+  },
+  "paid": [
+   {
+    "fill": "main input",
+    "value": "9000"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "price": [
+   {
+    "button": "No"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "plan:registration": {
+   "button": "We Do"
+  },
+  "plate": {
+   "button": "No plate yet"
+  },
+  "plan:title-signer": {
+   "button": "The Buyer, Here Today"
+  },
+  "plan:inspection": {
+   "button": "Already Passed"
+  },
+  "plan:insurance": {
+   "button": "Yes, Shown Today"
+  },
+  "odometerStatus": {
+   "button": "Yes, That Is The Real Mileage"
+  },
+  "tradeIn": {
+   "text": "Yes"
+  },
+  "conditionType": {
+   "text": "As-Is"
+  },
+  "countyOfResidence": {
+   "button": "Next",
+   "exact": true
+  },
+  "applicationType": {
+   "text": "Title And Registration"
+  },
+  "applicantType": {
+   "text": "A Person"
+  },
+  "emptyWeight": [
+   {
+    "fill": "main input",
+    "value": "4400"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "issuingState": {
+   "button": "Next",
+   "exact": true
+  },
+  "tradeInDescription": [
+   {
+    "fill": "main input",
+    "value": "2012 Honda Civic LX"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "tradeInAllowance": [
+   {
+    "fill": "main input",
+    "value": "2000"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "paymentFrequency": {
+   "text": "Monthly"
+  },
+  "termsBy": {
+   "text": "Both Of Those"
+  },
+  "paymentAmount": [
+   {
+    "fill": "main input",
+    "value": "400"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "numberOfPayments": [
+   {
+    "fill": "main input",
+    "value": "36"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "apr": [
+   {
+    "fill": "main input",
+    "value": "18"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "downPayment": [
+   {
+    "fill": "main input",
+    "value": "1500"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "firstPaymentDate": {
+   "button": "Next",
+   "exact": true
+  }
+ }
+}

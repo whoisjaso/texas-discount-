@@ -1,0 +1,1051 @@
+/* The operating desk shares its materials with the showroom, while keeping
+   Geist for every interface heading. Scope survives App Router navigation;
+   screen media keeps the printed contracts and official forms untouched. */
+@media screen {
+  .tj-admin {
+    --font-display: "Barlow Semi Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    --radius-small: 6px;
+    --radius-button: 6px;
+    --radius-card: 10px;
+    --radius-feature: 12px;
+    --radius-modal: 12px;
+    color: var(--tj-ink);
+    font-family: var(--font-body);
+    font-variant-numeric: tabular-nums;
+    min-height: 100dvh;
+    background: var(--tj-warm-white);
+  }
+
+  .tj-admin :where(input, textarea, select) {
+    caret-color: var(--tj-copper);
+  }
+
+  .tj-admin :where(button, a, input, select, textarea):focus-visible {
+    outline: 2px solid var(--tj-copper);
+    outline-offset: 4px;
+  }
+
+  .tj-admin .ed-workspace-main:focus {
+    outline: none;
+  }
+
+  .tj-admin .ed-admin-skip {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 60;
+    padding: 12px 18px;
+    border: 1px solid var(--tj-line);
+    border-radius: 6px;
+    background: var(--tj-plane);
+    color: var(--tj-ink);
+    translate: 0 -180%;
+  }
+
+  .tj-admin .ed-admin-skip:focus {
+    translate: 0 0;
+  }
+
+  /* Navigation has its own quiet ground. The active word carries the
+     selection, without an additional dot or competing accent. */
+  .tj-admin .ed-admin-rail {
+    width: 248px;
+    background: color-mix(in srgb, var(--tj-warm-white) 68%, var(--tj-surface));
+  }
+
+  .tj-admin .ed-admin-brand {
+    min-height: 96px;
+    padding-inline: 25px;
+  }
+
+  .tj-admin .ed-admin-brand a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  /* Vega's emblem is full colour and must never be flattened to white. */
+  .tj-admin :is(.ed-admin-brand, .ed-access-mark) img:not([src*="/brand/vegas-logo"]) {
+    filter: var(--admin-brand-filter, none);
+  }
+
+  .tj-admin .ed-admin-brand svg:not(.vega-glint) {
+    width: 165px;
+    max-width: 100%;
+  }
+
+  .tj-admin .ed-palette-open {
+    min-height: 40px;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--tj-plane) 48%, transparent);
+  }
+
+  .tj-admin .ed-palette-open kbd {
+    margin-left: auto;
+    padding: 2px 5px;
+    border: 1px solid var(--tj-line);
+    border-radius: 3px;
+  }
+
+  .tj-admin .ed-nav-item {
+    gap: 11px;
+    border-radius: 6px;
+    font-size: 13px;
+    letter-spacing: -0.01em;
+  }
+
+  /*
+    The tightening is for the desktop rail, where the pointer is a mouse and
+    the list is long. It used to apply at every width, so the same rule also
+    compressed the mobile More sheet, which is a finger target: rows there
+    measured 42px against the 44px minimum, on the only path a phone has to
+    Settings. The base rule in globals.css is already 44px, so scoping this
+    to the rail restores it rather than adding anything.
+  */
+  @media (min-width: 768px) {
+    .tj-admin .ed-nav-item {
+      min-height: 42px;
+    }
+
+    .tj-admin .ed-nav-secondary .ed-nav-item {
+      min-height: 35px;
+    }
+  }
+
+  .tj-admin .ed-nav-item[aria-current="page"] {
+    background: var(--tj-plane);
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgb(12 12 13 / 4%);
+  }
+
+  .tj-admin .ed-nav-section {
+    margin-top: 24px;
+    margin-bottom: 8px;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+  }
+
+  .tj-admin .ed-nav-secondary .ed-nav-item {
+    font-size: 12px;
+  }
+
+  .tj-admin .ed-nav-avatar {
+    border-radius: 8px;
+    background-color: var(--tj-plane);
+    font-family: var(--font-body);
+  }
+
+  .tj-admin .ed-nav-identity {
+    border-radius: 6px;
+  }
+
+  .tj-admin .ed-admin-tabs {
+    background: var(--tj-plane);
+  }
+
+  .tj-admin .ed-tab-item {
+    position: relative;
+    height: 66px;
+    gap: 5px;
+  }
+
+  .tj-admin .ed-tab-item[aria-current="page"] {
+    color: var(--tj-ink);
+    background: var(--tj-warm-white);
+  }
+
+  .tj-admin .ed-tab-item[aria-current="page"]::before {
+    content: "";
+    position: absolute;
+    top: -1px;
+    inset-inline: 22%;
+    height: 2px;
+    background: var(--tj-ink);
+  }
+
+  .tj-admin .ed-admin-more {
+    border-radius: 12px 12px 0 0;
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+  }
+
+  .tj-admin .ed-admin-more-dialog {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .tj-admin .ed-admin-more-dialog::backdrop {
+    background: transparent;
+  }
+
+  /* Shared pages: the title and action establish the working edge, followed
+     by one consistent interval before the real records. */
+  .tj-admin .ed-admin-page {
+    padding: 28px 20px 56px;
+  }
+
+  .tj-admin .ed-admin-page-header:not(.sr-only) {
+    align-items: flex-start;
+    margin-bottom: 26px;
+  }
+
+  .tj-admin .ed-admin-page-header h1 {
+    font-size: clamp(28px, 2.7vw, 36px);
+    font-weight: 500;
+    letter-spacing: -0.04em;
+    line-height: 1.1;
+  }
+
+  .tj-admin .ed-admin-card {
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgb(12 12 13 / 2%);
+  }
+
+  .tj-admin .tj-action-base {
+    border-radius: 6px;
+    font-weight: 550;
+    letter-spacing: -0.01em;
+  }
+
+  .tj-admin .tj-action-md {
+    min-height: 46px;
+    padding-inline: 19px;
+  }
+
+  .tj-admin .tj-action-primary {
+    border-color: var(--tj-invert);
+    background: var(--tj-invert);
+    color: var(--tj-invert-ink);
+  }
+
+  .tj-admin .tj-action-primary:hover {
+    border-color: var(--tj-invert-hover);
+    background: var(--tj-invert-hover);
+  }
+
+  .tj-admin .ed-admin-title {
+    font-size: clamp(30px, 2.7vw, 38px);
+    font-weight: 500;
+    letter-spacing: -0.04em;
+  }
+
+  .tj-admin .ed-doc-title {
+    font-size: 17px;
+    font-weight: 500;
+    line-height: 1.3;
+  }
+
+  .tj-admin .ed-lot-price {
+    font-family: var(--font-figure);
+    letter-spacing: -0.025em;
+  }
+
+  /* The desk has one live statement and one action. All five destinations
+     remain visible as a single, compact index rather than extra cards. */
+  .tj-admin .ed-desk {
+    padding: 32px 20px 44px;
+  }
+
+  .tj-admin .ed-desk-inner {
+    width: 100%;
+    max-width: 920px;
+    margin-inline: auto;
+  }
+
+  .tj-admin .ed-desk-greeting {
+    font-size: 26px;
+    line-height: 1.15;
+  }
+
+  .tj-admin .ed-desk-today {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 25px;
+    margin-top: 28px;
+    padding: 26px 24px;
+    border: 1px solid var(--tj-line);
+    border-radius: 10px;
+    background: var(--tj-plane);
+  }
+
+  .tj-admin .ed-desk-state {
+    max-width: 24ch;
+    font-size: clamp(29px, 3vw, 38px);
+    font-weight: 450;
+    line-height: 1.14;
+    letter-spacing: -0.04em;
+  }
+
+  .tj-admin .ed-desk-index {
+    margin-top: 34px;
+  }
+
+  .tj-admin .ed-desk-index .ed-index-row {
+    gap: 7px 16px;
+    min-height: 82px;
+    padding-block: 20px;
+    transition: background-color 180ms var(--ease-primary);
+  }
+
+  .tj-admin .ed-desk-index .ed-index-row:hover {
+    padding-inline: 0;
+    background: color-mix(in srgb, var(--tj-plane) 50%, transparent);
+  }
+
+  .tj-admin .ed-desk-index .ed-index-row::before {
+    display: none;
+  }
+
+  .tj-admin .ed-desk-index .ed-index-name {
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: -0.025em;
+  }
+
+  .tj-admin .ed-desk-index .ed-index-note {
+    font-size: 12px;
+  }
+
+  .tj-admin .ed-desk-index .ed-index-figure {
+    color: var(--tj-muted);
+    font-size: 12px;
+  }
+
+  /* One sale, one visual frame. These styles stop at the interface and do
+     not reach the printable document components inside a preview. */
+  .tj-admin .ed-guide {
+    padding: 16px 20px max(20px, env(safe-area-inset-bottom));
+    background: var(--tj-warm-white);
+  }
+
+  .tj-admin .ed-guide-head {
+    width: 100%;
+    max-width: 1080px;
+    margin-inline: auto;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--tj-line);
+  }
+
+  .tj-admin .ed-guide-body {
+    padding-block: 36px;
+  }
+
+  .tj-admin .ed-guide-question {
+    font-weight: 450;
+    letter-spacing: -0.04em;
+    line-height: 1.12;
+    text-wrap: balance;
+  }
+
+  /* A question receives programmatic focus to announce a new step. It is
+     not an input; interactive controls retain their visible keyboard ring. */
+  .tj-admin h1.ed-guide-question[tabindex="-1"]:focus-visible {
+    outline: none !important;
+  }
+
+  .tj-admin .ed-guide-car {
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 13px;
+  }
+
+  .tj-admin .ed-guide-nav {
+    width: 100%;
+    max-width: 640px;
+    margin-inline: auto;
+    padding-top: 18px;
+  }
+
+  .tj-admin .ed-guide :where(.ed-input, .ed-start-search) {
+    border-radius: 6px;
+    background: var(--tj-plane);
+    border-color: var(--tj-line);
+  }
+
+  .tj-admin .ed-guide :where(.ed-input):focus {
+    background: var(--tj-plane);
+    border-color: var(--tj-copper);
+  }
+
+  .tj-admin input.ed-money-input {
+    font-family: var(--font-figure);
+    font-weight: 450;
+  }
+
+  .tj-admin :where(.ed-pay-choice, .ed-plan-choice, .ed-title-kind, .ed-pick) {
+    border-radius: 8px;
+    background: var(--tj-plane);
+    box-shadow: none;
+    transition: border-color 180ms var(--ease-primary), background-color 180ms var(--ease-primary);
+  }
+
+  .tj-admin :where(.ed-pay-choice, .ed-plan-choice):hover:not(:disabled) {
+    border-color: var(--tj-ink);
+    background: var(--tj-plane);
+  }
+
+  .tj-admin .ed-pick:hover {
+    border-color: var(--tj-muted);
+    box-shadow: 0 2px 6px rgb(12 12 13 / 4%);
+  }
+
+  .tj-admin .ed-pick-name {
+    font-weight: 500;
+  }
+
+  .tj-admin .ed-pick:has(.ed-pick-empty) {
+    display: grid;
+    grid-template-columns: 80px minmax(0, 1fr);
+    align-items: center;
+    min-height: 104px;
+  }
+
+  .tj-admin .ed-pick:has(.ed-pick-empty) .ed-pick-media {
+    width: 68px;
+    height: 68px;
+    margin-left: 12px;
+    aspect-ratio: auto;
+    border-radius: 4px;
+  }
+
+  .tj-admin .ed-pick:has(.ed-pick-empty) .ed-pick-body {
+    padding: 18px 14px;
+  }
+
+  .tj-admin .ed-flowrail {
+    border-radius: 0 10px 10px 0;
+  }
+
+  /* Team access is a quiet threshold, with the identity above one form.
+     No generated scenery is needed at a screen that asks for credentials. */
+  /* One leaf of paper, centred on the ground. Everything on it is centred
+     too: the owner asked for the wording in the middle, and a centred mark
+     over a left-aligned heading was the thing that read as unfinished. */
+  .tj-admin .ed-access {
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 18px;
+    min-height: 100dvh;
+    padding: 56px 20px;
+  }
+
+  .tj-admin .ed-access-leaf {
+    width: 100%;
+    max-width: 424px;
+    padding: 48px 44px 40px;
+    border: 1px solid var(--tj-line);
+    border-radius: 4px;
+    background: var(--tj-plane);
+    text-align: center;
+    /* Practically nothing. The leaf sits on the ground, it does not hover. */
+    box-shadow: 0 1px 2px rgb(12 12 13 / 3%);
+  }
+
+  .tj-admin .ed-access-mark {
+    display: block;
+    width: fit-content;
+    margin: 0 auto 30px;
+  }
+
+  /* No rule under the mark. The whitespace separates them, and a hairline
+     there cut the leaf into two cards. */
+  .tj-admin .ed-access-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 31px;
+    font-weight: 450;
+    line-height: 1.08;
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+  }
+
+  .tj-admin .ed-access-lede {
+    margin: 12px auto 0;
+    max-width: 38ch;
+    color: var(--tj-muted);
+    font-size: 13.5px;
+    line-height: 1.55;
+    text-wrap: balance;
+  }
+
+  /* Spanish sits under the English rather than beside it behind a slash.
+     Somebody locked out cannot be asked to find a language switch, so both
+     are present; only one of them needs to be the loud one. */
+  .tj-admin .ed-access-lede-es {
+    display: block;
+    margin-top: 3px;
+    color: var(--tj-muted-light);
+    font-size: 12.5px;
+  }
+
+  .tj-admin .ed-access-body {
+    margin-top: 34px;
+    text-align: left;
+  }
+
+  .tj-admin .ed-access-foot {
+    margin-top: 30px;
+    padding-top: 22px;
+    border-top: 1px solid var(--tj-line);
+    text-align: center;
+  }
+
+  .tj-admin .ed-access :where(input) {
+    min-height: 50px;
+    border-radius: 6px;
+    background: var(--tj-warm-white);
+    font-size: 16px;
+  }
+
+  .tj-admin .ed-access label {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  /* The legal line belongs to the page, not to the leaf. */
+  .tj-admin .ed-access-legal {
+    margin: 0;
+    color: var(--tj-muted-light);
+    text-align: center;
+    font-size: 11px;
+    line-height: 1.5;
+    letter-spacing: 0.01em;
+  }
+
+  /* The one divider that earns its keep: it separates two ways in. */
+  .tj-admin .ed-access-or {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 26px 0;
+    color: var(--tj-muted-light);
+    font-size: 11px;
+    letter-spacing: 0.02em;
+  }
+
+  .tj-admin .ed-access-or::before,
+  .tj-admin .ed-access-or::after {
+    flex: 1;
+    height: 1px;
+    background: var(--tj-line);
+    content: "";
+  }
+
+  .tj-admin .ed-access-quiet {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    margin-top: 20px;
+    color: var(--tj-muted);
+    font-size: 12.5px;
+  }
+
+  .tj-admin .ed-access-quiet a,
+  .tj-admin .ed-access-quiet button {
+    color: var(--tj-muted);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: var(--tj-line);
+    transition: color 160ms ease, text-decoration-color 160ms ease;
+  }
+
+  .tj-admin .ed-access-quiet :is(a, button):hover {
+    color: var(--tj-ink);
+    text-decoration-color: currentcolor;
+  }
+
+  /* A native select keeps the platform's own picker, which is the right
+     control on a phone, but its default arrow is a different shape on every
+     OS and reads as the one unstyled thing on the leaf. One hairline chevron
+     in ink, drawn at the same weight as the rules around it. */
+  .tj-admin .ed-access {
+    --tj-select-caret: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%234a4a45' stroke-width='1.25' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  }
+
+  /* Two answers, one control. Ink for the chosen one: copper belongs to the
+     button that sends the request, and two copper things on a screen means
+     one of them is wrong. */
+  .tj-admin .ed-access-segment {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid var(--tj-line);
+    border-radius: 6px;
+    background: var(--tj-surface);
+  }
+
+  .tj-admin .ed-access-segment label {
+    margin: 0;
+  }
+
+  .tj-admin .ed-access-segment span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    border-radius: 4px;
+    color: var(--tj-muted);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 160ms ease, color 160ms ease;
+  }
+
+  .tj-admin .ed-access-segment input:checked + span {
+    background: var(--tj-plane);
+    color: var(--tj-ink);
+    box-shadow: 0 1px 1px rgb(12 12 13 / 5%);
+  }
+
+  .tj-admin .ed-access-segment input:focus-visible + span {
+    outline: 2px solid var(--tj-copper);
+    outline-offset: 1px;
+  }
+
+  /* An action that has to speak twice.
+     `.tj-action-base` is inline-flex and capitalizes, which put the Spanish
+     beside the English on one line and title-cased it into "Enviarme El
+     Enlace". Spanish is sentence case, and it belongs under. */
+  .tj-admin .ed-access-bi {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    line-height: 1.2;
+  }
+
+  .tj-admin .ed-access-bi > span {
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0;
+    opacity: 0.62;
+    text-transform: none;
+  }
+
+  /* Six digits, six boxes. Sized so the row fits a 320px phone with the
+     leaf's padding on either side, and so a digit is the biggest thing on
+     the screen when it is the only thing being asked for. */
+  .tj-admin .ed-code-boxes {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+  }
+
+  .tj-admin .ed-code-boxes input {
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+    aspect-ratio: 3 / 4;
+    border: 1px solid var(--tj-line);
+    border-radius: 6px;
+    background: var(--tj-surface);
+    color: var(--tj-ink);
+    font-size: 22px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    transition: border-color 160ms ease, background-color 160ms ease;
+  }
+
+  /* A filled box reads as answered without shouting: paper, not colour. */
+  .tj-admin .ed-code-boxes input[data-filled] {
+    border-color: var(--tj-muted-light);
+    background: var(--tj-plane);
+  }
+
+  .tj-admin .ed-code-boxes input:focus {
+    border-color: var(--tj-copper);
+    background: var(--tj-plane);
+    outline: none;
+  }
+
+  .tj-admin .ed-code-boxes input[aria-invalid="true"] {
+    border-color: var(--tj-danger);
+  }
+
+  /* The seal.
+     A copper ring closes around the monogram, the mark settles, then the
+     words arrive. Deliberate rather than scattered: the gesture a sheet of
+     paper makes, not the one a birthday card makes. */
+  .tj-admin .ed-granted {
+    text-align: center;
+    padding: 8px 0 4px;
+  }
+
+  .tj-admin .ed-granted-seal {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 96px;
+    height: 96px;
+    margin: 0 auto 26px;
+  }
+
+  .tj-admin .ed-granted-ring {
+    position: absolute;
+    inset: 0;
+    border: 1px solid var(--tj-copper);
+    border-radius: 50%;
+    opacity: 0;
+    scale: 1.35;
+    animation: ed-seal-close 620ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .tj-admin .ed-granted-mark {
+    display: block;
+    opacity: 0;
+    scale: 0.82;
+    animation: ed-seal-settle 520ms cubic-bezier(0.16, 1, 0.3, 1) 180ms forwards;
+  }
+
+  .tj-admin .ed-granted-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 27px;
+    font-weight: 450;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    color: var(--tj-ink);
+    opacity: 0;
+    translate: 0 8px;
+    animation: ed-seal-rise 480ms cubic-bezier(0.16, 1, 0.3, 1) 420ms forwards;
+  }
+
+  .tj-admin .ed-granted-note {
+    margin: 12px auto 0;
+    max-width: 34ch;
+    color: var(--tj-muted);
+    font-size: 13.5px;
+    line-height: 1.6;
+    opacity: 0;
+    translate: 0 8px;
+    animation: ed-seal-rise 480ms cubic-bezier(0.16, 1, 0.3, 1) 540ms forwards;
+  }
+
+  @keyframes ed-seal-close {
+    from { opacity: 0; scale: 1.35; }
+    60%  { opacity: 1; }
+    to   { opacity: 1; scale: 1; }
+  }
+
+  @keyframes ed-seal-settle {
+    from { opacity: 0; scale: 0.82; }
+    to   { opacity: 1; scale: 1; }
+  }
+
+  @keyframes ed-seal-rise {
+    to { opacity: 1; translate: 0 0; }
+  }
+
+  /* Settings.
+     A list of destinations, not a grid of cards: it scales to a fourth and a
+     fifth row without re-deciding the layout, and it reads the same on a
+     phone as on a desk. */
+  .tj-admin .ed-settings {
+    display: grid;
+    gap: 34px;
+    padding-bottom: 8px;
+  }
+
+  /* The same rows appear at the foot of Profile, where they need their own
+     air because a form sits above them rather than another group. */
+  .tj-admin .ed-profile-more {
+    margin-top: 40px;
+  }
+
+  .tj-admin .ed-settings-group-title {
+    margin: 0 0 10px;
+    color: var(--tj-muted);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .tj-admin .ed-settings-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border: 1px solid var(--tj-line);
+    border-radius: 6px;
+    background: var(--tj-plane);
+    overflow: hidden;
+  }
+
+  /* One rule between rows, none at the ends: the container already has its
+     edge, and a border on both sides of every row is the pattern that makes
+     a list look like a spreadsheet. */
+  .tj-admin .ed-settings-list li + li .ed-settings-row {
+    border-top: 1px solid var(--tj-line);
+  }
+
+  .tj-admin .ed-settings-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 62px;
+    padding: 13px 16px;
+    color: var(--tj-ink);
+    text-decoration: none;
+    transition: background-color 160ms ease;
+  }
+
+  .tj-admin .ed-settings-row:hover {
+    background: var(--tj-surface);
+  }
+
+  .tj-admin .ed-settings-row:focus-visible {
+    outline: 2px solid var(--tj-copper);
+    outline-offset: -2px;
+  }
+
+  .tj-admin .ed-settings-icon {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    flex: none;
+    border: 1px solid var(--tj-line);
+    border-radius: 5px;
+    color: var(--tj-muted);
+  }
+
+  .tj-admin .ed-settings-text {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  .tj-admin .ed-settings-label {
+    font-size: 14.5px;
+    font-weight: 500;
+    line-height: 1.3;
+  }
+
+  .tj-admin .ed-settings-scent {
+    color: var(--tj-muted);
+    font-size: 12.5px;
+    line-height: 1.4;
+  }
+
+  .tj-admin .ed-settings-caret {
+    margin-left: auto;
+    flex: none;
+    color: var(--tj-muted-light);
+  }
+
+  /* The diagnostics, at the weight they deserve. */
+  .tj-admin .ed-settings-status {
+    padding-top: 20px;
+    border-top: 1px solid var(--tj-line);
+  }
+
+  .tj-admin .ed-settings-status dl {
+    display: grid;
+    gap: 10px 26px;
+    margin: 0;
+    grid-template-columns: repeat(auto-fit, minmax(150px, auto));
+    justify-content: start;
+  }
+
+  .tj-admin .ed-settings-status dt {
+    color: var(--tj-muted-light);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .tj-admin .ed-settings-status dd {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin: 2px 0 0;
+    color: var(--tj-ink);
+    font-size: 13.5px;
+    overflow-wrap: anywhere;
+  }
+
+  /* Colour is never the only signal: the word beside it says the same thing. */
+  .tj-admin .ed-settings-dot {
+    width: 6px;
+    height: 6px;
+    flex: none;
+    border-radius: 50%;
+    background: var(--tj-danger);
+  }
+
+  .tj-admin .ed-settings-dot[data-live] {
+    background: #3f5a43;
+  }
+
+  .tj-admin .ed-settings-probe {
+    margin: 14px 0 0;
+    color: var(--tj-muted-light);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+}
+
+@media screen and (min-width: 768px) {
+  .tj-admin .ed-workspace-main {
+    padding-left: 248px;
+  }
+
+  .tj-admin .ed-admin-page {
+    padding: 42px 36px 64px;
+  }
+
+  .tj-admin .ed-desk {
+    padding: 54px 44px 64px;
+  }
+
+  .tj-admin .ed-desk-greeting {
+    font-size: 30px;
+  }
+
+  .tj-admin .ed-desk-today {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 32px;
+    min-height: 166px;
+    margin-top: 32px;
+    padding: 32px;
+  }
+
+  .tj-admin .ed-desk-today > a {
+    flex-shrink: 0;
+  }
+
+  .tj-admin .ed-desk-index {
+    margin-top: 40px;
+  }
+
+  .tj-admin .ed-desk-index .ed-index-row {
+    grid-template-columns: minmax(140px, 0.7fr) minmax(180px, 1.4fr) auto;
+    align-items: center;
+    min-height: 76px;
+    gap: 24px;
+    padding-block: 20px;
+  }
+
+  .tj-admin .ed-desk-index .ed-index-note {
+    grid-column: 2;
+    grid-row: 1;
+    font-size: 13px;
+  }
+
+  .tj-admin .ed-desk-index :is(.ed-index-figure, svg) {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .tj-admin .ed-guide {
+    padding: 24px 40px;
+  }
+
+  .tj-admin .ed-guide-body {
+    padding-block: 48px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  /* On a phone the leaf is the screen, so the border around it is a line
+     drawn just inside the bezel. It goes; the paper stays. */
+  .tj-admin .ed-access {
+    padding: 36px 22px;
+    background: var(--tj-plane);
+  }
+
+  .tj-admin .ed-access-leaf {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .tj-admin .ed-access-mark {
+    margin-bottom: 26px;
+  }
+
+  .tj-admin .ed-access-title {
+    font-size: 28px;
+  }
+}
+
+@media screen and (prefers-reduced-motion: reduce) {
+  .tj-admin :where(.ed-desk-index .ed-index-row, .ed-pay-choice, .ed-plan-choice, .ed-title-kind, .ed-pick) {
+    animation: none;
+    transition: none;
+  }
+
+  /* The seal arrives already pressed. Somebody who asked for less movement
+     still gets the moment, just not the motion. */
+  .tj-admin :where(.ed-granted-ring, .ed-granted-mark, .ed-granted-title, .ed-granted-note) {
+    animation: none;
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+
+@media screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .tj-admin {
+    --admin-brand-filter: none;
+  }
+}
+
+@media screen {
+  :root[data-theme="dark"] .tj-admin {
+    --admin-brand-filter: none;
+  }
+}
+
+/* The rail is sixteen entries and the viewport is not always tall enough for
+   them. It has always scrolled, but it clipped hard at the bottom edge, so at
+   1440x900 five entries and at 1280x720 nine simply were not there as far as a
+   reader could tell. "Stop Hiding My Controls" is the standing reference: a
+   hidden, uncued control costs discoverability to buy tidiness.
+
+   The last rows fade instead of being cut, which reads as a list that
+   continues. It is one rule and no script, and it does not move anything. */
+.tj-admin .tj-admin-rail-scroll {
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 26px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 26px), transparent 100%);
+}
+
+/* Vega's: the rail and the phone tab bar are the public site's black band,
+   carrying the emblem and the wordmark in white. Every role flips inside
+   them, so the nav keeps its own contrast without new rules. */
+@media screen {
+  .tj-admin :is(.ed-admin-rail, .ed-admin-tabs) {
+    --tj-plane: #000000;
+    --tj-surface: #000000;
+    --tj-warm-white: #000000;
+    --tj-off-white: #000000;
+    --tj-cream-warm: #1c1c1e;
+    --tj-ink: #ffffff;
+    --tj-line: #2a2a2c;
+    --tj-muted: #b0b2b4;
+    --tj-muted-light: #a4a6a8;
+    --tj-copper: #ffffff;
+    --tj-copper-light: #e5e6e8;
+    --tj-invert: #ffffff;
+    --tj-invert-ink: #000000;
+    --tj-invert-hover: #e5e6e8;
+    color: #ffffff;
+    background: #000000;
+  }
+}

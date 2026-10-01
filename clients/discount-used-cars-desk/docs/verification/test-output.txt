@@ -1,0 +1,1399 @@
+ ✓ src/__tests__/licence-ocr.test.ts > the language data ships > is vendored in public, the way the barcode decoder's wasm is 2ms
+ ✓ src/__tests__/fill-130u-template-inputs.test.ts > standalone 130-U input reaches the official PDF > does not print a purchase price or sale date for non-purchase paperwork 642ms
+ ✓ src/__tests__/id-and-signature-on-130u.test.ts > the form without extras is untouched > is exactly one sheet: the form, without the template's instruction page 656ms
+ ✓ src/__tests__/id-and-signature-on-130u.test.ts > the licence photograph > arrives as its own page, at a size somebody can read 358ms
+ ✓ src/__tests__/fill-130u-template-inputs.test.ts > standalone 130-U input reaches the official PDF > prints a complete business entity without inventing a personal ID 376ms
+ ✓ src/__tests__/fill-130u-template-inputs.test.ts > standalone 130-U input reaches the official PDF > prints a complete government entity without inventing a personal ID 286ms
+ ✓ src/__tests__/licence-ocr.test.ts > reading a licence front from image bytes > returns the fields printed on the card 1465ms
+ ✓ src/__tests__/id-and-signature-on-130u.test.ts > the licence photograph > takes a JPEG, which is what the camera path actually produces 279ms
+ ✓ src/__tests__/fill-130u-template-inputs.test.ts > standalone 130-U input reaches the official PDF > prints a complete trust entity without inventing a personal ID 230ms
+ ✓ src/__tests__/id-and-signature-on-130u.test.ts > the licence photograph > takes a PNG too 294ms
+ ✓ src/__tests__/fill-130u-template-inputs.test.ts > standalone 130-U input reaches the official PDF > prints a complete non_profit entity without inventing a personal ID 268ms
+ ✓ src/__tests__/fill-130u-template-inputs.test.ts > standalone 130-U input reaches the official PDF > fills nontitle, alternate vehicle location, and trade VIN but preserves county tax boxes 224ms
+ ✓ src/__tests__/fill-130u-template-inputs.test.ts > standalone 130-U input reaches the official PDF > keeps the dealer default only when a standalone previous owner was not supplied 1ms
+ ✓ src/__tests__/vtr-271-columns.test.ts > VTR-271 multi-box fields > has a template to check against 2ms
+ ✓ src/__tests__/vtr-271-columns.test.ts > VTR-271 multi-box fields > declares four boxes for every multi-box field, left to right 3ms
+ ✓ src/__tests__/id-and-signature-on-130u.test.ts > the licence photograph > appends nothing when there is no photograph 1019ms
+ ✓ src/__tests__/licence-ocr.test.ts > reading a licence front from image bytes > reads a card photographed badly 1415ms
+ ✓ src/__tests__/id-and-signature-on-130u.test.ts > the licence photograph > does not lose the whole document to a corrupt image 212ms
+ ✓ src/__tests__/vtr-271-columns.test.ts > VTR-271 multi-box fields > puts each part of the grantor's name under its own printed box 565ms
+ ✓ src/__tests__/id-and-signature-on-130u.test.ts > the seller's signature > changes page one when a signature is supplied 408ms
+ ✓ src/__tests__/vtr-271-columns.test.ts > VTR-271 multi-box fields > puts city, county, state and zip in four different boxes 247ms
+ ✓ src/__tests__/vtr-271-columns.test.ts > VTR-271 multi-box fields > does not put the whole name in the first box, which was the bug 214ms
+ ✓ src/__tests__/id-and-signature-on-130u.test.ts > the seller's signature > ignores a signature that is not an image 262ms
+ ✓ src/__tests__/id-and-signature-on-130u.test.ts > the seller's signature > sits on the seller band and nowhere near the applicant lines 1ms
+ ✓ src/__tests__/id-and-signature-on-130u.test.ts > decoding what arrives > reads a PNG data URL 3ms
+ ✓ src/__tests__/id-and-signature-on-130u.test.ts > decoding what arrives > normalises image/jpg to image/jpeg 0ms
+ ✓ src/__tests__/id-and-signature-on-130u.test.ts > decoding what arrives > refuses formats no PDF library here can embed 0ms
+ ✓ src/__tests__/id-and-signature-on-130u.test.ts > decoding what arrives > refuses a payload too small to be a picture 0ms
+ ✓ src/__tests__/id-and-signature-on-130u.test.ts > decoding what arrives > refuses anything that is not a data URL 0ms
+ ✓ src/__tests__/id-and-signature-on-130u.test.ts > fitting a picture into a box > never distorts 0ms
+ ✓ src/__tests__/id-and-signature-on-130u.test.ts > fitting a picture into a box > centres what is left over 0ms
+ ✓ src/__tests__/id-and-signature-on-130u.test.ts > fitting a picture into a box > survives a degenerate image rather than dividing by zero 0ms
+ ✓ src/__tests__/vtr-271-columns.test.ts > VTR-271 multi-box fields > fills the dealership's own boxes separately too 180ms
+ ✓ src/__tests__/the-name-stays-in-boxes.test.ts > what the forms are told > uses the typed boxes and says so 3ms
+ ✓ src/__tests__/the-name-stays-in-boxes.test.ts > what the forms are told > falls back to splitting for a deal that only has one string 1ms
+ ✓ src/__tests__/the-name-stays-in-boxes.test.ts > what the forms are told > reports none rather than inventing a name 0ms
+ ✓ src/__tests__/the-name-stays-in-boxes.test.ts > what the forms are told > does not silently split when boxes were typed 0ms
+ ✓ src/__tests__/the-name-stays-in-boxes.test.ts > what the forms are told > survives a round trip through step data 0ms
+ ✓ src/__tests__/the-name-stays-in-boxes.test.ts > the split, where it is still used > keeps surname particles together 1ms
+ ✓ src/__tests__/the-name-stays-in-boxes.test.ts > the split, where it is still used > honours an explicit Last, First ordering 0ms
+ ✓ src/__tests__/the-name-stays-in-boxes.test.ts > the split, where it is still used > admits when a three-word name is a coin toss 0ms
+ ✓ src/__tests__/the-name-stays-in-boxes.test.ts > joining, which is the safe direction > writes the boxes out in order 1ms
+ ✓ src/__tests__/the-name-stays-in-boxes.test.ts > joining, which is the safe direction > knows four empties is no name 0ms
+ ✓ src/__tests__/fill-130u-typography.test.ts > fill130U typography > fills every text field with one black regular Helvetica appearance 647ms
+ ✓ src/__tests__/the-name-stays-in-boxes.test.ts > the power of attorney, given real boxes > prints a two-word surname under Last Name rather than splitting it 591ms
+ ✓ src/__tests__/buyers-guide.test.ts > buyers guide PDF > fills only odd pages of the official three-page template 425ms
+ ✓ src/__tests__/licence-ocr.test.ts > reading a licence front from image bytes > reads a card held sideways 2571ms
+ ✓ src/__tests__/buyers-guide.test.ts > buyers guide PDF > draws the AS IS mark corner-to-corner inside the checkbox in both languages 1ms
+ ✓ src/__tests__/buyers-guide.test.ts > buyers guide PDF > fills the official Spanish template for lang=es 112ms
+ ✓ src/__tests__/the-licence-reaches-the-deal.test.ts > a licence posted from the intake screen > puts both sides on the deal 405ms
+ ✓ src/__tests__/the-licence-reaches-the-deal.test.ts > a licence posted from the intake screen > stores the files themselves, not just their names 19ms
+ ✓ src/__tests__/the-licence-reaches-the-deal.test.ts > a licence posted from the intake screen > lands the barcode as read, never as confirmed 10ms
+ ✓ src/__tests__/the-licence-reaches-the-deal.test.ts > a licence posted from the intake screen > keeps the front when there is no back to keep 14ms
+ ✓ src/__tests__/the-licence-reaches-the-deal.test.ts > a licence posted from the intake screen > refuses a token that was not signed here 7ms
+ ✓ src/__tests__/the-licence-reaches-the-deal.test.ts > a licence posted from the intake screen > refuses a token that has expired 5ms
+ ✓ src/__tests__/the-licence-reaches-the-deal.test.ts > a licence posted from the intake screen > refuses a part that is not a photograph 6ms
+ ✓ src/__tests__/licence-ocr.test.ts > reading a licence front from image bytes > returns null for a photograph that is not an identity document 722ms
+ ✓ src/__tests__/licence-ocr.test.ts > reading a licence front from image bytes > returns null rather than throwing on bytes that are not an image 1ms
+ ✓ src/__tests__/no-hardcoded-dealer-facts.test.ts > dealership facts live in exactly one file > finds files to check 2ms
+ ✓ src/__tests__/no-hardcoded-dealer-facts.test.ts > dealership facts live in exactly one file > does not hardcode the phone number outside dealership-config 40ms
+ ✓ src/__tests__/no-hardcoded-dealer-facts.test.ts > dealership facts live in exactly one file > does not hardcode the street address outside dealership-config 33ms
+ ✓ src/__tests__/no-hardcoded-dealer-facts.test.ts > dealership facts live in exactly one file > does not hardcode the postal code outside dealership-config 35ms
+ ✓ src/__tests__/no-hardcoded-dealer-facts.test.ts > dealership facts live in exactly one file > carries no reference phone from the reference dealership 42ms
+ ✓ src/__tests__/no-hardcoded-dealer-facts.test.ts > dealership facts live in exactly one file > carries no reference street from the reference dealership 35ms
+ ✓ src/__tests__/no-hardcoded-dealer-facts.test.ts > dealership facts live in exactly one file > carries no reference licence from the reference dealership 32ms
+ ✓ src/__tests__/hold-confirm.test.tsx > deliberate hold confirmation > resets a short press and never treats its click as confirmation 192ms
+ ✓ src/__tests__/hold-confirm.test.tsx > deliberate hold confirmation > requires release after visible100percent, and commits only once 15ms
+ ✓ src/__tests__/hold-confirm.test.tsx > deliberate hold confirmation > cancels when dragged outside and cannot resume by dragging back 13ms
+ ✓ src/__tests__/hold-confirm.test.tsx > deliberate hold confirmation > resets after pointerCancel 11ms
+ ✓ src/__tests__/hold-confirm.test.tsx > deliberate hold confirmation > resets after blur 16ms
+ ✓ src/__tests__/hold-confirm.test.tsx > deliberate hold confirmation > resets after lostPointerCapture 9ms
+ ✓ src/__tests__/hold-confirm.test.tsx > deliberate hold confirmation > supports holding and releasing the   key without repeat activation 15ms
+ ✓ src/__tests__/hold-confirm.test.tsx > deliberate hold confirmation > supports holding and releasing the Enter key without repeat activation 9ms
+ ✓ src/__tests__/no-hardcoded-dealer-facts.test.ts > dealership facts live in exactly one file > carries no reference postal code from the reference dealership 36ms
+ ✓ src/__tests__/no-hardcoded-dealer-facts.test.ts > dealership facts live in exactly one file > carries no reference domain from the reference dealership 70ms
+ ✓ src/__tests__/hold-confirm.test.tsx > deliberate hold confirmation > ignores a held opening key and resets an incomplete keyboard press 12ms
+ ✓ src/__tests__/hold-confirm.test.tsx > deliberate hold confirmation > cancels when Escape is pressed or the page loses focus 11ms
+ ✓ src/__tests__/hold-confirm.test.tsx > deliberate hold confirmation > gives click-only assistive activation two deliberate steps with the same wait 9ms
+ ✓ src/__tests__/hold-confirm.test.tsx > deliberate hold confirmation > cannot complete after unmount 20ms
+ ✓ src/__tests__/hold-confirm.test.tsx > deliberate hold confirmation > cancels the touch compatibility click at its source 20ms
+ ✓ src/__tests__/hold-confirm.test.tsx > deliberate hold confirmation > resets a hold when a different request replaces the open question 75ms
+ ✓ src/__tests__/hold-confirm.test.tsx > deliberate hold confirmation > keeps ordinary DeskConfirm actions immediate and Cancel available for holds 37ms
+ ✓ src/__tests__/no-hardcoded-dealer-facts.test.ts > dealership facts live in exactly one file > carries no personal payment handle from the reference dealership 39ms
+ ✓ src/__tests__/no-hardcoded-dealer-facts.test.ts > dealership facts live in exactly one file > does not grow the number of places naming the dealership 35ms
+ ✓ src/__tests__/no-hardcoded-dealer-facts.test.ts > dealership facts live in exactly one file > never falls back to a real dealership's details behind an env var 37ms
+ ✓ src/__tests__/official-template-output.test.ts > original government templates > fills ENF write-in lines while preserving the original page and every original content stream 188ms
+ ✓ src/__tests__/official-template-output.test.ts > original government templates > ENF asks only for the state form fields and leaves signing date blank by default 1ms
+ ✓ src/__tests__/official-template-output.test.ts > original government templates > VTR-61 fills the actual owner, rebuilder, work and component fields without certification signatures 214ms
+ ✓ src/__tests__/official-template-output.test.ts > original government templates > omits hidden parts and a previous rebuilder when answers change 4ms
+ ✓ src/__tests__/official-template-output.test.ts > original government templates > keeps historical signed documents on their historical rendering 1ms
+ ✓ src/__tests__/code-boxes.test.tsx > CodeBoxes > posts one value from six boxes 231ms
+ ✓ src/__tests__/code-boxes.test.tsx > CodeBoxes > moves forward as you type and back on backspace 34ms
+ ✓ src/__tests__/code-boxes.test.tsx > CodeBoxes > spreads a pasted code across every box 17ms
+ ✓ src/__tests__/code-boxes.test.tsx > CodeBoxes > spreads a paste made into the middle box, from the start 13ms
+ ✓ src/__tests__/code-boxes.test.tsx > CodeBoxes > takes an iOS autofill, which arrives whole in the first box 14ms
+ ✓ src/__tests__/code-boxes.test.tsx > CodeBoxes > marks only the first box for autofill 12ms
+ ✓ src/__tests__/official-sheet-readiness.test.tsx > official signing sheet readiness > waits for every rendered PDF page and its image decoding before becoming ready 79ms
+ ✓ src/__tests__/code-boxes.test.tsx > CodeBoxes > keeps out anything that is not a digit 12ms
+ ✓ src/__tests__/code-boxes.test.tsx > CodeBoxes > reports the code once, when all six are filled 20ms
+ ✓ src/__tests__/code-boxes.test.tsx > CodeBoxes > says which box is which, for a screen reader 8ms
+ ✓ src/__tests__/official-sheet-readiness.test.tsx > official signing sheet readiness > keeps a failed later PDF page unready even if the first page loaded 147ms
+ ✓ src/__tests__/official-sheet-readiness.test.tsx > official signing sheet readiness > requires the rebuilt disclosure image to decode and clears readiness for changed facts 13ms
+ ✓ src/__tests__/official-sheet-readiness.test.tsx > official signing sheet readiness > retains an earlier image failure when a later page finishes rendering 16ms
+ ✓ src/__tests__/official-sheet-readiness.test.tsx > official signing sheet readiness > never becomes ready after an image or document-fetch failure 34ms
+ ✓ src/__tests__/official-pdf-routing.test.ts > every delivery route gets the original form > passes buyer-copy privacy and blank-signature flags into the official 130-U renderer 4ms
+ ✓ src/__tests__/official-pdf-routing.test.ts > every delivery route gets the original form > renders a new marked rebuilt disclosure directly from the original PDF without an HTML render token 183ms
+ ✓ src/__tests__/official-pdf-routing.test.ts > every delivery route gets the original form > keeps historical disclosure links on the historical renderer 2ms
+ ✓ src/__tests__/the-photograph-lands-before-it-is-read.test.ts > the order the work happens in > attaches the photograph before reading a thing off it 109ms
+ ✓ src/__tests__/the-photograph-lands-before-it-is-read.test.ts > the order the work happens in > answers the phone without waiting for the reader 3ms
+ ✓ src/__tests__/the-photograph-lands-before-it-is-read.test.ts > the order the work happens in > reads the card afterwards and writes what it found 2ms
+ ✓ src/__tests__/the-photograph-lands-before-it-is-read.test.ts > the order the work happens in > re-reads the deal before the second write 1ms
+ ✓ src/__tests__/the-photograph-lands-before-it-is-read.test.ts > a reader that fails cannot cost the photograph > survives a reader that throws 1ms
+ ✓ src/__tests__/the-photograph-lands-before-it-is-read.test.ts > a reader that fails cannot cost the photograph > survives a reader that returns-null 1ms
+ ✓ src/__tests__/the-photograph-lands-before-it-is-read.test.ts > the desk keeps listening after the picture arrives > does not tear the subscription down once the photograph is in 0ms
+ ✓ src/__tests__/the-photograph-lands-before-it-is-read.test.ts > the desk keeps listening after the picture arrives > is not keyed on whether it is still waiting 0ms
+ ✓ src/__tests__/the-photograph-lands-before-it-is-read.test.ts > the desk keeps listening after the picture arrives > fills empty fields and leaves typed ones alone 1ms
+ ✓ src/__tests__/the-photograph-lands-before-it-is-read.test.ts > the desk keeps listening after the picture arrives > asks the server for a new signed URL only when the photograph changes 0ms
+ ✓ src/__tests__/the-photograph-lands-before-it-is-read.test.ts > what still counts as a failure > says so when the image itself did not save 1ms
+ ✓ src/__tests__/customerPortal.test.ts > encodeCustomerLink / decodeCustomerLink > generates tokenized short portal links 2ms
+ ✓ src/__tests__/customerPortal.test.ts > encodeCustomerLink / decodeCustomerLink > round-trips bill of sale data 2ms
+ ✓ src/__tests__/customerPortal.test.ts > encodeCustomerLink / decodeCustomerLink > includes dealer signature when provided 1ms
+ ✓ src/__tests__/customerPortal.test.ts > encodeCustomerLink / decodeCustomerLink > excludes buyer-only fields from dealer link 1ms
+ ✓ src/__tests__/customerPortal.test.ts > encodeCustomerLink / decodeCustomerLink > returns null for invalid hash 0ms
+ ✓ src/__tests__/customerPortal.test.ts > encodeCompletedLink / decodeCompletedLink > round-trips with acknowledgments 1ms
+ ✓ src/__tests__/customerPortal.test.ts > encodeCompletedLink / decodeCompletedLink > returns null for invalid completed hash 0ms
+ ✓ src/__tests__/customerPortal.test.ts > encodeCompletedLink / decodeCompletedLink > omits signatures that exceed size limits 2ms
+ ✓ src/__tests__/customerPortal.test.ts > encodeCompletedLink / decodeCompletedLink > includes signatures under the size limit 55ms
+ ✓ src/__tests__/customerPortal.test.ts > encodeCompletedLink / decodeCompletedLink > works for all document types 2ms
+ ✓ src/__tests__/customerPortal.test.ts > saveAgreement completion payload > sends raw completion evidence instead of a client-generated completed_link 48ms
+ ✓ src/__tests__/signing-readiness.test.tsx > the buyer reads loaded document content > does not accept a loading placeholder that fits in the viewport 237ms
+ ✓ src/__tests__/signing-readiness.test.tsx > the buyer reads loaded document content > waits for actual image load after the official renderer reports ready 33ms
+ ✓ src/__tests__/signing-readiness.test.tsx > the buyer reads loaded document content > observes delayed readiness and requires scrolling through the newly drawn pages 28ms
+ ✓ src/__tests__/signing-readiness.test.tsx > the buyer reads loaded document content > revokes a previous read when the document becomes unavailable, then recovers 26ms
+ ✓ src/__tests__/signing-readiness.test.tsx > the buyer reads loaded document content > refuses a stale signing click if content becomes unavailable before observer delivery 39ms
+ ✓ src/__tests__/signing-readiness.test.tsx > the buyer reads loaded document content > requires every readiness marker and every image, including broken images 4ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > what the advertised price meant > puts tax and fees on top when the price is the car alone 2ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > what the advertised price meant > works backwards when the price is what they drive away for 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > what the advertised price meant > adds up to the quoted figure exactly, at every price 53ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > what the advertised price meant > does not invent a negative car out of a price below the fees 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > the registration that was not paid > leaves tax and fees owed, and calls it a lien 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > the registration that was not paid > leaves nothing owed when it is paid 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > the registration that was not paid > still owes the registration on an out-the-door price 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > the registration that was not paid > raises no lien on a deal nobody has been asked about 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > the registration that was not paid > taxes the price less the trade-in, which is the statute 1ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > what they actually handed over > is whatever the dealer typed 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > what they actually handed over > falls back to the whole total until somebody is asked 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > what they actually handed over > survives the way people type money 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > what they actually handed over > does not take a half-typed number for an answer 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > what they actually handed over > refuses to pay more than the deal is worth 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > what they actually handed over > refuses a negative payment 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > what they actually handed over > says what a yes or no never could 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > what they actually handed over > needs no second answer to know a deal is settled 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > what they actually handed over > reaches the bill of sale as the balance 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > what the answers are worth to the deal > survives the round trip 1ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > what the answers are worth to the deal > does not let an old deal's paid figure pose as the spoken amount 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > what the answers are worth to the deal > refuses a value that is not one of the answers 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > what the answers are worth to the deal > is not settled until both are answered 9ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > the lien reaching the paper > arrives in the three keys the documents already read 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > the lien reaching the paper > is off on a deal that is paid 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > the lien reaching the paper > is filed with the document rather than only drawn on the screen 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > the lien reaching the paper > is read by the 130-U from the same key 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > the lien reaching the paper > uses semantic lien red on screen and prints it in ink 1ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > the lien reaching the paper > is red on the screen that files it too, and legibly 1ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > where the question is asked > is two steps of the sale, not two questions on one screen 2ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > where the question is asked > asks the amount before asking what it means 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > where the question is asked > starts the box at the marked price, and empty when there is none 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > where the question is asked > anchors every figure on the typed amount, not the vehicle row 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > where the question is asked > works out what crossed the desk from the amount and its meaning 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > where the question is asked > has no yes or no about it left to disagree with the amount 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > where the question is asked > asks both before anything gets printed 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > where the question is asked > counts each as its own unanswered step 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > where the question is asked > marks only the one that was answered 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > where the question is asked > carries its own Next on the box, and the nav's on the choice 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > where the question is asked > draws no receipt from an answer nobody has given 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > where the question is asked > does not write to the database once per keystroke 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > where the question is asked > refuses to move on with an empty box 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > where the question is asked > moves on even though the save came first 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > where the question is asked > is rendered by both steps it belongs to 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > a sixth grader could work the money screens > has a scorer that can fail 1ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > a sixth grader could work the money screens > reads How Much Are They Paying? at sixth grade or below 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > a sixth grader could work the money screens > reads Does That Include Tax And Fees? at sixth grade or below 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > a sixth grader could work the money screens > reads How Much Are They Paying Today? at sixth grade or below 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > a sixth grader could work the money screens > reads What Is The Down Payment Today? at sixth grade or below 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > a sixth grader could work the money screens > reads The car is marked $3,500. at sixth grade or below 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > a sixth grader could work the money screens > reads This car has no marked price. Type what they agreed to. at sixth grade or below 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > a sixth grader could work the money screens > reads They are paying $3,500. at sixth grade or below 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > a sixth grader could work the money screens > reads Yes at sixth grade or below 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > a sixth grader could work the money screens > reads That is the whole price at sixth grade or below 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > a sixth grader could work the money screens > reads No at sixth grade or below 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > a sixth grader could work the money screens > reads Tax and fees go on top at sixth grade or below 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > a sixth grader could work the money screens > reads Car at sixth grade or below 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > a sixth grader could work the money screens > reads Less trade-in at sixth grade or below 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > a sixth grader could work the money screens > reads Sales tax at sixth grade or below 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > a sixth grader could work the money screens > reads Title fee at sixth grade or below 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > a sixth grader could work the money screens > reads Doc fee at sixth grade or below 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > a sixth grader could work the money screens > reads Reg fee at sixth grade or below 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > a sixth grader could work the money screens > reads Total at sixth grade or below 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > a sixth grader could work the money screens > reads Paying today at sixth grade or below 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > a sixth grader could work the money screens > reads Balance owed at sixth grade or below 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > a sixth grader could work the money screens > reads We hold the title until they pay this. at sixth grade or below 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > a sixth grader could work the money screens > reads Paid in full. No balance owed. at sixth grade or below 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > a sixth grader could work the money screens > reads They are paying some other amount today at sixth grade or below 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > a sixth grader could work the money screens > says every one of those lines on the screen 1ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > a sixth grader could work the money screens > holds for every question the guide asks in its own words 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > the printed balance does not name what it is for > says balance owed rather than unpaid registration 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > the printed balance does not name what it is for > is called a balance on every screen a person reads 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > the registration quote nobody types any more > is not a question on the vehicle responsibility form 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > the registration quote nobody types any more > is tax, title, registration and the doc fee 0ms
+ ✓ src/__tests__/the-price-means-one-thing.test.ts > the registration quote nobody types any more > is computed onto that form rather than left blank 0ms
+ ✓ src/__tests__/no-banned-dashes.test.ts > banned dashes > does not ship an em-dash or an en-dash separator anywhere a person reads 43ms
+ ✓ src/__tests__/no-banned-dashes.test.ts > banned dashes > holds the business hours in exactly one place 30ms
+ ✓ src/__tests__/the-bill-of-sale-names-the-banks-lien.test.tsx > the bill of sale names the bank's lien > prints the lender as lienholder when the deal carries the bank's lien 97ms
+ ✓ src/__tests__/the-bill-of-sale-names-the-banks-lien.test.tsx > the bill of sale names the bank's lien > prints no lien section on a deal that carries none 25ms
+ ✓ src/__tests__/sms-delivery-reconciliation.test.ts > provider receipt reconciliation is read-only and conservative > uses a bounded GET for a matching delivered message 51ms
+ ✓ src/__tests__/sms-delivery-reconciliation.test.ts > provider receipt reconciliation is read-only and conservative > maps documented terminal status sending_failed to failed 1ms
+ ✓ src/__tests__/sms-delivery-reconciliation.test.ts > provider receipt reconciliation is read-only and conservative > maps documented terminal status delivery_failed to failed 1ms
+ ✓ src/__tests__/sms-delivery-reconciliation.test.ts > provider receipt reconciliation is read-only and conservative > maps documented terminal status expired to failed 1ms
+ ✓ src/__tests__/sms-delivery-reconciliation.test.ts > provider receipt reconciliation is read-only and conservative > leaves nonterminal or unconfirmed queued unchanged 1ms
+ ✓ src/__tests__/sms-delivery-reconciliation.test.ts > provider receipt reconciliation is read-only and conservative > leaves nonterminal or unconfirmed sending unchanged 1ms
+ ✓ src/__tests__/sms-delivery-reconciliation.test.ts > provider receipt reconciliation is read-only and conservative > leaves nonterminal or unconfirmed sent unchanged 0ms
+ ✓ src/__tests__/sms-delivery-reconciliation.test.ts > provider receipt reconciliation is read-only and conservative > leaves nonterminal or unconfirmed delivery_unconfirmed unchanged 0ms
+ ✓ src/__tests__/sms-delivery-reconciliation.test.ts > provider receipt reconciliation is read-only and conservative > leaves nonterminal or unconfirmed unexpected unchanged 1ms
+ ✓ src/__tests__/sms-delivery-reconciliation.test.ts > provider receipt reconciliation is read-only and conservative > rejects a mismatched message identity or recipient 1ms
+ ✓ src/__tests__/sms-delivery-reconciliation.test.ts > provider receipt reconciliation is read-only and conservative > rejects a mismatched message identity or recipient 0ms
+ ✓ src/__tests__/sms-delivery-reconciliation.test.ts > provider receipt reconciliation is read-only and conservative > rejects a mismatched message identity or recipient 0ms
+ ✓ src/__tests__/sms-delivery-reconciliation.test.ts > provider receipt reconciliation is read-only and conservative > leaves state unchanged on timeout, HTTP error or malformed JSON 1ms
+ ✓ src/__tests__/billOfSale.test.ts > bill of sale print composition > places the acknowledgment before the one buyer signature and fills today's date 47ms
+ ✓ src/__tests__/billOfSale.test.ts > bill of sale print composition > keeps the protected terms and acknowledgments while removing unrelated records 9ms
+ ✓ src/__tests__/billOfSale.test.ts > bill of sale print composition > uses the bill of sale signing agreement in Spanish 17ms
+ ✓ src/__tests__/packet-signing-text.test.ts > signing link retries > reuses a live accepted message and only explicitly resends it 2ms
+ ✓ src/__tests__/packet-signing-text.test.ts > signing link retries > never sends again during a concurrent request, even for explicit resend 1ms
+ ✓ src/__tests__/packet-signing-text.test.ts > signing link retries > does not claim a stalled request was delivered or retry it implicitly 0ms
+ ✓ src/__tests__/packet-signing-text.test.ts > signing link retries > replaces expired links and links to a corrected phone 0ms
+ ✓ src/__tests__/packet-signing-text.test.ts > signing link retries > uses a fixed bilingual message without buyer or vehicle details 0ms
+ ✓ src/__tests__/packet-signing-text.test.ts > Telnyx send certainty > accepts only a returned message ID 48ms
+ ✓ src/__tests__/packet-signing-text.test.ts > Telnyx send certainty > treats timeouts and malformed success as uncertain 1ms
+ ✓ src/__tests__/packet-signing-text.test.ts > Telnyx send certainty > distinguishes a rejected recipient from ambiguous provider failure 1ms
+ ✓ src/__tests__/sign-in-code-privacy.test.ts > private username and email code requests > returns the typed handle before any roster lookup or mail operation 39ms
+ ✓ src/__tests__/sign-in-code-privacy.test.ts > private username and email code requests > keeps a phone number as private as a handle, and texts the code 1ms
+ ✓ src/__tests__/sign-in-code-privacy.test.ts > private username and email code requests > says nothing different when the number belongs to nobody 1ms
+ ✓ src/__tests__/sign-in-code-privacy.test.ts > private username and email code requests > answers identically for known, unknown and provider-failed requests 1ms
+ ✓ src/__tests__/sign-in-code-privacy.test.ts > private username and email code requests > does not disclose the resolved mailbox or none verification state 1ms
+ ✓ src/__tests__/sign-in-code-privacy.test.ts > private username and email code requests > does not disclose the resolved mailbox or wrong verification state 0ms
+ ✓ src/__tests__/sign-in-code-privacy.test.ts > private username and email code requests > does not disclose the resolved mailbox or expired verification state 0ms
+ ✓ src/__tests__/sign-in-code-privacy.test.ts > private username and email code requests > does not disclose the resolved mailbox or locked verification state 0ms
+ ✓ src/__tests__/sign-in-code-privacy.test.ts > private username and email code requests > does not disclose the resolved mailbox or consumed verification state 1ms
+ ✓ src/__tests__/sign-in-code-privacy.test.ts > private username and email code requests > does not disclose the resolved mailbox or unavailable verification state 0ms
+ ✓ src/__tests__/sign-in-code-privacy.test.ts > private username and email code requests > keeps username-based code completion working without returning its email 2ms
+ ✓ src/__tests__/sign-in-code-privacy.test.ts > private username and email code requests > rechecks active access before turning a correct code into a session 0ms
+ ✓ src/__tests__/typed-input-survives-refusal.test.ts > a refused submit keeps what was typed > puts text back after the browser resets it 25ms
+ ✓ src/__tests__/typed-input-survives-refusal.test.ts > a refused submit keeps what was typed > puts a textarea back 4ms
+ ✓ src/__tests__/typed-input-survives-refusal.test.ts > a refused submit keeps what was typed > restores a select to the chosen option, not the default 6ms
+ ✓ src/__tests__/typed-input-survives-refusal.test.ts > a refused submit keeps what was typed > restores checkboxes and radios by checked state, not by value 5ms
+ ✓ src/__tests__/typed-input-survives-refusal.test.ts > a refused submit keeps what was typed > restores a multiple select 6ms
+ ✓ src/__tests__/typed-input-survives-refusal.test.ts > a refused submit keeps what was typed > keeps a value that differs from its defaultValue 2ms
+ ✓ src/__tests__/typed-input-survives-refusal.test.ts > the restore refuses to guess > does not write a value into a field that moved 4ms
+ ✓ src/__tests__/typed-input-survives-refusal.test.ts > the restore refuses to guess > does not write across a type change at the same position 3ms
+ ✓ src/__tests__/typed-input-survives-refusal.test.ts > the restore refuses to guess > leaves a file input alone, because its value cannot be set 3ms
+ ✓ src/__tests__/typed-input-survives-refusal.test.ts > the restore refuses to guess > does not snapshot buttons 2ms
+ ✓ src/__tests__/typed-input-survives-refusal.test.ts > the check itself > would notice if the restore did nothing 2ms
+ ✓ src/__tests__/typed-input-survives-refusal.test.ts > the check itself > sees that a plain reset is what loses the values 2ms
+ ✓ src/__tests__/agreements-api.test.ts > GET /api/documents/agreements > returns 401 without admin session 8ms
+ ✓ src/__tests__/agreements-api.test.ts > GET /api/documents/agreements > returns 401 with expired/invalid session 1ms
+ ✓ src/__tests__/agreements-api.test.ts > GET /api/documents/agreements > returns agreements with valid admin session 3ms
+ ✓ src/__tests__/agreements-api.test.ts > GET /api/documents/agreements > allows sales staff to read agreements under their current roster role 1ms
+ ✓ src/__tests__/agreements-api.test.ts > GET /api/documents/agreements > denies a pending member despite active owner metadata 2ms
+ ✓ src/__tests__/agreements-api.test.ts > GET /api/documents/agreements > denies a inactive member despite active owner metadata 1ms
+ ✓ src/__tests__/agreements-api.test.ts > GET /api/documents/agreements > denies an active role without document read permission despite owner metadata 1ms
+ ✓ src/__tests__/agreements-api.test.ts > GET /api/documents/agreements > fails closed when the authoritative roster cannot be read 1ms
+ ✓ src/__tests__/agreements-api.test.ts > GET /api/documents/agreements > uses explicit column list (not select *) 3ms
+ ✓ src/__tests__/agreements-api.test.ts > GET /api/documents/agreements > redacts signing credentials from list responses 2ms
+ ✓ src/__tests__/agreements-api.test.ts > GET /api/documents/agreements > redacts signing credentials from fallback select star responses 3ms
+ ✓ src/__tests__/agreements-api.test.ts > GET /api/documents/agreements/[id] > redacts signing credentials from read-only detail responses 2ms
+ ✓ src/__tests__/agreements-api.test.ts > GET /api/documents/agreements/[id] > keeps completed customer portal links behind documents manage 2ms
+ ✓ src/__tests__/agreements-api.test.ts > GET /api/documents/agreements/[id] > blocks read-only sales staff from obtaining customer portal credentials 1ms
+ ✓ src/__tests__/agreements-api.test.ts > POST /api/documents/agreements > returns 401 without admin session 1ms
+ ✓ src/__tests__/agreements-api.test.ts > POST /api/documents/agreements > creates agreement with admin auth 2ms
+ ✓ src/__tests__/agreements-api.test.ts > POST /api/documents/agreements > blocks sales staff from creating agreements despite stale owner metadata 1ms
+ ✓ src/__tests__/agreements-api.test.ts > POST /api/documents/agreements > returns 400 without document_type 1ms
+ ✓ src/__tests__/agreements-api.test.ts > POST /api/documents/agreements > sets completed_at when status is completed 1ms
+ ✓ src/__tests__/agreements-api.test.ts > POST /api/documents/agreements > sets completed_at to null when status is pending 1ms
+ ✓ src/__tests__/agreements-api.test.ts > PATCH /api/documents/agreements > returns 401 without admin session 1ms
+ ✓ src/__tests__/agreements-api.test.ts > PATCH /api/documents/agreements > returns 400 without id 1ms
+ ✓ src/__tests__/agreements-api.test.ts > PATCH /api/documents/agreements > blocks sales staff from changing agreements despite stale owner metadata 1ms
+ ✓ src/__tests__/agreements-api.test.ts > PATCH /api/documents/agreements > returns 400 with no fields to update 1ms
+ ✓ src/__tests__/agreements-api.test.ts > PATCH /api/documents/agreements > updates has_dealer_signature (was previously missing) 1ms
+ ✓ src/__tests__/agreements-api.test.ts > PATCH /api/documents/agreements > allows setting buyer_name to empty string (uses !== undefined, not falsy) 1ms
+ ✓ src/__tests__/the-id-is-registered-or-it-is-not.test.ts > the preview fixture, before it is trusted > remembers what it was told to write 30ms
+ ✓ src/__tests__/the-id-is-registered-or-it-is-not.test.ts > the preview fixture, before it is trusted > keeps the path of every file it was handed 15ms
+ ✓ src/__tests__/the-id-is-registered-or-it-is-not.test.ts > the preview fixture, before it is trusted > leaves a row alone when the update names no single id 11ms
+ ✓ src/__tests__/the-id-is-registered-or-it-is-not.test.ts > the upload route, which is what registering actually means > keeps both sides and writes them onto the deal 0ms
+ ✓ src/__tests__/the-id-is-registered-or-it-is-not.test.ts > the upload route, which is what registering actually means > names the deal from the signed token, never from the request 0ms
+ ✓ src/__tests__/the-id-is-registered-or-it-is-not.test.ts > the upload route, which is what registering actually means > answers a failed write with an error rather than ok 0ms
+ ✓ src/__tests__/the-id-is-registered-or-it-is-not.test.ts > the answer the screen reads back > is checked, not thrown away 0ms
+ ✓ src/__tests__/the-id-is-registered-or-it-is-not.test.ts > the answer the screen reads back > tells the operator the ID is on file, and what is in it 0ms
+ ✓ src/__tests__/the-id-is-registered-or-it-is-not.test.ts > the answer the screen reads back > says so when the barcode gave up no back 0ms
+ ✓ src/__tests__/the-id-is-registered-or-it-is-not.test.ts > the answer the screen reads back > never reports a lost licence as a lost sale 0ms
+ ✓ src/__tests__/the-id-is-registered-or-it-is-not.test.ts > the answer the screen reads back > holds the confirmation long enough to be read 0ms
+ ✓ src/__tests__/the-id-is-registered-or-it-is-not.test.ts > the answer the screen reads back > skips the confirmation when nothing was scanned 0ms
+ ✓ src/__tests__/every-sheet-carries-the-signer.test.ts > the dealer line > carries the stroke on the vehicle responsibility form 28ms
+ ✓ src/__tests__/every-sheet-carries-the-signer.test.ts > the dealer line > carries the stroke on the insurance acknowledgment 3ms
+ ✓ src/__tests__/every-sheet-carries-the-signer.test.ts > the dealer line > carries the stroke on the rebuilt disclosure, beside the buyer's 4ms
+ ✓ src/__tests__/every-sheet-carries-the-signer.test.ts > the dealer line > stays a line for ink when no stroke is on file 3ms
+ ✓ src/__tests__/every-sheet-carries-the-signer.test.ts > the sheet reader hands the stroke to all three > passes the dealer signature from the completed link 1ms
+ ✓ src/__tests__/every-sheet-carries-the-signer.test.ts > the sheet reader hands the stroke to all three > is the per-person signature, read by the finalize action from the member row 0ms
+ ✓ src/__tests__/useDeviceTier.test.ts > useDeviceTier > forces mobile tier when prefers-reduced-motion is set (even on desktop viewport) 25ms
+ ✓ src/__tests__/useDeviceTier.test.ts > useDeviceTier > returns mobile for narrow touch device (iPhone SE class) 3ms
+ ✓ src/__tests__/useDeviceTier.test.ts > useDeviceTier > returns tablet for wide touch device (iPad portrait class) 3ms
+ ✓ src/__tests__/useDeviceTier.test.ts > useDeviceTier > returns tablet for large touch device (iPad Pro class) 2ms
+ ✓ src/__tests__/useDeviceTier.test.ts > useDeviceTier > returns desktop for wide fine-pointer device 3ms
+ ✓ src/__tests__/useDeviceTier.test.ts > useDeviceTier > returns tablet for narrow fine-pointer window (resized browser) 2ms
+ ✓ src/__tests__/useDeviceTier.test.ts > useDeviceTier > returns mobile for narrow fine-pointer window (tiny dev tools) 2ms
+ ✓ src/__tests__/useDeviceTier.test.ts > useDeviceTier > returns tablet for wide hybrid touch device even with fine pointer 2ms
+ ✓ src/__tests__/useDeviceTier.test.ts > useDeviceTier > falls back to mobile when matchMedia is unavailable 3ms
+ ✓ src/__tests__/the-rebuilt-disclosure-says-what-the-state-says.test.ts > the state's sentence > is the state's wording, word for word, in the English copy 2ms
+ ✓ src/__tests__/the-rebuilt-disclosure-says-what-the-state-says.test.ts > the state's sentence > is translated in the Spanish copy with the English original kept under it 1ms
+ ✓ src/__tests__/the-rebuilt-disclosure-says-what-the-state-says.test.ts > the sheet > sets the purchaser's name into the sentence 14ms
+ ✓ src/__tests__/the-rebuilt-disclosure-says-what-the-state-says.test.ts > the sheet > prints the year and make on their own lines and the VIN 4ms
+ ✓ src/__tests__/the-rebuilt-disclosure-says-what-the-state-says.test.ts > the sheet > says it in Spanish and in the state's English on the Spanish sheet 4ms
+ ✓ src/__tests__/the-rebuilt-disclosure-says-what-the-state-says.test.ts > the sheet > stays one sheet: a marker section, no second page 6ms
+ ✓ src/__tests__/the-rebuilt-disclosure-says-what-the-state-says.test.ts > older rows > split the description into year, make and model when the parts are missing 0ms
+ ✓ src/__tests__/the-rebuilt-disclosure-says-what-the-state-says.test.ts > the packet > no longer staples the state's PDF; the sheet is ours 0ms
+ ✓ src/__tests__/licence-reaches-the-paperwork.test.ts > a confirmed licence reaches the document > overrides the customer row that was typed months ago 20ms
+ ✓ src/__tests__/licence-reaches-the-paperwork.test.ts > a confirmed licence reaches the document > keeps the customer details the licence does not carry 1ms
+ ✓ src/__tests__/licence-reaches-the-paperwork.test.ts > a confirmed licence reaches the document > wins even when a customer file is named as well 1ms
+ ✓ src/__tests__/licence-reaches-the-paperwork.test.ts > which address goes on the paperwork > uses the mailing address once somebody has confirmed it 0ms
+ ✓ src/__tests__/licence-reaches-the-paperwork.test.ts > which address goes on the paperwork > falls back to the licence address when the mailing one is unconfirmed 0ms
+ ✓ src/__tests__/licence-reaches-the-paperwork.test.ts > an unconfirmed reading never reaches a document > ignores values the machine read but nobody checked 1ms
+ ✓ src/__tests__/licence-reaches-the-paperwork.test.ts > a deal that carries nothing > returns no prefill rather than an object of blanks 0ms
+ ✓ src/__tests__/licence-reaches-the-paperwork.test.ts > a deal that carries nothing > still returns the vehicle, which came from a different row 0ms
+ ✓ src/__tests__/licence-reaches-the-paperwork.test.ts > a deal that carries nothing > survives step_data that is not shaped like a licence at all 2ms
+ ✓ src/__tests__/sale-funding.test.ts > what each funding path requires > keeps our financing contract off a cash sale 3ms
+ ✓ src/__tests__/sale-funding.test.ts > what each funding path requires > requires our financing contract when we carry the note 1ms
+ ✓ src/__tests__/sale-funding.test.ts > what each funding path requires > excludes our financing contract when an outside lender funds it 0ms
+ ✓ src/__tests__/sale-funding.test.ts > what each funding path requires > still requires title paperwork on every path 1ms
+ ✓ src/__tests__/sale-funding.test.ts > what each funding path requires > excludes nothing before anyone has answered 0ms
+ ✓ src/__tests__/sale-funding.test.ts > funding survives a round trip through step_data > keeps the rest of the blob intact 1ms
+ ✓ src/__tests__/sale-funding.test.ts > funding survives a round trip through step_data > reads nothing out of a deal that was never asked 0ms
+ ✓ src/__tests__/sale-funding.test.ts > funding survives a round trip through step_data > drops a lender left behind when the type changes away 0ms
+ ✓ src/__tests__/sale-funding.test.ts > the lender directory > is alphabetical 9ms
+ ✓ src/__tests__/sale-funding.test.ts > the lender directory > separates who funds the customer from who funds the lot 1ms
+ ✓ src/__tests__/sale-funding.test.ts > the lender directory > carries the lenders a Texas independent lot would actually meet 1ms
+ ✓ src/__tests__/sale-funding.test.ts > the lender directory > lets a dealer override a seeded entry by id 1ms
+ ✓ src/__tests__/sale-funding.test.ts > the lender directory > finds a lender by an alias someone would actually type 1ms
+ ✓ src/__tests__/sale-funding.test.ts > the lender directory > returns the whole directory for an empty query 2ms
+ ✓ src/__tests__/sale-funding.test.ts > the lender directory > never ships a portal that is not a real https URL 1ms
+ ✓ src/__tests__/sale-funding.test.ts > the webDEALER handoff > carries the VIN in upper case, the way the form wants it 10ms
+ ✓ src/__tests__/sale-funding.test.ts > the webDEALER handoff > names a missing field instead of leaving a blank to fill from memory 1ms
+ ✓ src/__tests__/sale-funding.test.ts > the webDEALER handoff > does not invent a dealer licence when config has none 0ms
+ ✓ src/__tests__/sale-funding.test.ts > the webDEALER handoff > treats a zero sale price as missing rather than as free 0ms
+ ✓ src/__tests__/sale-funding.test.ts > the webDEALER handoff > stores a plate upper cased without disturbing the rest of the blob 0ms
+ ✓ src/__tests__/sale-funding.test.ts > every question on the walkthrough is a header > capitalises every word of every question 3ms
+ ✓ src/__tests__/sale-funding.test.ts > every question on the walkthrough is a header > covers the lender question too, which only a bank deal creates 0ms
+ ✓ src/__tests__/sale-funding.test.ts > the walkthrough builds its steps from the deal > asks the lender question only on a bank deal 1ms
+ ✓ src/__tests__/sale-funding.test.ts > the walkthrough builds its steps from the deal > never creates a step for paperwork the funding path excludes 0ms
+ ✓ src/__tests__/sale-funding.test.ts > the walkthrough builds its steps from the deal > counts a step done only when the deal actually holds the answer 0ms
+ ✓ src/__tests__/sale-funding.test.ts > the walkthrough builds its steps from the deal > keeps a finished step in the list rather than dropping it 0ms
+ ✓ src/__tests__/a-default-is-an-answer-or-it-is-nothing.test.ts > the county the dealer typed reaches the 130-U > prints the typed county, not a blank box 22ms
+ ✓ src/__tests__/a-default-is-an-answer-or-it-is-nothing.test.ts > the county the dealer typed reaches the 130-U > still carries the address it always did 3ms
+ ✓ src/__tests__/a-default-is-an-answer-or-it-is-nothing.test.ts > the county the dealer typed reaches the 130-U > fills the 130-U's other unwalked defaults too 4ms
+ ✓ src/__tests__/a-default-is-an-answer-or-it-is-nothing.test.ts > the county the dealer typed reaches the 130-U > does not overwrite an answer somebody gave 0ms
+ ✓ src/__tests__/a-default-is-an-answer-or-it-is-nothing.test.ts > the vehicle responsibility figure is a real number > carries tax, title, registration and the doc fee onto the form 1ms
+ ✓ src/__tests__/a-default-is-an-answer-or-it-is-nothing.test.ts > the vehicle responsibility figure is a real number > is the same figure the money step computed, not a second opinion 2ms
+ ✓ src/__tests__/a-default-is-an-answer-or-it-is-nothing.test.ts > the responsibility sheet is typeset as the bill of sale is > reckons its money in the bill of sale's own block 1ms
+ ✓ src/__tests__/a-default-is-an-answer-or-it-is-nothing.test.ts > the responsibility sheet is typeset as the bill of sale is > shares the letterhead and the page system 0ms
+ ✓ src/__tests__/a-default-is-an-answer-or-it-is-nothing.test.ts > the responsibility sheet is typeset as the bill of sale is > names itself the way the bill of sale names itself 1ms
+ ✓ src/__tests__/a-default-is-an-answer-or-it-is-nothing.test.ts > the responsibility sheet is typeset as the bill of sale is > states the figure it turns on exactly once 0ms
+ ✓ src/__tests__/a-default-is-an-answer-or-it-is-nothing.test.ts > the responsibility sheet is typeset as the bill of sale is > keeps both languages' money labels in step 0ms
+ ✓ src/__tests__/packet-live-updates.test.tsx > one live packet reader > adopts a buyer's signed document without navigation or manual refresh 22ms
+ ✓ src/__tests__/packet-live-updates.test.tsx > one live packet reader > coalesces realtime and focus events into one in-flight request 5ms
+ ✓ src/__tests__/packet-live-updates.test.tsx > one live packet reader > pauses while hidden and checks as soon as the dealer returns 5ms
+ ✓ src/__tests__/packet-live-updates.test.tsx > one live packet reader > keeps the last packet during a failed read and backs off 4ms
+ ✓ src/__tests__/packet-live-updates.test.tsx > one live packet reader > stops retrying a denied session and removes timers and subscription on exit 3ms
+ ✓ src/__tests__/the-paper-says-what-the-sale-knows.test.ts > the odometer reading the desk took reaches the paper > is read off the sale, not asked again 2ms
+ ✓ src/__tests__/the-paper-says-what-the-sale-knows.test.ts > the odometer reading the desk took reaches the paper > prints on the bill of sale's federal disclosure 3ms
+ ✓ src/__tests__/the-paper-says-what-the-sale-knows.test.ts > the odometer reading the desk took reaches the paper > prints on the financing contract and the title application 4ms
+ ✓ src/__tests__/the-paper-says-what-the-sale-knows.test.ts > the odometer reading the desk took reaches the paper > still lets a reading typed on the document win 2ms
+ ✓ src/__tests__/the-paper-says-what-the-sale-knows.test.ts > Still To Do on the bill of sale never disclaims the dealer's filing duty > says we file when the sale says we file 7ms
+ ✓ src/__tests__/the-paper-says-what-the-sale-knows.test.ts > Still To Do on the bill of sale never disclaims the dealer's filing duty > says we file when nothing was answered, because that is the law's default 2ms
+ ✓ src/__tests__/the-paper-says-what-the-sale-knows.test.ts > Still To Do on the bill of sale never disclaims the dealer's filing duty > names the buyer as the filer only when the sale recorded it 5ms
+ ✓ src/__tests__/the-paper-says-what-the-sale-knows.test.ts > Still To Do on the bill of sale never disclaims the dealer's filing duty > is what the printed page reads, with an absent answer read as ours 0ms
+ ✓ src/__tests__/the-paper-says-what-the-sale-knows.test.ts > the state 130-U is filled from the corridor's whole record > has the applicant's address, city and ZIP 1ms
+ ✓ src/__tests__/the-paper-says-what-the-sale-knows.test.ts > the state 130-U is filled from the corridor's whole record > has the county, the licence number and the phone 0ms
+ ✓ src/__tests__/the-paper-says-what-the-sale-knows.test.ts > the state 130-U is filled from the corridor's whole record > has the car, the reading and the price 0ms
+ ✓ src/__tests__/the-paper-says-what-the-sale-knows.test.ts > the state 130-U is filled from the corridor's whole record > names a bank's lien without lending it our address 1ms
+ ✓ src/__tests__/the-paper-says-what-the-sale-knows.test.ts > the state 130-U is filled from the corridor's whole record > still lets the portal's customer half win over the dealer half 0ms
+ ✓ src/__tests__/the-paper-says-what-the-sale-knows.test.ts > box 15 of the 130-U names the kind of photo ID the desk recorded > ticks the licence box and writes the state for a licence 3ms
+ ✓ src/__tests__/the-paper-says-what-the-sale-knows.test.ts > box 15 of the 130-U names the kind of photo ID the desk recorded > ticks the passport box, names the country, and leaves the state line blank 2ms
+ ✓ src/__tests__/the-paper-says-what-the-sale-knows.test.ts > box 15 of the 130-U names the kind of photo ID the desk recorded > ticks the military box for a military ID 1ms
+ ✓ src/__tests__/the-paper-says-what-the-sale-knows.test.ts > box 15 of the 130-U names the kind of photo ID the desk recorded > reads a record from before the question as a Texas licence 1ms
+ ✓ src/__tests__/the-paper-says-what-the-sale-knows.test.ts > box 15 of the 130-U names the kind of photo ID the desk recorded > never lends a passport a Texas state 1ms
+ ✓ src/__tests__/the-paper-says-what-the-sale-knows.test.ts > box 15 of the 130-U names the kind of photo ID the desk recorded > is what the intake screen sends and the profile keeps 1ms
+ ✓ src/__tests__/template-workflow.test.ts > standalone template workflow > omits purchase questions and stale purchase values for standalone title work 3ms
+ ✓ src/__tests__/template-workflow.test.ts > standalone template workflow > leaves the alternate vehicle-address box blank when mailing address was chosen 0ms
+ ✓ src/__tests__/template-workflow.test.ts > standalone template workflow > offers every existing template without creating buyer or transaction defaults 19ms
+ ✓ src/__tests__/template-workflow.test.ts > standalone template workflow > shows only applicable questions and excludes salvage money from tow and responsibility sheets 2ms
+ ✓ src/__tests__/template-workflow.test.ts > standalone template workflow > drops hidden trade, co-buyer, warranty, fee and lien answers from the document after a decision changes 5ms
+ ✓ src/__tests__/template-workflow.test.ts > standalone template workflow > requires actual values, validates VIN/money/dates and accepts explicitly quoted zero 2ms
+ ✓ src/__tests__/template-workflow.test.ts > standalone template workflow > requires the supported guide and POA applicability choices 1ms
+ ✓ src/__tests__/template-workflow.test.ts > standalone template workflow > does not ask an entity for personal ID details or retain old individual names 1ms
+ ✓ src/__tests__/template-workflow.test.ts > standalone template workflow > preserves official form distinctions and full separate vehicle location in the PDF request 3ms
+ ✓ src/__tests__/template-workflow.test.ts > standalone template workflow > uses supported ID enum values and drops irrelevant military issuer 1ms
+ ✓ src/__tests__/template-workflow.test.ts > standalone template workflow > keeps POA city/county/state/ZIP separate and never sends source record IDs 1ms
+ ✓ src/__tests__/template-workflow.test.ts > standalone template workflow > calculates salvage totals from entered figures and respects other payment text 0ms
+ ✓ src/__tests__/template-workflow.test.ts > standalone template workflow > keeps registration quote unsigned and independent of a sale 0ms
+ ✓ src/__tests__/template-workflow.test.ts > standalone template workflow > builds Spanish guide requests without carrying buyer PII 0ms
+ ✓ src/__tests__/no-screen-is-a-dead-end.test.ts > leave is not one way on the capture screen > offers a route back to the scanner from the manual picker 2ms
+ ✓ src/__tests__/no-screen-is-a-dead-end.test.ts > leave is not one way on the capture screen > renders the way back into the sale only off the validated prop 0ms
+ ✓ src/__tests__/no-screen-is-a-dead-end.test.ts > leave is not one way on the capture screen > tells the buyer's phone it can be put down after a send 0ms
+ ✓ src/__tests__/no-screen-is-a-dead-end.test.ts > the back param cannot leave the site > rejects an absolute URL 0ms
+ ✓ src/__tests__/no-screen-is-a-dead-end.test.ts > the back param cannot leave the site > rejects a protocol relative URL 0ms
+ ✓ src/__tests__/no-screen-is-a-dead-end.test.ts > the back param cannot leave the site > rejects everything that is not a guide path 0ms
+ ✓ src/__tests__/no-screen-is-a-dead-end.test.ts > the back param cannot leave the site > accepts the one shape the licence step actually sends 0ms
+ ✓ src/__tests__/no-screen-is-a-dead-end.test.ts > the back param cannot leave the site > is what the capture page runs the query param through 0ms
+ ✓ src/__tests__/no-screen-is-a-dead-end.test.ts > the back param cannot leave the site > rides only the same-phone link, never the QR 1ms
+ ✓ src/__tests__/no-screen-is-a-dead-end.test.ts > the admin chrome follows navigation > decides the frame from the live pathname, on the client 0ms
+ ✓ src/__tests__/no-screen-is-a-dead-end.test.ts > the admin chrome follows navigation > gets the corridor test from the one shared definition 0ms
+ ✓ src/__tests__/no-screen-is-a-dead-end.test.ts > the admin chrome follows navigation > defines isSaleFlowPath exactly once in the whole tree 20ms
+ ✓ src/__tests__/no-screen-is-a-dead-end.test.ts > the admin chrome follows navigation > leaves the layout no definition of its own 0ms
+ ✓ src/__tests__/feedback.test.ts > Sound > is disabled by default and does not create oscillator feedback 8ms
+ ✓ src/__tests__/feedback.test.ts > Sound > keeps the Sound API silent even after explicit opt-in 1ms
+ ✓ src/__tests__/feedback.test.ts > Sound > setEnabled(false) prevents later sounds from playing 1ms
+ ✓ src/__tests__/feedback.test.ts > Haptic > is disabled by default and does not vibrate 1ms
+ ✓ src/__tests__/feedback.test.ts > Haptic > vibrates only after explicit opt-in 2ms
+ ✓ src/__tests__/feedback.test.ts > Haptic > supports one-shot premium pulses without enabling global haptics 1ms
+ ✓ src/__tests__/feedback.test.ts > Haptic > respects reduced motion even when one-shot haptics are requested 1ms
+ ✓ src/__tests__/feedback.test.ts > Haptic > respects data saver even when haptics are opted in 1ms
+ ✓ src/__tests__/feedback.test.ts > Haptic > silently catches rejected vibration calls 2ms
+ ✓ src/__tests__/feedback.test.ts > admin feedback policy > keeps admin audio silent and haptics opt-in only 14ms
+ ✓ src/__tests__/delete-a-sale.test.ts > a sale with nothing signed can go > removes the deal 24ms
+ ✓ src/__tests__/delete-a-sale.test.ts > a sale with nothing signed can go > takes its unsigned drafts with it 1ms
+ ✓ src/__tests__/delete-a-sale.test.ts > a sale with a signature stays > refuses when a document carries the buyer-signature flag 1ms
+ ✓ src/__tests__/delete-a-sale.test.ts > a sale with a signature stays > refuses when a document carries a drawn signature 0ms
+ ✓ src/__tests__/delete-a-sale.test.ts > a sale with a signature stays > refuses when a document carries a signing timestamp 0ms
+ ✓ src/__tests__/delete-a-sale.test.ts > a sale with a signature stays > points at the thing that does work instead of just saying no 0ms
+ ✓ src/__tests__/delete-a-sale.test.ts > a sale with a signature stays > does not treat the dealership finalising its own PDF as a signature 0ms
+ ✓ src/__tests__/delete-a-sale.test.ts > the owner can destroy a signed sale, deliberately > still refuses the owner's FIRST tap, and says what is at stake 0ms
+ ✓ src/__tests__/delete-a-sale.test.ts > the owner can destroy a signed sale, deliberately > goes through once the owner confirms the signed path 1ms
+ ✓ src/__tests__/delete-a-sale.test.ts > the owner can destroy a signed sale, deliberately > never lets a manager through, confirmed or not 1ms
+ ✓ src/__tests__/delete-a-sale.test.ts > who may do it > refuses a signed-out caller 0ms
+ ✓ src/__tests__/delete-a-sale.test.ts > who may do it > refuses a role that cannot manage documents 0ms
+ ✓ src/__tests__/delete-a-sale.test.ts > who may do it > checks permission before it reads anything 0ms
+ ✓ src/__tests__/delete-a-sale.test.ts > bad input > refuses an empty id rather than deleting by accident 0ms
+ ✓ src/__tests__/nothing-is-typed-twice.test.ts > what intake collected reaches the licence step > hands the address over as a real value 2ms
+ ✓ src/__tests__/nothing-is-typed-twice.test.ts > what intake collected reaches the licence step > is seeded at the moment the deal is written 1ms
+ ✓ src/__tests__/nothing-is-typed-twice.test.ts > what intake collected reaches the licence step > hands over a value and not a confirmation 1ms
+ ✓ src/__tests__/nothing-is-typed-twice.test.ts > what intake collected reaches the licence step > writes nothing when intake collected nothing 0ms
+ ✓ src/__tests__/nothing-is-typed-twice.test.ts > past sales > is newest first by default, because that is the one being looked for 8ms
+ ✓ src/__tests__/nothing-is-typed-twice.test.ts > past sales > sorts by customer and by vehicle 1ms
+ ✓ src/__tests__/nothing-is-typed-twice.test.ts > past sales > searches from the start of a word, not from anywhere in the row 1ms
+ ✓ src/__tests__/nothing-is-typed-twice.test.ts > past sales > searches the things a person says out loud 0ms
+ ✓ src/__tests__/nothing-is-typed-twice.test.ts > past sales > returns everything for an empty query 1ms
+ ✓ src/__tests__/nothing-is-typed-twice.test.ts > past sales > names the person, and invents nobody when it cannot 0ms
+ ✓ src/__tests__/nothing-is-typed-twice.test.ts > past sales > is everyone's book, not the signed-in person's 0ms
+ ✓ src/__tests__/nothing-is-typed-twice.test.ts > past sales > keeps the server client out of the browser bundle 0ms
+ ✓ src/__tests__/nothing-is-typed-twice.test.ts > past sales > opens the packet when there is one, and the car's record when there is not 0ms
+ ✓ src/__tests__/nothing-is-typed-twice.test.ts > past sales > sits next to Sale in the navigation 0ms
+ ✓ src/__tests__/nothing-is-typed-twice.test.ts > past sales > states its job and does not explain itself 0ms
+ ✓ src/__tests__/nothing-is-typed-twice.test.ts > past sales > has a hierarchy rather than four fields of the same size 3ms
+ ✓ src/__tests__/nothing-is-typed-twice.test.ts > past sales > moves, and stops moving when asked to 2ms
+ ✓ src/__tests__/nothing-is-typed-twice.test.ts > past sales > replays the entrance when the filter changes, and caps the stagger 0ms
+ ✓ src/__tests__/nothing-is-typed-twice.test.ts > past sales > reads without a browser 2ms
+ ✓ src/__tests__/a-form-never-accepts-what-it-can-check.test.ts > every template found its fields > walks a real number of them, so the rules below are checking something 8ms
+ ✓ src/__tests__/a-form-never-accepts-what-it-can-check.test.ts > a state is chosen, never spelled > offers the list everywhere a state is asked for 3ms
+ ✓ src/__tests__/a-form-never-accepts-what-it-can-check.test.ts > a state is chosen, never spelled > stores the two letter code rather than the name 3ms
+ ✓ src/__tests__/a-form-never-accepts-what-it-can-check.test.ts > the issuer question knows which list it is > never asks one box for either a state or a country 3ms
+ ✓ src/__tests__/a-form-never-accepts-what-it-can-check.test.ts > the issuer question knows which list it is > offers states for a licence and countries for a passport 1ms
+ ✓ src/__tests__/a-form-never-accepts-what-it-can-check.test.ts > an ID number is asked after the things that make it checkable > knows which document and which issuer it belongs to 5ms
+ ✓ src/__tests__/a-form-never-accepts-what-it-can-check.test.ts > an ID number is asked after the things that make it checkable > asks the kind and the issuer BEFORE the number, on every template 3ms
+ ✓ src/__tests__/a-form-never-accepts-what-it-can-check.test.ts > an ID number is asked after the things that make it checkable > caps the box at what the document can actually carry 0ms
+ ✓ src/__tests__/a-form-never-accepts-what-it-can-check.test.ts > a phone holds a phone number > is a phone field everywhere one is asked for 3ms
+ ✓ src/__tests__/a-form-never-accepts-what-it-can-check.test.ts > the registration answer decides the registration fee > asks who registers the car before charging for registering it 0ms
+ ✓ src/__tests__/a-form-never-accepts-what-it-can-check.test.ts > the registration answer decides the registration fee > does not ask for a fee the dealership is not collecting 0ms
+ ✓ src/__tests__/a-form-never-accepts-what-it-can-check.test.ts > the registration answer decides the registration fee > keeps the registration fee out of the Tax and Fees screen 0ms
+ ✓ src/__tests__/every-state-has-a-shape.test.ts > the state list is complete > holds the fifty states and DC 3ms
+ ✓ src/__tests__/every-state-has-a-shape.test.ts > the state list is complete > uses the two letter postal code, uppercase, for every entry 2ms
+ ✓ src/__tests__/every-state-has-a-shape.test.ts > the state list is complete > stays in alphabetical order by name, so a person can hunt in it 1ms
+ ✓ src/__tests__/every-state-has-a-shape.test.ts > every state has a licence shape > knows a shape for all 51, so no card falls through unchecked 7ms
+ ✓ src/__tests__/every-state-has-a-shape.test.ts > every state has a licence shape > gives every state a real field length 3ms
+ ✓ src/__tests__/every-state-has-a-shape.test.ts > the shapes match the cards states actually print > still knows a Texas licence is eight digits, or seven on the oldest cards 1ms
+ ✓ src/__tests__/every-state-has-a-shape.test.ts > the shapes match the cards states actually print > accepts a California letter and seven digits 0ms
+ ✓ src/__tests__/every-state-has-a-shape.test.ts > the shapes match the cards states actually print > accepts a Florida letter and twelve digits 0ms
+ ✓ src/__tests__/every-state-has-a-shape.test.ts > the shapes match the cards states actually print > accepts every format a multi-format state has issued 1ms
+ ✓ src/__tests__/every-state-has-a-shape.test.ts > the shapes match the cards states actually print > still names the letter that should have been a digit 1ms
+ ✓ src/__tests__/every-state-has-a-shape.test.ts > the check never blocks > only ever answers with a warning string or nothing 12ms
+ ✓ src/__tests__/public-inventory-mock-view.test.ts > public inventory view in the isolated preview store > keeps public preview inventory populated with a safe projection 13ms
+ ✓ src/__tests__/public-inventory-mock-view.test.ts > public inventory view in the isolated preview store > immediately hides a in_progress deal without removing source rows 2ms
+ ✓ src/__tests__/public-inventory-mock-view.test.ts > public inventory view in the isolated preview store > immediately hides a completed deal without removing source rows 1ms
+ ✓ src/__tests__/public-inventory-mock-view.test.ts > public inventory view in the isolated preview store > immediately hides a cancelled deal without removing source rows 1ms
+ ✓ src/__tests__/public-inventory-mock-view.test.ts > public inventory view in the isolated preview store > hides fixture sale evidence or noncurrent inventory: {"status":"Sold"} 0ms
+ ✓ src/__tests__/public-inventory-mock-view.test.ts > public inventory view in the isolated preview store > hides fixture sale evidence or noncurrent inventory: {"status":"Pending"} 0ms
+ ✓ src/__tests__/public-inventory-mock-view.test.ts > public inventory view in the isolated preview store > hides fixture sale evidence or noncurrent inventory: {"is_rental_fleet":true} 0ms
+ ✓ src/__tests__/public-inventory-mock-view.test.ts > public inventory view in the isolated preview store > hides fixture sale evidence or noncurrent inventory: {"date_sold":"2026-09-01"} 0ms
+ ✓ src/__tests__/public-inventory-mock-view.test.ts > public inventory view in the isolated preview store > hides fixture sale evidence or noncurrent inventory: {"buyer_customer_id":"synthetic-buyer"} 0ms
+ ✓ src/__tests__/public-inventory-mock-view.test.ts > public inventory view in the isolated preview store > hides fixture sale evidence or noncurrent inventory: {"buyer_name":"Synthetic Buyer"} 0ms
+ ✓ src/__tests__/public-inventory-mock-view.test.ts > public inventory view in the isolated preview store > hides fixture sale evidence or noncurrent inventory: {"buyer_phone":"synthetic-phone"} 0ms
+ ✓ src/__tests__/public-inventory-mock-view.test.ts > public inventory view in the isolated preview store > hides fixture sale evidence or noncurrent inventory: {"buyer_id_number":"synthetic-id"} 0ms
+ ✓ src/__tests__/public-inventory-mock-view.test.ts > public inventory view in the isolated preview store > hides fixture sale evidence or noncurrent inventory: {"sale_price":1} 0ms
+ ✓ src/__tests__/public-inventory-mock-view.test.ts > public inventory view in the isolated preview store > ignores blank buyer fields and zero sale price 1ms
+ ✓ src/__tests__/public-inventory-mock-view.test.ts > public inventory view in the isolated preview store > rejects writes through the public view 0ms
+ ✓ src/__tests__/sale-start.test.ts > starting a sale asks one answer group at a time > derives six lot stages and seven manual VIN stages 2ms
+ ✓ src/__tests__/sale-start.test.ts > starting a sale asks one answer group at a time > gives every stage its own translated question 4ms
+ ✓ src/__tests__/sale-start.test.ts > starting a sale asks one answer group at a time > keeps every named control on the stage that asks for it 11ms
+ ✓ src/__tests__/sale-start.test.ts > starting a sale asks one answer group at a time > runs each explicit guard only on the stage that owns it 0ms
+ ✓ src/__tests__/sale-start.test.ts > starting a sale asks one answer group at a time > records motion and changes stage in the same tick 1ms
+ ✓ src/__tests__/sale-start.test.ts > starting a sale asks one answer group at a time > lands in the funnel rather than on the packet 1ms
+ ✓ src/__tests__/sale-start.test.ts > starting a sale asks one answer group at a time > offers exactly one action per screen 2ms
+ ✓ src/__tests__/sale-start.test.ts > starting a sale asks one answer group at a time > collects the car's own facts on the car's screen 1ms
+ ✓ src/__tests__/sale-start.test.ts > starting a sale asks one answer group at a time > asks for the buyer's name on the name screen 1ms
+ ✓ src/__tests__/sale-start.test.ts > starting a sale asks one answer group at a time > keeps unmounted answers in React state for the final payload 1ms
+ ✓ src/__tests__/sale-start.test.ts > starting a sale asks one answer group at a time > names the action on the button, not the state 0ms
+ ✓ src/__tests__/sale-start.test.ts > starting a sale asks one answer group at a time > shows both sides back so they can be seen, not just claimed 0ms
+ ✓ src/__tests__/sale-start.test.ts > starting a sale asks one answer group at a time > draws what to photograph before anything has been 0ms
+ ✓ src/__tests__/sale-start.test.ts > starting a sale asks one answer group at a time > draws the cards rather than shipping a picture of a real one 0ms
+ ✓ src/__tests__/sale-start.test.ts > starting a sale asks one answer group at a time > hands the preview URLs back to the browser 0ms
+ ✓ src/__tests__/sale-start.test.ts > starting a sale asks one answer group at a time > reads the licence here, where the card is on the counter 0ms
+ ✓ src/__tests__/sale-start.test.ts > starting a sale asks one answer group at a time > attaches both sides to the sale the moment it exists 0ms
+ ✓ src/__tests__/sale-start.test.ts > starting a sale asks one answer group at a time > opens the camera on the tap that was already made 0ms
+ ✓ src/__tests__/sale-start.test.ts > starting a sale asks one answer group at a time > does not ask for a mailing address 0ms
+ ✓ src/__tests__/sale-start.test.ts > starting a sale asks one answer group at a time > puts the cursor on the next answer once the car is chosen 0ms
+ ✓ src/__tests__/sale-start.test.ts > links written before the rebuild > sends an old step link to the sale it belonged to 0ms
+ ✓ src/__tests__/sale-start.test.ts > links written before the rebuild > sends the old buyer screen back to the one that replaced it 0ms
+ ✓ src/__tests__/sale-start.test.ts > what the sale counts > measures signed documents, not screens visited 0ms
+ ✓ src/__tests__/sale-start.test.ts > what the sale counts > never counts a document that leaves no record 1ms
+ ✓ src/__tests__/sale-start.test.ts > a car entered by VIN > is added to inventory rather than left floating 0ms
+ ✓ src/__tests__/sale-start.test.ts > a car entered by VIN > enters as a car under contract, never as one for sale 0ms
+ ✓ src/__tests__/sale-start.test.ts > a car entered by VIN > reuses an existing VIN instead of creating a duplicate 0ms
+ ✓ src/__tests__/sale-start.test.ts > a car entered by VIN > records the odometer read at the sale, for either route 0ms
+ ✓ src/__tests__/sale-start.test.ts > a car entered by VIN > still guesses nothing, and stores only what a person confirmed 0ms
+ ✓ src/__tests__/sale-start.test.ts > a car entered by VIN > asks the VIN service on the screen, where a person can correct it 3ms
+ ✓ src/__tests__/webdealer-copy-fields.test.ts > webDEALER copy fields match the destination boxes > preserves the entire legal name in Name 1 and separates address parts 21ms
+ ✓ src/__tests__/webdealer-copy-fields.test.ts > webDEALER copy fields match the destination boxes > splits 770020421 without losing leading zeros 0ms
+ ✓ src/__tests__/webdealer-copy-fields.test.ts > webDEALER copy fields match the destination boxes > splits 77002-0421 without losing leading zeros 0ms
+ ✓ src/__tests__/webdealer-copy-fields.test.ts > webDEALER copy fields match the destination boxes > splits 77002 0421 without losing leading zeros 0ms
+ ✓ src/__tests__/webdealer-copy-fields.test.ts > webDEALER copy fields match the destination boxes > does not guess malformed ZIP 7700 0ms
+ ✓ src/__tests__/webdealer-copy-fields.test.ts > webDEALER copy fields match the destination boxes > does not guess malformed ZIP 77002-4 0ms
+ ✓ src/__tests__/webdealer-copy-fields.test.ts > webDEALER copy fields match the destination boxes > does not guess malformed ZIP 77002-12345 0ms
+ ✓ src/__tests__/webdealer-copy-fields.test.ts > webDEALER copy fields match the destination boxes > does not guess malformed ZIP unknown 0ms
+ ✓ src/__tests__/webdealer-copy-fields.test.ts > webDEALER copy fields match the destination boxes > does not guess malformed ZIP  0ms
+ ✓ src/__tests__/webdealer-copy-fields.test.ts > webDEALER copy fields match the destination boxes > shows an absent extension as not supplied without calling it required 1ms
+ ✓ src/__tests__/webdealer-copy-fields.test.ts > webDEALER copy fields match the destination boxes > copies numeric empty weight and prefers the reviewed 130-U answer 1ms
+ ✓ src/__tests__/webdealer-copy-fields.test.ts > webDEALER copy fields match the destination boxes > does not invent an unknown or invalid vehicle weight null 0ms
+ ✓ src/__tests__/webdealer-copy-fields.test.ts > webDEALER copy fields match the destination boxes > does not invent an unknown or invalid vehicle weight 0 0ms
+ ✓ src/__tests__/webdealer-copy-fields.test.ts > webDEALER copy fields match the destination boxes > does not invent an unknown or invalid vehicle weight -20 0ms
+ ✓ src/__tests__/webdealer-copy-fields.test.ts > webDEALER copy fields match the destination boxes > does not invent an unknown or invalid vehicle weight NaN 0ms
+ ✓ src/__tests__/webdealer-copy-fields.test.ts > webDEALER copy fields match the destination boxes > does not conceal an invalid reviewed weight behind an old inventory value 1ms
+ ✓ src/__tests__/the-address-stays-in-pieces.test.ts > the county survives > comes back out of step data after being written 2ms
+ ✓ src/__tests__/the-address-stays-in-pieces.test.ts > the county survives > is not dropped when somebody confirms the address 0ms
+ ✓ src/__tests__/the-address-stays-in-pieces.test.ts > the county survives > is null on a scanned card, because no barcode carries it 0ms
+ ✓ src/__tests__/the-address-stays-in-pieces.test.ts > the 130-U county > uses what the operator typed, not what the city implies 0ms
+ ✓ src/__tests__/the-address-stays-in-pieces.test.ts > the 130-U county > still falls back to the city when nobody typed a county 0ms
+ ✓ src/__tests__/the-address-stays-in-pieces.test.ts > the webDEALER handoff > gives each part its own row, so nothing is split by hand 19ms
+ ✓ src/__tests__/the-address-stays-in-pieces.test.ts > the webDEALER handoff > no longer offers one combined address row to copy 1ms
+ ✓ src/__tests__/the-address-stays-in-pieces.test.ts > the webDEALER handoff > falls back to the customer row's line for a deal with no mailing record 1ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > a phone number types itself > brackets the area code as soon as there is one 2ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > a phone number types itself > never shows punctuation around digits that are not there yet 0ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > a phone number types itself > refuses an eleventh digit 0ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > a phone number types itself > treats a leading 1 as a habit rather than a digit 0ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > a phone number types itself > survives whatever punctuation somebody pastes in 0ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > a phone number types itself > knows when it is finished 4ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > a phone number types itself > stores one shape, so a returning buyer is findable 0ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > the kind of ID is asked before the number > offers the driver licence first, because that is what a lot sees 0ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > the kind of ID is asked before the number > knows which kinds belong to a state 1ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > the kind of ID is asked before the number > falls back to Other rather than throwing on an unknown kind 0ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > a number is checked against its own document > knows a Texas licence is eight digits, or seven on the oldest cards 1ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > a number is checked against its own document > names the letter that should have been a digit 0ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > a number is checked against its own document > uses the right rule for a different state 0ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > a number is checked against its own document > knows a passport is nine characters and may carry letters 0ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > a number is checked against its own document > knows every state and DC, so no real card is questioned 7ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > a number is checked against its own document > still catches the digit that was dropped from a Texas card 0ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > a passport is checked against its own country > offers the countries a Houston lot actually sees, the United States first 1ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > a passport is checked against its own country > passes every listed country's real passport 3ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > a passport is checked against its own country > names the country when the number is the wrong length for it 0ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > a passport is checked against its own country > holds every passport to the ICAO ceiling, whatever the country 0ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > a passport is checked against its own country > asks for the country, not a state 0ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > a passport is checked against its own country > opens the number pad only where every real number is digits 0ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > a passport is checked against its own country > reads an older record with no kind as a licence 0ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > a passport is checked against its own country > says nothing about a place whose format it does not know 0ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > a passport is checked against its own country > says nothing about an empty box 0ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > a passport is checked against its own country > warns rather than blocks, always 0ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > what the field will hold > stops a Texas licence at eight 0ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > what the field will hold > is generous when the format is unknown 0ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > what the field will hold > holds the longest format a state has ever issued 0ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > what the field will hold > normalises what somebody pasted 0ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > the 130-U wants to know which kind was presented > maps each kind to the box on the official form 0ms
+ ✓ src/__tests__/typed-fields-behave.test.ts > the 130-U wants to know which kind was presented > ticks nothing for a document the form does not list 0ms
+ ✓ src/__tests__/document-complete-api.test.ts > POST /api/documents/agreements/complete > rejects tokenized agreements when the signing token is missing 10ms
+ ✓ src/__tests__/document-complete-api.test.ts > POST /api/documents/agreements/complete > rejects expired agreement links before writing customer data 1ms
+ ✓ src/__tests__/document-complete-api.test.ts > POST /api/documents/agreements/complete > rejects legacy pending agreements that do not have a signing token 1ms
+ ✓ src/__tests__/document-complete-api.test.ts > POST /api/documents/agreements/complete > completes a tokenized agreement when the token is valid 5ms
+ ✓ src/__tests__/document-complete-api.test.ts > POST /api/documents/agreements/complete > builds the completed link server-side from trusted dealer data 4ms
+ ✓ src/__tests__/document-complete-api.test.ts > POST /api/documents/agreements/complete > rejects completion when the raw buyer signature is missing 1ms
+ ✓ src/__tests__/admin-route-permissions.test.ts > unknown admin paths are denied, not defaulted > /admin/definitely-not-a-screen → deny 5ms
+ ✓ src/__tests__/admin-route-permissions.test.ts > unknown admin paths are denied, not defaulted > /admin/sales-export → deny 0ms
+ ✓ src/__tests__/admin-route-permissions.test.ts > unknown admin paths are denied, not defaulted > /admin/deals/3f2b8c1d-9a4e-4f6b-8c1d-2e5a7b9c0d1f → deny 1ms
+ ✓ src/__tests__/admin-route-permissions.test.ts > unknown admin paths are denied, not defaulted > /admin/api-console → deny 0ms
+ ✓ src/__tests__/admin-route-permissions.test.ts > unknown admin paths are denied, not defaulted > exempts exactly the auth screens 1ms
+ ✓ src/__tests__/admin-route-permissions.test.ts > the concrete-URL matrix > /admin/sales/new 0ms
+ ✓ src/__tests__/admin-route-permissions.test.ts > the concrete-URL matrix > /admin/sales/3f2b8c1d-9a4e-4f6b-8c1d-2e5a7b9c0d1f/guide/money 0ms
+ ✓ src/__tests__/admin-route-permissions.test.ts > the concrete-URL matrix > /admin/sales/3f2b8c1d-9a4e-4f6b-8c1d-2e5a7b9c0d1f/step/paid 0ms
+ ✓ src/__tests__/admin-route-permissions.test.ts > the concrete-URL matrix > /admin/sales/3f2b8c1d-9a4e-4f6b-8c1d-2e5a7b9c0d1f/paperwork/billOfSale/start 1ms
+ ✓ src/__tests__/admin-route-permissions.test.ts > the concrete-URL matrix > /admin/sales 0ms
+ ✓ src/__tests__/admin-route-permissions.test.ts > the concrete-URL matrix > /admin/sales/past 0ms
+ ✓ src/__tests__/admin-route-permissions.test.ts > the concrete-URL matrix > /admin/sales/3f2b8c1d-9a4e-4f6b-8c1d-2e5a7b9c0d1f 0ms
+ ✓ src/__tests__/admin-route-permissions.test.ts > the concrete-URL matrix > /admin/sales/3f2b8c1d-9a4e-4f6b-8c1d-2e5a7b9c0d1f/packet 0ms
+ ✓ src/__tests__/admin-route-permissions.test.ts > the concrete-URL matrix > /admin/reports/pnl 0ms
+ ✓ src/__tests__/admin-route-permissions.test.ts > the concrete-URL matrix > /admin/dealership/payments 0ms
+ ✓ src/__tests__/admin-route-permissions.test.ts > the concrete-URL matrix > /admin/customers/new 1ms
+ ✓ src/__tests__/admin-route-permissions.test.ts > the concrete-URL matrix > /admin/auction-intake 0ms
+ ✓ src/__tests__/admin-route-permissions.test.ts > the concrete-URL matrix > /admin/dealership/inventory/mock-1/edit 2ms
+ ✓ src/__tests__/admin-route-permissions.test.ts > the concrete-URL matrix > /admin/dealership/inventory 0ms
+ ✓ src/__tests__/admin-route-permissions.test.ts > the concrete-URL matrix > /admin/templates 0ms
+ ✓ src/__tests__/admin-route-permissions.test.ts > the concrete-URL matrix > /admin/documents/bill-of-sale 0ms
+ ✓ src/__tests__/admin-route-permissions.test.ts > the concrete-URL matrix > /admin/team/api-keys 0ms
+ ✓ src/__tests__/admin-route-permissions.test.ts > the concrete-URL matrix > /admin/home 0ms
+ ✓ src/__tests__/admin-route-permissions.test.ts > the concrete-URL matrix > /admin/account/signature 0ms
+ ✓ src/__tests__/admin-route-permissions.test.ts > the concrete-URL matrix > /admin/start-here 0ms
+ ✓ src/__tests__/admin-route-permissions.test.ts > the filesystem never outruns the table > resolves every live admin page to a rule or an exemption — never deny 2ms
+ ✓ src/__tests__/admin-route-permissions.test.ts > the filesystem never outruns the table > gives the owner every screen and the viewer only read-only surfaces 2ms
+ ✓ src/__tests__/vehicle-catalog.test.ts > typing a make > puts the makes that start with the letter first 4ms
+ ✓ src/__tests__/vehicle-catalog.test.ts > typing a make > narrows as the second letter arrives 0ms
+ ✓ src/__tests__/vehicle-catalog.test.ts > typing a make > ignores case, so nobody has to hold shift 0ms
+ ✓ src/__tests__/vehicle-catalog.test.ts > typing a make > finds a make by a later word 0ms
+ ✓ src/__tests__/vehicle-catalog.test.ts > typing a make > does not make anybody guess where the hyphen goes 0ms
+ ✓ src/__tests__/vehicle-catalog.test.ts > typing a make > offers the head of the list before anything is typed 0ms
+ ✓ src/__tests__/vehicle-catalog.test.ts > typing a make > returns nothing rather than everything for a miss 0ms
+ ✓ src/__tests__/vehicle-catalog.test.ts > typing a make > never floods the field 0ms
+ ✓ src/__tests__/vehicle-catalog.test.ts > the year list > runs newest first, starting one year ahead 1ms
+ ✓ src/__tests__/vehicle-catalog.test.ts > the year list > stops at the floor rather than running to the 1980s 0ms
+ ✓ src/__tests__/vehicle-catalog.test.ts > the year list > narrows as digits are typed 1ms
+ ✓ src/__tests__/vehicle-catalog.test.ts > the lists themselves > keeps makes alphabetical, which is how a list is scanned 7ms
+ ✓ src/__tests__/vehicle-catalog.test.ts > the lists themselves > has no duplicates 0ms
+ ✓ src/__tests__/vehicle-catalog.test.ts > the lists themselves > writes the marques that are initials as initials 0ms
+ ✓ src/__tests__/signing-token-pdf-access.test.ts > buyer PDF access remains bound to the signing session > rejects an expired token before reading customer data 9ms
+ ✓ src/__tests__/signing-token-pdf-access.test.ts > buyer PDF access remains bound to the signing session > rejects an agreement belonging to another deal 3ms
+ ✓ src/__tests__/signing-token-pdf-access.test.ts > buyer PDF access remains bound to the signing session > returns the signed buyer PDF with ID imagery stripped and private headers 4ms
+ ✓ src/__tests__/signing-token-pdf-access.test.ts > buyer PDF access remains bound to the signing session > opens inline only when requested explicitly 1ms
+ ✓ src/__tests__/signing-token-pdf-access.test.ts > buyer PDF access remains bound to the signing session > does not offer an unsigned or superseded signed row 2ms
+ ✓ src/__tests__/signing-token-pdf-access.test.ts > buyer PDF access remains bound to the signing session > does not offer a draft or a row without its filed document payload 1ms
+ ✓ src/__tests__/signing-token-pdf-access.test.ts > buyer PDF access remains bound to the signing session > keeps ink-only POA and dealer-signed title forms outside the buyer ceremony 2ms
+ ✓ src/__tests__/signing-token-pdf-access.test.ts > buyer PDF access remains bound to the signing session > fails closed when the database or renderer is unavailable 2ms
+ ✓ src/__tests__/one-signing-secret-not-two.test.ts > what counts as the signing secret > accepts ADMIN_SESSION_SECRET on its own 3ms
+ ✓ src/__tests__/one-signing-secret-not-two.test.ts > what counts as the signing secret > accepts INTERNAL_RENDER_TOKEN on its own 1ms
+ ✓ src/__tests__/one-signing-secret-not-two.test.ts > what counts as the signing secret > accepts ADMIN_SECRET on its own 1ms
+ ✓ src/__tests__/one-signing-secret-not-two.test.ts > what counts as the signing secret > prefers the explicit name when more than one is set 0ms
+ ✓ src/__tests__/one-signing-secret-not-two.test.ts > what counts as the signing secret > is null when nothing at all is set 0ms
+ ✓ src/__tests__/one-signing-secret-not-two.test.ts > what counts as the signing secret > ignores a variable set to blank space 0ms
+ ✓ src/__tests__/one-signing-secret-not-two.test.ts > the capture link signs with the same secret the admin does > issues a link when only ADMIN_SESSION_SECRET is set 13ms
+ ✓ src/__tests__/one-signing-secret-not-two.test.ts > the capture link signs with the same secret the admin does > issues a link when only INTERNAL_RENDER_TOKEN is set 0ms
+ ✓ src/__tests__/one-signing-secret-not-two.test.ts > the capture link signs with the same secret the admin does > issues a link when only ADMIN_SECRET is set 1ms
+ ✓ src/__tests__/one-signing-secret-not-two.test.ts > the capture link signs with the same secret the admin does > still refuses when nothing is configured 2ms
+ ✓ src/__tests__/one-signing-secret-not-two.test.ts > the capture link signs with the same secret the admin does > names every variable it would have accepted 1ms
+ ✓ src/__tests__/one-signing-secret-not-two.test.ts > neither caller keeps its own copy of the list > src/lib/auth/admin-device-session.ts asks the shared resolver 1ms
+ ✓ src/__tests__/one-signing-secret-not-two.test.ts > neither caller keeps its own copy of the list > src/lib/sales/capture-token.ts asks the shared resolver 0ms
+ ✓ src/__tests__/one-signing-secret-not-two.test.ts > a link that cannot be signed costs the phone, not the screen > catches the refusal instead of letting it escape the page 0ms
+ ✓ src/__tests__/one-signing-secret-not-two.test.ts > a link that cannot be signed costs the phone, not the screen > still renders the photograph when the link cannot be signed 0ms
+ ✓ src/__tests__/one-signing-secret-not-two.test.ts > a link that cannot be signed costs the phone, not the screen > falls through to the fields rather than showing a dead QR 0ms
+ ✓ src/__tests__/one-signing-secret-not-two.test.ts > a link that cannot be signed costs the phone, not the screen > says which of the two happened 0ms
+ ✓ src/__tests__/bill-of-sale-lien.test.ts > bill of sale seller lien sync > keeps the lien disabled until an actual amount is owed 2ms
+ ✓ src/__tests__/bill-of-sale-lien.test.ts > bill of sale seller lien sync > prefills 130-U first lienholder fields from the bill of sale lien 16ms
+ ✓ src/__tests__/aamva.test.ts > reading the barcode on a licence > reads the fields a sale needs 3ms
+ ✓ src/__tests__/aamva.test.ts > reading the barcode on a licence > does not put NONE on a document 0ms
+ ✓ src/__tests__/aamva.test.ts > reading the barcode on a licence > keeps the case of a licence number but not of a name 0ms
+ ✓ src/__tests__/aamva.test.ts > reading the barcode on a licence > drops an unused ZIP+4 block rather than printing four zeroes 1ms
+ ✓ src/__tests__/aamva.test.ts > reading the barcode on a licence > joins a second address line when the card carries one 0ms
+ ✓ src/__tests__/aamva.test.ts > the two date orders > reads a US card as month first 0ms
+ ✓ src/__tests__/aamva.test.ts > the two date orders > reads a Canadian card as year first 0ms
+ ✓ src/__tests__/aamva.test.ts > the two date orders > trusts the digits over the country when they disagree 0ms
+ ✓ src/__tests__/aamva.test.ts > the two date orders > refuses a date that cannot exist rather than inventing one 1ms
+ ✓ src/__tests__/aamva.test.ts > deciding whether a barcode is a licence at all > accepts a licence 0ms
+ ✓ src/__tests__/aamva.test.ts > deciding whether a barcode is a licence at all > rejects a PDF417 that is not an ID 0ms
+ ✓ src/__tests__/aamva.test.ts > deciding whether a barcode is a licence at all > rejects an AAMVA payload with no licence number 0ms
+ ✓ src/__tests__/aamva.test.ts > a decoder that escapes control characters > still finds the fields 0ms
+ ✓ src/__tests__/aamva.test.ts > the element split > keeps the first value when a card repeats an element 0ms
+ ✓ src/__tests__/aamva.test.ts > the element split > accepts CR, LF and the record separator as separators 0ms
+ ✓ src/__tests__/brand-tokens-resolve.test.ts > brand tokens in the message catalogues > finds tokens to check 3ms
+ ✓ src/__tests__/brand-tokens-resolve.test.ts > brand tokens in the message catalogues > uses only tokens the resolver knows, in messages/en.json 1ms
+ ✓ src/__tests__/brand-tokens-resolve.test.ts > brand tokens in the message catalogues > leaves no token behind after resolution, in messages/en.json 4ms
+ ✓ src/__tests__/brand-tokens-resolve.test.ts > brand tokens in the message catalogues > uses only tokens the resolver knows, in messages/es.json 1ms
+ ✓ src/__tests__/brand-tokens-resolve.test.ts > brand tokens in the message catalogues > leaves no token behind after resolution, in messages/es.json 3ms
+ ✓ src/__tests__/brand-tokens-resolve.test.ts > brand tokens in the message catalogues > keeps the two catalogues in step 1ms
+ ✓ src/__tests__/brand-tokens-resolve.test.ts > brand tokens in the message catalogues > substitutes the real values, not the token text 1ms
+ ✓ src/__tests__/brand-tokens-resolve.test.ts > brand tokens in the message catalogues > leaves genuine ICU arguments alone 0ms
+ ✓ src/__tests__/brand-tokens-resolve.test.ts > the resolver holds no state between calls > resolves the same string identically however many strings precede it 1ms
+ ✓ src/__tests__/brand-tokens-resolve.test.ts > the resolver holds no state between calls > resolves a repeated token more than once in one string 0ms
+ ✓ src/__tests__/packet-signing-text-action-safety.test.ts > signing SMS is authorized, claimed once and narrowly scoped > blocks an unauthorized staff request before sending or creating a claim 7ms
+ ✓ src/__tests__/packet-signing-text-action-safety.test.ts > signing SMS is authorized, claimed once and narrowly scoped > requires the explicit buyer-request attestation 1ms
+ ✓ src/__tests__/packet-signing-text-action-safety.test.ts > signing SMS is authorized, claimed once and narrowly scoped > honors the phone ledger before a customer-level consent can bypass revoked 5ms
+ ✓ src/__tests__/packet-signing-text-action-safety.test.ts > signing SMS is authorized, claimed once and narrowly scoped > honors the phone ledger before a customer-level consent can bypass unavailable 1ms
+ ✓ src/__tests__/packet-signing-text-action-safety.test.ts > signing SMS is authorized, claimed once and narrowly scoped > honors the phone ledger before a customer-level consent can bypass not_configured 1ms
+ ✓ src/__tests__/packet-signing-text-action-safety.test.ts > signing SMS is authorized, claimed once and narrowly scoped > never overrides revoked with a fresh attestation 1ms
+ ✓ src/__tests__/packet-signing-text-action-safety.test.ts > signing SMS is authorized, claimed once and narrowly scoped > never overrides opted_out with a fresh attestation 1ms
+ ✓ src/__tests__/packet-signing-text-action-safety.test.ts > signing SMS is authorized, claimed once and narrowly scoped > never overrides review_hold with a fresh attestation 1ms
+ ✓ src/__tests__/packet-signing-text-action-safety.test.ts > signing SMS is authorized, claimed once and narrowly scoped > never overrides unknown_customer with a fresh attestation 1ms
+ ✓ src/__tests__/packet-signing-text-action-safety.test.ts > signing SMS is authorized, claimed once and narrowly scoped > elects one provider request across concurrent callers 2ms
+ ✓ src/__tests__/packet-signing-text-action-safety.test.ts > signing SMS is authorized, claimed once and narrowly scoped > sends only to the saved buyer and stores hashes rather than the bearer URL 2ms
+ ✓ src/__tests__/packet-signing-text-action-safety.test.ts > signing SMS is authorized, claimed once and narrowly scoped > keeps an uncertain provider response from causing an implicit retry 1ms
+ ✓ src/__tests__/packet-signing-text-action-safety.test.ts > signing SMS is authorized, claimed once and narrowly scoped > does not resend an accepted SMS when writing the message mirror fails 1ms
+ ✓ src/__tests__/packet-signing-text-action-safety.test.ts > signing SMS is authorized, claimed once and narrowly scoped > recovers an early delivery receipt with a read, without a new send 1ms
+ ✓ src/__tests__/packet-signing-text-action-safety.test.ts > signing SMS is authorized, claimed once and narrowly scoped > does not replace a terminal webhook receipt with a concurrent provider read 0ms
+ ✓ src/__tests__/packet-signing-text-action-safety.test.ts > signing SMS is authorized, claimed once and narrowly scoped > never queries a provider receipt for an uncertain send with no message ID 1ms
+ ✓ src/__tests__/packet-signing-text-action-safety.test.ts > signing SMS is authorized, claimed once and narrowly scoped > does not reveal or reconcile another deal's claim 0ms
+ ✓ src/__tests__/command-palette-search.test.ts > going somewhere by typing > does not let a coincidence beat the word you meant 2ms
+ ✓ src/__tests__/command-palette-search.test.ts > going somewhere by typing > finds a screen by what it is for, not what it is called 0ms
+ ✓ src/__tests__/command-palette-search.test.ts > going somewhere by typing > still prefers the name when you type the name 0ms
+ ✓ src/__tests__/command-palette-search.test.ts > going somewhere by typing > still answers to the name a screen used to have 0ms
+ ✓ src/__tests__/command-palette-search.test.ts > going somewhere by typing > returns everything when nothing is typed 1ms
+ ✓ src/__tests__/command-palette-search.test.ts > going somewhere by typing > says nothing rather than something wrong 1ms
+ ✓ src/__tests__/command-palette-search.test.ts > going somewhere by typing > points every destination at a route that exists 1ms
+ ✓ src/__tests__/command-palette-search.test.ts > mounting > mounts exactly once 8ms
+ ✓ src/__tests__/owner-notifications.test.ts > owner document notifications > formats first-time signing alerts in the required order 16ms
+ ✓ src/__tests__/owner-notifications.test.ts > owner document notifications > formats renewal alerts from structured vehicle data 0ms
+ ✓ src/__tests__/sign-in-code-consumption.test.ts > durable one-time-code consumption > allows exactly one concurrent success for the same code 6ms
+ ✓ src/__tests__/sign-in-code-consumption.test.ts > durable one-time-code consumption > does not let concurrent guesses overwrite the attempt count 1ms
+ ✓ src/__tests__/sign-in-code-consumption.test.ts > durable one-time-code consumption > allows a correct fifth attempt and consumes it atomically 0ms
+ ✓ src/__tests__/sign-in-code-consumption.test.ts > durable one-time-code consumption > fails closed on readError without issuing a session 0ms
+ ✓ src/__tests__/sign-in-code-consumption.test.ts > durable one-time-code consumption > fails closed on writeError without issuing a session 0ms
+ ✓ src/__tests__/sign-in-code-consumption.test.ts > durable one-time-code consumption > does not call a duplicate pending email accepted 1ms
+ ✓ src/__tests__/sign-in-code-consumption.test.ts > durable one-time-code consumption > does not call a duplicate rejected email accepted 0ms
+ ✓ src/__tests__/sign-in-code-consumption.test.ts > durable one-time-code consumption > does not call a duplicate sent_unknown email accepted 0ms
+ ✓ src/__tests__/sign-in-code-consumption.test.ts > durable one-time-code consumption > does not call a duplicate skipped email accepted 1ms
+ ✓ src/__tests__/frame-quality.test.ts > measuring a frame > reads brightness off a flat frame 6ms
+ ✓ src/__tests__/frame-quality.test.ts > measuring a frame > reports no sharpness for a frame with no edges 0ms
+ ✓ src/__tests__/frame-quality.test.ts > measuring a frame > reports sharpness where there are edges 2ms
+ ✓ src/__tests__/frame-quality.test.ts > measuring a frame > rates a low-contrast frame as less sharp than a high-contrast one 4ms
+ ✓ src/__tests__/frame-quality.test.ts > measuring a frame > returns zeroes rather than dividing by nothing on a tiny frame 1ms
+ ✓ src/__tests__/frame-quality.test.ts > what the screen says > asks for light before it asks for stillness 0ms
+ ✓ src/__tests__/frame-quality.test.ts > what the screen says > says nothing when the frame is good 0ms
+ ✓ src/__tests__/frame-quality.test.ts > what the screen says > names a blown-out frame rather than calling it blurry 0ms
+ ✓ src/__tests__/frame-quality.test.ts > what the screen says > asks for stillness when the light is fine and the edges are not 0ms
+ ✓ src/__tests__/frame-quality.test.ts > what the screen says > offers one instruction at a time, never a list 1ms
+ ✓ src/__tests__/frame-quality.test.ts > waiting for a run of good frames > does not capture from a single lucky frame 0ms
+ ✓ src/__tests__/frame-quality.test.ts > waiting for a run of good frames > captures once the run is long enough 0ms
+ ✓ src/__tests__/frame-quality.test.ts > waiting for a run of good frames > resets the moment one frame goes bad 0ms
+ ✓ src/__tests__/frame-quality.test.ts > the cutout > is the real card shape, not a guess 0ms
+ ✓ src/__tests__/frame-quality.test.ts > mapping the cutout back into the camera frame > crops to the card rather than filing the whole sensor frame 0ms
+ ✓ src/__tests__/frame-quality.test.ts > mapping the cutout back into the camera frame > never asks for pixels outside the frame 0ms
+ ✓ src/__tests__/frame-quality.test.ts > mapping the cutout back into the camera frame > falls back to the whole frame rather than dividing by zero 0ms
+ ✓ src/__tests__/rentalRenewal.test.ts > Rental Renewal Data Flow > encodes and decodes completed rental link round-trip 8ms
+ ✓ src/__tests__/rentalRenewal.test.ts > Rental Renewal Data Flow > extracts customer info from decoded data for renewal pre-fill 1ms
+ ✓ src/__tests__/rentalRenewal.test.ts > Rental Renewal Data Flow > preserves vehicle info from dealer data for renewal 1ms
+ ✓ src/__tests__/rentalRenewal.test.ts > Rental Renewal Data Flow > preserves rate/fee structure from dealer data for renewal 3ms
+ ✓ src/__tests__/rentalRenewal.test.ts > Rental Renewal Data Flow > preserves dealer signature for renewal 1ms
+ ✓ src/__tests__/rentalRenewal.test.ts > Rental Renewal Data Flow > returns null for invalid URL 0ms
+ ✓ src/__tests__/rentalRenewal.test.ts > Rental Renewal Data Flow > returns null for non-rental completed link decoded as rental 6ms
+ ✓ src/__tests__/sale-flow.test.ts > buyer details carried between documents > reads the ID number and address off the customer profile 2ms
+ ✓ src/__tests__/sale-flow.test.ts > buyer details carried between documents > treats blank and missing details the same — as not recorded 1ms
+ ✓ src/__tests__/sale-flow.test.ts > buyer details carried between documents > survives a profile that is not an object at all 1ms
+ ✓ src/__tests__/sale-flow.test.ts > buyer details carried between documents > keeps details a previous sale recorded when a new one adds to them 0ms
+ ✓ src/__tests__/sale-flow.test.ts > buyer details carried between documents > overwrites only the field being corrected 0ms
+ ✓ src/__tests__/sale-flow.test.ts > buyer phone normalisation > stores every way a desk types a US number the same way 0ms
+ ✓ src/__tests__/sale-flow.test.ts > buyer phone normalisation > leaves an already-international number alone 0ms
+ ✓ src/__tests__/sale-flow.test.ts > the sale packet > lists the documents the sale actually needs 0ms
+ ✓ src/__tests__/sale-flow.test.ts > the sale packet > carries the sale into every document link 1ms
+ ✓ src/__tests__/sale-flow.test.ts > the sale packet > escapes a deal id rather than pasting it into the URL raw 0ms
+ ✓ src/__tests__/sale-flow.test.ts > the sale packet > never claims a document is signed when nothing is on file 0ms
+ ✓ src/__tests__/sale-flow.test.ts > the sale packet > distinguishes a saved draft from a filed copy from a signed one 0ms
+ ✓ src/__tests__/sale-flow.test.ts > the sale packet > only claims signed when a buyer signature is actually recorded 0ms
+ ✓ src/__tests__/sale-flow.test.ts > the sale packet > says the buyer's guide is printed rather than showing it as missing 0ms
+ ✓ src/__tests__/sale-flow.test.ts > the sale packet > does not chase optional documents that were never needed 3ms
+ ✓ src/__tests__/sale-flow.test.ts > the sale packet > clears a document from the outstanding list once it is signed 0ms
+ ✓ src/__tests__/sale-flow.test.ts > vehicle labelling > reads back as it would be spoken 0ms
+ ✓ src/__tests__/sale-flow.test.ts > vehicle labelling > says so plainly when there is no vehicle rather than printing blanks 0ms
+ ✓ src/__tests__/sale-flow.test.ts > starting a sale > requires the operator to be signed in before writing anything 0ms
+ ✓ src/__tests__/sale-flow.test.ts > starting a sale > reuses a returning buyer instead of creating a second record 0ms
+ ✓ src/__tests__/sale-flow.test.ts > starting a sale > points at the open sale when a vehicle already has one 0ms
+ ✓ src/__tests__/sale-flow.test.ts > starting a sale > takes the buyer for an ID correction from the deal, not the caller 0ms
+ ✓ src/__tests__/sale-flow.test.ts > reading a sale > counts a document as signed only when the record says so 0ms
+ ✓ src/__tests__/sale-flow.test.ts > reading a sale > keeps the strongest state when a deal holds several attempts 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > reading a plan off a deal > survives a round trip through step_data 2ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > reading a plan off a deal > treats an unanswered insurance question as unanswered, never as a no 1ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > reading a plan off a deal > refuses values it does not recognise rather than passing them on 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > reading a plan off a deal > knows when the packet is knowable 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > reading a plan off a deal > drops a stale signer answer on the buyer branch when reading 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > what the plan does to the packet > leaves the HB 718 default alone when no plan has been given 1ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > what the plan does to the packet > adds the power of attorney only when we sign the application for an absent buyer 1ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > what the plan does to the packet > swaps the whole branch when the BUYER registers 1ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > what the plan does to the packet > keeps our financing contract on an in-house deal either way 1ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > what the plan does to the packet > adds an insurance acknowledgment only when proof was NOT shown 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > what the plan does to the packet > never doubles a document 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > what the buyer carries out of here > says nothing about a question nobody answered 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > what the buyer carries out of here > marks our work as ours and theirs as theirs 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > what the buyer carries out of here > a buyer-run inspection is neither ours nor finished 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > which power of attorney form, when one is owed at all > names the secure form on a modern car 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > which power of attorney form, when one is owed at all > allows the plain form on a vehicle old enough to be exempt 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > which power of attorney form, when one is owed at all > owes no form at all when the buyer signs the application themselves 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > which power of attorney form, when one is owed at all > does not apply when the buyer is registering 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > which power of attorney form, when one is owed at all > says the year is missing rather than guessing a form 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > only the questions this sale actually has > starts with the one that decides the branch 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > only the questions this sale actually has > asks who signs the application only when WE are filing 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > only the questions this sale actually has > clears the signer answer when registration moves to the buyer 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > only the questions this sale actually has > asks about the price only when the BUYER is filing 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > only the questions this sale actually has > asks inspection and insurance on every sale 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > only the questions this sale actually has > cannot be completed while a question it owes is unanswered 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > only the questions this sale actually has > is not blocked by a question this route never asks 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > a rebuilt title brings its own disclosure > adds the document without anybody choosing it 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > a rebuilt title brings its own disclosure > leaves a clean title alone 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > one answer at a time, applied to what is stored > applies only the submitted field 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > one answer at a time, applied to what is stored > clears the price answer when registration goes back to the dealer 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > one answer at a time, applied to what is stored > refuses a value that is not an answer to that question 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > one answer at a time, applied to what is stored > counts a false answer as answered 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > step identity > maps every question to a key and back 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > step identity > does not claim a document key as a plan question 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > a signed document freezes the answers that made it > refuses when a plan-derived document is finalized 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > a signed document freezes the answers that made it > reaches wider than the two obvious documents 0ms
+ ✓ src/__tests__/the-sale-plan-decides-the-packet.test.ts > a signed document freezes the answers that made it > lets an unrelated signed document alone 0ms
+ ✓ src/__tests__/packet-status.test.ts > the desk follows the filed signature facts > never equates filing with signing 3ms
+ ✓ src/__tests__/packet-status.test.ts > the desk follows the filed signature facts > keeps a remaining draft visible after signatures finish 0ms
+ ✓ src/__tests__/packet-status.test.ts > the desk follows the filed signature facts > does not ask for buyer strokes on the wet-signature POA or dealer-signed title 0ms
+ ✓ src/__tests__/packet-status.test.ts > the desk follows the filed signature facts > never calls an empty packet ready 0ms
+ ✓ src/__tests__/packet-status.test.ts > the desk follows the filed signature facts > does not let an older unsigned copy keep a newly signed packet waiting 0ms
+ ✓ src/__tests__/packet-status.test.ts > the desk follows the filed signature facts > detects a new signed PDF without needing a changed document id 1ms
+ ✓ src/__tests__/packet-status.test.ts > the desk follows the filed signature facts > bounds retry traffic while checking pending signatures promptly 2ms
+ ✓ src/__tests__/packet-status.test.ts > the desk follows the filed signature facts > rejects incomplete or untyped responses instead of clearing the current packet 0ms
+ ✓ src/__tests__/auth-one-shell.test.ts > every way in wears the same shell > login renders through AuthShell 2ms
+ ✓ src/__tests__/auth-one-shell.test.ts > every way in wears the same shell > signup renders through AuthShell 0ms
+ ✓ src/__tests__/auth-one-shell.test.ts > every way in wears the same shell > recover renders through AuthShell 0ms
+ ✓ src/__tests__/auth-one-shell.test.ts > every way in wears the same shell > login does not hand-roll the leaf 0ms
+ ✓ src/__tests__/auth-one-shell.test.ts > every way in wears the same shell > signup does not hand-roll the leaf 0ms
+ ✓ src/__tests__/auth-one-shell.test.ts > every way in wears the same shell > recover does not hand-roll the leaf 0ms
+ ✓ src/__tests__/auth-one-shell.test.ts > every way in wears the same shell > the mark is the monogram, and the retired crest is gone 1ms
+ ✓ src/__tests__/auth-one-shell.test.ts > every way in wears the same shell > the heading is centred, which is what was actually asked for 0ms
+ ✓ src/__tests__/auth-one-shell.test.ts > every way in wears the same shell > keeps Spanish out of a slash and out of Title Case 1ms
+ ✓ src/__tests__/auth-one-shell.test.ts > every way in wears the same shell > spells Spanish with its accents 1ms
+ ✓ src/__tests__/auth-one-shell.test.ts > every way in wears the same shell > keeps copper scarce: the segment control is ink, not a second accent 5ms
+ ✓ src/__tests__/auth-one-shell.test.ts > every way in wears the same shell > caps the phone field at a whole number, without maxLength 1ms
+ ✓ src/__tests__/auth-one-shell.test.ts > every way in wears the same shell > stores a whole number or nothing, decided on the server 0ms
+ ✓ src/__tests__/auth-one-shell.test.ts > every way in wears the same shell > uses one field treatment rather than three 0ms
+ ✓ src/__tests__/a-financed-car-always-carries-a-lien.test.ts > whose lien the title carries > is the dealership's on an in-house note, whatever the balance says 2ms
+ ✓ src/__tests__/a-financed-car-always-carries-a-lien.test.ts > whose lien the title carries > is the bank's on a lender deal, and never the dealership's 1ms
+ ✓ src/__tests__/a-financed-car-always-carries-a-lien.test.ts > whose lien the title carries > carries the bank's titling address only when the directory has it 1ms
+ ✓ src/__tests__/a-financed-car-always-carries-a-lien.test.ts > whose lien the title carries > names a lender typed in when the directory does not carry it 0ms
+ ✓ src/__tests__/a-financed-car-always-carries-a-lien.test.ts > whose lien the title carries > has no holder on a lender deal with no lender named 0ms
+ ✓ src/__tests__/a-financed-car-always-carries-a-lien.test.ts > whose lien the title carries > is the seller's on a cash deal only while money is owed 0ms
+ ✓ src/__tests__/a-financed-car-always-carries-a-lien.test.ts > whose lien the title carries > is nothing until the funding question is answered 0ms
+ ✓ src/__tests__/a-financed-car-always-carries-a-lien.test.ts > whose lien the title carries > puts the dealership in the box as the config spells it 0ms
+ ✓ src/__tests__/a-financed-car-always-carries-a-lien.test.ts > the filing clock > is the law's numbers 0ms
+ ✓ src/__tests__/a-financed-car-always-carries-a-lien.test.ts > the filing clock > gives a cash or bank deal thirty days and no tax cliff 1ms
+ ✓ src/__tests__/a-financed-car-always-carries-a-lien.test.ts > the filing clock > gives the in-house note forty-five days, and names the day the tax is due in full 0ms
+ ✓ src/__tests__/a-financed-car-always-carries-a-lien.test.ts > the filing clock > counts across a month end and a year end without drifting 0ms
+ ✓ src/__tests__/a-financed-car-always-carries-a-lien.test.ts > the filing clock > knows seller-financed is the in-house note and nothing else 0ms
+ ✓ src/__tests__/a-financed-car-always-carries-a-lien.test.ts > the filing clock > counts days to a date, negative once it has passed 0ms
+ ✓ src/__tests__/a-financed-car-always-carries-a-lien.test.ts > the bill of sale discloses the bank's lien > is off unless a holder is named 0ms
+ ✓ src/__tests__/a-financed-car-always-carries-a-lien.test.ts > the bill of sale discloses the bank's lien > carries the holder, the date, and the reason 0ms
+ ✓ src/__tests__/a-financed-car-always-carries-a-lien.test.ts > the clock on the sale summary > shows the in-house note both dates 1ms
+ ✓ src/__tests__/a-financed-car-always-carries-a-lien.test.ts > the clock on the sale summary > shows a cash or bank deal thirty days and no cliff 0ms
+ ✓ src/__tests__/a-financed-car-always-carries-a-lien.test.ts > the clock on the sale summary > settles when the title step settles 0ms
+ ✓ src/__tests__/a-financed-car-always-carries-a-lien.test.ts > the clock on the sale summary > shows nothing until the deal has a date and a funding answer 0ms
+ ✓ src/__tests__/a-financed-car-always-carries-a-lien.test.ts > the wiring > decides the lien once and hands it to both sheets 0ms
+ ✓ src/__tests__/a-financed-car-always-carries-a-lien.test.ts > the wiring > never blanks a lienholder address by hand again 0ms
+ ✓ src/__tests__/a-financed-car-always-carries-a-lien.test.ts > the wiring > keeps the seller-lien keys off a lender-funded 130-U 0ms
+ ✓ src/__tests__/a-financed-car-always-carries-a-lien.test.ts > the wiring > prints the bank's lien beside the seller's on the bill of sale 0ms
+ ✓ src/__tests__/a-financed-car-always-carries-a-lien.test.ts > the wiring > puts the filing clock on the sale summary 0ms
+ ✓ src/__tests__/a-financed-car-always-carries-a-lien.test.ts > the wiring > says it in both languages 0ms
+ ✓ src/__tests__/a-financed-car-always-carries-a-lien.test.ts > the wiring > gives the dealership a lienholder id and a seller-financed permit to fill in 0ms
+ ✓ src/__tests__/a-licence-has-two-sides.test.ts > the back of the card is kept, not just read > is somewhere the record can hold it 2ms
+ ✓ src/__tests__/a-licence-has-two-sides.test.ts > the back of the card is kept, not just read > is taken from the frame that decoded, not from a later one 0ms
+ ✓ src/__tests__/a-licence-has-two-sides.test.ts > the back of the card is kept, not just read > is the whole frame, not the barcode-shaped cutout 0ms
+ ✓ src/__tests__/a-licence-has-two-sides.test.ts > the back of the card is kept, not just read > is not invented for a card whose barcode never read 0ms
+ ✓ src/__tests__/a-licence-has-two-sides.test.ts > the back of the card is kept, not just read > travels with the front 0ms
+ ✓ src/__tests__/a-licence-has-two-sides.test.ts > the back of the card is kept, not just read > is stored, and never at the cost of the front 1ms
+ ✓ src/__tests__/a-licence-has-two-sides.test.ts > the back of the card is kept, not just read > survives a retake that sends no back 0ms
+ ✓ src/__tests__/a-licence-has-two-sides.test.ts > the back of the card is kept, not just read > survives the reader's second write 0ms
+ ✓ src/__tests__/a-licence-has-two-sides.test.ts > the confirmation is the two photographs and the values together > signs a link for the back as well 1ms
+ ✓ src/__tests__/a-licence-has-two-sides.test.ts > the confirmation is the two photographs and the values together > shows both sides on the screen that asks you to check the values 0ms
+ ✓ src/__tests__/a-licence-has-two-sides.test.ts > the confirmation is the two photographs and the values together > names which is which 0ms
+ ✓ src/__tests__/a-licence-has-two-sides.test.ts > the confirmation is the two photographs and the values together > gives them equal boxes so the captions line up 0ms
+ ✓ src/__tests__/a-licence-has-two-sides.test.ts > the tap that makes the phone able to buzz at all > holds the camera until the document has been touched 0ms
+ ✓ src/__tests__/a-licence-has-two-sides.test.ts > the tap that makes the phone able to buzz at all > says why in the code, because the reason is not guessable 0ms
+ ✓ src/__tests__/a-licence-has-two-sides.test.ts > the tap that makes the phone able to buzz at all > takes the picture itself, and lets a person take it too 0ms
+ ✓ src/__tests__/a-licence-has-two-sides.test.ts > the tap that makes the phone able to buzz at all > holds each side still and asks before keeping it 0ms
+ ✓ src/__tests__/a-licence-has-two-sides.test.ts > the tap that makes the phone able to buzz at all > has a way out of a screen that has taken the whole display 0ms
+ ✓ src/__tests__/a-licence-has-two-sides.test.ts > the tap that makes the phone able to buzz at all > does not run the frame loop before the camera is open 0ms
+ ✓ src/__tests__/a-licence-has-two-sides.test.ts > a card already photographed does not have to be photographed again > offers the library as well as the camera 0ms
+ ✓ src/__tests__/a-licence-has-two-sides.test.ts > a card already photographed does not have to be photographed again > takes both sides from one pick 0ms
+ ✓ src/__tests__/a-licence-has-two-sides.test.ts > a card already photographed does not have to be photographed again > asks for both sides in the copy 0ms
+ ✓ src/__tests__/a-licence-has-two-sides.test.ts > the frame on the back pass looks like the thing it wants > is drawn as a stacked code, not as an empty rectangle 0ms
+ ✓ src/__tests__/a-licence-has-two-sides.test.ts > the frame on the back pass looks like the thing it wants > stays faint enough to see the card through 0ms
+ ✓ src/__tests__/sms-provider.test.ts > sendSMS > normalizes formatted customer phone numbers before calling Telnyx 2ms
+ ✓ src/__tests__/sms-provider.test.ts > sendSMS > returns error when env vars are missing 1ms
+ ✓ src/__tests__/sms-provider.test.ts > sendSMS > sends SMS via Telnyx API on success 3ms
+ ✓ src/__tests__/sms-provider.test.ts > sendSMS > returns error on Telnyx API failure (400) 2ms
+ ✓ src/__tests__/sms-provider.test.ts > sendSMS > refuses an unreadable recipient without spending a send 1ms
+ ✓ src/__tests__/sms-provider.test.ts > sendSMS > returns error on network failure 1ms
+ ✓ src/__tests__/sms-provider.test.ts > sendSMS > includes messaging_profile_id in request body 0ms
+ ✓ src/__tests__/sms-provider.test.ts > sendSMS > handles Telnyx error response without errors array 1ms
+ ✓ src/__tests__/sms-provider.test.ts > normalizePhone > normalizes 10-digit number to E.164 1ms
+ ✓ src/__tests__/sms-provider.test.ts > normalizePhone > normalizes formatted US number to E.164 0ms
+ ✓ src/__tests__/sms-provider.test.ts > normalizePhone > normalizes 11-digit number starting with 1 0ms
+ ✓ src/__tests__/sms-provider.test.ts > normalizePhone > passes through already E.164 number 0ms
+ ✓ src/__tests__/sms-provider.test.ts > normalizePhone > throws on invalid phone number 1ms
+ ✓ src/__tests__/sms-provider.test.ts > normalizePhone > strips dashes and dots 0ms
+ ✓ src/__tests__/step-data-cas.test.ts > no whole-blob step_data writes outside the one writer > forbids .update({ step_data everywhere except step-data-write.ts and the guarded legacy advance 9ms
+ ✓ src/__tests__/step-data-cas.test.ts > casMergeStepData > merges and returns the new version 1ms
+ ✓ src/__tests__/step-data-cas.test.ts > casMergeStepData > retries on a version conflict and merges into the OTHER writer's result 1ms
+ ✓ src/__tests__/step-data-cas.test.ts > casMergeStepData > gives up after exhausting retries under permanent contention 0ms
+ ✓ src/__tests__/step-data-cas.test.ts > casMergeStepData > treats a null patch as nothing-to-do 1ms
+ ✓ src/__tests__/step-data-cas.test.ts > casMergeStepData > reports a missing deal as not-found 0ms
+ ✓ src/__tests__/team-access-request-boundary.test.ts > public team access requests > does not record an unverified request when the email transport is missing 3ms
+ ✓ src/__tests__/team-access-request-boundary.test.ts > public team access requests > does not modify the roster after an invalid verification code 1ms
+ ✓ src/__tests__/team-access-request-boundary.test.ts > public team access requests > inserts a verified request without replacing an existing roster record 4ms
+ ✓ src/__tests__/team-access-request-boundary.test.ts > public team access requests > does not downgrade approved Auth-only staff to pending during migration fallback 1ms
+ ✓ src/__tests__/team-access-request-boundary.test.ts > public team access requests > honestly handles a duplicate active roster request without sending a new-request alert 1ms
+ ✓ src/__tests__/team-access-request-boundary.test.ts > public team access requests > honestly handles a duplicate pending roster request without sending a new-request alert 0ms
+ ✓ src/__tests__/team-access-request-boundary.test.ts > public team access requests > honestly handles a duplicate inactive roster request without sending a new-request alert 0ms
+ ✓ src/__tests__/team-access-request-boundary.test.ts > public team access requests > preserves an Auth-only pending owner decision without reopening or alerting 0ms
+ ✓ src/__tests__/team-access-request-boundary.test.ts > public team access requests > preserves an Auth-only inactive owner decision without reopening or alerting 1ms
+ ✓ src/__tests__/team-access-request-boundary.test.ts > public team access requests > does not claim a new request when the duplicate row cannot be read 0ms
+ ✓ src/__tests__/team-access-request-boundary.test.ts > public team access requests > does not claim a new request when the duplicate row cannot be read 0ms
+ ✓ src/__tests__/haptics.test.ts > tapHaptic > uses the shared quiet light pulse by default 3ms
+ ✓ src/__tests__/haptics.test.ts > tapHaptic > caps stronger CTA pulses at the shared quiet medium pulse 0ms
+ ✓ src/__tests__/haptics.test.ts > tapHaptic > is a silent no-op when vibrate is absent 1ms
+ ✓ src/__tests__/haptics.test.ts > tapHaptic > silently catches errors from vibrate() 1ms
+ ✓ src/__tests__/haptics.test.ts > tapHaptic > stays silent on admin routes until the haptic key is explicitly enabled 9ms
+ ✓ src/__tests__/past-sales-are-the-cars-we-sold.test.ts > a sold car is a past sale, deal or no deal > lists the cars the deal flow never touched 3ms
+ ✓ src/__tests__/past-sales-are-the-cars-we-sold.test.ts > a sold car is a past sale, deal or no deal > never lists one car twice 1ms
+ ✓ src/__tests__/past-sales-are-the-cars-we-sold.test.ts > a sold car is a past sale, deal or no deal > keeps a finished sale whose car was never marked Sold 0ms
+ ✓ src/__tests__/past-sales-are-the-cars-we-sold.test.ts > where a row goes > opens the packet when a deal was run 0ms
+ ✓ src/__tests__/past-sales-are-the-cars-we-sold.test.ts > where a row goes > opens the car's record when one was not 0ms
+ ✓ src/__tests__/past-sales-are-the-cars-we-sold.test.ts > what a row says, and what it refuses to say > takes the buyer from the car when there is no deal 0ms
+ ✓ src/__tests__/past-sales-are-the-cars-we-sold.test.ts > what a row says, and what it refuses to say > prefers the deal's customer, which is the record that was signed 0ms
+ ✓ src/__tests__/past-sales-are-the-cars-we-sold.test.ts > what a row says, and what it refuses to say > says no name rather than an empty cell 0ms
+ ✓ src/__tests__/past-sales-are-the-cars-we-sold.test.ts > what a row says, and what it refuses to say > leaves the date null rather than inventing one 1ms
+ ✓ src/__tests__/past-sales-are-the-cars-we-sold.test.ts > what a row says, and what it refuses to say > falls back to the deal's completion, which is a date somebody recorded 0ms
+ ✓ src/__tests__/past-sales-are-the-cars-we-sold.test.ts > what a row says, and what it refuses to say > names who handled it only when a deal says so 0ms
+ ✓ src/__tests__/past-sales-are-the-cars-we-sold.test.ts > an undated sale still sorts somewhere sensible > puts dated sales first and leaves the rest in the reader's order 1ms
+ ✓ src/__tests__/past-sales-are-the-cars-we-sold.test.ts > search still finds a car with no deal behind it > matches on the plate the vehicle record carries 0ms
+ ✓ src/__tests__/past-sales-are-the-cars-we-sold.test.ts > search still finds a car with no deal behind it > finds a plate typed the way it is printed, hyphen and all 0ms
+ ✓ src/__tests__/past-sales-are-the-cars-we-sold.test.ts > search still finds a car with no deal behind it > narrows on a second word rather than widening 0ms
+ ✓ src/__tests__/past-sales-are-the-cars-we-sold.test.ts > search still finds a car with no deal behind it > treats whitespace and punctuation alone as no query at all 0ms
+ ✓ src/__tests__/past-sales-are-the-cars-we-sold.test.ts > the reader asks for both, and nothing more > queries sold vehicles alongside finished deals 0ms
+ ✓ src/__tests__/past-sales-are-the-cars-we-sold.test.ts > the reader asks for both, and nothing more > keeps the merge out of the reader, so it can be checked without a database 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > --tj-ink clears WCAG AA on ground 2ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > --tj-ink clears WCAG AA on panel 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > --tj-ink clears WCAG AA on well 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > --tj-muted clears WCAG AA on ground 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > --tj-muted clears WCAG AA on panel 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > --tj-muted clears WCAG AA on well 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > --tj-muted-light clears WCAG AA on ground 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > --tj-muted-light clears WCAG AA on panel 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > --tj-muted-light clears WCAG AA on well 1ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > --tj-copper clears WCAG AA on ground 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > --tj-copper clears WCAG AA on panel 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > --tj-copper clears WCAG AA on well 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > --tj-copper-light clears WCAG AA on ground 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > --tj-copper-light clears WCAG AA on panel 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > --tj-copper-light clears WCAG AA on well 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > emerald: text on its own tint clears WCAG AA 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > emerald: the tint stays a tint and the text stays text 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > emerald: carries white text when used as a solid fill 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > amber: text on its own tint clears WCAG AA 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > amber: the tint stays a tint and the text stays text 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > amber: carries white text when used as a solid fill 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > red: text on its own tint clears WCAG AA 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > red: the tint stays a tint and the text stays text 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > red: carries white text when used as a solid fill 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > blue: text on its own tint clears WCAG AA 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > blue: the tint stays a tint and the text stays text 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > blue: carries white text when used as a solid fill 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > violet: text on its own tint clears WCAG AA 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > violet: the tint stays a tint and the text stays text 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > violet: carries white text when used as a solid fill 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > rose: text on its own tint clears WCAG AA 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > rose: the tint stays a tint and the text stays text 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > rose: carries white text when used as a solid fill 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > orange: text on its own tint clears WCAG AA 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > orange: the tint stays a tint and the text stays text 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > orange: carries white text when used as a solid fill 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > cyan: text on its own tint clears WCAG AA 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > cyan: the tint stays a tint and the text stays text 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > cyan: carries white text when used as a solid fill 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > keeps the base ground on paper, not the retired dark theme 0ms
+ ✓ src/__tests__/paper-palette-contrast.test.ts > Vega's palette contrast > has retired the legacy dark-theme brand palette 0ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > the check itself can fail > reads a redirect target out of an action 2ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > the check itself can fail > ignores the query string, which is not part of the route 0ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > the check itself can fail > still recognises the pages that are pure redirects 1ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > the check itself can fail > does not mistake a real page for one 0ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > the check itself can fail > would have caught the bug that produced it 0ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > the check itself can fail > found actions to sweep 0ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > no action sends anybody to a page that redirects again > address-complete.ts 0ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > no action sends anybody to a page that redirects again > admin-language.ts 0ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > no action sends anybody to a page that redirects again > auth.ts 1ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > no action sends anybody to a page that redirects again > buyer-id.ts 0ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > no action sends anybody to a page that redirects again > complete-sale.ts 0ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > no action sends anybody to a page that redirects again > deal-language.ts 0ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > no action sends anybody to a page that redirects again > delete-sale.ts 0ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > no action sends anybody to a page that redirects again > oauth.ts 0ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > no action sends anybody to a page that redirects again > packet-signing-text.ts 0ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > no action sends anybody to a page that redirects again > packet-signing.ts 0ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > no action sends anybody to a page that redirects again > paperwork-delivery.ts 0ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > no action sends anybody to a page that redirects again > paperwork-preview.ts 0ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > no action sends anybody to a page that redirects again > paperwork.ts 0ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > no action sends anybody to a page that redirects again > password-reset.ts 0ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > no action sends anybody to a page that redirects again > sale-funding.ts 0ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > no action sends anybody to a page that redirects again > sale-money.ts 0ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > no action sends anybody to a page that redirects again > sale-plan.ts 0ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > no action sends anybody to a page that redirects again > salvage-plan.ts 0ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > no action sends anybody to a page that redirects again > sign-in-code.ts 0ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > no action sends anybody to a page that redirects again > sms-review-hold.ts 0ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > no action sends anybody to a page that redirects again > staff-signature.ts 0ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > no action sends anybody to a page that redirects again > start-sale.ts 0ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > no action sends anybody to a page that redirects again > team-access.ts 0ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > no action sends anybody to a page that redirects again > title-status.ts 0ms
+ ✓ src/__tests__/a-server-action-never-redirects-into-a-redirect.test.ts > no action sends anybody to a page that redirects again > title-work.ts 0ms
+ ✓ src/__tests__/packet-status-route.test.ts > authenticated packet status > requires document read access before querying any sale 6ms
+ ✓ src/__tests__/packet-status-route.test.ts > authenticated packet status > returns signature status, never signing links or document payloads 2ms
+ ✓ src/__tests__/packet-status-route.test.ts > authenticated packet status > does not expose documents for a sale the signed-in reader cannot see 1ms
+ ✓ src/__tests__/packet-status-route.test.ts > authenticated packet status > makes a failed read retryable instead of presenting an empty packet 1ms
+ ✓ src/__tests__/the-address-finishes-itself.test.ts > it only asks when there is something to ask about > waits for a whole street name, not a prefix 2ms
+ ✓ src/__tests__/the-address-finishes-itself.test.ts > it only asks when there is something to ask about > wants a house number, not just a street 0ms
+ ✓ src/__tests__/the-address-finishes-itself.test.ts > it only asks when there is something to ask about > ignores an empty or stub line 0ms
+ ✓ src/__tests__/the-address-finishes-itself.test.ts > which door it knocks on > uses the precise one once a city exists to send 1ms
+ ✓ src/__tests__/the-address-finishes-itself.test.ts > which door it knocks on > falls back to the one that answers from a street alone 0ms
+ ✓ src/__tests__/the-address-finishes-itself.test.ts > which door it knocks on > always asks for the geography, because the county is the point 0ms
+ ✓ src/__tests__/the-address-finishes-itself.test.ts > what it accepts, and what it refuses > completes the address the desk half typed 1ms
+ ✓ src/__tests__/the-address-finishes-itself.test.ts > what it accepts, and what it refuses > gets the county right where guessing from the city would not 0ms
+ ✓ src/__tests__/the-address-finishes-itself.test.ts > what it accepts, and what it refuses > throws away a match in the wrong state 1ms
+ ✓ src/__tests__/the-address-finishes-itself.test.ts > what it accepts, and what it refuses > refuses to pick between two streets 0ms
+ ✓ src/__tests__/the-address-finishes-itself.test.ts > what it accepts, and what it refuses > says nothing when the service says nothing 0ms
+ ✓ src/__tests__/the-address-finishes-itself.test.ts > what it accepts, and what it refuses > refuses a half answer 0ms
+ ✓ src/__tests__/the-address-finishes-itself.test.ts > what it accepts, and what it refuses > still answers when the geography is missing, minus the county 0ms
+ ✓ src/__tests__/the-address-finishes-itself.test.ts > what it accepts, and what it refuses > hands back words a document can print, not shouting 0ms
+ ✓ src/__tests__/the-address-finishes-itself.test.ts > the screen it serves > is wired into the sale's own intake, not only the retired forms 0ms
+ ✓ src/__tests__/the-address-finishes-itself.test.ts > the screen it serves > never overwrites what somebody typed 0ms
+ ✓ src/__tests__/the-address-finishes-itself.test.ts > the screen it serves > can be undone in one tap 0ms
+ ✓ src/__tests__/the-address-finishes-itself.test.ts > the screen it serves > is behind the admin session and fails silent 0ms
+ ✓ src/__tests__/the-address-finishes-itself.test.ts > the screen it serves > costs nothing and needs no key 0ms
+ ✓ src/__tests__/what-the-sale-needs-is-marked.test.ts > the mark > sits on every label the sale needs and on none it does not 3ms
+ ✓ src/__tests__/what-the-sale-needs-is-marked.test.ts > the mark > is decorative to a screen reader; the control's own required is the announcement 2ms
+ ✓ src/__tests__/what-the-sale-needs-is-marked.test.ts > the mark > is explained once, in both languages, above the actions 1ms
+ ✓ src/__tests__/what-the-sale-needs-is-marked.test.ts > the mark > is styled in the house copper 2ms
+ ✓ src/__tests__/what-the-sale-needs-is-marked.test.ts > no leaving the page without it > computes readiness for every stage 0ms
+ ✓ src/__tests__/what-the-sale-needs-is-marked.test.ts > no leaving the page without it > holds Next and Start Sale until the stage is ready 0ms
+ ✓ src/__tests__/what-the-sale-needs-is-marked.test.ts > no leaving the page without it > still names what is wrong with a filled answer 0ms
+ ✓ src/__tests__/what-the-sale-needs-is-marked.test.ts > no leaving the page without it > runs the address guard on the final submit too 0ms
+ ✓ src/__tests__/what-the-sale-needs-is-marked.test.ts > the title question is asked on every sale > is a stage on the lot route as well as the typed-in route 1ms
+ ✓ src/__tests__/what-the-sale-needs-is-marked.test.ts > the title question is asked on every sale > arrives answered from inventory on a listed car, and open on one nobody verified 0ms
+ ✓ src/__tests__/what-the-sale-needs-is-marked.test.ts > the title question is asked on every sale > is sent for every car, and the server writes a changed answer back to the vehicle 0ms
+ ✓ src/__tests__/licence-front.test.ts > what the reader actually produced > a clean render > reads the name, given names first 2ms
+ ✓ src/__tests__/licence-front.test.ts > what the reader actually produced > a clean render > reads the licence number without touching its case 0ms
+ ✓ src/__tests__/licence-front.test.ts > what the reader actually produced > a clean render > reads the date of birth 0ms
+ ✓ src/__tests__/licence-front.test.ts > what the reader actually produced > a clean render > reads the expiry, and does not mistake the issue date for it 0ms
+ ✓ src/__tests__/licence-front.test.ts > what the reader actually produced > a clean render > reads the address and drops the caption of the portrait box 0ms
+ ✓ src/__tests__/licence-front.test.ts > what the reader actually produced > a clean render > is recognised as a licence 0ms
+ ✓ src/__tests__/licence-front.test.ts > what the reader actually produced > a photographed card > reads the name, given names first 0ms
+ ✓ src/__tests__/licence-front.test.ts > what the reader actually produced > a photographed card > reads the licence number without touching its case 0ms
+ ✓ src/__tests__/licence-front.test.ts > what the reader actually produced > a photographed card > reads the date of birth 0ms
+ ✓ src/__tests__/licence-front.test.ts > what the reader actually produced > a photographed card > reads the expiry, and does not mistake the issue date for it 0ms
+ ✓ src/__tests__/licence-front.test.ts > what the reader actually produced > a photographed card > reads the address and drops the caption of the portrait box 0ms
+ ✓ src/__tests__/licence-front.test.ts > what the reader actually produced > a photographed card > is recognised as a licence 0ms
+ ✓ src/__tests__/licence-front.test.ts > the dates, which is where a wrong answer is silent > uses the label when the label survived 0ms
+ ✓ src/__tests__/licence-front.test.ts > the dates, which is where a wrong answer is silent > falls back to order when every label is unreadable 0ms
+ ✓ src/__tests__/licence-front.test.ts > the dates, which is where a wrong answer is silent > never lets the issue date become the expiry 0ms
+ ✓ src/__tests__/licence-front.test.ts > the dates, which is where a wrong answer is silent > proposes nothing when the two dates come out impossible 0ms
+ ✓ src/__tests__/licence-front.test.ts > the dates, which is where a wrong answer is silent > refuses a date that does not exist 0ms
+ ✓ src/__tests__/licence-front.test.ts > the dates, which is where a wrong answer is silent > refuses a year no licence holder was born in 0ms
+ ✓ src/__tests__/licence-front.test.ts > the licence number > does not mistake a date for one 0ms
+ ✓ src/__tests__/licence-front.test.ts > the licence number > reads a number carrying letters 0ms
+ ✓ src/__tests__/licence-front.test.ts > the licence number > finds a bare number when the label is gone 0ms
+ ✓ src/__tests__/licence-front.test.ts > the name > is not confused by the other fields that begin with a 1 0ms
+ ✓ src/__tests__/licence-front.test.ts > the name > reads a family name alone when the given names did not survive 0ms
+ ✓ src/__tests__/licence-front.test.ts > the name > keeps a hyphenated name together 0ms
+ ✓ src/__tests__/licence-front.test.ts > the address > keeps the town on one line rather than guessing where the street ends 0ms
+ ✓ src/__tests__/licence-front.test.ts > the address > keeps a nine digit postal code readable 0ms
+ ✓ src/__tests__/licence-front.test.ts > the address > keeps a street that happens to be named like card chrome 0ms
+ ✓ src/__tests__/licence-front.test.ts > refusing things that are not licences > rejects an empty read 0ms
+ ✓ src/__tests__/licence-front.test.ts > refusing things that are not licences > rejects a loyalty card 0ms
+ ✓ src/__tests__/licence-front.test.ts > refusing things that are not licences > rejects a page that merely talks about licences 0ms
+ ✓ src/__tests__/licence-front.test.ts > refusing things that are not licences > accepts a card that names itself and reads one field 0ms
+ ✓ src/__tests__/licence-front.test.ts > refusing things that are not licences > accepts a card whose header was cut off but whose fields read 0ms
+ ✓ src/__tests__/licence-front.test.ts > the parser cannot invent > returns nulls for text that carries nothing 1ms
+ ✓ src/__tests__/the-title-gate.test.ts > what a title status can be > recognizes the canonical statuses and nothing else 2ms
+ ✓ src/__tests__/the-title-gate.test.ts > the gate itself > lets a verified sellable title through 1ms
+ ✓ src/__tests__/the-title-gate.test.ts > the gate itself > fails closed on unverified, including anything malformed 0ms
+ ✓ src/__tests__/the-title-gate.test.ts > the gate itself > refuses the titles a retail sale cannot proceed on, by name 2ms
+ ✓ src/__tests__/the-title-gate.test.ts > the gate itself > hangs the rebuilt disclosure duty on exactly the rebuilt title 0ms
+ ✓ src/__tests__/the-title-gate.test.ts > the sale flow enforces it server-side > gates the resolved vehicle before any record is written 0ms
+ ✓ src/__tests__/the-title-gate.test.ts > the sale flow enforces it server-side > reads the title fact with the vehicle rather than trusting the client 0ms
+ ✓ src/__tests__/the-title-gate.test.ts > the sale flow enforces it server-side > writes the desk's answer back only when it is a real status that differs 0ms
+ ✓ src/__tests__/the-title-gate.test.ts > the sale flow enforces it server-side > refuses to create a desk-typed vehicle without a verified title 0ms
+ ✓ src/__tests__/the-title-gate.test.ts > the resolve action > is inventory authority, not sales authority 0ms
+ ✓ src/__tests__/the-title-gate.test.ts > the resolve action > refuses 'unknown' as a target: unmarking is not verification 0ms
+ ✓ src/__tests__/the-title-gate.test.ts > the resolve action > records who verified and when 0ms
+ ✓ src/__tests__/the-title-gate.test.ts > the resolve screen is reachable and guarded > has a route rule requiring inventory:manage 0ms
+ ✓ src/__tests__/the-title-gate.test.ts > the resolve screen is reachable and guarded > is where the blocked Start Sale screen points 3ms
+ ✓ src/__tests__/the-paperwork-outlives-the-desk.test.ts > where the sale ends > is the last step, after the title is filed 3ms
+ ✓ src/__tests__/the-paperwork-outlives-the-desk.test.ts > where the sale ends > is a screen of its own rather than a panel on the question route 0ms
+ ✓ src/__tests__/the-paperwork-outlives-the-desk.test.ts > where the sale ends > is done once there is something to print, and not before 1ms
+ ✓ src/__tests__/the-paperwork-outlives-the-desk.test.ts > what it offers > prints what was signed rather than what the rows say today 0ms
+ ✓ src/__tests__/the-paperwork-outlives-the-desk.test.ts > what it offers > opens and saves, because those are different jobs 0ms
+ ✓ src/__tests__/the-paperwork-outlives-the-desk.test.ts > what it offers > invents no second answer to who may see a document 0ms
+ ✓ src/__tests__/the-paperwork-outlives-the-desk.test.ts > what it offers > lists what was started and never signed 0ms
+ ✓ src/__tests__/the-paperwork-outlives-the-desk.test.ts > what it offers > survives a document type the packet registry does not name 0ms
+ ✓ src/__tests__/the-paperwork-outlives-the-desk.test.ts > what it offers > does not fall over when the document read fails 1ms
+ ✓ src/__tests__/the-paperwork-outlives-the-desk.test.ts > the licence on that page > is signed for minutes rather than served openly 0ms
+ ✓ src/__tests__/the-paperwork-outlives-the-desk.test.ts > the licence on that page > is never cached, because those links expire 0ms
+ ✓ src/__tests__/the-paperwork-outlives-the-desk.test.ts > the licence on that page > is not handed to the image optimiser 0ms
+ ✓ src/__tests__/document-normalize.test.ts > a name on a legal instrument > calms down what somebody typed in capitals 3ms
+ ✓ src/__tests__/document-normalize.test.ts > a name on a legal instrument > keeps a single letter as an initial 0ms
+ ✓ src/__tests__/document-normalize.test.ts > a name on a legal instrument > writes the names that title case gets wrong 0ms
+ ✓ src/__tests__/document-normalize.test.ts > a name on a legal instrument > does not invent a capital inside every Mac 0ms
+ ✓ src/__tests__/document-normalize.test.ts > a name on a legal instrument > writes suffixes the way they are written 0ms
+ ✓ src/__tests__/document-normalize.test.ts > a name on a legal instrument > does not turn a leading suffix-looking name into a suffix 0ms
+ ✓ src/__tests__/document-normalize.test.ts > a name on a legal instrument > lowercases particles inside a name but not at the front 0ms
+ ✓ src/__tests__/document-normalize.test.ts > a name on a legal instrument > keeps a company's entity suffix as initials 0ms
+ ✓ src/__tests__/document-normalize.test.ts > a name on a legal instrument > returns nothing for nothing rather than the word undefined 0ms
+ ✓ src/__tests__/document-normalize.test.ts > an address that has to reach a mailbox > keeps directionals as capitals 0ms
+ ✓ src/__tests__/document-normalize.test.ts > an address that has to reach a mailbox > writes PO Box properly 0ms
+ ✓ src/__tests__/document-normalize.test.ts > an address that has to reach a mailbox > keeps a unit letter capital and an ordinal lowercase 0ms
+ ✓ src/__tests__/document-normalize.test.ts > an address that has to reach a mailbox > handles the dealership's own address 0ms
+ ✓ src/__tests__/document-normalize.test.ts > the pieces that are codes, not words > keeps a VIN in capitals and strips the spaces people type 0ms
+ ✓ src/__tests__/document-normalize.test.ts > the pieces that are codes, not words > never silently corrects a VIN's characters 0ms
+ ✓ src/__tests__/document-normalize.test.ts > the pieces that are codes, not words > keeps a plate in capitals 0ms
+ ✓ src/__tests__/document-normalize.test.ts > the pieces that are codes, not words > writes a state as two capitals and leaves anything else alone 0ms
+ ✓ src/__tests__/document-normalize.test.ts > makes and models > writes an ordinary marque as a word 0ms
+ ✓ src/__tests__/document-normalize.test.ts > makes and models > leaves the marques that are actually initials alone 0ms
+ ✓ src/__tests__/document-normalize.test.ts > makes and models > keeps trim codes as codes 0ms
+ ✓ src/__tests__/document-normalize.test.ts > makes and models > keeps a letter-number designation in capitals 0ms
+ ✓ src/__tests__/document-normalize.test.ts > a whole address line > gives each comma-separated piece the rule that suits it 0ms
+ ✓ src/__tests__/document-normalize.test.ts > a whole address line > keeps a ZIP+4 intact 0ms
+ ✓ src/__tests__/document-normalize.test.ts > a whole address line > treats a single piece as a street 0ms
+ ✓ src/__tests__/document-normalize.test.ts > place names > title cases a city 0ms
+ ✓ src/__tests__/document-normalize.test.ts > place names > keeps a county readable 0ms
+ ✓ src/__tests__/four-hundred-dollars-over-the-price.test.ts > the fee schedule > adds up to what the dealer quotes 2ms
+ ✓ src/__tests__/four-hundred-dollars-over-the-price.test.ts > the fee schedule > leaves the statutory figures at their real values 0ms
+ ✓ src/__tests__/four-hundred-dollars-over-the-price.test.ts > the fee schedule > is what the paperwork corridor starts a bill of sale with 0ms
+ ✓ src/__tests__/four-hundred-dollars-over-the-price.test.ts > the fee schedule > is what the out-the-door calculator backs out 0ms
+ ✓ src/__tests__/four-hundred-dollars-over-the-price.test.ts > what the buyer owes > is price, plus 6.25%, plus four hundred 1ms
+ ✓ src/__tests__/four-hundred-dollars-over-the-price.test.ts > what the buyer owes > uses the state's rate rather than a number typed here 0ms
+ ✓ src/__tests__/four-hundred-dollars-over-the-price.test.ts > what the buyer owes > takes the trade-in off what is owed, and off the tax base 0ms
+ ✓ src/__tests__/four-hundred-dollars-over-the-price.test.ts > what the buyer owes > ignores a trade-in allowance when there is no trade-in 0ms
+ ✓ src/__tests__/four-hundred-dollars-over-the-price.test.ts > what the buyer owes > never goes below zero 0ms
+ ✓ src/__tests__/four-hundred-dollars-over-the-price.test.ts > what the buyer owes > holds up when the vehicle has no price on it 0ms
+ ✓ src/__tests__/four-hundred-dollars-over-the-price.test.ts > the money reaching the document > is filed with the bill of sale, not just shown 0ms
+ ✓ src/__tests__/four-hundred-dollars-over-the-price.test.ts > the money reaching the document > is computed on the server from the vehicle and what the price meant 0ms
+ ✓ src/__tests__/four-hundred-dollars-over-the-price.test.ts > the money reaching the document > reaches every document, each reading only the figures it prints 0ms
+ ✓ src/__tests__/four-hundred-dollars-over-the-price.test.ts > the money reaching the document > shows the operator a total before it is signed 2ms
+ ✓ src/__tests__/the-car-that-is-not-on-the-lot.test.ts > the VIN field is on the selector, at every lot size > is not behind the search box, which a small lot never renders 2ms
+ ✓ src/__tests__/the-car-that-is-not-on-the-lot.test.ts > the VIN field is on the selector, at every lot size > is a labelled input, not a link that changes mode 1ms
+ ✓ src/__tests__/the-car-that-is-not-on-the-lot.test.ts > the VIN field is on the selector, at every lot size > takes a VIN however it is typed 0ms
+ ✓ src/__tests__/the-car-that-is-not-on-the-lot.test.ts > the VIN field is on the selector, at every lot size > counts the characters while the VIN is still short, and stops when it is whole 3ms
+ ✓ src/__tests__/the-car-that-is-not-on-the-lot.test.ts > what it does with the VIN > asks the app's own decoder, which is NHTSA 0ms
+ ✓ src/__tests__/the-car-that-is-not-on-the-lot.test.ts > what it does with the VIN > waits before asking, so a paste is one request and not seventeen 0ms
+ ✓ src/__tests__/the-car-that-is-not-on-the-lot.test.ts > what it does with the VIN > does not decode a VIN that is already on the lot 0ms
+ ✓ src/__tests__/the-car-that-is-not-on-the-lot.test.ts > what it does with the VIN > does not name its own result as a dependency 0ms
+ ✓ src/__tests__/the-car-that-is-not-on-the-lot.test.ts > what it does with the VIN > does not decode while the car is already settled 0ms
+ ✓ src/__tests__/the-car-that-is-not-on-the-lot.test.ts > what it does with the VIN > hands back a car to pick, in the same grid the lot cars use 0ms
+ ✓ src/__tests__/the-car-that-is-not-on-the-lot.test.ts > what it does with the VIN > carries the decoded facts into the sale rather than only the VIN 0ms
+ ✓ src/__tests__/the-car-that-is-not-on-the-lot.test.ts > what it does with the VIN > leaves the by-hand route open when the decoder says nothing 0ms
+ ✓ src/__tests__/the-car-that-is-not-on-the-lot.test.ts > what it does with the VIN > treats an unreachable decoder as nothing found, not as an error 0ms
+ ✓ src/__tests__/the-car-that-is-not-on-the-lot.test.ts > it speaks from the catalogue, in both languages > has every key the block reads 1ms
+ ✓ src/__tests__/the-car-that-is-not-on-the-lot.test.ts > it speaks from the catalogue, in both languages > says something different in Spanish 1ms
+ ✓ src/__tests__/the-car-that-is-not-on-the-lot.test.ts > it speaks from the catalogue, in both languages > keeps the count placeholder in both bundles 0ms
+ ✓ src/__tests__/the-car-that-is-not-on-the-lot.test.ts > it is styled, not just rendered > has its own rule, and sits in the finders row ahead of the cars 0ms
+ ✓ src/__tests__/the-car-that-is-not-on-the-lot.test.ts > it is styled, not just rendered > comes before the car grid in the markup, so a phone shows it first 0ms
+ ✓ src/__tests__/the-car-that-is-not-on-the-lot.test.ts > it is styled, not just rendered > uses Tailwind v4's individual properties, not a combined transform 0ms
+ ✓ src/__tests__/buyer-id.test.ts > what the machine read is never what the paperwork uses > does not treat a reader's guess as a settled value 2ms
+ ✓ src/__tests__/buyer-id.test.ts > what the machine read is never what the paperwork uses > lets a person correct what the reader got wrong 0ms
+ ✓ src/__tests__/buyer-id.test.ts > what the machine read is never what the paperwork uses > counts only unreviewed guesses as outstanding, not blanks 1ms
+ ✓ src/__tests__/buyer-id.test.ts > what the machine read is never what the paperwork uses > never lets re-reading a better photo undo a person's decision 0ms
+ ✓ src/__tests__/buyer-id.test.ts > the mailing address, which is the one that goes silently wrong > blocks on the confirmation even when the address is filled in 1ms
+ ✓ src/__tests__/buyer-id.test.ts > the mailing address, which is the one that goes silently wrong > drops the confirmation when the address is edited afterwards 0ms
+ ✓ src/__tests__/buyer-id.test.ts > the mailing address, which is the one that goes silently wrong > refuses to confirm an address that is not there 0ms
+ ✓ src/__tests__/buyer-id.test.ts > the mailing address, which is the one that goes silently wrong > offers the licence address as a starting point, not as an answer 1ms
+ ✓ src/__tests__/buyer-id.test.ts > what the desk is waiting for > reports the photograph first, because nothing else can be done without it 1ms
+ ✓ src/__tests__/buyer-id.test.ts > what the desk is waiting for > moves on to the unchecked values once the photo lands 0ms
+ ✓ src/__tests__/buyer-id.test.ts > storage survives a round trip > keeps the rest of the blob intact 0ms
+ ✓ src/__tests__/buyer-id.test.ts > storage survives a round trip > reads nothing out of a deal that was never scanned 0ms
+ ✓ src/__tests__/buyer-id.test.ts > storage survives a round trip > treats anything other than literal true as unconfirmed 0ms
+ ✓ src/__tests__/buyer-id.test.ts > storage survives a round trip > ignores a field stored as something other than an object 0ms
+ ✓ src/__tests__/funnel-catalogue-guards.test.ts > funnel catalogue coverage > every English funnel key exists in Spanish 3ms
+ ✓ src/__tests__/funnel-catalogue-guards.test.ts > funnel catalogue coverage > every Spanish funnel key exists in English 1ms
+ ✓ src/__tests__/funnel-catalogue-guards.test.ts > funnel Spanish register > the es funnel namespace never slips into the tu register 3ms
+ ✓ src/__tests__/funnel-catalogue-guards.test.ts > the corridor says which language it is in > stamps the document with the language on screen 0ms
+ ✓ src/__tests__/funnel-catalogue-guards.test.ts > the corridor says which language it is in > puts it back on the way out 0ms
+ ✓ src/__tests__/funnel-catalogue-guards.test.ts > the corridor says which language it is in > stops title-casing Spanish, and only Spanish 1ms
+ ✓ src/__tests__/reader-precedence.test.ts > the weaker reader never overwrites the stronger one > drops every field the barcode already answered 2ms
+ ✓ src/__tests__/reader-precedence.test.ts > the weaker reader never overwrites the stronger one > leaves the barcode's values in place when the filtered set is applied 0ms
+ ✓ src/__tests__/reader-precedence.test.ts > the weaker reader never overwrites the stronger one > fills only the fields the barcode could not produce 0ms
+ ✓ src/__tests__/reader-precedence.test.ts > the weaker reader never overwrites the stronger one > fills everything when no barcode read at all 0ms
+ ✓ src/__tests__/reader-precedence.test.ts > the weaker reader never overwrites the stronger one > never proposes a null or an empty string over an empty field 0ms
+ ✓ src/__tests__/reader-precedence.test.ts > a person's decision outranks both readers > leaves a confirmed field alone even when nothing was ever read 0ms
+ ✓ src/__tests__/reader-precedence.test.ts > a person's decision outranks both readers > cannot reach confirmed through the extraction path at all 0ms
+ ✓ src/__tests__/reader-precedence.test.ts > knowing whether the second reader is worth running > says yes when nothing has been read 0ms
+ ✓ src/__tests__/reader-precedence.test.ts > knowing whether the second reader is worth running > says no when the barcode answered everything 0ms
+ ✓ src/__tests__/reader-precedence.test.ts > knowing whether the second reader is worth running > says yes when the barcode answered only some of it 0ms
+ ✓ src/__tests__/reader-precedence.test.ts > knowing whether the second reader is worth running > counts a hand-typed value as answered 0ms
+ ✓ src/__tests__/publicVehicle.test.ts > toPublicVehicle > strips every sensitive internal field 2ms
+ ✓ src/__tests__/publicVehicle.test.ts > toPublicVehicle > never serializes sensitive fields in JSON 1ms
+ ✓ src/__tests__/publicVehicle.test.ts > toPublicVehicle > preserves every public field the UI needs 1ms
+ ✓ src/__tests__/publicVehicle.test.ts > toPublicVehicle > handles arrays via toPublicVehicles 1ms
+ ✓ src/__tests__/publicVehicle.test.ts > toPublicVehicle > uses explicit public database columns instead of select star 1ms
+ ✓ src/__tests__/capture-token.test.ts > the capture link > round trips the deal it was issued for 3ms
+ ✓ src/__tests__/capture-token.test.ts > the capture link > expires, and is still valid one millisecond before 1ms
+ ✓ src/__tests__/capture-token.test.ts > the capture link > cannot be pointed at a different deal 0ms
+ ✓ src/__tests__/capture-token.test.ts > the capture link > cannot have its expiry extended 1ms
+ ✓ src/__tests__/capture-token.test.ts > the capture link > does not accept a token signed with a different secret 0ms
+ ✓ src/__tests__/capture-token.test.ts > the capture link > rejects rubbish without throwing 0ms
+ ✓ src/__tests__/capture-token.test.ts > the capture link > refuses to issue a link with no secret configured 1ms
+ ✓ src/__tests__/capture-token.test.ts > the capture link > builds a URL without doubling the slash 0ms
+ ✓ src/__tests__/official-130u-delivery.test.ts > 130-U copy options > omits ID imagery and signatures when explicitly requested 5ms
+ ✓ src/__tests__/official-130u-delivery.test.ts > 130-U copy options > uses the filed dealer signature without requiring a staff session 1ms
+ ✓ src/__tests__/official-130u-delivery.test.ts > 130-U copy options > preserves existing signed dealer-copy defaults 1ms
+ ✓ src/__tests__/an-address-is-four-things-not-one.test.ts > the pieces the barcode actually encoded > keeps them apart instead of joining and hoping 3ms
+ ✓ src/__tests__/an-address-is-four-things-not-one.test.ts > the pieces the barcode actually encoded > still offers one line for anywhere that genuinely wants a string 0ms
+ ✓ src/__tests__/an-address-is-four-things-not-one.test.ts > recovering the pieces from a line that lost them > splits 4412 Cedar Elm Dr, Houston, TX 77042 1ms
+ ✓ src/__tests__/an-address-is-four-things-not-one.test.ts > recovering the pieces from a line that lost them > splits 4412 Cedar Elm Dr Houston TX 77042 0ms
+ ✓ src/__tests__/an-address-is-four-things-not-one.test.ts > recovering the pieces from a line that lost them > splits 1 Example St, Houston TX 0ms
+ ✓ src/__tests__/an-address-is-four-things-not-one.test.ts > recovering the pieces from a line that lost them > splits 820 W 5th St, Apt 12B, Austin, TX 78703-1180 0ms
+ ✓ src/__tests__/an-address-is-four-things-not-one.test.ts > recovering the pieces from a line that lost them > leaves what it cannot read in the street rather than guessing 0ms
+ ✓ src/__tests__/an-address-is-four-things-not-one.test.ts > recovering the pieces from a line that lost them > does not eat the end of a city that happens to be two letters 0ms
+ ✓ src/__tests__/an-address-is-four-things-not-one.test.ts > recovering the pieces from a line that lost them > is empty for an empty line 1ms
+ ✓ src/__tests__/an-address-is-four-things-not-one.test.ts > recovering the pieces from a line that lost them > round trips a well formed address 0ms
+ ✓ src/__tests__/an-address-is-four-things-not-one.test.ts > deals saved before any of this existed > splits the old single string rather than calling it a street 0ms
+ ✓ src/__tests__/an-address-is-four-things-not-one.test.ts > deals saved before any of this existed > keeps a confirmation somebody already gave 0ms
+ ✓ src/__tests__/an-address-is-four-things-not-one.test.ts > deals saved before any of this existed > prefers the new shape when a row carries both 0ms
+ ✓ src/__tests__/an-address-is-four-things-not-one.test.ts > the form sends what the record holds > has a box for every part and no more 0ms
+ ✓ src/__tests__/every-document-prints-in-one-case.test.ts > the casing rule itself > capitalises every word of a value typed all one case 2ms
+ ✓ src/__tests__/every-document-prints-in-one-case.test.ts > the casing rule itself > leaves a value somebody cased on purpose alone 0ms
+ ✓ src/__tests__/every-document-prints-in-one-case.test.ts > the casing rule itself > keeps a trim badge as the badge spells it 0ms
+ ✓ src/__tests__/every-document-prints-in-one-case.test.ts > the casing rule itself > puts a VIN, a plate and a state in capitals, always 0ms
+ ✓ src/__tests__/every-document-prints-in-one-case.test.ts > the corridor's facts are cased for paper once > prints the car in title case and the VIN in capitals 0ms
+ ✓ src/__tests__/every-document-prints-in-one-case.test.ts > the corridor's facts are cased for paper once > prints the buyer and the address in title case, the codes in capitals 0ms
+ ✓ src/__tests__/every-document-prints-in-one-case.test.ts > the state 130-U prints the same way > cases the boxes from the corridor's record 3ms
+ ✓ src/__tests__/every-document-prints-in-one-case.test.ts > the state 130-U prints the same way > cases a row the customer portal wrote, which never passed through the corridor 0ms
+ ✓ src/__tests__/every-document-prints-in-one-case.test.ts > the intake keeps the catalogue's spelling of a decoded body style > matches the decode to the catalogue rather than lowercasing it 1ms
+ ✓ src/__tests__/saveAgreement.test.ts > saveAgreement return type > returns { success: true, id } on successful create 3ms
+ ✓ src/__tests__/saveAgreement.test.ts > saveAgreement return type > returns { success: true, id } on successful complete 0ms
+ ✓ src/__tests__/saveAgreement.test.ts > saveAgreement return type > returns { success: false, error } on HTTP error 0ms
+ ✓ src/__tests__/saveAgreement.test.ts > saveAgreement return type > returns { success: false, error } on network failure 0ms
+ ✓ src/__tests__/saveAgreement.test.ts > saveAgreement return type > returns { success: false, error } on unknown error 0ms
+ ✓ src/__tests__/saveAgreement.test.ts > saveAgreement return type > uses correct endpoint for pending (create) 3ms
+ ✓ src/__tests__/saveAgreement.test.ts > saveAgreement return type > uses correct endpoint for completed (update) 1ms
+ ✓ src/__tests__/sms-send-normalises.test.ts > sendSMS normalises the recipient > sends the exact shape that failed in production 4ms
+ ✓ src/__tests__/sms-send-normalises.test.ts > sendSMS normalises the recipient > accepts the other shapes the desk types 1ms
+ ✓ src/__tests__/sms-send-normalises.test.ts > sendSMS normalises the recipient > leaves an already-correct number untouched 1ms
+ ✓ src/__tests__/sms-send-normalises.test.ts > sendSMS normalises the recipient > refuses a number it cannot read, without spending a send 2ms
+ ✓ src/__tests__/sms-send-normalises.test.ts > sendSMS normalises the recipient > does not leak the number into the error text 1ms
+ ✓ src/__tests__/customerWizard.test.ts > Wizard step building > builds correct steps for financing (8 steps) 3ms
+ ✓ src/__tests__/customerWizard.test.ts > Wizard step building > builds correct steps for rental (9 steps) 1ms
+ ✓ src/__tests__/customerWizard.test.ts > Wizard step building > builds correct steps for billOfSale with acknowledgments (8 steps) 0ms
+ ✓ src/__tests__/customerWizard.test.ts > Wizard step building > builds correct steps for form130U (9 steps) 0ms
+ ✓ src/__tests__/customerWizard.test.ts > Wizard step building > includes text-update consent for non-billOfSale types 0ms
+ ✓ src/__tests__/customerWizard.test.ts > Wizard step building > does not include video or explainer steps 0ms
+ ✓ src/__tests__/customerWizard.test.ts > Wizard step building > always starts with welcome and ends with complete 0ms
+ ✓ src/__tests__/customerWizard.test.ts > Wizard step building > marks co-buyer/co-renter/lienholder groups as optional 0ms
+ ✓ src/__tests__/customerWizard.test.ts > Wizard step building > billOfSale co-buyer has 9 fields 0ms
+ ✓ src/__tests__/customerWizard.test.ts > Field label formatting > converts camelCase to Title Case 0ms
+ ✓ src/__tests__/customerWizard.test.ts > Field label formatting > handles co-buyer prefix 0ms
+ ✓ src/__tests__/customerWizard.test.ts > Field label formatting > handles single word fields 0ms
+ ✓ src/__tests__/documents-i18n.test.ts > getDocStrings > returns English strings for "en" 2ms
+ ✓ src/__tests__/documents-i18n.test.ts > getDocStrings > returns Spanish strings for "es" 0ms
+ ✓ src/__tests__/documents-i18n.test.ts > getDocStrings > falls back to English for invalid locale 0ms
+ ✓ src/__tests__/documents-i18n.test.ts > getDocStrings > falls back to English for empty string 0ms
+ ✓ src/__tests__/documents-i18n.test.ts > getDocStrings > defaults to English when no argument 0ms
+ ✓ src/__tests__/documents-i18n.test.ts > getDocStrings > has matching keys in both locales 1ms
+ ✓ src/__tests__/documents-i18n.test.ts > getDocStrings > has shared section with dealer info 0ms
+ ✓ src/__tests__/documents-i18n.test.ts > getDocStrings > has form130U section with Spanish header 0ms
+ ✓ src/__tests__/documents-i18n.test.ts > resolveLocale > returns "es" for "es" 0ms
+ ✓ src/__tests__/documents-i18n.test.ts > resolveLocale > returns "en" for "en" 0ms
+ ✓ src/__tests__/documents-i18n.test.ts > resolveLocale > returns "en" for null 0ms
+ ✓ src/__tests__/documents-i18n.test.ts > resolveLocale > returns "en" for undefined 0ms
+ ✓ src/__tests__/documents-i18n.test.ts > resolveLocale > returns "en" for invalid 0ms
+ ✓ src/__tests__/mobile-keyboards.test.ts > the keyboard a field opens on a phone > gives every phone-number field the number pad 4ms
+ ✓ src/__tests__/mobile-keyboards.test.ts > the keyboard a field opens on a phone > stops a phone lowercasing and autocorrecting a VIN 2ms
+ ✓ src/__tests__/mobile-keyboards.test.ts > the licence fields carry their own keyboards > names a keyboard and a capitalisation for every field 1ms
+ ✓ src/__tests__/mobile-keyboards.test.ts > the licence fields carry their own keyboards > asks for digits on the two date fields and not on the others 2ms
+ ✓ src/__tests__/mobile-keyboards.test.ts > the licence fields carry their own keyboards > does not autocapitalise a date 0ms
+ ✓ src/__tests__/the-desk-has-two-ways-in.test.ts > what the desk is offered > no longer prints the signed link out under the code 2ms
+ ✓ src/__tests__/the-desk-has-two-ways-in.test.ts > what the desk is offered > offers the scanner beside the phone, not instead of it 0ms
+ ✓ src/__tests__/the-desk-has-two-ways-in.test.ts > what the desk is offered > gives the two ways equal room so their captions line up 0ms
+ ✓ src/__tests__/the-desk-has-two-ways-in.test.ts > what the desk is offered > does not offer a scanner upload with no link to sign it 0ms
+ ✓ src/__tests__/the-desk-has-two-ways-in.test.ts > the step stops naming one of the three ways > asks for the licence on file rather than for a photograph 1ms
+ ✓ src/__tests__/the-desk-has-two-ways-in.test.ts > the scanner's own file > is somewhere the record can hold it 1ms
+ ✓ src/__tests__/the-desk-has-two-ways-in.test.ts > the scanner's own file > is allowed into the bucket it has to land in 0ms
+ ✓ src/__tests__/the-desk-has-two-ways-in.test.ts > the scanner's own file > is only ever taken as a PDF 0ms
+ ✓ src/__tests__/the-desk-has-two-ways-in.test.ts > the scanner's own file > survives a later retake from a phone 0ms
+ ✓ src/__tests__/the-desk-has-two-ways-in.test.ts > the scanner's own file > survives the reader's second write 0ms
+ ✓ src/__tests__/the-desk-has-two-ways-in.test.ts > the scanner's own file > says so when it could not be kept 0ms
+ ✓ src/__tests__/the-desk-has-two-ways-in.test.ts > what is read, and where > decodes the barcode in this browser rather than uploading to be read 0ms
+ ✓ src/__tests__/the-desk-has-two-ways-in.test.ts > what is read, and where > reads the record separators as bytes, not as the text <LF> 0ms
+ ✓ src/__tests__/the-desk-has-two-ways-in.test.ts > what is read, and where > tries every page, because a flatbed takes both sides at once 0ms
+ ✓ src/__tests__/the-desk-has-two-ways-in.test.ts > what is read, and where > refuses a barcode that is not a licence 0ms
+ ✓ src/__tests__/the-scanner-says-when-it-has-it.test.ts > the frame asks for the distance that actually decodes > widens for the barcode instead of staying card-shaped 1ms
+ ✓ src/__tests__/the-scanner-says-when-it-has-it.test.ts > the frame asks for the distance that actually decodes > gives the barcode nearly the whole screen 0ms
+ ✓ src/__tests__/the-scanner-says-when-it-has-it.test.ts > the frame asks for the distance that actually decodes > is shaped like a barcode, not like a card 2ms
+ ✓ src/__tests__/the-scanner-says-when-it-has-it.test.ts > the frame asks for the distance that actually decodes > draws the frame so it survives a pale card behind it 0ms
+ ✓ src/__tests__/the-scanner-says-when-it-has-it.test.ts > the confirmation is on screen long enough to be seen > keeps the scanner up while the photograph uploads 0ms
+ ✓ src/__tests__/the-scanner-says-when-it-has-it.test.ts > the confirmation is on screen long enough to be seen > does not hold the scanner over the picker's upload 0ms
+ ✓ src/__tests__/the-scanner-says-when-it-has-it.test.ts > the confirmation is on screen long enough to be seen > decides that from state, not from a ref read during render 0ms
+ ✓ src/__tests__/the-scanner-says-when-it-has-it.test.ts > the confirmation is on screen long enough to be seen > draws the check inside the frame the card is in 0ms
+ ✓ src/__tests__/the-scanner-says-when-it-has-it.test.ts > what the hand is told, when the eyes are elsewhere > answers a decode with the pattern, not the tap 0ms
+ ✓ src/__tests__/the-scanner-says-when-it-has-it.test.ts > what the hand is told, when the eyes are elsewhere > keeps a single tap for merely turning the card over 0ms
+ ✓ src/__tests__/the-scanner-says-when-it-has-it.test.ts > what the hand is told, when the eyes are elsewhere > is a pattern with a gap in it, not one longer buzz 0ms
+ ✓ src/__tests__/the-scanner-says-when-it-has-it.test.ts > what the hand is told, when the eyes are elsewhere > still asks the admin's own preference before buzzing 0ms
+ ✓ src/__tests__/email-subject-title-case.test.ts > every email subject is Title Case > capitalises the words the templates actually send 3ms
+ ✓ src/__tests__/email-subject-title-case.test.ts > every email subject is Title Case > capitalises Spanish too, because the instruction was every email 0ms
+ ✓ src/__tests__/email-subject-title-case.test.ts > every email subject is Title Case > leaves alone the things capitalising would damage 0ms
+ ✓ src/__tests__/email-subject-title-case.test.ts > every email subject is Title Case > is applied where mail actually leaves, not left to each template 1ms
+ ✓ src/__tests__/email-subject-title-case.test.ts > every email subject is Title Case > is idempotent, so a subject already cased is not re-mangled 0ms
+ ✓ src/__tests__/admin-button-luxury.test.ts > admin button luxury system > keeps shared admin buttons premium without forcing all-caps copy 4ms
+ ✓ src/__tests__/admin-button-luxury.test.ts > admin button luxury system > gives direct action buttons crisp active and icon states 1ms
+ ✓ src/__tests__/admin-button-luxury.test.ts > admin button luxury system > keeps shared admin badges in Title Case instead of shouting 0ms
+ ✓ src/__tests__/admin-button-luxury.test.ts > admin button luxury system > runs every action variant off the shared paper tokens 0ms
+ ✓ src/__tests__/admin-button-luxury.test.ts > admin button luxury system > keeps danger red, because red is what danger means 0ms
+ ✓ src/__tests__/admin-button-luxury.test.ts > admin button luxury system > marks the current page as the ink selection, matching the rail 0ms
+ ✓ src/__tests__/admin-button-luxury.test.ts > admin button luxury system > defines one shared action tile extension for dashboard quick links 1ms
+ ✓ src/__tests__/power-of-attorney-form.test.ts > the official power of attorney template > ships the real TxDMV form, not a rendering of one 3ms
+ ✓ src/__tests__/power-of-attorney-form.test.ts > the official power of attorney template > records where the template came from so it can be refreshed 0ms
+ ✓ src/__tests__/power-of-attorney-form.test.ts > which power of attorney applies > says plainly that the secure form cannot be produced here 0ms
+ ✓ src/__tests__/power-of-attorney-form.test.ts > which power of attorney applies > treats a vehicle old enough to be exempt as eligible 0ms
+ ✓ src/__tests__/power-of-attorney-form.test.ts > which power of attorney applies > treats a vehicle inside the disclosure window as not eligible 0ms
+ ✓ src/__tests__/power-of-attorney-form.test.ts > which power of attorney applies > refuses to guess when the model year is unknown 0ms
+ ✓ src/__tests__/power-of-attorney-form.test.ts > which power of attorney applies > uses the statutory twenty-year window 0ms
+ ✓ src/__tests__/power-of-attorney-form.test.ts > filling the form > opens the template with the empty user password it is published with 0ms
+ ✓ src/__tests__/power-of-attorney-form.test.ts > filling the form > always names Triple J as the grantee, never the caller 0ms
+ ✓ src/__tests__/power-of-attorney-form.test.ts > filling the form > leaves the form editable for county corrections 0ms
+ ✓ src/__tests__/power-of-attorney-form.test.ts > filling the form > sizes the narrow vehicle columns so a make does not clip 0ms
+ ✓ src/__tests__/inspection-acknowledgment-action.test.ts > inspection confirmation cannot be skipped through the server action > rejects the customer answer without the explicit acknowledgment 3ms
+ ✓ src/__tests__/inspection-acknowledgment-action.test.ts > inspection confirmation cannot be skipped through the server action > stamps the confirmed customer answer with the authenticated staff and server time 1ms
+ ✓ src/__tests__/inspection-acknowledgment-action.test.ts > inspection confirmation cannot be skipped through the server action > does not require or store an acknowledgment when the dealer completes the inspection 1ms
+ ✓ src/__tests__/sop-test-vectors.test.ts > the SOP's money test vectors > $4,000 out the door, cash 2ms
+ ✓ src/__tests__/sop-test-vectors.test.ts > the SOP's money test vectors > $3,500 vehicle only, cash, nothing else typed 0ms
+ ✓ src/__tests__/sop-test-vectors.test.ts > the SOP's money test vectors > $4,000 vehicle only, cash 0ms
+ ✓ src/__tests__/sop-test-vectors.test.ts > the SOP's money test vectors > $10,000 vehicle only, $3,000 trade 0ms
+ ✓ src/__tests__/sop-test-vectors.test.ts > the SOP's money test vectors > any lender deal carries no balance 0ms
+ ✓ src/__tests__/sop-test-vectors.test.ts > the SOP's money test vectors > buy here pay here with no down payment yet: paid 0, the note is the total 0ms
+ ✓ src/__tests__/sop-test-vectors.test.ts > the SOP's money test vectors > parses money boxes before testing for empty 0ms
+ ✓ src/__tests__/sop-test-vectors.test.ts > the SOP's money test vectors > clamps what was paid to the deal 0ms
+ ✓ src/__tests__/sign-in-by-phone.test.ts > signing in with a phone number > tells a number apart from a handle 4ms
+ ✓ src/__tests__/sign-in-by-phone.test.ts > signing in with a phone number > checks for a number before a handle, because ten digits is both 1ms
+ ✓ src/__tests__/sign-in-by-phone.test.ts > signing in with a phone number > sends the code by text when a number was typed 0ms
+ ✓ src/__tests__/sign-in-by-phone.test.ts > signing in with a phone number > resolves a number only to an active member, via the phone column 0ms
+ ✓ src/__tests__/sign-in-by-phone.test.ts > signing in with a phone number > verifies against the same address the code was issued for 0ms
+ ✓ src/__tests__/sign-in-by-phone.test.ts > signing in with a phone number > says how the code travels without saying who exists 0ms
+ ✓ src/__tests__/sign-in-by-phone.test.ts > signing in with a phone number > says on the screen that a number is welcome 0ms
+ ✓ src/__tests__/early-return.test.ts > early return rental balance > calculates the daily rate from a weekly rental 2ms
+ ✓ src/__tests__/early-return.test.ts > early return rental balance > charges only the remaining paid-through days 1ms
+ ✓ src/__tests__/early-return.test.ts > early return rental balance > does not create a balance once the paid-through date has arrived 0ms
+ ✓ src/__tests__/one-count-of-what-a-sale-owes.test.ts > what each kind of sale owes > a cash sale owes two, and neither is a financing contract 3ms
+ ✓ src/__tests__/one-count-of-what-a-sale-owes.test.ts > what each kind of sale owes > a buy here pay here sale owes three, including our contract 1ms
+ ✓ src/__tests__/one-count-of-what-a-sale-owes.test.ts > what each kind of sale owes > a bank financed sale owes two, because the contract is theirs 0ms
+ ✓ src/__tests__/one-count-of-what-a-sale-owes.test.ts > what each kind of sale owes > a sale with no answer yet owes the two that are always owed 0ms
+ ✓ src/__tests__/one-count-of-what-a-sale-owes.test.ts > the list asks rather than assumes > reads the requirement from the deal's funding 0ms
+ ✓ src/__tests__/one-count-of-what-a-sale-owes.test.ts > the list asks rather than assumes > selects step_data, without which it cannot know 0ms
+ ✓ src/__tests__/one-count-of-what-a-sale-owes.test.ts > the list asks rather than assumes > no longer counts against a fixed list of non-optional documents 0ms
+ ✓ src/__tests__/extractCustomerColumns.test.ts > extractCustomerColumns > maps Bill of Sale fields (buyerAddress, buyerLicense, coBuyerName) 3ms
+ ✓ src/__tests__/extractCustomerColumns.test.ts > extractCustomerColumns > maps Rental fields (renterAddress, renterLicense, coRenterName) 1ms
+ ✓ src/__tests__/extractCustomerColumns.test.ts > extractCustomerColumns > maps Form 130-U fields (mailingAddress, applicantIdNumber, coApplicantName) 0ms
+ ✓ src/__tests__/extractCustomerColumns.test.ts > extractCustomerColumns > returns all nulls when no recognized fields are present 0ms
+ ✓ src/__tests__/extractCustomerColumns.test.ts > extractCustomerColumns > prefers snake_case over camelCase (for pre-normalized data) 0ms
+ ✓ src/__tests__/admin-workspace.test.ts > admin workspace routing > keeps auction intake inside the dealership workspace 2ms
+ ✓ src/__tests__/admin-workspace.test.ts > admin workspace routing > resolves the desk routes the sidebar links to 0ms
+ ✓ src/__tests__/admin-workspace.test.ts > admin workspace routing > treats the admin root as workspace-free 0ms
+ ✓ src/__tests__/admin-workspace.test.ts > admin workspace routing > never asks the operator to pick a lane 0ms
+ ✓ src/__tests__/admin-workspace.test.ts > admin workspace routing > returns nothing when the account has no workspace at all 0ms
+ ✓ src/__tests__/admin-workspace.test.ts > admin workspace routing > no longer recognises rental as a workspace 0ms
+ ✓ src/__tests__/admin-workspace.test.ts > admin workspace routing > keeps root paths compatibility-only by resolving canonical routes 0ms
+ ✓ src/__tests__/admin-workspace.test.ts > admin workspace routing > leaves unknown paths alone 0ms
+ ✓ src/__tests__/admin-workspace.test.ts > admin workspace routing > points the desk at the dealership dashboard 0ms
+ ✓ src/__tests__/current-admin-roster-authority.test.ts > the staff roster is authoritative > uses the current roster role rather than older Auth metadata 3ms
+ ✓ src/__tests__/current-admin-roster-authority.test.ts > the staff roster is authoritative > denies a pending member despite active Auth metadata 1ms
+ ✓ src/__tests__/current-admin-roster-authority.test.ts > the staff roster is authoritative > denies a inactive member despite active Auth metadata 0ms
+ ✓ src/__tests__/current-admin-roster-authority.test.ts > the staff roster is authoritative > fails closed when the roster cannot be checked 0ms
+ ✓ src/__tests__/current-admin-roster-authority.test.ts > the staff roster is authoritative > retains the explicit Auth-only migration fallback when the table is absent 0ms
+ ✓ src/__tests__/inspection-acknowledgment.test.ts > the dealer inspection acknowledgment is an internal fact > survives saving other plan answers and a step-data round trip 2ms
+ ✓ src/__tests__/inspection-acknowledgment.test.ts > the dealer inspection acknowledgment is an internal fact > drops the acknowledgment when the inspection answer changes and never resurrects it 0ms
+ ✓ src/__tests__/inspection-acknowledgment.test.ts > the dealer inspection acknowledgment is an internal fact > rejects stale, invalid and non-buyer acknowledgments on read 0ms
+ ✓ src/__tests__/inspection-acknowledgment.test.ts > the dealer inspection acknowledgment is an internal fact > never attaches the staff notice to the bill-of-sale data 0ms
+ ✓ src/__tests__/inspection-acknowledgment.test.ts > the dealer inspection acknowledgment is an internal fact > does not change legacy plan completion or fabricate a historic acknowledgment 0ms
+ ✓ src/__tests__/title-case-leaves-prose-alone.test.ts > title case > still capitalises every word of a title 3ms
+ ✓ src/__tests__/title-case-leaves-prose-alone.test.ts > title case > leaves a sentence as it was written 1ms
+ ✓ src/__tests__/title-case-leaves-prose-alone.test.ts > title case > does not mistake a short label with a period for prose 0ms
+ ✓ src/__tests__/title-case-leaves-prose-alone.test.ts > title case > keeps preserving acronyms in titles 0ms
+ ✓ src/__tests__/email-preview-render.test.ts > render email previews > writes every template as html 3ms
+ ✓ src/__tests__/spanish-legal-review.test.ts > Spanish legal copy, flag flipped 28 August 2026 > no longer caveats the Spanish document now the flag is on 2ms
+ ✓ src/__tests__/spanish-legal-review.test.ts > Spanish legal copy, flag flipped 28 August 2026 > keeps the original registration warning either way 0ms
+ ✓ src/__tests__/spanish-legal-review.test.ts > Spanish legal copy, flag flipped 28 August 2026 > never puts the caveat on the buyer's copy 0ms
+ ✓ src/__tests__/spanish-legal-review.test.ts > Spanish legal copy, flag flipped 28 August 2026 > clears everywhere from the one flag, which is now flipped 0ms
+ ✓ src/__tests__/spanish-legal-review.test.ts > Spanish legal copy, flag flipped 28 August 2026 > still says the Spanish clauses match the English ones structurally 1ms
+ ✓ src/__tests__/the-sign-box-is-centred.test.ts > the sign box is centred > centres its buttons and its line of text 2ms
+ ✓ src/__tests__/the-sign-box-is-centred.test.ts > the sign box is centred > keeps the pad itself full width 1ms
+ ✓ src/__tests__/the-desk-does-not-bounce.test.ts > no admin route bounces a browser that has chosen nothing > has exactly one workspace, so there is no choice to present 2ms
+ ✓ src/__tests__/the-desk-does-not-bounce.test.ts > no admin route bounces a browser that has chosen nothing > falls back to that workspace instead of redirecting to /admin 1ms
+ ✓ src/__tests__/the-desk-does-not-bounce.test.ts > no admin route bounces a browser that has chosen nothing > keeps no allowlist of paths spared from the bounce 0ms
+ ✓ src/__tests__/the-desk-does-not-bounce.test.ts > no admin route bounces a browser that has chosen nothing > still normalises a short alias to its canonical route 0ms
+ ✓ src/__tests__/customer-dob.test.ts > parseValidDateOfBirth > accepts plausible YYYY-MM-DD dates 2ms
+ ✓ src/__tests__/customer-dob.test.ts > parseValidDateOfBirth > rejects empty, malformed, and non-string values 0ms
+ ✓ src/__tests__/customer-dob.test.ts > parseValidDateOfBirth > rejects implausible birth years 0ms
+ ✓ src/__tests__/admin-ops-task-guide-luxury.test.ts > admin ops task guide luxury controls > keeps the guided task panel Title Case and on shared controls 2ms
+ ✓ src/__tests__/admin-ops-task-guide-luxury.test.ts > admin ops task guide luxury controls > normalizes dynamic task copy before display 0ms
+ ✓ src/__tests__/portal-link-language.test.ts > portal link language > appends lang=es for Spanish customers 2ms
+ ✓ src/__tests__/portal-link-language.test.ts > portal link language > omits lang for English and unknown values 1ms
+ ✓ src/__tests__/capture-route-locale.test.ts > the phone's capture link > is exempt from locale routing, like the other tokenized portals 2ms
+ ✓ src/__tests__/capture-route-locale.test.ts > the phone's capture link > returns the response unchanged rather than handing it to intl 0ms
+ ✓ src/__tests__/next-dev-indicator-mobile-clean.test.ts > Next development indicator > keeps local dev chrome out of mobile admin screenshots 2ms
+ Test Files  120 passed (120)
+      Tests  1396 passed (1396)
+   Duration  20.71s (transform 3.67s, setup 0ms, import 14.24s, tests 20.14s, environment 7.39s)

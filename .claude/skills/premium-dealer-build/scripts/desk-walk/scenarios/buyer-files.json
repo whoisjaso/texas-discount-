@@ -1,0 +1,98 @@
+{
+ "car": "2019 Hyundai Tucson SEL",
+ "language": "en",
+ "title": "Clean title",
+ "first": "Rosa",
+ "last": "Villarreal",
+ "phone": "7135550156",
+ "street": "11210 Edgebrook Dr",
+ "city": "Houston",
+ "zip": "77034",
+ "county": "Harris",
+ "answers": {
+  "funding": {
+   "button": "Cash",
+   "exact": true
+  },
+  "paid": [
+   {
+    "fill": "main input",
+    "value": "11000"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "price": [
+   {
+    "button": "Yes"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "plan:registration": {
+   "button": "The Customer Does"
+  },
+  "plate": {
+   "button": "No plate yet"
+  },
+  "plan:title-signer": {
+   "button": "The Buyer, Here Today"
+  },
+  "plan:inspection": {
+   "button": "Already Passed"
+  },
+  "plan:insurance": {
+   "button": "No, Coming Back With It"
+  },
+  "odometerStatus": {
+   "button": "Yes, That Is The Real Mileage"
+  },
+  "paymentMethod": {
+   "text": "Cash"
+  },
+  "tradeIn": {
+   "text": "No"
+  },
+  "conditionType": {
+   "text": "As-Is"
+  },
+  "countyOfResidence": {
+   "button": "Next",
+   "exact": true
+  },
+  "applicationType": {
+   "text": "Title And Registration"
+  },
+  "applicantType": {
+   "text": "A Person"
+  },
+  "emptyWeight": [
+   {
+    "fill": "main input",
+    "value": "3340"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "carryingCapacity": {
+   "button": "Next",
+   "exact": true
+  },
+  "issuingState": {
+   "button": "Next",
+   "exact": true
+  },
+  "plan:price-includes": {
+   "button": "No"
+  },
+  "howLeaving": {
+   "text": "Driving It"
+  }
+ }
+}
