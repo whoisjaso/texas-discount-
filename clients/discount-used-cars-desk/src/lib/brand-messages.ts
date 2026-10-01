@@ -2,7 +2,8 @@
  * Substitutes the dealership's name into the message catalogues at load time.
  *
  * `messages/*.json` carries `{dealer}`, `{dealerLegal}` and `{dealerShort}`
- * where the name used to be typed out. They are resolved here, before either
+ * where the name used to be typed out, and `{dealerCounty}` where the venue
+ * county was. They are resolved here, before either
  * consumer sees them, for one reason: the two consumers are different.
  *
  *   - next-intl reads the catalogue through `src/i18n/request.ts` and would
@@ -27,6 +28,7 @@ const TOKENS: Record<string, string> = {
   "{dealer}": dealership.name,
   "{dealerLegal}": factOr(dealership.legalName, "dealer legal name"),
   "{dealerShort}": dealership.shortName,
+  "{dealerCounty}": factOr(dealership.county, "county"),
 };
 
 /**
@@ -40,7 +42,7 @@ const TOKENS: Record<string, string> = {
  * bill of sale.
  */
 function substitute(text: string): string {
-  return text.replace(/\{dealer(?:Legal|Short)?\}/g, (match) => TOKENS[match] ?? match);
+  return text.replace(/\{dealer(?:Legal|Short|County)?\}/g, (match) => TOKENS[match] ?? match);
 }
 
 /** Recursively resolve brand tokens in a loaded message catalogue. */

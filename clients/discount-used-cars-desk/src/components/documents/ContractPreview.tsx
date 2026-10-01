@@ -6,6 +6,7 @@ import SignatureLinePreview from '@/components/documents/SignatureLinePreview';
 import { getDocStrings, type DocStrings } from '@/lib/documents/i18n';
 import SmsConsentSection from '@/components/documents/SmsConsentSection';
 import DocumentLetterhead from '@/components/documents/DocumentLetterhead';
+import { dealership } from '@/lib/dealership-config';
 
 interface Props {
   data: ContractData;
@@ -346,7 +347,7 @@ export default function ContractPreview({ data, signatures, copyLabel, strings: 
 
           <p><strong>19. ATTORNEY FEES &amp; COLLECTION COSTS:</strong> If Holder refers this Contract to an attorney for collection or enforcement, Buyer agrees to pay reasonable attorney&apos;s fees and all costs of collection, to the extent permitted by Texas law.</p>
 
-          <p><strong>20. GOVERNING LAW &amp; JURISDICTION:</strong> This Contract shall be governed by and construed in accordance with the laws of the State of Texas. Any dispute arising out of or related to this Contract shall be subject to the exclusive jurisdiction of the state and federal courts located in Harris County, Texas.</p>
+          <p><strong>20. GOVERNING LAW &amp; JURISDICTION:</strong> This Contract shall be governed by and construed in accordance with the laws of the State of Texas. Any dispute arising out of or related to this Contract shall be subject to the exclusive jurisdiction of the state and federal courts located in {dealership.county} County, Texas.</p>
 
           <p><strong>21. DISPUTE RESOLUTION:</strong> Prior to initiating any legal proceeding, the parties agree to attempt in good faith to resolve any dispute through informal negotiation for a period of thirty (30) days. If Buyer is a covered borrower under the Military Lending Act (10 U.S.C. 987), mandatory arbitration shall not apply.</p>
 

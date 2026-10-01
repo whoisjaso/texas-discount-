@@ -23,7 +23,7 @@ const root = process.cwd();
 const read = (p: string) => readFileSync(join(root, p), "utf8");
 
 const CATALOGUES = ["messages/en.json", "messages/es.json"] as const;
-const KNOWN = new Set(["{dealer}", "{dealerLegal}", "{dealerShort}"]);
+const KNOWN = new Set(["{dealer}", "{dealerLegal}", "{dealerShort}", "{dealerCounty}"]);
 
 /** Every `{dealerSomething}` written anywhere in a catalogue. */
 function tokensIn(source: string): string[] {
@@ -81,6 +81,13 @@ describe("brand tokens in the message catalogues", () => {
     // Non-strings pass through untouched rather than being stringified.
     expect(resolved.d).toBe(7);
     expect(resolved.e).toBeNull();
+  });
+
+  it("prints the configured county in the venue clause", () => {
+    // The venue county is the dealer's licence-record county, read from the
+    // config like the name, never typed into the catalogue.
+    const resolved = applyBrandTokens("resolved in {dealerCounty} County, Texas.");
+    expect(resolved).toBe(`resolved in ${factOr(dealership.county, "county")} County, Texas.`);
   });
 
   it("leaves genuine ICU arguments alone", () => {

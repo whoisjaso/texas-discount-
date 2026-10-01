@@ -66,10 +66,14 @@ type LayoutOptions = {
 };
 
 function layout(heading: string, bodyHtml: string, language: Language, preheader = "", options: LayoutOptions = {}): string {
+  // The dealer's email, linked, or its "Not set" marker until it is supplied.
+  const writeTo = brand.supportReplyTo
+    ? `<a href="mailto:${brand.supportReplyTo}" style="color:${INK};text-decoration:none;border-bottom:1px solid ${LINE};">${brand.supportReplyTo}</a>`
+    : escapeHtml(factOr(brand.supportReplyTo, "dealer email"));
   const questions =
     language === "es"
-      ? `¿Preguntas? Responda a este correo o escriba a <a href="mailto:${brand.supportReplyTo}" style="color:${INK};text-decoration:none;border-bottom:1px solid ${LINE};">${brand.supportReplyTo}</a>.`
-      : `Questions? Reply to this email or write to <a href="mailto:${brand.supportReplyTo}" style="color:${INK};text-decoration:none;border-bottom:1px solid ${LINE};">${brand.supportReplyTo}</a>.`;
+      ? `¿Preguntas? Responda a este correo o escriba a ${writeTo}.`
+      : `Questions? Reply to this email or write to ${writeTo}.`;
   const licence =
     language === "es"
       ? `Concesionario con licencia de Texas ${escapeHtml(factOr(dealership.license, "dealer licence (GDN)"))}`
@@ -313,7 +317,7 @@ export function customerWelcomeEmail(
         language,
         "Gracias por comprar con nosotros. Qué sigue con su título y placas.",
       ),
-      text: `Hola ${name},\n\nGracias por comprar su ${vehicle} con nosotros.\n\nQué sigue: nosotros presentamos el título y el registro. Cuando lleguen las placas, le avisamos. Guarde sus papeles firmados; si necesita otra copia, pídala cuando quiera.\n\nSi algo del carro le preocupa esta semana, escríbanos a ${brand.supportReplyTo} o llame al ${dealership.phone.display}.`,
+      text: `Hola ${name},\n\nGracias por comprar su ${vehicle} con nosotros.\n\nQué sigue: nosotros presentamos el título y el registro. Cuando lleguen las placas, le avisamos. Guarde sus papeles firmados; si necesita otra copia, pídala cuando quiera.\n\nSi algo del carro le preocupa esta semana, escríbanos a ${factOr(brand.supportReplyTo, "dealer email")} o llame al ${dealership.phone.display}.`,
     };
   }
   return {
@@ -327,7 +331,7 @@ export function customerWelcomeEmail(
       language,
       "Thank you for buying from us. What happens next with your title and plates.",
     ),
-    text: `Hi ${name},\n\nThank you for buying your ${vehicle} from us.\n\nWhat happens next: we file the title and registration. When the plates arrive, we let you know. Keep your signed paperwork; if you ever need another copy, just ask.\n\nIf anything about the car worries you this week, email ${brand.supportReplyTo} or call ${dealership.phone.display}.`,
+    text: `Hi ${name},\n\nThank you for buying your ${vehicle} from us.\n\nWhat happens next: we file the title and registration. When the plates arrive, we let you know. Keep your signed paperwork; if you ever need another copy, just ask.\n\nIf anything about the car worries you this week, email ${factOr(brand.supportReplyTo, "dealer email")} or call ${dealership.phone.display}.`,
   };
 }
 

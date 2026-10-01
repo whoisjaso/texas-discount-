@@ -50,7 +50,7 @@ export function createLocalAdminUser(
   const resolvedEmail =
     email?.trim().toLowerCase() ||
     process.env.ADMIN_EMAIL?.trim().toLowerCase() ||
-    "local-admin@discount.dev";
+    "local-admin@example.invalid";
 
   return {
     id: "local-admin-preview",

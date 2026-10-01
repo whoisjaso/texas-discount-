@@ -4,6 +4,7 @@ import { getMockVehicles } from "@/lib/mock-vehicles";
 import { PUBLIC_VEHICLE_DB_COLUMNS } from "@/lib/vehicles/public";
 import type { Lead, LeadRow, Vehicle, VehicleRow } from "@/types/database";
 import { packetPreviewAgreements, packetPreviewDeals } from "@/lib/supabase/packet-preview-fixtures";
+import { dealership } from "@/lib/dealership-config";
 
 type QueryMode = "rows" | "single";
 
@@ -659,7 +660,7 @@ const previewNotificationLog = [
     installment_id: "preview-financing-installment-2",
     channel: "sms",
     template_key: "overdue_3day",
-    message_body: "Hi Darius, your Malibu payment still has a $450 balance. Call Discount when you are ready to clear it.",
+    message_body: `Hi Darius, your Malibu payment still has a $450 balance. Call ${dealership.shortName} when you are ready to clear it.`,
     status: "sent",
     provider_message_id: "preview-finance-message-1",
     notification_date: "2026-05-18",

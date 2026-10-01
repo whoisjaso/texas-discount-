@@ -153,7 +153,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
       const { id } = await sendViaGmail({
         from: `${brand.full} <${gmailFrom}>`,
         to: input.to,
-        replyTo: brand.supportReplyTo,
+        replyTo: brand.supportReplyTo ?? undefined,
         subject,
         html: input.html,
         text: input.text,
@@ -175,7 +175,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
     const { data, error } = await resend.emails.send({
       from: fromAddress(identity),
       to: input.to,
-      replyTo: brand.supportReplyTo,
+      replyTo: brand.supportReplyTo ?? undefined,
       subject,
       html: input.html,
       text: input.text,

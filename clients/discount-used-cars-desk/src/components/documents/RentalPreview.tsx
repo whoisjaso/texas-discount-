@@ -176,16 +176,11 @@ export default function RentalPreview({ data, signatures, copyLabel, strings: st
         {copyLabel}
       </div>
 
-      {/* Watermark / Background Logo */}
-      <div className="absolute inset-0 flex items-center justify-center opacity-[0.02] pointer-events-none overflow-hidden print-no-watermark">
-        <div className="font-serif font-bold text-[400px] leading-none">JJJ</div>
-      </div>
-
       <div className="relative z-10">
         {/* Header */}
         <div className="flex justify-between items-end border-b border-[#e5e5e5] pb-8 mb-10 print-section">
           <div className="flex items-center space-x-6">
-            <div className="w-24 h-24 border-2 border-[#b89b5e] p-1 rounded-full overflow-hidden flex items-center justify-center bg-white">
+            <div className="w-24 h-24 border-2 border-[#1a1a1a] p-1 rounded-full overflow-hidden flex items-center justify-center bg-white">
               <BrandLogo size={96} className="w-full h-full object-contain" />
             </div>
             <div>
@@ -194,7 +189,7 @@ export default function RentalPreview({ data, signatures, copyLabel, strings: st
             </div>
           </div>
           <div className="text-right">
-            <h2 className="text-2xl font-serif font-semibold text-[#b89b5e]">{factOr(dealership.legalName, "dealer legal name")}</h2>
+            <h2 className="text-2xl font-serif font-semibold text-[#1a1a1a]">{factOr(dealership.legalName, "dealer legal name")}</h2>
             <p className="text-xs text-[color:var(--tj-ink)] mt-1">
               {dealership.address.street}, {dealership.address.locality},{" "}
               {dealership.address.region} {dealership.address.postalCode}
@@ -583,7 +578,7 @@ export default function RentalPreview({ data, signatures, copyLabel, strings: st
 
           <p><strong>19. INDEMNIFICATION:</strong> Renter agrees to indemnify, defend, and hold harmless Owner, its owners, officers, employees, and agents from and against any and all claims, demands, losses, damages, liabilities, costs, and expenses (including reasonable attorney&apos;s fees) arising out of or related to: (a) Renter&apos;s use, operation, or possession of the Vehicle; (b) any accident, injury, or damage involving the Vehicle during the rental period; (c) any violation of law by Renter; (d) any breach of this Agreement. THIS INDEMNIFICATION INCLUDES CLAIMS ARISING FROM RENTER&apos;S OWN NEGLIGENCE BUT DOES NOT APPLY TO CLAIMS ARISING SOLELY FROM OWNER&apos;S GROSS NEGLIGENCE OR WILLFUL MISCONDUCT.</p>
 
-          <p><strong>20. GOVERNING LAW &amp; JURISDICTION:</strong> This Agreement shall be governed by and construed in accordance with the laws of the State of Texas. Any dispute shall be subject to the exclusive jurisdiction of the state and federal courts located in Harris County, Texas.</p>
+          <p><strong>20. GOVERNING LAW &amp; JURISDICTION:</strong> This Agreement shall be governed by and construed in accordance with the laws of the State of Texas. Any dispute shall be subject to the exclusive jurisdiction of the state and federal courts located in {dealership.county} County, Texas.</p>
 
           <p><strong>21. ENTIRE AGREEMENT:</strong> This Agreement, together with all addenda and disclosures signed by the parties (including the GPS Disclosure and Vehicle Condition Report), constitutes the entire agreement. No modification shall be valid unless in writing and signed by both parties.</p>
 

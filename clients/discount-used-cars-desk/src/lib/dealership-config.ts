@@ -89,8 +89,12 @@ export const dealership = {
    * Independent (GDN) Motor Vehicle Dealers List, current 10/01/2026. Texas
    * SOS file 0802832466 (domestic LLC, formed 10/09/2017). An LLC contracts
    * under its entity name as licensed, so there is no "DBA" construction.
+   * Both records hold the name in capitals, so the casing is not part of the
+   * fact. It is written here in the casing the documents' name normaliser
+   * produces ("And", "LLC"), so the bill of sale, the 130-U and every other
+   * document print one identical name.
    */
-  legalName: (env(process.env.NEXT_PUBLIC_DEALER_LEGAL_NAME) ?? "Discount Used Cars and Trucks, LLC") as string | null,
+  legalName: (env(process.env.NEXT_PUBLIC_DEALER_LEGAL_NAME) ?? "Discount Used Cars And Trucks, LLC") as string | null,
   url: SITE_URL,
 
   googleSiteVerification: env(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION) ?? undefined,
@@ -180,7 +184,8 @@ export const dealership = {
   ] satisfies DealershipHours[],
 
   priceRange: null as string | null,
-  serviceArea: "Houston and surrounding areas",
+  /** Not supplied: no service area is claimed until the owner states one. */
+  serviceArea: null as string | null,
   // PUBLIC: the dealer's Facebook page.
   socials: [
     { label: "Facebook", href: "https://www.facebook.com/Discountusedcars/" },
@@ -461,7 +466,12 @@ export const brand = {
   mailFrom: env(process.env.RESEND_FROM_EMAIL) ?? `documents@${MAIL_HOST}`,
   mailHost: MAIL_HOST,
   supportFrom: env(process.env.SUPPORT_FROM_EMAIL) ?? `support@${MAIL_HOST}`,
-  supportReplyTo: env(process.env.SUPPORT_REPLY_TO) ?? env(process.env.NEXT_PUBLIC_DEALER_EMAIL) ?? `support@${MAIL_HOST}`,
+  /**
+   * The address customers are told to write to. The dealer's email is not
+   * supplied, so this stays null and the emails print its "Not set" marker:
+   * a mailbox built from the site host would be an address nobody confirmed.
+   */
+  supportReplyTo: (env(process.env.SUPPORT_REPLY_TO) ?? dealership.email) as string | null,
 
   filePrefix: "Discount",
 };
