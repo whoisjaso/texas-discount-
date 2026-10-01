@@ -56,6 +56,7 @@ describe("a filed 130-U", () => {
       status: "finalized",
       finalized_at: "2026-10-01T16:00:00.000Z",
       completed_link: link({ dealerSignerName: "Maria Gonzalez" }),
+      form_data: { dealerSignerName: "Maria Gonzalez", dealerSignerMemberId: "member-1" },
     };
     expect((await render130UPdf("filed")).ok).toBe(true);
     expect(state.fill.mock.calls[0][1].staffSignatureDataUrl).toBeNull();
@@ -69,10 +70,25 @@ describe("a filed 130-U", () => {
       status: "finalized",
       finalized_at: "2026-10-01T16:00:00.000Z",
       completed_link: link({ dealerSignerName: "Maria Gonzalez" }, "data:image/png;base64,FILED"),
+      form_data: { dealerSignerName: "Maria Gonzalez", dealerSignerMemberId: "member-1" },
     };
     await render130UPdf("filed");
     expect(state.fill.mock.calls[0][1].staffSignatureDataUrl).toBe("data:image/png;base64,FILED");
     expect(state.fill.mock.calls[0][0].dealer_signer_name).toBe("Maria Gonzalez");
+    expect(state.staff).not.toHaveBeenCalled();
+  });
+
+  it("never takes the name from a link the filing did not record (the legacy agreements API)", async () => {
+    // A completed link naming somebody, on a row whose form_data carries no
+    // filer: what POST or PATCH /api/documents/agreements can produce.
+    state.row = {
+      id: "forged",
+      status: "completed",
+      completed_link: link({ dealerSignerName: "Somebody Else" }),
+      form_data: { dealerSignerName: "Somebody Else" },
+    };
+    await render130UPdf("forged");
+    expect(state.fill.mock.calls[0][0].dealer_signer_name).toBeNull();
     expect(state.staff).not.toHaveBeenCalled();
   });
 

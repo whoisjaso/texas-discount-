@@ -1,5 +1,6 @@
 import { firstUnprintableOnStateForm } from "@/lib/forms/state-form-charset";
 import { signerFitsSellerLine } from "@/lib/fill-130u/seller-line-fit";
+import { onboardedSignerName } from "@/lib/documents/dealer-signer";
 
 /**
  * A staff member's own name, as onboarding asks for it.
@@ -125,17 +126,32 @@ export function savedOnboardingName(member: {
   return parts;
 }
 
-/**
- * Whether there is nothing left for onboarding to ask this member: a usable
- * saved name and, for a member cleared to sign, a saved signature.
- */
-export function onboardingSatisfied(member: {
+type OnboardingMember = {
   full_name?: string | null;
   display_name?: string | null;
   can_sign_contracts?: boolean | null;
   signature_data_url?: string | null;
-} | null): boolean {
-  if (!member || !savedOnboardingName(member)) return false;
+  onboarding_completed_at?: string | null;
+};
+
+/**
+ * Whether this member's name is settled: one onboarding saved and would
+ * still accept, or, for a member who has finished onboarding, one that
+ * already prints on the dealer line (`onboardedSignerName`; an owner may
+ * have set it on the team screen with a display name that is not the first
+ * name). A settled name is not the member's to rewrite.
+ */
+export function nameSettled(member: OnboardingMember | null): boolean {
+  if (!member) return false;
+  return Boolean(savedOnboardingName(member) || onboardedSignerName(member));
+}
+
+/**
+ * Whether there is nothing left for onboarding to ask this member: a settled
+ * name and, for a member cleared to sign, a saved signature.
+ */
+export function onboardingSatisfied(member: OnboardingMember | null): boolean {
+  if (!member || !nameSettled(member)) return false;
   return member.can_sign_contracts !== true || Boolean(member.signature_data_url);
 }
 

@@ -90,7 +90,7 @@ describe("the name screen", () => {
   it("writes exactly the name columns, to the session's own row", async () => {
     const result = await saveOnboardingNameAction(
       form({
-        firstName: "  maria ",
+        firstName: "  Maria ",
         lastName: "Lopez",
         id: "someone-else",
         member_id: "someone-else",
@@ -111,9 +111,64 @@ describe("the name screen", () => {
     expect(write.eq).toEqual([["id", "member-1"]]);
   });
 
-  it("keeps a name as typed after the first letter", async () => {
+  it("keeps a name exactly as typed, casing included", async () => {
     const result = await saveOnboardingNameAction(form({ firstName: "Angus", lastName: "McDonald" }));
     expect(result).toEqual({ ok: true, first: "Angus", last: "McDonald" });
+    const lower = await saveOnboardingNameAction(form({ firstName: "maria", lastName: "de la Cruz" }));
+    expect(lower).toEqual({ ok: true, first: "maria", last: "de la Cruz" });
+    expect(state.writes.at(-1)!.payload.full_name).toBe("maria de la Cruz");
+  });
+
+  it("refuses a name the 130-U seller line would cut off, and writes nothing", async () => {
+    const result = await saveOnboardingNameAction(
+      form({ firstName: "Wolfeschlegelsteinhausenbergerdorff", lastName: "Montgomery-Featherstonehaugh" }),
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.code).toBe("tooLongForForm");
+      expect(result.error).toMatch(/too long/);
+    }
+    expect(state.writes).toEqual([]);
+  });
+
+  it("refuses to rewrite a usable name once onboarding is finished, and writes nothing", async () => {
+    state.access!.member = member({
+      full_name: "Maria Lopez",
+      display_name: "Maria",
+      onboarding_completed_at: "2026-09-01T12:00:00.000Z",
+    });
+    const result = await saveOnboardingNameAction(form({ firstName: "Robert", lastName: "Owner" }));
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.code).toBe("alreadyNamed");
+    expect(state.writes).toEqual([]);
+  });
+
+  it("refuses a finished member whose name already prints on the dealer line, even one an owner set", async () => {
+    state.access!.member = member({
+      full_name: "Maria Lopez",
+      display_name: "Mari",
+      onboarding_completed_at: "2026-09-01T12:00:00.000Z",
+    });
+    const result = await saveOnboardingNameAction(form({ firstName: "Robert", lastName: "Owner" }));
+    expect(result).toMatchObject({ ok: false, code: "alreadyNamed" });
+    expect(state.writes).toEqual([]);
+  });
+
+  it("still lets a finished member replace a name onboarding would refuse", async () => {
+    state.access!.member = member({
+      full_name: "Associate",
+      display_name: "Associate",
+      onboarding_completed_at: "2026-09-01T12:00:00.000Z",
+    });
+    const result = await saveOnboardingNameAction(form({ firstName: "Maria", lastName: "Lopez" }));
+    expect(result).toEqual({ ok: true, first: "Maria", last: "Lopez" });
+    expect(state.writes).toHaveLength(1);
+    expect(state.writes[0].eq).toEqual([["id", "member-1"]]);
+  });
+
+  it("gives every refusal a code the screen translates", async () => {
+    const result = await saveOnboardingNameAction(form({ firstName: "Łukasz", lastName: "Lopez" }));
+    expect(result).toMatchObject({ ok: false, code: "unprintable", params: { part: "first", char: "Ł" } });
   });
 
   it.each([
@@ -149,6 +204,17 @@ describe("the done screen", () => {
   it("refuses before the name is saved", async () => {
     const result = await completeOnboardingAction();
     expect(result.ok).toBe(false);
+    expect(state.writes).toEqual([]);
+  });
+
+  it.each([
+    [{ full_name: "Associate", display_name: "Associate" }],
+    [{ full_name: "maria@example.com", display_name: "maria@example.com" }],
+    [{ full_name: "Maria Lopez", display_name: null }],
+  ])("refuses a name the name screen did not save (%j)", async (name) => {
+    state.access!.member = member({ ...name, signature_data_url: "data:image/png;base64,AAA" });
+    const result = await completeOnboardingAction();
+    expect(result).toMatchObject({ ok: false, code: "nameFirst" });
     expect(state.writes).toEqual([]);
   });
 

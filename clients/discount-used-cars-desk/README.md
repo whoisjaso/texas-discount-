@@ -111,7 +111,11 @@ Verified 10/01/2026:
 | What it sells | Pre-owned cars, trucks and SUVs | |
 
 **`null` until the owner supplies them:** owner, documentary fee,
-late-handling fee (Vehicle Responsibility Acknowledgment), email, payment
+late-handling fee (Vehicle Responsibility Acknowledgment), email (the
+Buyer's Guide's Email box prints `[Not set: dealer email]`, never the
+website), the sender mailboxes customers receive mail from
+(`RESEND_FROM_EMAIL`, `SUPPORT_FROM_EMAIL`; Resend mail stays unsent until
+they are set, and none is built from the website's domain), payment
 destinations (Zelle, Cash App, Apple Pay, PayPal), SMS provider, salvage
 dealer licence, lenders and map position.
 
@@ -120,18 +124,24 @@ its place, and filing a document is refused while a legal fact (legal name,
 licence, county, documentary fee, website domain) is missing, and while the
 desk's own address (`NEXT_PUBLIC_SITE_URL`, "Desk address") is unset. The
 Vehicle Responsibility Acknowledgment alone is also refused until the
-late-handling fee is supplied. The Handle A Sale screen lists what is
-missing.
+late-handling fee is supplied (typed as dollars: `100`, `$100` and `1,000`
+all read; anything else, or a negative figure, keeps it refused with the
+reason). Filing is also refused if the desk's address and the public website
+are the same host, in either direction. The Handle A Sale screen lists what
+is missing.
 
 **Who signs for the dealer** is not a config fact. The 130-U seller line
 prints the legal name followed by the filing member's own name in
 parentheses, `Discount Used Cars And Trucks, LLC (First Last)`, and every
 dealer signature line prints the same pairing (owner's instruction
 10/01/2026: county offices no longer accept the entity alone). The name is
-the one the member entered at onboarding, and their saved signature goes on
-the line. Filing is refused for a member who is not cleared to sign or has no
-name on record; with `DESK_ALLOW_UNSET_FACTS=true` it files and prints
-`[Not set: signer name]` instead.
+the one the member entered at onboarding, exactly as typed (casing
+included), and their saved signature goes on the line. Filing is refused for
+a member who is not cleared to sign or has no usable name on record; with
+`DESK_ALLOW_UNSET_FACTS=true` it files and prints `[Not set: signer name]`
+instead. A name whose "(First Last)" would not fit the 130-U seller box at
+the form's smallest size (7.25pt) is refused at onboarding and at filing,
+never printed cut off.
 
 ## Owner's manual steps before going live
 
@@ -151,24 +161,54 @@ name on record; with `DESK_ALLOW_UNSET_FACTS=true` it files and prints
    `ADMIN_SESSION_SECRET`, `INTERNAL_RENDER_TOKEN`, and the SMS credentials
    once a provider is chosen.
 6. **Supply the remaining dealer facts** in `.env.example`
-   (`NEXT_PUBLIC_DEALER_*`): documentary fee, late-handling fee and email.
-   Set the desk's own address, `NEXT_PUBLIC_SITE_URL` (the recommended value
-   is in `.env.example`), before any email is sent: until it is set, links
-   the desk builds point at the local development address and filing is
-   refused. That address is never printed; documents print the public
-   website.
+   (`NEXT_PUBLIC_DEALER_*`): documentary fee, late-handling fee and email,
+   and the sender mailboxes `RESEND_FROM_EMAIL` and `SUPPORT_FROM_EMAIL`
+   (verified in Resend) before any email is expected to go out.
+   Set the desk's own address before any link is sent:
+
+   ```
+   NEXT_PUBLIC_SITE_URL=https://desk.discountusedcarsandtrucks.com
+   ```
+
+   Until it is set, links the desk builds point at the local development
+   address and filing is refused ("Desk address"). That address is never
+   printed; documents print the public website,
+   www.discountusedcarsandtrucks.com. Never set the two to the same host:
+   filing is refused if they match.
 7. **Confirm the fee and tax lines.** Texas 6.25% tax, $33 title fee and $75
    registration fee are the statutory defaults. The documentary fee is the
    dealer's own and must be supplied.
 8. **Confirm the financing rate ceilings** in `src/lib/documents/terms.ts`
    (Tex. Fin. Code ch. 348, never below the 18% optional ceiling of §303.009)
    with counsel before selling buy here pay here.
-9. **Clear the signers and onboard them.** Signing is on for managers and
-   registration on approval; any other member who files sale documents
-   needs `can_sign_contracts` set. Each one's first sign-in asks their first
-   and last name and their signature (`/admin/account/onboarding`). An owner
-   who signs in through `ADMIN_EMAIL` without a team row has no name to
-   print and cannot file until a row is added for them.
+9. **Clear the signers and onboard every staff member.**
+   - *Who is cleared to sign:* approval turns signing on for the Manager and
+     Registration roles only. Any other member who will file sale documents
+     (an owner or a salesperson, say) needs `can_sign_contracts` turned on by
+     an owner. Only a cleared member can file: the dealer line carries the
+     filer's own name and signature.
+   - *Each staff member completes onboarding:* their first sign-in goes to
+     `/admin/account/onboarding`: **What Is Your Name?** (first and last
+     name, their legal name as on their ID, kept exactly as typed),
+     **Draw Your Signature** (cleared members only; the same stored
+     signature as `/admin/account/signature`), then **You Are All Set**, which
+     goes to Handle A Sale. Their documents then read
+     `Discount Used Cars And Trucks, LLC (First Last)` with their stroke on
+     the dealer line.
+   - *After onboarding the name is the owner's to change:* a finished member
+     cannot rewrite their own name (the screen sends them back to work). The
+     desk has no rename screen yet, so a correction is an owner (team:manage)
+     editing that member's `full_name` ("First Last") and `display_name`
+     (first name) row in Supabase. The member's own name write at onboarding
+     is logged in `team_activity_events`.
+   - *An owner who signs in through `ADMIN_EMAIL`* without a team row has no
+     name to print and cannot file until a row is added for them.
+   - **Decision needed before go-live:** approving or resetting a member sets
+     `requires_password_change`, and nothing in the desk clears it yet, so
+     an approved member can save a name and signature but cannot finish
+     onboarding (Start Working is refused: "still on the temporary
+     password") and so cannot file. Whether onboarding should start with a
+     "Choose A Password" screen is the owner's call and is not built.
 10. **Upload the dealer's signature** at `/admin/account/signature`. It prints
     on the dealer line of every document that person files.
 11. **Approve the Spanish documents.** They carry "translation pending counsel

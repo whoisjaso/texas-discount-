@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  dealerSignerFixIsOnboarding,
   dealerSignerProblem,
   dealerStroke,
   linkSignerName,
@@ -86,13 +87,31 @@ describe("why a member may not file", () => {
     const problem = dealerSignerProblem({ dataUrl: null, hasMember: true, canSign: true, signerName: null, fullName: "Associate" });
     expect(problem).toMatch(/Add your first and last name before filing/);
     expect(problem).toContain(`${dealership.legalName} (First Last)`);
-    expect(problem).toContain("/admin/account/onboarding");
+    // Named in words for staff, with the button on Handle A Sale; never a raw path.
+    expect(problem).toMatch(/Finish Onboarding/);
+    expect(problem).not.toContain("/admin/");
   });
 
   it("names the character the state form cannot print", () => {
     vi.stubEnv("DESK_ALLOW_UNSET_FACTS", "");
     const problem = dealerSignerProblem({ dataUrl: null, hasMember: true, canSign: true, signerName: null, fullName: "Łukasz Nowak" });
     expect(problem).toContain("Ł");
+  });
+
+  it("refuses a name the 130-U seller box would cut off, and says so", () => {
+    vi.stubEnv("DESK_ALLOW_UNSET_FACTS", "");
+    const long = "Wolfeschlegelsteinhausenbergerdorff Montgomery-Featherstonehaugh";
+    expect(onboardedSignerName({ full_name: long, can_sign_contracts: true, onboarding_completed_at: "2026-10-01" })).toBeNull();
+    const problem = dealerSignerProblem({ dataUrl: null, hasMember: true, canSign: true, signerName: null, fullName: long });
+    expect(problem).toMatch(/too long to print in full on the 130-U seller line/);
+  });
+
+  it("points to onboarding only when the member can fix it there", () => {
+    expect(dealerSignerFixIsOnboarding({ dataUrl: null, hasMember: true, canSign: true, signerName: null })).toBe(true);
+    expect(dealerSignerFixIsOnboarding({ dataUrl: null, hasMember: true, canSign: false, signerName: null })).toBe(false);
+    expect(dealerSignerFixIsOnboarding({ dataUrl: null, hasMember: false, signerName: null })).toBe(false);
+    expect(dealerSignerFixIsOnboarding(named)).toBe(false);
+    expect(dealerSignerFixIsOnboarding(null)).toBe(false);
   });
 
   it("is lifted for demos exactly as the other unset facts are, and the marker still prints", () => {

@@ -29,7 +29,11 @@ let helvetica: StandardFontEmbedder | null = null;
 /** Width of a line of the seller name at the 7.25pt floor, or Infinity when it cannot be drawn at all. */
 export function sellerLineWidth(text: string, size: number = SELLER_LINE_MIN_FONT_SIZE): number {
   try {
-    helvetica ??= StandardFontEmbedder.for(StandardFonts.Helvetica);
+    // pdf-lib's StandardFonts.Helvetica is the same string ("Helvetica") as
+    // the embedder's own font-name type, which pdf-lib does not re-export.
+    helvetica ??= StandardFontEmbedder.for(
+      StandardFonts.Helvetica as unknown as Parameters<typeof StandardFontEmbedder.for>[0],
+    );
     return helvetica.widthOfTextAtSize(text, size);
   } catch {
     return Number.POSITIVE_INFINITY;

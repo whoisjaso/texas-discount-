@@ -8,8 +8,8 @@ import { DEALERSHIP_HOME } from "@/lib/admin/workspace";
 import { createServiceClient } from "@/lib/supabase/service";
 import {
   checkStaffNamePart,
+  nameSettled,
   namePartProblemSentence,
-  savedOnboardingName,
   staffFullName,
   type NamePartProblem,
 } from "@/lib/onboarding/staff-name";
@@ -116,7 +116,7 @@ export async function saveOnboardingNameAction(formData: FormData): Promise<Onbo
   const who = await currentOnboardee();
   if (!who.ok) return who;
 
-  if (who.member.onboarding_completed_at && savedOnboardingName(who.member)) {
+  if (who.member.onboarding_completed_at && nameSettled(who.member)) {
     return refuse(
       "alreadyNamed",
       "Your name is already on file and prints on the documents you file. Ask an owner to change it.",
@@ -204,7 +204,7 @@ export async function completeOnboardingAction(): Promise<OnboardingCompleteResu
   // The name the name screen saves, not merely a non-empty one: a signup
   // name ("Associate", an email address) would otherwise finish onboarding
   // with nothing that can print on the dealer line.
-  if (!savedOnboardingName(member)) {
+  if (!nameSettled(member)) {
     return refuse("nameFirst", "Add your first and last name first.");
   }
   if (member.can_sign_contracts === true && !member.signature_data_url) {

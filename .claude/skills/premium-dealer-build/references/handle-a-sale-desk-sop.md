@@ -236,16 +236,43 @@ the same corridor styling:
 1. **What Is Your Name?** First name and last name, two fields, required.
    Saved as `full_name` ("First Last") and `display_name` (first name). This
    is the name that prints in parentheses on the 130-U and under the dealer
-   signature lines, so it is the person's legal name, not a nickname.
+   signature lines, so it is the person's legal name, not a nickname. Kept
+   exactly as typed (trimmed, spaces collapsed, never re-cased). Refused,
+   with the reason, when a part is over 60 characters, holds anything but
+   letters, spaces, apostrophes, periods and hyphens, holds a character the
+   state form's font (Helvetica, WinAnsi) cannot print, or when
+   "(First Last)" would not fit the 130-U seller box at the 7.25pt floor.
 2. **Draw Your Signature.** Shown only when the member is cleared to sign
    (`can_sign_contracts`): the signature pad, saved through the same action
    as `/admin/account/signature` (one stored signature, reused on every
    dealer line). Members not cleared to sign skip it.
-3. **Done.** Sets `onboarding_completed_at` and goes to Handle A Sale.
+3. **Done.** Sets `onboarding_completed_at` (never moved once set) and goes
+   to Handle A Sale (a role that cannot open it goes to its signature page).
+   Refused until the saved name is one step 1 would accept and, for a member
+   cleared to sign, a signature is saved.
+
+The writes touch only the signed-in member's own row (the service client
+replaces the RLS check that needs `team:manage`), and every name write is
+logged in `team_activity_events`. Onboarding asks once: a member who has
+finished it with a usable name is sent back to work from the page, and the
+name action refuses them, so a later change to the name that prints on every
+document goes through an owner. The page stays open to a finished member
+only while their saved name is one step 1 would refuse, which is where the
+filing refusal sends them (a "Finish Onboarding" button on Handle A Sale).
+Every refusal carries a code the screen renders from the message catalogue,
+so the Spanish corridor never shows an English sentence.
 
 The page must exist before the redirect is deployed: a redirect to a missing
 route locks every new member out. Test it with a fresh member in the preview
 mock (no name, no signature, onboarding not completed).
+
+Open (owner's decision, not built): approving or resetting a member sets
+`requires_password_change`, the layout sends that account to onboarding from
+every page, and nothing clears the flag yet, so Done refuses it ("still on
+the temporary password"). Whether onboarding gains a "Choose A Password"
+screen is undecided; until it does, an approved member cannot finish
+onboarding or file. The page never redirects such an account away (that
+would loop with the layout).
 
 ### The website on paper versus the desk's own address
 
@@ -636,9 +663,22 @@ Legal content each document must carry:
   sign), named exactly as they entered it at onboarding (first and last
   name). If that person has no name on record, the parentheses print the
   visible `[Not set: signer name]` marker and filing is refused, never the
-  entity name alone. The same pairing (entity, then the person in
+  entity name alone (a filer not cleared to sign is refused too;
+  `DESK_ALLOW_UNSET_FACTS=true` lifts both for demos and the marker still
+  prints). The filer's name and member id are stored on the row
+  (`form_data.dealerSignerName`, `dealerSignerMemberId`) and in the
+  completed link; a filed 130-U prints only that recorded name, never a
+  later viewer's, and a row the filing did not record prints the marker.
+  Drafts and previews show the viewer's own name and stroke. A pairing too
+  long for one line prints on two at the 7.25pt floor (entity, then the
+  person in parentheses), never smaller and never clipped: a name that would
+  still not fit is refused at onboarding and at filing, and the fill throws
+  rather than cut it off. The same pairing (entity, then the person in
   parentheses) is used wherever a state form asks for the dealer's printed
-  name beside a dealer signature.
+  name beside a dealer signature, and under the dealer line of every
+  dealer-authored sheet (bill of sale, contract, vehicle responsibility,
+  insurance acknowledgment, rebuilt disclosure, tow-away sheets) whose
+  filing recorded a name.
 - **Insurance acknowledgment:** no proof shown, the law requires it, they will
   get it before driving, the dealer is not their insurer, and registration
   waits on proof.

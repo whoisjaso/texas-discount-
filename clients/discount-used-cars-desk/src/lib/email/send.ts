@@ -66,10 +66,10 @@ export function recipientFingerprint(email: string): string {
   return createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
 }
 
-function fromAddress(identity: EmailIdentity): string {
-  return identity === "documents"
-    ? `${brand.full} <${brand.mailFrom}>`
-    : `${brand.full} <${brand.supportFrom}>`;
+/** The sender for this identity, or null while its mailbox is not supplied. */
+function fromAddress(identity: EmailIdentity): string | null {
+  const mailbox = identity === "documents" ? brand.mailFrom : brand.supportFrom;
+  return mailbox ? `${brand.full} <${mailbox}>` : null;
 }
 
 export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
@@ -170,10 +170,18 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
     }
   }
 
+  // No sender mailbox supplied for this identity: recorded and not sent,
+  // rather than sent from an address nobody confirmed.
+  const from = fromAddress(identity);
+  if (!from) {
+    await record({ state: "rejected", error_code: "no_sender" });
+    return { state: "not_configured" };
+  }
+
   try {
     const resend = new Resend(resendKey);
     const { data, error } = await resend.emails.send({
-      from: fromAddress(identity),
+      from,
       to: input.to,
       replyTo: brand.supportReplyTo ?? undefined,
       subject,

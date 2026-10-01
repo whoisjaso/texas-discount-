@@ -29,6 +29,11 @@ import type { OnboardingStep } from "@/lib/onboarding/staff-name";
  * /admin/account/signature uses, so there is one stored signature and every
  * dealer line, the 130-U's seller band included, reads it.
  */
+type ShownError =
+  | { key: "nameRequired" | "signatureRequired" | "couldNotSave" }
+  | { refusal: OnboardingRefusal }
+  | { text: string };
+
 export default function OnboardingFlow({
   onRoster,
   steps,
@@ -54,7 +59,9 @@ export default function OnboardingFlow({
   const [drawn, setDrawn] = useState(initialSignature ?? "");
   const [signedOn, setSignedOn] = useState("");
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Kept as what went wrong, not as words, so the language toggle swaps the
+  // message in place like every other word on the screen.
+  const [error, setError] = useState<ShownError | null>(null);
   const locked = useRef(false);
   const questionRef = useRef<HTMLHeadingElement>(null);
   const shownStep = useRef(initialStep);
@@ -84,6 +91,12 @@ export default function OnboardingFlow({
     return fillTemplate(template, { ...params, label });
   }
 
+  function errorText(shown: ShownError): string {
+    if ("refusal" in shown) return refusalText(shown.refusal);
+    if ("text" in shown) return shown.text;
+    return shown.key === "couldNotSave" ? t.chrome.couldNotSave : o[shown.key];
+  }
+
   function go(next: OnboardingStep) {
     setError(null);
     setStep(next);
@@ -110,7 +123,7 @@ export default function OnboardingFlow({
   function submitName(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!first.trim() || !last.trim()) {
-      setError(o.nameRequired);
+      setError({ key: "nameRequired" });
       return;
     }
     const data = new FormData();
@@ -119,7 +132,7 @@ export default function OnboardingFlow({
     void run(async () => {
       const result = await saveOnboardingNameAction(data);
       if (!result.ok) {
-        setError(refusalText(result));
+        setError({ refusal: result });
         return false;
       }
       setFirst(result.first);
@@ -132,7 +145,7 @@ export default function OnboardingFlow({
 
   function saveSignature() {
     if (!drawn) {
-      setError(o.signatureRequired);
+      setError({ key: "signatureRequired" });
       return;
     }
     // Nothing new drawn over the one on file: it is already saved.
@@ -143,7 +156,7 @@ export default function OnboardingFlow({
     void run(async () => {
       const result = await saveStaffSignatureAction(drawn);
       if (!result.ok) {
-        setError(result.error ?? t.chrome.couldNotSave);
+        setError(result.error ? { text: result.error } : { key: "couldNotSave" });
         return false;
       }
       setSavedSignature(drawn);
@@ -156,7 +169,7 @@ export default function OnboardingFlow({
     void run(async () => {
       // On success the action redirects and this never returns.
       const result = await completeOnboardingAction();
-      if (result && !result.ok) setError(refusalText(result));
+      if (result && !result.ok) setError({ refusal: result });
       return false;
     });
   }
@@ -295,7 +308,7 @@ export default function OnboardingFlow({
 
           {error ? (
             <p className="ed-money-error" role="alert">
-              {error}
+              {errorText(error)}
             </p>
           ) : null}
         </div>

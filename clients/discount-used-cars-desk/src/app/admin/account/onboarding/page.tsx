@@ -14,7 +14,7 @@ import {
   onboardingNameParts,
   onboardingSatisfied,
   onboardingSteps,
-  savedOnboardingName,
+  nameSettled,
 } from "@/lib/onboarding/staff-name";
 
 export const metadata: Metadata = {
@@ -70,7 +70,7 @@ export default async function AdminOnboardingPage() {
     canSign,
     // A saved name onboarding would now refuse (too long for the seller
     // line, say) reopens the name screen, with what was saved in the boxes.
-    hasName: Boolean(savedOnboardingName(member)),
+    hasName: nameSettled(member),
     hasSignature: Boolean(signature),
   });
 

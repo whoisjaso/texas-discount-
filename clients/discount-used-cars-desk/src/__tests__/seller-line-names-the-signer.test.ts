@@ -106,6 +106,13 @@ describe("the filled state form", () => {
   it("refuses a name the form's font cannot print rather than leaving the box blank", async () => {
     await expect(fill130U({ ...sample, dealer_signer_name: "Nguyễn Văn An" })).rejects.toThrow(/cannot print/);
   });
+
+  it.each([
+    "Wolfeschlegelsteinhausenbergerdorff Montgomery-Featherstonehaugh",
+    `${"A".repeat(60)} ${"B".repeat(60)}`,
+  ])("refuses a name the box would clip rather than cut its end off (%s)", async (name) => {
+    await expect(fill130U({ ...sample, dealer_signer_name: name })).rejects.toThrow(/does not fit the seller box/);
+  });
 });
 
 describe("the name read off a filed document", () => {

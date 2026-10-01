@@ -1,12 +1,22 @@
 import { describe, expect, it } from "vitest";
 import { PDFDocument, StandardFonts } from "pdf-lib";
 import {
+  checkStaffNamePart,
   cleanStaffNamePart,
   firstOpenStep,
   onboardingNameParts,
+  onboardingSatisfied,
   onboardingSteps,
+  savedOnboardingName,
   staffFullName,
 } from "@/lib/onboarding/staff-name";
+import {
+  SELLER_LINE_MIN_FONT_SIZE,
+  SELLER_LINE_USABLE_WIDTH,
+  SELLER_NAME_BOX_WIDTH,
+  sellerLineWidth,
+  signerFitsSellerLine,
+} from "@/lib/fill-130u/seller-line-fit";
 import { firstUnprintableOnStateForm, printsOnStateForm } from "@/lib/forms/state-form-charset";
 
 /**
@@ -20,16 +30,18 @@ const ok = (raw: string, part: "first" | "last" = "first") => {
 };
 
 describe("one part of a staff name", () => {
-  it("trims, collapses spaces and raises only the first letter", () => {
-    expect(ok("  maria  ")).toBe("Maria");
+  it("trims and collapses spaces, and changes nothing else", () => {
+    expect(ok("  Maria  ")).toBe("Maria");
     expect(ok("McDonald", "last")).toBe("McDonald");
-    expect(ok("de la   Cruz", "last")).toBe("De la Cruz");
+    expect(ok("de la   Cruz", "last")).toBe("de la Cruz");
     expect(ok("O'Brien", "last")).toBe("O'Brien");
     expect(ok("Hernández-Villarreal", "last")).toBe("Hernández-Villarreal");
   });
 
-  it("keeps the name as typed apart from the first capital", () => {
-    expect(ok("jean-luc")).toBe("Jean-luc");
+  it("keeps the casing exactly as typed (SOP 130-U bullet: named exactly as they entered it)", () => {
+    expect(ok("maria")).toBe("maria");
+    expect(ok("van Dyke", "last")).toBe("van Dyke");
+    expect(ok("jean-luc")).toBe("jean-luc");
     expect(ok("ANA")).toBe("ANA");
   });
 
@@ -117,5 +129,64 @@ describe("the screens a member walks", () => {
     expect(firstOpenStep({ canSign: true, hasName: true, hasSignature: false })).toBe("signature");
     expect(firstOpenStep({ canSign: false, hasName: true, hasSignature: false })).toBe("done");
     expect(firstOpenStep({ canSign: true, hasName: true, hasSignature: true })).toBe("done");
+  });
+});
+
+describe("refusals carry a code the screen translates", () => {
+  it.each([
+    ["", "first", { code: "empty", part: "first" }],
+    ["A".repeat(61), "last", { code: "tooLong", part: "last", max: 60 }],
+    ["Maria2", "first", { code: "badChars", part: "first" }],
+    ["Łukasz", "first", { code: "unprintable", part: "first", char: "Ł" }],
+  ] as const)("%j as the %s name", (raw, part, problem) => {
+    expect(checkStaffNamePart(raw, part)).toEqual({ ok: false, ...problem });
+  });
+});
+
+/** The longest run of a letter whose "(First Last)" still fits, for the boundary. */
+const LONG_FIRST = "Wolfeschlegelsteinhausenbergerdorff";
+const LONG_LAST = "Montgomery-Featherstonehaugh";
+
+describe("the name must print in full on the 130-U seller line", () => {
+  it("measures with the same font and floor the fill uses, against the real box", async () => {
+    const { readFile } = await import("node:fs/promises");
+    const { join } = await import("node:path");
+    const pdf = await PDFDocument.load(await readFile(join(process.cwd(), "public/forms/130-U.pdf")));
+    const rect = pdf.getForm().getTextField("Seller  Name").acroField.getWidgets()[0].getRectangle();
+    expect(rect.width).toBeCloseTo(SELLER_NAME_BOX_WIDTH, 2);
+    expect(SELLER_LINE_MIN_FONT_SIZE).toBe(7.25);
+    const font = await pdf.embedFont(StandardFonts.Helvetica);
+    expect(sellerLineWidth("(Maria Lopez)")).toBeCloseTo(font.widthOfTextAtSize("(Maria Lopez)", 7.25), 6);
+  });
+
+  it("accepts an ordinary long name and refuses one the box would clip", () => {
+    expect(signerFitsSellerLine("María Guadalupe Hernández-Villarreal de la Fuente")).toBe(true);
+    const tooLong = staffFullName(LONG_FIRST, LONG_LAST);
+    expect(tooLong.length).toBe(64);
+    expect(sellerLineWidth(`(${tooLong})`)).toBeGreaterThan(SELLER_LINE_USABLE_WIDTH);
+    expect(signerFitsSellerLine(tooLong)).toBe(false);
+    expect(signerFitsSellerLine(staffFullName("A".repeat(60), "B".repeat(60)))).toBe(false);
+  });
+
+  it("is part of what makes a saved name usable", () => {
+    expect(savedOnboardingName({ display_name: "Maria", full_name: "Maria Lopez" })).toEqual({ first: "Maria", last: "Lopez" });
+    expect(savedOnboardingName({ display_name: LONG_FIRST, full_name: `${LONG_FIRST} ${LONG_LAST}` })).toBeNull();
+    expect(savedOnboardingName({ display_name: "Associate", full_name: "Associate" })).toBeNull();
+    expect(savedOnboardingName({ display_name: null, full_name: "maria@example.com" })).toBeNull();
+  });
+});
+
+describe("onboarding has nothing left to ask", () => {
+  const named = { display_name: "Maria", full_name: "Maria Lopez" };
+
+  it("when the name is usable and, for a member cleared to sign, the signature is saved", () => {
+    expect(onboardingSatisfied({ ...named, can_sign_contracts: true, signature_data_url: "data:image/png;base64,AAA" })).toBe(true);
+    expect(onboardingSatisfied({ ...named, can_sign_contracts: false, signature_data_url: null })).toBe(true);
+  });
+
+  it("not while either is missing", () => {
+    expect(onboardingSatisfied({ ...named, can_sign_contracts: true, signature_data_url: null })).toBe(false);
+    expect(onboardingSatisfied({ display_name: null, full_name: "Maria Lopez", can_sign_contracts: false })).toBe(false);
+    expect(onboardingSatisfied(null)).toBe(false);
   });
 });

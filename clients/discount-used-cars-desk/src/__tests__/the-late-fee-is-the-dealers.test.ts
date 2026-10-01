@@ -81,6 +81,26 @@ describe("once the owner supplies it", () => {
   });
 });
 
+describe("read the way the desk reads a money box", () => {
+  it.each([
+    ["$100", 100],
+    ["1,000", 1000],
+    [" $ 75 ", 75],
+    ["0", 0],
+  ])("%j is %d", async (typed, amount) => {
+    const { config } = await fresh(typed);
+    expect(config.dealerFees.lateHandlingFee).toBe(amount);
+    expect(config.documentFilingBlockedReason("vehicleResponsibility")).toBeNull();
+  });
+
+  it.each(["-50", "abc", "$", "100 dollars"])("%j is no amount: refused with the reason, and the marker prints", async (typed) => {
+    const { config, html } = await fresh(typed);
+    expect(Number.isNaN(config.dealerFees.lateHandlingFee)).toBe(true);
+    expect(config.documentFilingBlockedReason("vehicleResponsibility")).toMatch(/Late-handling fee is not a dollar amount/);
+    expect(html).toContain("[Not set: late-handling fee]");
+  });
+});
+
 describe("in the source", () => {
   it("holds no late-fee figure of its own", () => {
     const source = readFileSync("src/lib/documents/vehicleResponsibility.ts", "utf8");

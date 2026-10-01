@@ -187,3 +187,12 @@ describe("the HTML 130-U on screen", () => {
     expect(html).toContain(`${DEALER.name} ([Not set: signer name])`);
   });
 });
+
+describe("the review screen's preview", () => {
+  it("prints the name the filing will print (the viewer's own), as the 130-U draft does", () => {
+    const source = readFileSync(join(process.cwd(), "src/lib/actions/paperwork-preview.ts"), "utf8");
+    const call = source.slice(source.indexOf("corridorCompletedLink("), source.indexOf("if (!completedLink)"));
+    expect(call).toContain("dealerSignerName: viewer?.signerName ?? null");
+    expect(source).toContain("getStaffSignature()");
+  });
+});

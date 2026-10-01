@@ -15,6 +15,146 @@ passed on the command line and never written to a file:
 
 The desk this one was forked from has the same requirements.
 
+## 0. This change: signer name, onboarding, website and hours (10/01/2026)
+
+This section records the latest run. Where sections 1 to 8 below (an earlier
+run) differ, this section supersedes them.
+
+**What changed.** The owner's facts (OWNER source, 10/01/2026): hours
+Tuesday to Saturday 10:00 to 19:00, Sunday and Monday closed; public website
+www.discountusedcarsandtrucks.com printed on documents; phone (713) 900-5050
+confirmed. The user's requirements: the 130-U seller line prints
+`Discount Used Cars And Trucks, LLC (First Last)`, and a staff member's first
+sign-in asks their first and last name and their signature, which is then on
+the 130-U they file. The review round then fixed:
+
+- a name too long for the 130-U seller box is refused at onboarding and at
+  filing, and the fill throws rather than clip it;
+- a finished member can no longer reopen onboarding to rewrite the legal
+  name (a correction needs an owner; there is no rename screen yet); name
+  writes are logged; Done needs a name the name screen would accept;
+- the name is kept exactly as typed (no re-capitalising);
+- onboarding refusals come from the message catalogue (Spanish screens show
+  Spanish), and swap in place with the language toggle;
+- the Buyer's Guide Email box prints `[Not set: dealer email]`, never the
+  website;
+- the contract's down payment reaches the money step only for a caller with
+  `sales:manage` on a buy here pay here deal (the registration role, or a
+  cash deal, can no longer move a balance or 130-U lien through it);
+- the review-screen preview prints the viewer's name on the dealer line, as
+  the filed sheet will;
+- filing is refused if the desk address and the website are one host;
+- the late-handling fee is read like a money box (`$100`, `1,000`), and a
+  bad or negative value keeps the document refused with the reason;
+- sender mailboxes are null until `RESEND_FROM_EMAIL` / `SUPPORT_FROM_EMAIL`
+  are set (no mailbox built from the website);
+- a filed 130-U names its signer only from what the filing recorded
+  (`form_data.dealerSignerMemberId`), so a link written by the legacy
+  agreements API cannot name one;
+- the "Before You File" notice names the fix in words and carries a
+  **Finish Onboarding** button instead of a raw path.
+
+### Checks
+
+| Check | Result |
+|---|---|
+| `npx tsc --noEmit` | 0 errors |
+| `npx eslint` | 0 errors, the same 4 warnings as below (untouched files) |
+| `npx vitest run` | **134 files, 1,625 tests passed**, 0 failed (`test-output.txt`) |
+| `npx next build` | compiled; `/admin/account/onboarding` is a route (next-env.d.ts restored afterwards, no diff) |
+
+### Five sales at both sizes
+
+Dev server on 5190, preview mock, `DESK_ALLOW_UNSET_FACTS=true`,
+`DESK_PREVIEW_MEMBER=fresh`. The member onboarded at 1440×900 as
+"Maria Lopez" (cleared to sign) and then walked every sale with
+`sale.cjs` and `ceremony.cjs`, scenario files unchanged. Every walk printed
+`THEME OK` (accent `rgb(0, 0, 0)`, ground `rgb(238, 239, 242)`, Barlow Semi
+Condensed), `sale exit 0`, `ceremony exit 0`, no page errors, no stuck step.
+
+| Sale | Size | Deal | Signed | Contrast failures (desk / ceremony) |
+|---|---|---|---|---|
+| `cash-otd` | 1440×900 | preview-deals-3 | 2 / 2 | 0 / 0 |
+| `cash-otd` | 390×844 | preview-deals-24 | 2 / 2 | 0 / 0 |
+| `cash-balance` | 1440×900 | preview-deals-21 | 2 / 2 | 0 / 0 |
+| `cash-balance` | 390×844 | preview-deals-38 | 2 / 2 | 0 / 0 |
+| `bhph-trade` | 1440×900 | preview-deals-7 | 3 / 3 | 0 / 0 |
+| `bhph-trade` | 390×844 | preview-deals-27 | 3 / 3 | 0 / 0 |
+| `bank` | 1440×900 | preview-deals-17 | 2 / 2 | 0 / 0 |
+| `bank` | 390×844 | preview-deals-35 | 2 / 2 | 0 / 0 |
+| `buyer-files` | 1440×900 | preview-deals-12 | 3 / 3 | 0 / 0 |
+| `buyer-files` | 390×844 | preview-deals-31 | 3 / 3 | 0 / 0 |
+
+Screens are in `walks/<scenario>-<w>x<h>/` and `walks/<scenario>-<w>x<h>-cer/`.
+
+### The 130-U seller line, read back
+
+The cash-otd and bhph-trade 1440×900 packets were pulled with `pdfs.cjs` and
+read with PyMuPDF (`packet-checks.txt`, final run):
+
+- **Seller printed name:** the 130-U field `Seller  Name` is exactly
+  **`Discount Used Cars And Trucks, LLC (Maria Lopez)`** on both, at 9.49pt
+  inside the box [293.5, 688.2, 514.6, 712.0].
+- **Signature:** the stroke drawn at onboarding is one image on the seller
+  band (x 96.5 to 213.5, y 689 to 711), beside the printed name. Rasterised at
+  300 dpi: `packet-pages/130-U_Delgado_812345-p1-seller-line-300dpi.png` and
+  `packet-pages/130-U_Salinas_A98765-p1-seller-line-300dpi.png`.
+- **Every dealer line** (bill of sale, contract, vehicle responsibility,
+  insurance acknowledgment) prints the same pairing.
+- **Website:** www.discountusedcarsandtrucks.com prints on the bill of sale
+  (2×), the contract and the other sheets; no `localhost`, no
+  desk.discountusedcarsandtrucks.com anywhere. Phone (713) 900-5050.
+- **Markers:** none on the cash-otd and bhph-trade packets; on buyer-files
+  only `[Not set: late-handling fee]` (owner has not supplied it).
+- **Box 36:** "2012 Honda Civic LX", trade-in amount 2000.00
+  (`packet-pages/130-U_Salinas_A98765-p1-box36-300dpi.png`).
+- **Hours:** no document prints opening hours; the config holds Tuesday to
+  Saturday, 10:00 to 19:00, Sunday and Monday closed.
+- **Money (reported, not changed):** bhph-trade still shows a bill of sale
+  balance of $7,545.50 against $6,045.50 financed, because the unchanged
+  scenario types the $1,500 down payment only at the financing question,
+  after the bill of sale is filed. Tax is $437.50 on both. This is an open
+  owner decision ("Still open" below).
+
+### Onboarding screens
+
+Each run on its own fresh server (onboarding changes the mock member).
+0 page errors and 0 contrast failures on every screen. In every run a hard
+load of `/admin/sales` before Done goes back to onboarding, Done lands on
+Handle A Sale, a reload stays there, and opening `/admin/account/onboarding`
+afterwards goes straight back to `/admin/sales`.
+
+| Member | Size | Screens (`onboarding/`) |
+|---|---|---|
+| Cleared to sign, "Maria Lopez" | 1440×900 | `cleared-1440x900-00` sign in, `-01` name (Next disabled while empty), `-02`/`-03` a 64-character name refused in English and in Spanish, `-04` name, `-05`/`-06` Draw Your Signature, `-07` You Are All Set ("Documents you file will read Discount Used Cars And Trucks, LLC (Maria Lopez), with your saved signature on the dealer line."), `-08`/`-09` Handle A Sale |
+| Cleared to sign, "Maria Lopez" | 390×844 | `cleared-390x844-00` to `-09`, the same screens |
+| Not cleared, "Daniel Reyes" | 1440×900 | `cannot-sign-1440x900-00` to `-05`: Step 1 of 2 name, Step 2 of 2 done ("Your name is saved as Daniel Reyes."), no signature screen; Handle A Sale shows "Only a member cleared to sign can file…" with no button |
+| Not cleared, "Daniel Reyes" | 390×844 | `cannot-sign-390x844-00` to `-05`, the same |
+
+The signer notice for a member cleared to sign with no name (server with
+`DESK_ALLOW_UNSET_FACTS` not set): `refusal/notice-1440x900.png` and
+`refusal/notice-390x844.png` show "Add your first and last name before
+filing: the 130-U prints the seller as Discount Used Cars And Trucks, LLC
+(First Last). Use Finish Onboarding on Handle A Sale." with a **Finish
+Onboarding** button, which opens What Is Your Name?. The server-side filing
+refusal screens in `refusal/unnamed-*/` are from the earlier run (same
+refusal, the older wording with the raw path).
+
+### Still open (owner's decisions)
+
+- **Temporary passwords:** approving or resetting a member sets
+  `requires_password_change` and nothing clears it, so an approved member
+  cannot finish onboarding or file until the owner decides whether
+  onboarding gains a "Choose A Password" screen.
+- **Down payment after the bill of sale is filed:** refuse or accept.
+  Separately, the skill's `bhph-trade.json` should enter the $1,500 on the
+  money step; it is not edited without permission.
+- **VTR-61 printed name:** whether it also becomes
+  `Discount Used Cars And Trucks, LLC (First Last)`.
+- **Facts still to supply:** late-handling fee, documentary fee, dealer
+  email, sender mailboxes, and `NEXT_PUBLIC_SITE_URL` (recommended
+  `https://desk.discountusedcarsandtrucks.com`).
+
 ## 1. Static checks
 
 | Check | Result |
@@ -223,32 +363,30 @@ Not changed, with the reason:
 
 ## 6. Owner's manual steps
 
-The full list is in `README.md`. The essentials:
+The full, current list is in `README.md` ("Owner's manual steps before going
+live"). The essentials:
 
 1. Create a new Supabase project for this dealer; never reuse another
    dealer's. Apply `supabase/migrations/20260926000000_discount_sale_desk.sql`.
 2. Set the secrets in the host: Supabase URL and keys, `ADMIN_SESSION_SECRET`
    and `INTERNAL_RENDER_TOKEN`.
-3. Confirm the phone: (713) 900-5050 from the listing and the sign, or
-   (713) 203-3890 from the licence record.
-4. Confirm the hours and languages. The public site has since taken Tuesday
-   to Saturday, 10 AM to 7 PM, from the owner's billboard artwork, while the
-   desk still prints the Google listing's Monday to Friday, 10:00 AM to
-   5:00 PM. Once the owner confirms, update `hours` in the config and
-   `src/__tests__/dealer-hours.test.ts`.
-5. Supply the missing facts: documentary fee, authorised signer (name and
-   title), website domain and email. Set `NEXT_PUBLIC_SITE_URL` before any
-   email is sent; until then, links the desk builds point at the local
-   development address.
+3. Set the desk's own address, never printed:
+   `NEXT_PUBLIC_SITE_URL=https://desk.discountusedcarsandtrucks.com`.
+   Documents print the public website, www.discountusedcarsandtrucks.com.
+4. Supply the missing facts: documentary fee, late-handling fee, dealer
+   email, and the sender mailboxes `RESEND_FROM_EMAIL` / `SUPPORT_FROM_EMAIL`.
+   The phone, the hours and the website were confirmed on 10/01/2026.
+5. Clear the members who file (`can_sign_contracts`; on by default only for
+   Manager and Registration) and have every staff member complete onboarding
+   (name, signature if cleared, done). Decide the temporary-password step
+   first (section 0, "Still open").
 6. Confirm the statutory fee lines and the financing rate ceilings with
    counsel before selling buy here pay here.
-7. Upload the dealer's signature at `/admin/account/signature`.
-8. Approve the Spanish documents. Spanish e-signature stays off until then.
-9. Keep signing texts off until an SMS provider and a registered campaign
+7. Approve the Spanish documents and the Spanish onboarding strings. Spanish
+   e-signature stays off until then.
+8. Keep signing texts off until an SMS provider and a registered campaign
    exist.
-10. Confirm or replace the $100.00 late-handling fee on the
-    vehicle-responsibility form.
-11. Renew the GDN before 09/30/2027.
+9. Renew the GDN before 09/30/2027.
 
 ## 7. Images still needed (prompts for the team)
 

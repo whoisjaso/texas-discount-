@@ -111,8 +111,29 @@ export async function render130UPdf(
   const includeSignatures = options.includeSignatures !== false;
   const viewer =
     includeSignatures && !linkStroke && !filed ? await getStaffSignature().catch(() => null) : null;
+  /*
+    A filed row's signer name is trusted only from what the filing itself
+    recorded: `form_data.dealerSignerName` beside `dealerSignerMemberId`,
+    which only finalizePaperwork writes (and the ceremony carries forward).
+    The legacy agreements API can insert or patch a completed link but never
+    form_data, so a link it wrote cannot name somebody as the dealer's signer
+    on a state form; such a row prints the "[Not set: signer name]" marker.
+  */
+  const form =
+    agreement.form_data && typeof agreement.form_data === "object"
+      ? (agreement.form_data as Record<string, unknown>)
+      : {};
+  const recordedFiler =
+    typeof form.dealerSignerMemberId === "string" && form.dealerSignerMemberId.trim()
+      ? linkSignerName(form)
+      : null;
   const seller = resolveSellerSigner(
-    { filed, includeSignatures, linkStroke, linkSignerName: linkSignerName(decoded.dd as Record<string, unknown>) },
+    {
+      filed,
+      includeSignatures,
+      linkStroke,
+      linkSignerName: filed ? recordedFiler : linkSignerName(decoded.dd as Record<string, unknown>),
+    },
     viewer,
   );
   const staffSignatureDataUrl = seller.stroke;

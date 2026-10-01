@@ -76,7 +76,7 @@ describe("with a fresh member cleared to sign", () => {
   });
 
   it("walks name, signature and done, then lands on the desk", async () => {
-    expect(await saveOnboardingNameAction(name("maria", "Lopez"))).toEqual({ ok: true, first: "Maria", last: "Lopez" });
+    expect(await saveOnboardingNameAction(name("Maria", "Lopez"))).toEqual({ ok: true, first: "Maria", last: "Lopez" });
     expect(await saveStaffSignatureAction(PNG)).toEqual({ ok: true });
     await expect(completeOnboardingAction()).rejects.toThrow(`REDIRECT:${DEALERSHIP_HOME}`);
 

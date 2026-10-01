@@ -272,6 +272,21 @@ export const dealership = {
  * known yet. Null means "not set": the receipt shows it as missing and a
  * document cannot be filed until it is supplied.
  */
+/**
+ * A dollar amount the owner types into the environment, read the way the
+ * desk reads a money box (SOP "Money": strip "$", "," and spaces before
+ * testing for empty): "$1,000" is 1000. Null when unset; NaN when something
+ * was typed that is not a dollar amount, or is below zero, so the document
+ * stays refused and the refusal can say why rather than printing it.
+ */
+function envDollars(value: string | undefined): number | null {
+  const raw = env(value);
+  if (raw === null) return null;
+  const digits = raw.replace(/[$,\s]/g, "");
+  const amount = digits === "" ? Number.NaN : Number(digits);
+  return Number.isFinite(amount) && amount >= 0 ? amount : Number.NaN;
+}
+
 export const dealerFees = {
   /** Texas motor vehicle sales tax, Tax Code §152.021. */
   taxRate: Number(env(process.env.NEXT_PUBLIC_DEALER_TAX_RATE)) || 0.0625,
@@ -286,10 +301,7 @@ export const dealerFees = {
    * policy carried over in the port, never Discount's. Null prints
    * "[Not set: late-handling fee]" and that one document cannot be filed.
    */
-  lateHandlingFee:
-    env(process.env.NEXT_PUBLIC_DEALER_LATE_HANDLING_FEE) === null
-      ? null
-      : Number(env(process.env.NEXT_PUBLIC_DEALER_LATE_HANDLING_FEE)),
+  lateHandlingFee: envDollars(process.env.NEXT_PUBLIC_DEALER_LATE_HANDLING_FEE),
 };
 
 /** What prints in place of a fact the owner has not supplied. */
@@ -336,7 +348,21 @@ export function missingDealerFacts(): string[] {
   // desk origin a filing would store completed links on the local
   // development address, so it stays a refusal of its own.
   if (!SITE_URL_CONFIGURED) missing.push("Desk address");
+  // Two values, never one host for both jobs: the desk printing its own
+  // origin on paper, or building signing links on the public site, is the
+  // mistake the SOP section exists to prevent. Compared without "www.", in
+  // either direction.
+  if (SITE_URL_CONFIGURED && dealership.website && sameHost(SITE_URL, dealership.website)) {
+    missing.push("Website domain (must be the public site, not the desk address)");
+  }
   return missing;
+}
+
+/** Whether two addresses name the same host, ignoring scheme, "www." and case. */
+function sameHost(a: string, b: string): boolean {
+  const host = (value: string) =>
+    value.trim().replace(/^https?:\/\//i, "").replace(/[/?#].*$/, "").replace(/:\d+$/, "").replace(/^www\./i, "").toLowerCase();
+  return host(a) !== "" && host(a) === host(b);
 }
 
 /**
@@ -368,6 +394,9 @@ export function documentFilingBlockedReason(documentType: string): string | null
   const fee = dealerFees.lateHandlingFee;
   if (fee !== null && Number.isFinite(fee)) return null;
   if (env(process.env.DESK_ALLOW_UNSET_FACTS) === "true") return null;
+  if (fee !== null) {
+    return "Fix this dealer detail before filing the Vehicle Responsibility Acknowledgment: Late-handling fee is not a dollar amount (NEXT_PUBLIC_DEALER_LATE_HANDLING_FEE).";
+  }
   return "Add this dealer detail before filing the Vehicle Responsibility Acknowledgment: Late-handling fee.";
 }
 
@@ -506,10 +535,9 @@ export function copyrightLine(year: number): string {
 }
 
 const HOST = SITE_URL.replace(/^https?:\/\//, "").replace(/\/$/, "");
-// The default senders take the PUBLIC website's domain, not the desk's: the
-// desk host (desk.<domain>) must never reach a customer's inbox (SOP "The
-// website on paper versus the desk's own address"). RESEND_FROM_EMAIL and
-// SUPPORT_FROM_EMAIL still override.
+// The public website's domain, never the desk's: the desk host (desk.<domain>)
+// must never reach a customer's inbox (SOP "The website on paper versus the
+// desk's own address"). Not used to make up a sender: see mailFrom below.
 const MAIL_HOST = (dealership.website ?? HOST).replace(/^www\./, "");
 
 /**
@@ -552,10 +580,15 @@ export const brand = {
   /** The public website as printed on paper; never the desk origin. */
   host: factOr(dealership.website, "website domain"),
 
-  /** Mail stays unsent until a verified sending domain is configured. */
-  mailFrom: env(process.env.RESEND_FROM_EMAIL) ?? `documents@${MAIL_HOST}`,
+  /**
+   * The senders customers see. Not supplied: null until RESEND_FROM_EMAIL and
+   * SUPPORT_FROM_EMAIL name verified mailboxes, and mail through Resend stays
+   * unsent ("not configured") until then. A mailbox built from the website's
+   * domain would be an address nobody confirmed (never invent a dealer fact).
+   */
+  mailFrom: env(process.env.RESEND_FROM_EMAIL) as string | null,
   mailHost: MAIL_HOST,
-  supportFrom: env(process.env.SUPPORT_FROM_EMAIL) ?? `support@${MAIL_HOST}`,
+  supportFrom: env(process.env.SUPPORT_FROM_EMAIL) as string | null,
   /**
    * The address customers are told to write to. The dealer's email is not
    * supplied, so this stays null and the emails print its "Not set" marker:

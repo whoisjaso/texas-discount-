@@ -94,13 +94,26 @@ describe("with the desk served from its own address", () => {
     }
   });
 
-  it("sends mail from the website's domain, not the desk's", async () => {
+  it("never sends from the desk's host, and never from a mailbox nobody supplied", async () => {
+    // No sender is built from either domain: a mailbox made up from the
+    // website would be an address nobody confirmed (never invent a dealer
+    // fact), and the desk host must never reach a customer's inbox. Null
+    // until the owner names the mailboxes; Resend mail stays unsent.
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", DESK);
     vi.stubEnv("RESEND_FROM_EMAIL", "");
     vi.stubEnv("SUPPORT_FROM_EMAIL", "");
     const { config } = await fresh();
-    expect(config.brand.mailFrom).toBe("documents@discountusedcarsandtrucks.com");
-    expect(config.brand.supportFrom).toBe("support@discountusedcarsandtrucks.com");
+    expect(config.brand.mailFrom).toBeNull();
+    expect(config.brand.supportFrom).toBeNull();
+  });
+
+  it("sends from exactly the mailboxes the owner supplies", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", DESK);
+    vi.stubEnv("RESEND_FROM_EMAIL", "documents@example.com");
+    vi.stubEnv("SUPPORT_FROM_EMAIL", "support@example.com");
+    const { config } = await fresh();
+    expect(config.brand.mailFrom).toBe("documents@example.com");
+    expect(config.brand.supportFrom).toBe("support@example.com");
   });
 });
 
@@ -128,10 +141,31 @@ describe("the filing refusal is not loosened", () => {
     const { config } = await fresh();
     expect(config.missingDealerFacts()).not.toContain("Desk address");
   });
+
+  it.each([
+    ["the desk address set to the public website", "https://www.discountusedcarsandtrucks.com", ""],
+    ["the website set to the desk address", DESK, "desk.discountusedcarsandtrucks.com"],
+    ["the two differing only by www", "https://discountusedcarsandtrucks.com/", "www.discountusedcarsandtrucks.com"],
+  ])("refuses filing with %s", async (_case, siteUrl, website) => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", siteUrl);
+    vi.stubEnv("NEXT_PUBLIC_DEALER_WEBSITE", website);
+    vi.stubEnv("NEXT_PUBLIC_DEALER_DOC_FEE", "150");
+    vi.stubEnv("DESK_ALLOW_UNSET_FACTS", "");
+    const { config } = await fresh();
+    expect(config.missingDealerFacts().join(" ")).toMatch(/Website domain \(must be the public site, not the desk address\)/);
+    expect(config.filingBlockedReason()).toMatch(/not the desk address/);
+  });
+
+  it("files with the desk and the website on their own hosts", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", DESK);
+    vi.stubEnv("NEXT_PUBLIC_DEALER_WEBSITE", "");
+    const { config } = await fresh();
+    expect(config.missingDealerFacts().join(" ")).not.toMatch(/Website domain/);
+  });
 });
 
 describe("the Buyer's Guide", () => {
-  it("prints the website in its email box while the dealer email is unset", async () => {
+  it("prints the email marker in its email box while the dealer email is unset, never the website", async () => {
     vi.stubEnv("NEXT_PUBLIC_DEALER_EMAIL", "");
     await fresh();
     const { generateBuyersGuidePdf } = await import("@/lib/documents/buyersGuide");
@@ -143,7 +177,11 @@ describe("the Buyer's Guide", () => {
     const doc = await pdfjs.getDocument({ data: new Uint8Array(bytes) }).promise;
     const page = await doc.getPage(3);
     const text = (await page.getTextContent()).items.map((item) => ("str" in item ? item.str : "")).join(" ");
-    expect(text).toContain(WEBSITE);
+    // The FTC form's Email box: an email address or its visible marker. The
+    // website is a real-looking value in the wrong field of a federal form.
+    expect(text).toContain("[Not set: dealer email]");
+    expect(text).not.toContain(WEBSITE);
+    expect(text).not.toContain("discountusedcarsandtrucks.com");
     expect(text).not.toContain("desk.");
   }, 30_000);
 });

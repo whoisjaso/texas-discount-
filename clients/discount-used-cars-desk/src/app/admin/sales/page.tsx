@@ -12,7 +12,11 @@ import DealBadge from "@/components/admin/DealBadge";
 import { ArrowRight, Plus } from "@phosphor-icons/react/ssr";
 import { dealerFees, dealership, missingDealerFacts } from "@/lib/dealership-config";
 import { getStaffSignature } from "@/lib/actions/staff-signature";
-import { dealerSignerProblem } from "@/lib/documents/dealer-signer";
+import {
+  dealerSignerFixIsOnboarding,
+  dealerSignerProblem,
+  ONBOARDING_PATH,
+} from "@/lib/documents/dealer-signer";
 
 export const metadata = { title: `Sale - ${dealership.name}` };
 export const dynamic = "force-dynamic";
@@ -169,7 +173,8 @@ export default async function SalesPage() {
   // Said here, before the sale, rather than discovered at File: the dealer
   // line carries the filer's own name and stroke (owner's instruction
   // 10/01/2026; SOP 130-U bullet), and filing is refused without them.
-  const signerProblem = dealerSignerProblem(await getStaffSignature().catch(() => null));
+  const held = await getStaffSignature().catch(() => null);
+  const signerProblem = dealerSignerProblem(held);
 
   return (
     <div className="ed-admin px-5 py-8 md:px-10 md:py-12">
@@ -214,7 +219,13 @@ export default async function SalesPage() {
 
       {signerProblem ? (
         <div className="mt-4">
-          <AdminDataNotice label="Before You File" title="Your name on the dealer line" message={signerProblem} />
+          <AdminDataNotice
+            label="Before You File"
+            title="Your name on the dealer line"
+            message={signerProblem}
+            // The button the refusal names, when the fix is the member's own.
+            action={dealerSignerFixIsOnboarding(held) ? { href: ONBOARDING_PATH, label: "Finish Onboarding" } : undefined}
+          />
         </div>
       ) : null}
 
