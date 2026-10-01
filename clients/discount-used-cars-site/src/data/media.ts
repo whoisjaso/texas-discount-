@@ -50,6 +50,8 @@ export const photos: Partial<Record<PhotoSlot, string>> = {
   'sell-band': '/photos/sell-band.webp',
   'sell-cars': '/photos/sell-cars.webp',
   'sell-trucks': '/photos/sell-trucks.webp',
+  // Transparent cut-out beside the inventory search.
+  finder: '/photos/finder.webp',
 };
 
 /** Where each banner's subject sits, so narrow screens crop to it. */
