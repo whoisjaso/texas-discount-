@@ -17,7 +17,7 @@ import { dealership } from "@/lib/dealership-config";
 import type { SummaryDocumentState, SummaryFacts } from "@/lib/sales/sale-summary";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: `The Whole Sale - ${dealership.shortName} Auto` };
+export const metadata = { title: `The Whole Sale - ${dealership.name}` };
 
 interface Props {
   params: Promise<{ dealId: string }>;

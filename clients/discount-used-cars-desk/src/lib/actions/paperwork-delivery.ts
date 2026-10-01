@@ -53,9 +53,9 @@ import { CONSENT_WORDING } from "@/lib/paperwork-delivery/consent";
 
 
 const TEMPLATE_EN = (name: string, url: string) =>
-  `${dealership.shortName} Auto: ${name ? `${name}, your` : "Your"} paperwork is ready. Open your copy here: ${url} (link works for ${INVITE_TTL_DAYS} days)`;
+  `${dealership.name}: ${name ? `${name}, your` : "Your"} paperwork is ready. Open your copy here: ${url} (link works for ${INVITE_TTL_DAYS} days)`;
 const TEMPLATE_ES = (name: string, url: string) =>
-  `${dealership.shortName} Auto: ${name ? `${name}, sus` : "Sus"} papeles están listos. Abra su copia aquí: ${url} (el enlace funciona ${INVITE_TTL_DAYS} días)`;
+  `${dealership.name}: ${name ? `${name}, sus` : "Sus"} papeles están listos. Abra su copia aquí: ${url} (el enlace funciona ${INVITE_TTL_DAYS} días)`;
 
 export type SendPaperworkResult =
   | {

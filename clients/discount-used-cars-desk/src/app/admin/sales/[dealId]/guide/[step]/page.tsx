@@ -30,7 +30,7 @@ import { getFunnelBundles } from "@/lib/sales/i18n";
 import { resolveAdminLanguageWithUser } from "@/lib/admin/server-language";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: `Sale - ${dealership.shortName} Auto` };
+export const metadata = { title: `Sale - ${dealership.name}` };
 
 interface Props {
   params: Promise<{ dealId: string; step: string }>;

@@ -12,7 +12,7 @@ import DealBadge from "@/components/admin/DealBadge";
 import { ArrowRight, Plus } from "@phosphor-icons/react/ssr";
 import { dealership, missingDealerFacts } from "@/lib/dealership-config";
 
-export const metadata = { title: `Sale - ${dealership.shortName} Auto` };
+export const metadata = { title: `Sale - ${dealership.name}` };
 export const dynamic = "force-dynamic";
 
 /**

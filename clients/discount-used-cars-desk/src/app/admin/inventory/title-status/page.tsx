@@ -5,7 +5,7 @@ import TitleStatusList, { type UnverifiedVehicle } from "./TitleStatusList";
 import { createAdminDataClient } from "@/lib/supabase/admin-data";
 import { dealership } from "@/lib/dealership-config";
 
-export const metadata = { title: `Title Status - ${dealership.shortName} Auto` };
+export const metadata = { title: `Title Status - ${dealership.name}` };
 export const dynamic = "force-dynamic";
 
 /**

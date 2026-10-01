@@ -8,7 +8,7 @@ import { resolveAdminLanguageWithUser } from "@/lib/admin/server-language";
 import { createAdminDataClient } from "@/lib/supabase/admin-data";
 import { dealership } from "@/lib/dealership-config";
 
-export const metadata = { title: `Start A Sale - ${dealership.shortName} Auto` };
+export const metadata = { title: `Start A Sale - ${dealership.name}` };
 export const dynamic = "force-dynamic";
 
 async function getSellableVehicles(): Promise<{

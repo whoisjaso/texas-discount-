@@ -4,7 +4,7 @@ import { getPastSales } from "@/lib/admin/past-sales-data";
 import type { PastSale } from "@/lib/admin/past-sales";
 import { dealership } from "@/lib/dealership-config";
 
-export const metadata = { title: `Past Sales - ${dealership.shortName} Auto` };
+export const metadata = { title: `Past Sales - ${dealership.name}` };
 export const dynamic = "force-dynamic";
 
 /**

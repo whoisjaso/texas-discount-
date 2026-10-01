@@ -21,7 +21,7 @@ import { resolveCounty } from "@/lib/documents/resolve";
 import { dealership } from "@/lib/dealership-config";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: `Paperwork - ${dealership.shortName} Auto` };
+export const metadata = { title: `Paperwork - ${dealership.name}` };
 
 /**
  * One paperwork question, one screen, inside the sale.

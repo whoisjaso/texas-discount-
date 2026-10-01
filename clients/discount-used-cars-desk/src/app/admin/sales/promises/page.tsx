@@ -3,7 +3,7 @@ import PromiseList from "@/components/admin/PromiseList";
 import { getPromiseBoard, type PromiseBoard } from "@/lib/admin/promise-desk";
 import { dealership } from "@/lib/dealership-config";
 
-export const metadata = { title: `Promises - ${dealership.shortName} Auto` };
+export const metadata = { title: `Promises - ${dealership.name}` };
 export const dynamic = "force-dynamic";
 
 /**

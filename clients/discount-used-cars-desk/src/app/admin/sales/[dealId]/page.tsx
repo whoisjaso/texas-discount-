@@ -5,7 +5,7 @@ import { getSaleDetail, type SaleDetail } from "@/lib/admin/sale-desk";
 import { CaretLeft } from "@phosphor-icons/react/ssr";
 import { dealership } from "@/lib/dealership-config";
 
-export const metadata = { title: `Sale - ${dealership.shortName} Auto` };
+export const metadata = { title: `Sale - ${dealership.name}` };
 export const dynamic = "force-dynamic";
 
 interface Props {

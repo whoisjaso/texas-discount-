@@ -17,7 +17,7 @@ import type { Customer, PaymentSchedule, Installment, SmsMessage } from "@/types
 import { brand, dealership, factOr } from "@/lib/dealership-config";
 
 const BUSINESS_PHONE = dealership.phone.display;
-const BUSINESS_NAME = `${dealership.shortName} Auto`;
+const BUSINESS_NAME = `${dealership.name}`;
 
 const FALLBACK_REPLY_EN =
   `Thanks for your message! Please call ${BUSINESS_PHONE} for assistance. - ${BUSINESS_NAME}`;

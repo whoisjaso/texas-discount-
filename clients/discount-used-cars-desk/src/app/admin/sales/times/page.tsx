@@ -3,7 +3,7 @@ import SaleBoard from "@/components/admin/SaleBoard";
 import { getSaleBoard, type Board } from "@/lib/admin/sale-timing-data";
 import { dealership } from "@/lib/dealership-config";
 
-export const metadata = { title: `Sale Times - ${dealership.shortName} Auto` };
+export const metadata = { title: `Sale Times - ${dealership.name}` };
 export const dynamic = "force-dynamic";
 
 /**

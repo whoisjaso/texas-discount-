@@ -17,7 +17,7 @@ import { dealTitleBadge } from "@/lib/sales/deal-badge";
 import { SITE_URL } from "@/lib/dealership-config";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: `Paperwork - ${dealership.shortName} Auto` };
+export const metadata = { title: `Paperwork - ${dealership.name}` };
 
 interface Props {
   params: Promise<{ dealId: string }>;

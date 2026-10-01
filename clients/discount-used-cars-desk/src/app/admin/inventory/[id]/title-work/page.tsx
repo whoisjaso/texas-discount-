@@ -9,7 +9,7 @@ import { dealership } from "@/lib/dealership-config";
 import { TITLE_STATUS_LABELS, isTitleStatus, type TitleStatus } from "@/lib/vehicles/title-status";
 import type { TitleWorkRow } from "@/lib/vehicles/title-path";
 
-export const metadata = { title: `Title Work - ${dealership.shortName} Auto` };
+export const metadata = { title: `Title Work - ${dealership.name}` };
 export const dynamic = "force-dynamic";
 
 /**

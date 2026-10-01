@@ -4,7 +4,7 @@ import { DEALERSHIP_HOME } from "@/lib/admin/workspace";
 import { hasTeamPermission } from "@/lib/operations/team";
 import { dealership } from "@/lib/dealership-config";
 
-export const metadata = { title: `Admin - ${dealership.shortName} Auto` };
+export const metadata = { title: `Admin - ${dealership.name}` };
 export const dynamic = "force-dynamic";
 
 /**
