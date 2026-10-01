@@ -65,4 +65,14 @@ describe("the SOP's money test vectors", () => {
     expect(m.paidToday).toBe(4000);
     expect(m.lien).toBe(0);
   });
+
+  // Added with the bhph-trade fix: tax after trade-in, and the note is the
+  // total less the down payment that crossed the desk.
+  it("buy here pay here, $9,000 vehicle only, $2,000 trade, $1,500 down", () => {
+    const m = saleMoney(0, { amount: "9000", priceBasis: "vehicleOnly", paidTodayAmount: "1500" }, 2000, "inHouse");
+    expect(m.tax).toBe(437.5);
+    expect(m.total).toBe(7837.5);
+    expect(m.paidToday).toBe(1500);
+    expect(m.lien).toBe(6337.5);
+  });
 });

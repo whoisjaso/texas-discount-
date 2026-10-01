@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentAdminAccess } from "@/lib/admin/current-admin";
 import { signatureDataUrlProblem } from "@/lib/forms/signature-data-url";
 import { createServiceClient } from "@/lib/supabase/service";
+import { onboardedSignerName } from "@/lib/documents/dealer-signer";
 import type { TeamMember } from "@/lib/operations/types";
 
 /**
@@ -36,6 +37,18 @@ export type StaffSignature = {
   dataUrl: string | null;
   name: string;
   updatedAt: string | null;
+  /**
+   * The three facts the dealer line needs beside the stroke (owner's
+   * instruction 10/01/2026; SOP 130-U bullet): whether this member is cleared
+   * to sign, the onboarding name that prints in the parentheses
+   * ("Legal Name (First Last)"), and whether there is a roster row at all.
+   * `fullName` is the stored name as it stands, so a refusal can say what is
+   * wrong with it.
+   */
+  canSign: boolean;
+  signerName: string | null;
+  hasMember: boolean;
+  fullName: string | null;
 };
 
 const SIGNATURE_PAGE = "/admin/account/signature";
@@ -142,21 +155,32 @@ export async function clearStaffSignatureAction(): Promise<{
  * own query, because getCurrentAdminAccess selects the whole row and the
  * signature rides along with it.
  */
-export async function getStaffSignature(): Promise<{
-  dataUrl: string | null;
-  name: string;
-  updatedAt: string | null;
-}> {
+export async function getStaffSignature(): Promise<StaffSignature> {
   const access = await getCurrentAdminAccess();
   const member = access.member;
 
   if (!member) {
-    return { dataUrl: null, name: "", updatedAt: null };
+    return {
+      dataUrl: null,
+      name: "",
+      updatedAt: null,
+      canSign: false,
+      signerName: null,
+      hasMember: false,
+      fullName: null,
+    };
   }
 
   return {
+    // Unchanged on purpose: the signature page must still show a revoked
+    // member their own stroke so they can remove it. What may go on paper is
+    // decided by `dealerStroke`, which reads `canSign`.
     dataUrl: member.signature_data_url ?? null,
     name: member.display_name || member.full_name,
     updatedAt: member.signature_updated_at ?? null,
+    canSign: member.can_sign_contracts === true,
+    signerName: onboardedSignerName(member),
+    hasMember: true,
+    fullName: member.full_name ?? null,
   };
 }

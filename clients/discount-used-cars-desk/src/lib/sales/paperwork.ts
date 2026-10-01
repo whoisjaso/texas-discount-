@@ -5,7 +5,9 @@ import {
 } from "@/lib/documents/billOfSale";
 import {
   BALANCE_OWED_REASON,
+  readMoney,
   saleMoney,
+  writeMoney,
   type MoneyAnswers,
   type SaleMoney,
 } from "@/lib/sales/money";
@@ -818,6 +820,12 @@ export type PaperworkMoney = SaleMoney & {
  */
 export function paperworkMoney(
   salePrice: number | null | undefined,
+  /**
+   * The BILL OF SALE's answers, whichever document is being built: the
+   * trade-in is asked there and nowhere else, and every document must carry
+   * the same tax, total and balance (SOP "Money"; "every figure is read off
+   * the sale once"). Callers pass `readPaperwork(stepData, "billOfSale")`.
+   */
   answers: Record<string, string> = {},
   money: Partial<MoneyAnswers> = {},
   funding: DealType | null = null,
@@ -878,4 +886,27 @@ export function writePaperwork(
   bag[documentType] = answers;
   base[PAPERWORK_KEY] = bag;
   return base;
+}
+
+/**
+ * The down payment, written as the one fact it is.
+ *
+ * The SOP asks the financing contract's "How Much Are They Putting Down?"
+ * "prefilled from what the money step says crossed the desk; never asked
+ * twice", and every figure on the paper "is read off the sale once". The two
+ * answers used to be stored apart with nothing joining them: a down payment
+ * typed on the contract never reached the bill of sale's balance or the
+ * 130-U's lien. So both writes go through this: `money.paidTodayAmount` and
+ * `paperwork.financing.downPayment` are set together, in the same
+ * step-data transform, and nothing else is touched.
+ */
+export function withDownPayment(stepData: unknown, value: string): Record<string, unknown> {
+  const withMoney = writeMoney(stepData, { ...readMoney(stepData), paidTodayAmount: value });
+  const financing = { ...readPaperwork(withMoney, "financing"), downPayment: value };
+  return writePaperwork(withMoney, "financing", financing);
+}
+
+/** Whether the financing contract already holds a down payment answer. */
+export function hasFinancingDownPayment(stepData: unknown): boolean {
+  return Object.prototype.hasOwnProperty.call(readPaperwork(stepData, "financing"), "downPayment");
 }

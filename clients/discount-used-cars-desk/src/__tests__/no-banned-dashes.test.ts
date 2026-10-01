@@ -112,7 +112,10 @@ describe("banned dashes", () => {
     // matched the weekday half. The sentence is now built by `hoursLines` from
     // the `hours` rules, so what is worth guarding is that nobody writes it out
     // by hand again.
-    const literal = /(Monday|Lunes)[^"`]*(7:00 PM|Cerrado|Closed)/;
+    // Widened with the owner's hours (10/01/2026): the open line now starts
+    // on Tuesday ("Martes" in Spanish) and the closed line on Sunday with
+    // Monday second ("lunes"), so the old pattern could not see either.
+    const literal = /(Monday|Tuesday|Lunes|lunes|Martes)[^"`]*(7:00 PM|Cerrado|Closed)/;
     const offenders = [...walk("src"), ...walk("messages")].filter(
       (file) =>
         file !== "src/lib/dealership-config.ts" &&

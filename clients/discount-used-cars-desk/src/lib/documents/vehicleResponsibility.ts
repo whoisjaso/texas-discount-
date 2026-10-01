@@ -24,7 +24,7 @@
  *   - The dealer line on the printout is signed with a pen, not a canvas.
  */
 
-import { brand, dealership, factOr } from "@/lib/dealership-config";
+import { brand, dealerFees, dealership, factOr, notSet } from "@/lib/dealership-config";
 
 import { withSpanishReviewCaveat } from "@/lib/documents/translation-status";
 
@@ -77,10 +77,24 @@ export const DEALER_METADATA = {
  * the filing to the dealership after taking responsibility for it. Covers the
  * WebDealer late-transfer penalty the dealership then absorbs.
  *
+ * A dealer fact, read from the one config: null until the owner supplies it.
+ * The $100 that sat here was another dealer's policy carried over in the port
+ * (SOP "Legal content each document must carry"; never invent a dealer fact).
  * Single source of truth: the form, the printed document, and both language
- * versions all read this value.
+ * versions all read this value, and print "[Not set: late-handling fee]"
+ * while it is null.
  */
-export const LATE_HANDLING_FEE_USD = 100;
+export const LATE_HANDLING_FEE: number | null = dealerFees.lateHandlingFee;
+
+/** The fee as it prints: the figure, or its visible "Not set" marker. */
+export function lateFeeText(lateFee: number | null = LATE_HANDLING_FEE): string {
+  return lateFee !== null && Number.isFinite(lateFee) ? formatUsd(lateFee) : notSet("late-handling fee");
+}
+
+/** Quoted plus the fee, or the marker while the fee is not set. */
+export function lateFeeTotalText(quoted: number, lateFee: number | null = LATE_HANDLING_FEE): string {
+  return lateFee !== null && Number.isFinite(lateFee) ? formatUsd(quoted + lateFee) : notSet("late-handling fee");
+}
 
 /**
  * Texas requires the buyer to apply for title transfer within 30 calendar days
@@ -240,13 +254,13 @@ export function getLegalBody(
 export function buildReturnClause(
   language: VehicleResponsibilityLanguage,
   quotedRegistrationAmount: number,
-  lateFee: number = LATE_HANDLING_FEE_USD,
+  lateFee: number | null = LATE_HANDLING_FEE,
 ): string {
   const body = getLegalBody(language);
   return body.returnClauseTemplate
     .replace("{quoted}", formatUsd(quotedRegistrationAmount))
-    .replace("{fee}", formatUsd(lateFee))
-    .replace("{total}", formatUsd(quotedRegistrationAmount + lateFee));
+    .replace("{fee}", lateFeeText(lateFee))
+    .replace("{total}", lateFeeTotalText(quotedRegistrationAmount, lateFee));
 }
 
 export const ADMIN_WARNING_BANNER_EN =
@@ -303,7 +317,7 @@ export const VEHICLE_RESPONSIBILITY_SECTIONS = [
         label: "Registration amount quoted",
         type: "number" as const,
         required: true,
-        help: `The buyer agrees to this figure plus a $${LATE_HANDLING_FEE_USD} late-handling fee if the filing later comes back to us. Enter what you actually quoted.`,
+        help: `The buyer agrees to this figure plus a ${lateFeeText()} late-handling fee if the filing later comes back to us. Enter what you actually quoted.`,
       },
     ],
   },

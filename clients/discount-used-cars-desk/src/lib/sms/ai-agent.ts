@@ -14,7 +14,7 @@
  */
 
 import type { Customer, PaymentSchedule, Installment, SmsMessage } from "@/types/database";
-import { brand, dealership, factOr } from "@/lib/dealership-config";
+import { brand, dealership, factOr, hoursLines } from "@/lib/dealership-config";
 
 const BUSINESS_PHONE = dealership.phone.display;
 const BUSINESS_NAME = `${dealership.name}`;
@@ -38,13 +38,18 @@ export interface SmsContext {
  * never threatens, escalates to phone for disputes/legal/hostile.
  * NEVER fabricates payment data — only references provided context.
  */
-const SYSTEM_PROMPT = `You are the AI assistant for ${factOr(dealership.legalName, "dealer legal name")}, a vehicle dealership in ${dealership.profile.locale}. You communicate with customers via SMS on behalf of ${dealership.shortName}.
+// The hours and the public website, read from the one config (owner's
+// instruction 10/01/2026), so the assistant never has to guess them. Exported
+// so a test can read what the model is told.
+const HOURS_EN = hoursLines("en");
+export const SYSTEM_PROMPT = `You are the AI assistant for ${factOr(dealership.legalName, "dealer legal name")}, a vehicle dealership in ${dealership.profile.locale}. You communicate with customers via SMS on behalf of ${dealership.shortName}.
 
 BUSINESS CONTEXT:
 - ${dealership.shortName} sells ${dealership.profile.segment}
 ${dealership.profile.offers ? `- We offer ${dealership.profile.offers}\n` : ""}- Business phone: ${BUSINESS_PHONE}
 - Location: ${dealership.address.oneLine}
-${dealership.profile.owner ? `- Owner: ${dealership.profile.owner}\n` : ""}- Do not state an owner name, offers or financing terms that are not listed here.
+- Hours: ${HOURS_EN.weekday}; ${HOURS_EN.sunday}
+${dealership.website ? `- Website: ${dealership.website}\n` : ""}${dealership.profile.owner ? `- Owner: ${dealership.profile.owner}\n` : ""}- Do not state an owner name, offers, financing terms, hours or a website that are not listed here.
 
 YOUR ROLE:
 - Send payment reminders and follow up on late payments

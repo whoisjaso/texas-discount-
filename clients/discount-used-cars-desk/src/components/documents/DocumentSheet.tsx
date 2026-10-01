@@ -12,6 +12,7 @@ import { officialRebuiltDataFromLink } from '@/lib/documents/official-rebuilt-di
 import SalvageSaleDocument from '@/components/documents/SalvageSaleDocument';
 import { TEXAS_TAX_RATE, type BillOfSaleData } from '@/lib/documents/billOfSale';
 import { dealership } from '@/lib/dealership-config';
+import { linkSignerName } from '@/lib/documents/dealer-signer';
 import type { ContractData } from '@/lib/documents/finance';
 import type { Form130UData } from '@/lib/documents/form130U';
 import type { RentalData } from '@/lib/documents/rental';
@@ -95,6 +96,11 @@ export function DocumentSheet({
 }) {
   const docData = buildDocData(decoded);
   const signatures = buildSignatures(decoded, includeSignatureImages);
+  // The filing member's onboarding name, from the DEALER half only, printed
+  // under every dealer line as "Legal Name (First Last)" (owner's
+  // instruction 10/01/2026). Rows filed before it existed carry none and
+  // print exactly as they did.
+  const dealerSignerName = linkSignerName(decoded.dd as Record<string, unknown>);
   if (!includeIdImagery) {
     signatures.buyerIdPhoto = '';
     const record = docData as Record<string, unknown>;
@@ -111,6 +117,7 @@ export function DocumentSheet({
           signatures={signatures}
           acknowledgments={decoded.ack as unknown as BuyerAcknowledgments}
           copyLabel={copyLabel}
+          dealerSignerName={dealerSignerName}
           // The sale's own answers for Still To Do. Without this the block
           // printed its unanswered state, which named the buyer as the one
           // registering the car on every sale, filed by us or not.
@@ -132,6 +139,7 @@ export function DocumentSheet({
           data={docData as unknown as ContractData}
           signatures={signatures}
           copyLabel={copyLabel}
+          dealerSignerName={dealerSignerName}
         />
       );
     case 'rental':
@@ -151,6 +159,7 @@ export function DocumentSheet({
         <Form130UPreview
           data={form130UFromPayload(docData) as unknown as Form130UData}
           signatures={signatures}
+          sellerSignerName={dealerSignerName}
         />
       );
     case 'vehicleResponsibility': {
@@ -169,6 +178,7 @@ export function DocumentSheet({
           buyerSignatureDate={signatures.buyerSignatureDate || null}
           dealerSignature={signatures.dealerSignature || null}
           dealerSignatureDate={signatures.dealerSignatureDate || null}
+          dealerSignerName={dealerSignerName}
         />
       );
     }
@@ -182,6 +192,7 @@ export function DocumentSheet({
           buyerSignatureDate={signatures.buyerSignatureDate || null}
           dealerSignature={signatures.dealerSignature || null}
           dealerSignatureDate={signatures.dealerSignatureDate || null}
+          dealerSignerName={dealerSignerName}
         />
       );
     }
@@ -199,6 +210,7 @@ export function DocumentSheet({
           buyerSignatureDate={signatures.buyerSignatureDate || null}
           dealerSignature={signatures.dealerSignature || null}
           dealerSignatureDate={signatures.dealerSignatureDate || null}
+          dealerSignerName={dealerSignerName}
         />
       );
     }
@@ -235,6 +247,7 @@ export function DocumentSheet({
           buyerSignatureDate={signatures.buyerSignatureDate || null}
           dealerSignature={signatures.dealerSignature || null}
           dealerSignatureDate={signatures.dealerSignatureDate || null}
+          dealerSignerName={dealerSignerName}
         />
       );
     }

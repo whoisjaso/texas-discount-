@@ -86,15 +86,39 @@ async function findTeamMember(
   return member;
 }
 
+/**
+ * The preview session's own roster row, when the preview mock holds one.
+ *
+ * Preview only (the caller is inside the preview branch, and the service
+ * client is the in-memory mock there). The mock holds a row only when
+ * DESK_PREVIEW_MEMBER asks for one, so with the flag unset this is null and
+ * preview behaves exactly as before. With it set, a fresh member (no name,
+ * no signature, onboarding not completed) can be walked through onboarding
+ * and on into a sale, as the SOP asks ("First sign-in: onboarding").
+ */
+async function previewTeamMember(user: User): Promise<TeamMember | null> {
+  try {
+    const { data } = await createServiceClient()
+      .from("team_members")
+      .select("*")
+      .eq("auth_user_id", user.id)
+      .maybeSingle();
+    return (data as TeamMember | null) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getCurrentAdminAccess(): Promise<CurrentAdminAccess> {
   if (isLocalAdminPreviewEnabled()) {
     const cookieStore = await cookies();
     const previewValue = cookieStore.get(LOCAL_ADMIN_SESSION_COOKIE)?.value;
     if (previewValue) {
       const preview = parseLocalAdminPreviewValue(previewValue);
+      const user = createLocalAdminUser(preview.email, preview.role);
       return {
-        user: createLocalAdminUser(preview.email, preview.role),
-        member: null,
+        user,
+        member: await previewTeamMember(user),
         role: preview.role,
         service: null,
         isConfiguredOwner: preview.role === "owner",

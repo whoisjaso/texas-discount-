@@ -15,12 +15,19 @@
  *   0802832466 (domestic LLC, formed 10/09/2017) and the Comptroller agree on
  *   the entity and the address.
  * - PUBLIC: the Google listing at 8108 Gulf Fwy and the dealer's own sign,
- *   pending the owner's confirmation (phone, hours, languages).
- * - every other fact is `null`: owner, authorised signer, documentary fee,
- *   website domain, email, payment destinations, SMS provider, salvage
- *   licence, lenders and map position. Screens say it is missing, previews
- *   print a visible "Not set" marker in its place, and filing a document is
- *   refused until it is supplied (see `missingDealerFacts`).
+ *   pending the owner's confirmation (languages).
+ * - OWNER: the dealership's billboard artwork and the owner's texts,
+ *   10/01/2026: hours Tuesday to Saturday 10:00 to 19:00, Sunday and Monday
+ *   closed (supersedes the Google listing's Monday to Friday 10:00 to 17:00);
+ *   public website www.discountusedcarsandtrucks.com; phone (713) 900-5050
+ *   confirmed.
+ * - every other fact is `null`: owner, documentary fee, email, payment
+ *   destinations, SMS provider, salvage licence, lenders and map position.
+ *   Screens say it is missing, previews print a visible "Not set" marker in
+ *   its place, and filing a document is refused until it is supplied (see
+ *   `missingDealerFacts`). The person who signs for the dealer is not a
+ *   config fact: it is the filing member's own onboarding name (see
+ *   `dealerSignerPrintedName`).
  *
  * Each value is overridable through an environment variable so the owner can
  * supply it without a code change.
@@ -42,9 +49,13 @@ const env = (value: string | undefined): string | null =>
   value && value.trim() ? value.trim() : null;
 
 /**
- * The domain is not known yet. Until NEXT_PUBLIC_SITE_URL is set, links the
- * desk builds (signing texts, capture QR codes) use the origin it is served
- * from, which is correct locally and on any preview deployment.
+ * The desk's OWN origin (a "desk." host beside the public website; the
+ * recommended value is in .env.example), never the dealer's public website. It is
+ * used only to build links: signing texts, capture QR codes, recovery and
+ * invite links, and the internal render. It is never printed on paper (SOP:
+ * "The website on paper versus the desk's own address"); the printed website
+ * is `dealership.website`. Until NEXT_PUBLIC_SITE_URL is set, links use the
+ * local development origin and filing is refused ("Desk address").
  */
 const CONFIGURED_ORIGIN = env(process.env.NEXT_PUBLIC_SITE_URL) ?? env(process.env.NEXT_PUBLIC_BASE_URL);
 export const SITE_URL = CONFIGURED_ORIGIN
@@ -66,11 +77,21 @@ export type SocialProfile = {
   href: string;
 };
 
-// PUBLIC: (713) 900-5050 on the current Google listing at 8108 Gulf Fwy and on
-// the dealer's "713 900 50/50" sign, pending the owner's confirmation. The
-// TxDMV licence record lists (713) 203-3890; the owner says which one the
-// desk prints. One phone field only, never two that can disagree.
+// OWNER: (713) 900-5050 confirmed 10/01/2026 (billboard artwork and texts),
+// matching the Google listing at 8108 Gulf Fwy and the dealer's "713 900
+// 50/50" sign. The TxDMV licence record lists (713) 203-3890, which is not the
+// number the desk prints. One phone field only, never two that can disagree.
 const RAW_PHONE = env(process.env.NEXT_PUBLIC_DEALER_PHONE) ?? "+17139005050";
+
+/**
+ * A website as it prints on paper: "https://www.x.com/" -> "www.x.com".
+ * Null when nothing is left, so an empty override reads as unset.
+ */
+function printableHost(value: string | null): string | null {
+  if (!value) return null;
+  const host = value.trim().replace(/^https?:\/\//i, "").replace(/\/+$/, "");
+  return host || null;
+}
 
 /** "+17139005050" -> "(713) 900-5050" */
 function formatUsPhone(e164: string): string {
@@ -95,7 +116,15 @@ export const dealership = {
    * document print one identical name.
    */
   legalName: (env(process.env.NEXT_PUBLIC_DEALER_LEGAL_NAME) ?? "Discount Used Cars And Trucks, LLC") as string | null,
+  /** The desk's own origin, for links only. Never printed (see SITE_URL). */
   url: SITE_URL,
+  /**
+   * OWNER: billboard artwork and texts, 10/01/2026. The public website as
+   * printed on paper (letterhead, bill of sale, Buyer's Guide). Never the desk
+   * origin, and never a base for links (SOP: "The website on paper versus the
+   * desk's own address").
+   */
+  website: (printableHost(env(process.env.NEXT_PUBLIC_DEALER_WEBSITE)) ?? "www.discountusedcarsandtrucks.com") as string | null,
 
   googleSiteVerification: env(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION) ?? undefined,
   googleAnalyticsId: env(process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID) ?? "",
@@ -171,16 +200,17 @@ export const dealership = {
   /** Not supplied: no map position is printed until the owner confirms one. */
   geo: null as { latitude: number; longitude: number } | null,
 
-  // PUBLIC: Monday to Friday 10:00 to 17:00, Saturday and Sunday closed, on
-  // the Google listing at 8108 Gulf Fwy (read 10/01/2026), pending the
-  // owner's confirmation.
+  // OWNER: Tuesday to Saturday 10:00 to 19:00, Sunday and Monday closed, from
+  // the billboard artwork and texts (10/01/2026); supersedes the Google
+  // listing's Monday to Friday 10:00 to 17:00. Sunday is listed before Monday
+  // so the closed line reads "Sunday And Monday".
   hours: [
     {
-      days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+      days: ["Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
       opens: "10:00",
-      closes: "17:00",
+      closes: "19:00",
     },
-    { days: ["Saturday", "Sunday"], opens: null, closes: null },
+    { days: ["Sunday", "Monday"], opens: null, closes: null },
   ] satisfies DealershipHours[],
 
   priceRange: null as string | null,
@@ -214,7 +244,12 @@ export const dealership = {
   /** TxDMV webDEALER, where Texas dealers file title since 1 July 2025. */
   webDealerUrl: env(process.env.NEXT_PUBLIC_WEBDEALER_URL) ?? "https://www.txdmv.gov/dealers/webdealer",
 
-  /** The authorised signer printed under the dealer line. Not supplied. */
+  /**
+   * Read only by the legacy rental agreement's fallback. Sale documents print
+   * the FILING member's onboarding name instead, as "<legal name> (First
+   * Last)" (`dealerSignerPrintedName`; SOP "Legal content each document must
+   * carry", 130-U bullet; owner's instruction 10/01/2026).
+   */
   signer: {
     name: env(process.env.NEXT_PUBLIC_DEALER_SIGNER_NAME),
     title: env(process.env.NEXT_PUBLIC_DEALER_SIGNER_TITLE),
@@ -243,6 +278,18 @@ export const dealerFees = {
   titleFee: Number(env(process.env.NEXT_PUBLIC_DEALER_TITLE_FEE)) || 33,
   registrationFee: Number(env(process.env.NEXT_PUBLIC_DEALER_REGISTRATION_FEE)) || 75,
   docFee: env(process.env.NEXT_PUBLIC_DEALER_DOC_FEE) === null ? null : Number(env(process.env.NEXT_PUBLIC_DEALER_DOC_FEE)),
+  /**
+   * Not supplied: ask the owner. The Vehicle Responsibility Acknowledgment's
+   * late-handling fee, owed if the buyer hands the filing back (SOP "Legal
+   * content each document must carry": "the figure and late fee if it comes
+   * back to the dealer"). The $100 the desk printed was another dealer's
+   * policy carried over in the port, never Discount's. Null prints
+   * "[Not set: late-handling fee]" and that one document cannot be filed.
+   */
+  lateHandlingFee:
+    env(process.env.NEXT_PUBLIC_DEALER_LATE_HANDLING_FEE) === null
+      ? null
+      : Number(env(process.env.NEXT_PUBLIC_DEALER_LATE_HANDLING_FEE)),
 };
 
 /** What prints in place of a fact the owner has not supplied. */
@@ -256,6 +303,19 @@ export function factOr(value: string | null | undefined, label: string): string 
 }
 
 /**
+ * The dealer's printed name beside a dealer signature: the legal name, then
+ * the signing person's own name in parentheses, "Legal Name, LLC (First
+ * Last)". County offices no longer accept the entity alone (owner's
+ * instruction 10/01/2026; SOP "Legal content each document must carry",
+ * 130-U bullet). A person with no name on record prints the visible
+ * "[Not set: signer name]" marker, never the entity alone. The one place the
+ * pairing is built.
+ */
+export function dealerSignerPrintedName(person: string | null | undefined): string {
+  return `${factOr(dealership.legalName, "dealer legal name")} (${factOr(person, "signer name")})`;
+}
+
+/**
  * The facts a filed document cannot go without, in the words the owner is
  * asked for them. Empty when every one is supplied.
  */
@@ -265,8 +325,17 @@ export function missingDealerFacts(): string[] {
   if (!dealership.license) missing.push("Dealer licence (GDN) number");
   if (!dealership.county) missing.push("County");
   if (dealerFees.docFee === null || !Number.isFinite(dealerFees.docFee)) missing.push("Documentary fee");
-  if (!dealership.signer.name) missing.push("Authorised signer");
-  if (!SITE_URL_CONFIGURED) missing.push("Website domain");
+  // No "Authorised signer" here any more: the dealer line now carries the
+  // FILING member's own name and stroke, and `finalizePaperwork` refuses a
+  // filer who is not cleared and named (`dealerSignerProblem`; SOP 130-U
+  // bullet, owner's instruction 10/01/2026). The env signer printed nowhere
+  // on a sale document, so it guarded nothing.
+  if (!dealership.website) missing.push("Website domain");
+  // The website printed on paper and the desk's own origin are two facts
+  // (SOP "The website on paper versus the desk's own address"). Without the
+  // desk origin a filing would store completed links on the local
+  // development address, so it stays a refusal of its own.
+  if (!SITE_URL_CONFIGURED) missing.push("Desk address");
   return missing;
 }
 
@@ -283,6 +352,23 @@ export function filingBlockedReason(): string | null {
   if (missing.length === 0) return null;
   if (env(process.env.DESK_ALLOW_UNSET_FACTS) === "true") return null;
   return `Add these dealer details before filing: ${missing.join(", ")}.`;
+}
+
+/**
+ * Why one particular document may not be filed, or null when it may.
+ *
+ * For a fact only one document prints, so it never blocks the rest of the
+ * packet the way `filingBlockedReason` does: today, the late-handling fee on
+ * the Vehicle Responsibility Acknowledgment (SOP "Legal content each document
+ * must carry"; never invent a dealer fact). `DESK_ALLOW_UNSET_FACTS=true`
+ * lifts it exactly as it lifts the others, and the marker still prints.
+ */
+export function documentFilingBlockedReason(documentType: string): string | null {
+  if (documentType !== "vehicleResponsibility") return null;
+  const fee = dealerFees.lateHandlingFee;
+  if (fee !== null && Number.isFinite(fee)) return null;
+  if (env(process.env.DESK_ALLOW_UNSET_FACTS) === "true") return null;
+  return "Add this dealer detail before filing the Vehicle Responsibility Acknowledgment: Late-handling fee.";
 }
 
 /**
@@ -324,11 +410,11 @@ function to12Hour(time: string): string {
 }
 
 export type HoursLines = {
-  /** The open rule: "Monday to Friday, 10:00 AM to 5:00 PM". */
+  /** The open rule: "Tuesday to Saturday, 10:00 AM to 7:00 PM". */
   weekday: string;
   /**
-   * The closed days: "Saturday And Sunday: Closed". The key keeps the name
-   * it had when only Sunday was closed, so no caller changes shape.
+   * The closed days: "Sunday And Monday: Closed". The key keeps the name it
+   * had when only Sunday was closed, so no caller changes shape.
    */
   sunday: string;
   closedWord: string;
@@ -337,8 +423,8 @@ export type HoursLines = {
 /**
  * The hours as two lines of copy, built from `dealership.hours`: one open
  * rule (a run of days with one opening and one closing time) and every day
- * the lot is closed, joined into one line ("Saturday And Sunday: Closed",
- * "Sábado y domingo: Cerrado").
+ * the lot is closed, joined into one line ("Sunday And Monday: Closed",
+ * "Domingo y lunes: Cerrado").
  */
 export function hoursLines(locale: string): HoursLines {
   const isEs = locale === "es";
@@ -420,7 +506,11 @@ export function copyrightLine(year: number): string {
 }
 
 const HOST = SITE_URL.replace(/^https?:\/\//, "").replace(/\/$/, "");
-const MAIL_HOST = HOST.replace(/^www\./, "");
+// The default senders take the PUBLIC website's domain, not the desk's: the
+// desk host (desk.<domain>) must never reach a customer's inbox (SOP "The
+// website on paper versus the desk's own address"). RESEND_FROM_EMAIL and
+// SUPPORT_FROM_EMAIL still override.
+const MAIL_HOST = (dealership.website ?? HOST).replace(/^www\./, "");
 
 /**
  * The brand layer. Discount Used Cars and Trucks has a full logo (the red car
@@ -459,8 +549,8 @@ export const brand = {
   markInk: env(process.env.NEXT_PUBLIC_BRAND_MARK_INK) ?? "/brand/discount-mark-ink.png",
   logoPrint: env(process.env.BRAND_LOGO_PRINT),
 
-  /** The website as printed on paper; a marker until the domain is supplied. */
-  host: SITE_URL_CONFIGURED ? HOST : notSet("website domain"),
+  /** The public website as printed on paper; never the desk origin. */
+  host: factOr(dealership.website, "website domain"),
 
   /** Mail stays unsent until a verified sending domain is configured. */
   mailFrom: env(process.env.RESEND_FROM_EMAIL) ?? `documents@${MAIL_HOST}`,

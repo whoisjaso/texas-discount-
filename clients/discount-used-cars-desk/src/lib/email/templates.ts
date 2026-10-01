@@ -2,6 +2,14 @@ import { brand, dealership, SITE_URL, factOr } from "@/lib/dealership-config";
 import { brandImageSrc } from "@/lib/email/brand-images";
 
 /**
+ * The website a plain-text email signs off with: the dealer's PUBLIC website
+ * (owner's instruction 10/01/2026), never the desk origin. Links stay on the
+ * desk (SITE_URL); printed text names the website (SOP "The website on paper
+ * versus the desk's own address").
+ */
+const websiteSignOff = dealership.website ? `\n\n${dealership.website}` : "";
+
+/**
  * Every email this product sends: a letter on the dealership's own
  * stationery.
  *
@@ -436,7 +444,7 @@ export function lenderHandoffEmail(
         `Su enlace de preaprobación con ${input.lender.name}${aboutText}.`,
         { footer: "mark" },
       ),
-      text: `Hola ${name},\n\nEligió a ${input.lender.name}${aboutText}. ${input.lender.tagline}\n\nSu solicitud se completa en el sitio seguro de ${input.lender.name}.\n\nComenzar: ${input.url}\n\n${SITE_URL}`,
+      text: `Hola ${name},\n\nEligió a ${input.lender.name}${aboutText}. ${input.lender.tagline}\n\nSu solicitud se completa en el sitio seguro de ${input.lender.name}.\n\nComenzar: ${input.url}${websiteSignOff}`,
     };
   }
   const about = vehicle ? ` for your ${escapeHtml(vehicle)}` : "";
@@ -456,7 +464,7 @@ export function lenderHandoffEmail(
       `Your pre-approval link with ${input.lender.name}${aboutText}.`,
       { footer: "mark" },
     ),
-    text: `Hi ${name},\n\nYou chose ${input.lender.name}${aboutText}. ${input.lender.tagline}\n\nYour application is completed on ${input.lender.name}'s secure site.\n\nStart here: ${input.url}\n\n${SITE_URL}`,
+    text: `Hi ${name},\n\nYou chose ${input.lender.name}${aboutText}. ${input.lender.tagline}\n\nYour application is completed on ${input.lender.name}'s secure site.\n\nStart here: ${input.url}${websiteSignOff}`,
   };
 }
 
@@ -660,9 +668,7 @@ Bring a government photo ID and your completed tax and eligibility paperwork on 
 Welcome aboard.
 
 ${terms.signedBy.name}
-${terms.signedBy.title}, ${factOr(dealership.legalName, "dealer legal name")}
-
-${SITE_URL}`,
+${terms.signedBy.title}, ${factOr(dealership.legalName, "dealer legal name")}${websiteSignOff}`,
   };
 }
 

@@ -8,7 +8,7 @@ import {
   type SalvageLanguage,
   type SalvageSaleData,
 } from "@/lib/documents/salvageSale";
-import { brand, dealership } from "@/lib/dealership-config";
+import { brand, dealership, dealerSignerPrintedName } from "@/lib/dealership-config";
 
 /**
  * The three tow-away sheets, one component, because they are one document
@@ -33,6 +33,13 @@ type Props = {
   buyerSignatureDate?: string | null;
   dealerSignature?: string | null;
   dealerSignatureDate?: string | null;
+  /**
+   * The filing member's onboarding name, printed under the dealer line as
+   * "Legal Name (First Last)" (owner's instruction 10/01/2026; SOP "First
+   * sign-in: onboarding"). Absent on rows filed before it existed, which
+   * print exactly as they did.
+   */
+  dealerSignerName?: string | null;
 };
 
 function Field({ label, value }: { label: string; value: string }) {
@@ -59,6 +66,7 @@ export default function SalvageSaleDocument({
   buyerSignatureDate,
   dealerSignature,
   dealerSignatureDate,
+  dealerSignerName,
 }: Props) {
   const copy = getSalvageCopy(language);
   const parts = salvageVehicleParts(data);
@@ -214,6 +222,7 @@ export default function SalvageSaleDocument({
               dateLabel={copy.dateLabel}
               signatureImage={dealerSignature ?? undefined}
               signatureDate={dealerSignatureDate ?? data.saleDate}
+              printedName={dealerSignerName ? dealerSignerPrintedName(dealerSignerName) : undefined}
             />
           </div>
           <p className="bos-helper" style={{ marginTop: "0.75rem" }}>

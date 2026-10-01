@@ -8,7 +8,19 @@
  * can make corrections if needed.
  */
 
-import { PDFDocument, rgb, StandardFonts, type PDFPage, type PDFFont, type PDFImage, type PDFTextField } from 'pdf-lib';
+import {
+  drawTextField,
+  PDFDocument,
+  rgb,
+  StandardFonts,
+  type AppearanceProviderFor,
+  type PDFForm,
+  type PDFPage,
+  type PDFFont,
+  type PDFImage,
+  type PDFTextField,
+} from 'pdf-lib';
+import { firstUnprintableOnStateForm } from '@/lib/forms/state-form-charset';
 import { embedImageDataUrl, fitWithin } from '@/lib/documents/embed-image';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
@@ -20,6 +32,7 @@ import {
   FIELD_MAPPINGS,
   FIRST_LIENHOLDER_FIELD_ID,
   PREVIOUS_OWNER_FIELD_ID,
+  SELLER_NAME_FIELD_ID,
   type AgreementData,
 } from './field-mapping';
 
@@ -228,6 +241,80 @@ function drawLienholderColumns(pdfDoc: PDFDocument, field: PDFTextField, font: P
   drawLeftFitText(page, font, data.lienholder_zip || (ours ? DEALER.zip : ''), 505.08, baselineY, 78, 8.8);
 }
 
+/*
+  The seller's printed name, "Legal Name (First Last)" (owner's instruction
+  10/01/2026; SOP 130-U bullet).
+
+  Measured on public/forms/130-U.pdf: the box is 221.13 wide and 23.76 tall
+  at y 80.03, the printed-name rule runs through it at y 84.5 to 85.0, and
+  the certification text above ends at y 102.98. One line fits most names at
+  7.25 to 9.5pt. A name too long for one line at the 7.25pt house floor is
+  drawn as two lines (the entity, then the person in parentheses) between the
+  rule and the text above, never smaller and never with pdf-lib's multiline
+  layout, which was proven to strike through the rule. The field's stored
+  value stays the one-line string either way.
+*/
+const SELLER_LINE_BASELINES = { upper: 15.1, lower: 7.8 } as const;
+const SELLER_LINE_INSET = 2;
+
+function twoLineSellerAppearance(upper: string, lower: string): AppearanceProviderFor<PDFTextField> {
+  return (_field, widget, font) => {
+    const rect = widget.getRectangle();
+    return drawTextField({
+      x: 0,
+      y: 0,
+      width: rect.width,
+      height: rect.height,
+      borderWidth: 0,
+      color: undefined,
+      borderColor: undefined,
+      textColor: rgb(0, 0, 0),
+      font: font.name,
+      fontSize: MIN_FONT_SIZE,
+      padding: 1,
+      textLines: [
+        { encoded: font.encodeText(upper), x: SELLER_LINE_INSET, y: SELLER_LINE_BASELINES.upper },
+        { encoded: font.encodeText(lower), x: SELLER_LINE_INSET, y: SELLER_LINE_BASELINES.lower },
+      ],
+    });
+  };
+}
+
+/**
+ * Fill the seller's printed name, explicitly rather than through the
+ * catch-all loop: a value the state form's font cannot print throws a clear
+ * error (the render is refused) instead of leaving a blank seller box.
+ */
+function fillSellerName(form: PDFForm, font: PDFFont, value: string) {
+  const unprintable = firstUnprintableOnStateForm(value);
+  if (unprintable) {
+    throw new Error(`The 130-U seller name contains "${unprintable}", which the state form's font cannot print.`);
+  }
+  const field = form.getTextField(SELLER_NAME_FIELD_ID);
+  const rect = field.acroField.getWidgets()[0]?.getRectangle();
+  field.setText(value);
+
+  const usable = rect ? rect.width - FIELD_HORIZONTAL_PADDING : Infinity;
+  if (font.widthOfTextAtSize(value, MIN_FONT_SIZE) <= usable) {
+    applyPrintTypography(field, font, fitFontSize(field, value, font, getFontSize(SELLER_NAME_FIELD_ID)));
+    return;
+  }
+  // Two lines, each measured at the floor: a line wider than the box would be
+  // clipped by it and the county would get a seller name with its end
+  // missing, so the render is refused instead (onboarding and the filing
+  // gate refuse such a name first; see seller-line-fit.ts).
+  const split = value.lastIndexOf(' (');
+  const upper = split > 0 ? value.slice(0, split) : value;
+  const lower = split > 0 ? value.slice(split + 1) : '';
+  if (split <= 0 || font.widthOfTextAtSize(upper, MIN_FONT_SIZE) > usable || font.widthOfTextAtSize(lower, MIN_FONT_SIZE) > usable) {
+    throw new Error(
+      `The 130-U seller name "${value}" does not fit the seller box at ${MIN_FONT_SIZE}pt, even on two lines.`,
+    );
+  }
+  applyPrintTypography(field, font, MIN_FONT_SIZE);
+  field.updateAppearances(font, twoLineSellerAppearance(upper, lower));
+}
+
 /**
  * The seller's signature band on page 1.
  *
@@ -394,6 +481,9 @@ export async function fill130U(
 
   // Fill each mapped field
   for (const mapping of FIELD_MAPPINGS) {
+    // The seller's printed name is filled on its own below, where a failure
+    // is loud rather than a quietly blank box.
+    if (mapping.fieldId === SELLER_NAME_FIELD_ID) continue;
     try {
       const value = mapping.getValue(data);
 
@@ -422,6 +512,9 @@ export async function fill130U(
       );
     }
   }
+
+  const sellerName = FIELD_MAPPINGS.find((mapping) => mapping.fieldId === SELLER_NAME_FIELD_ID)?.getValue(data);
+  if (typeof sellerName === 'string' && sellerName) fillSellerName(form, font, sellerName);
 
   // Do NOT flatten — leave fields editable
   const applicantField = form.getTextField(APPLICANT_NAME_FIELD_ID);

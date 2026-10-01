@@ -130,6 +130,18 @@ function form130ULienKeys(lien: TitleLien | null) {
   };
 }
 
+/**
+ * The trade-in as box 36 of the 130-U describes it: the value filed with this
+ * document when it carries one, otherwise the bill of sale's answer, and only
+ * when that bill of sale says there is a trade-in.
+ */
+function tradeInDescriptionFor(sale: SaleDetail, formData: Record<string, unknown>): string {
+  const filed = text(formData.tradeInDescription).trim();
+  if (filed) return filed;
+  const bill = readPaperwork(sale.stepData, "billOfSale");
+  return bill.tradeIn === "yes" ? (bill.tradeInDescription ?? "").trim() : "";
+}
+
 /** The lender on the deal, as a name a title clerk can read. */
 export function lenderNameFor(sale: SaleDetail): string | null {
   if (sale.funding.type !== "lender") return null;
@@ -222,6 +234,14 @@ export function corridorCompletedLink(
     buyerSignatureDate?: string | null;
     dealerSignature?: string | null;
     dealerSignatureDate?: string | null;
+    /**
+     * The filing member's onboarding name, printed beside the dealer stroke
+     * as "Legal Name (First Last)" (owner's instruction 10/01/2026; SOP 130-U
+     * bullet). Carried in the DEALER half, so the customer half of a portal
+     * link can never name the dealer's signer, and the ceremony, which
+     * re-encodes the dealer half as it is, keeps it.
+     */
+    dealerSignerName?: string | null;
   } = {},
 ): string | null {
   const facts = baseFacts(sale);
@@ -333,6 +353,10 @@ export function corridorCompletedLink(
       vehiclePlate: facts.vehiclePlate,
       vehicleMileage: text(formData.odometerReading) || facts.vehicleMileage,
       cashPrice,
+      // The trade-in the bill of sale took is part of the down payment on the
+      // note, so the amount financed equals the bill of sale's balance (SOP
+      // "Money": balance = total - paid; one set of figures per sale).
+      tradeInAllowance: num(formData.tradeInAllowance),
       downPayment: num(formData.downPayment),
       tax: num(formData.tax),
       titleFee: num(formData.titleFee),
@@ -359,6 +383,10 @@ export function corridorCompletedLink(
       salesPrice: num(formData.salePrice),
       salePrice: num(formData.salePrice),
       tradeInAllowance: num(formData.tradeInAllowance),
+      // Box 36 names the trade-in the bill of sale took, so the county taxes
+      // the same price less trade the bill of sale did (SOP "Money"; Tax
+      // Code 152.021). The trade-in is asked on the bill of sale only.
+      tradeInDescription: tradeInDescriptionFor(sale, formData),
       tax: num(formData.tax),
       countyOfResidence: text(formData.countyOfResidence),
       applicationType: text(formData.applicationType) || "titleAndRegistration",
@@ -464,6 +492,9 @@ export function corridorCompletedLink(
     // answers as a clean summary sheet instead of failing.
     return null;
   }
+
+  const signer = signatures.dealerSignerName?.trim();
+  if (signer) data = { ...data, dealerSignerName: signer };
 
   return encodeCompletedLink(
     section,

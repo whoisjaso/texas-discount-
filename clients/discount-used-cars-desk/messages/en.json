@@ -367,6 +367,8 @@
       "docFeeLine": "c. Documentary Fee",
       "totalCashPrice": "2. Total Cash Price",
       "downPaymentLine": "3. Down Payment",
+      "tradeInLine": "a. Trade-In Allowance",
+      "cashDownLine": "b. Cash Down Payment",
       "amountFinancedLine": "4. Amount Financed (2 minus 3)",
       "asIsTitle": "As Is - No Dealer Warranty",
       "asIsText": "THE VEHICLE IS SOLD AS IS. The dealer assumes no responsibility for any repairs regardless of any oral statements about the vehicle. All implied warranties, including any implied warranties of merchantability and fitness for a particular purpose, are expressly disclaimed.",
@@ -1734,6 +1736,43 @@
       "preparing": "Preparing",
       "ready": "Ready to confirm.",
       "hint": "Hold for 1.2 seconds, then release to confirm. Release early to cancel. With assistive technology, activate once to prepare, then activate again when ready."
+    },
+    "onboarding": {
+      "stepOf": "Step {current} Of {total}",
+      "signOut": "Sign Out",
+      "nav": "Onboarding",
+      "nameQuestion": "What Is Your Name?",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "nameHelp": "Your legal name, as it is on your ID. It prints beside the dealership's name on state forms and under every dealer signature line.",
+      "nameRequired": "Enter your first and last name.",
+      "signatureQuestion": "Draw Your Signature",
+      "signatureHelp": "Sign in the box the way you sign on paper. It goes on the dealer line of every document you file.",
+      "signatureRequired": "Draw your signature in the box first.",
+      "saveSignature": "Save Signature",
+      "doneQuestion": "You Are All Set",
+      "doneSigned": "Documents you file will read {printed}, with your saved signature on the dealer line.",
+      "doneUnsigned": "Your name is saved as {name}.",
+      "startWorking": "Start Working",
+      "notOnRoster": "This Account Is Not On The Team Yet",
+      "notOnRosterBody": "Ask an owner to add this account to the team. Nothing can be saved until then.",
+      "errors": {
+        "firstNameLabel": "first name",
+        "lastNameLabel": "last name",
+        "empty": "Enter your {label}.",
+        "tooLong": "Your {label} is longer than {max} characters. Enter it as it is on your ID.",
+        "badChars": "Use only letters, spaces, apostrophes, periods and hyphens in your {label}.",
+        "unprintable": "The state form cannot print \"{char}\" in your {label}. Type it the way it is printed on your ID.",
+        "tooLongForForm": "Your full name is too long to print in full on the state form's seller line. Enter it as it is printed on your ID; if it already is, ask an owner.",
+        "alreadyNamed": "Your name is already on file and prints on the documents you file. Ask an owner to change it.",
+        "signInAgain": "Sign in again first.",
+        "notOnRoster": "This account is not on the team roster yet, so there is no profile to hold a name. Ask an owner to add you.",
+        "notActive": "This account is not active yet. Ask an owner to approve it.",
+        "saveFailed": "That could not be saved. Try again.",
+        "temporaryPassword": "This account is still on the temporary password it was issued, and the desk cannot replace it yet. Ask an owner.",
+        "nameFirst": "Add your first and last name first.",
+        "signatureFirst": "Draw and save your signature first. It is what goes on the dealer line."
+      }
     }
   }
 }

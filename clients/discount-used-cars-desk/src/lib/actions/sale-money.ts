@@ -5,6 +5,8 @@ import { requireAdminActionPermission } from "@/lib/admin/current-admin";
 import { createClient } from "@/lib/supabase/server";
 import { readMoney, writeMoney, type MoneyAnswers } from "@/lib/sales/money";
 import { casMergeStepData } from "@/lib/sales/step-data-write";
+import { hasFinancingDownPayment, withDownPayment } from "@/lib/sales/paperwork";
+import { readFunding } from "@/lib/sales/deal-type";
 
 /**
  * What the price meant, and whether the registration is paid.
@@ -34,7 +36,18 @@ export async function saveSaleMoney(
     // else that landed since this screen's read.
     const merged = await casMergeStepData(supabase, dealId, (current) => {
       const next: MoneyAnswers = { ...readMoney(current), ...patch };
-      return writeMoney(current, next);
+      const written = writeMoney(current, next);
+      // A changed "down today" also changes the contract's down payment once
+      // the contract holds one: the same dollars, one fact (SOP "Money").
+      // Only on a buy here pay here deal, the one packet the contract is in.
+      if (
+        patch.paidTodayAmount !== undefined &&
+        readFunding(current).type === "inHouse" &&
+        hasFinancingDownPayment(current)
+      ) {
+        return withDownPayment(written, next.paidTodayAmount);
+      }
+      return written;
     });
     if (!merged.ok) throw new Error(merged.error);
   } catch {

@@ -6,7 +6,7 @@ import {
   type AcknowledgmentLanguage,
   type InsuranceAcknowledgmentData,
 } from "@/lib/documents/insuranceAcknowledgment";
-import { brand, dealership } from "@/lib/dealership-config";
+import { brand, dealership, dealerSignerPrintedName } from "@/lib/dealership-config";
 
 /**
  * Insurance Acknowledgment, on the house paper.
@@ -34,6 +34,13 @@ type Props = {
   /** The staff member's stroke, drawn on the dealer line when they hold one. */
   dealerSignature?: string | null;
   dealerSignatureDate?: string | null;
+  /**
+   * The filing member's onboarding name, printed under the dealer line as
+   * "Legal Name (First Last)" (owner's instruction 10/01/2026; SOP "First
+   * sign-in: onboarding"). Absent on rows filed before it existed, which
+   * print exactly as they did.
+   */
+  dealerSignerName?: string | null;
 };
 
 function Field({ label, value }: { label: string; value: string }) {
@@ -52,6 +59,7 @@ export default function InsuranceAcknowledgmentDocument({
   buyerSignatureDate,
   dealerSignature,
   dealerSignatureDate,
+  dealerSignerName,
 }: Props) {
   const copy = getInsuranceCopy(language);
 
@@ -130,6 +138,7 @@ export default function InsuranceAcknowledgmentDocument({
               dateLabel={copy.dateLabel}
               signatureImage={dealerSignature ?? undefined}
               signatureDate={dealerSignatureDate ?? data.saleDate}
+              printedName={dealerSignerName ? dealerSignerPrintedName(dealerSignerName) : undefined}
             />
           </div>
           <p className="bos-helper" style={{ marginTop: "0.75rem" }}>

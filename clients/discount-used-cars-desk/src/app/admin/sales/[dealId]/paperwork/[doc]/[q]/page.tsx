@@ -67,7 +67,12 @@ export default async function PaperworkQuestionPage({ params }: Props) {
    */
   const money = paperworkMoney(
     sale.vehicle?.salePrice,
-    answers,
+    // The trade-in is asked on the bill of sale only, so every document reads
+    // the money with the bill of sale's answers. Reading this document's own
+    // answers taxed the full price on the contract and the 130-U while the
+    // bill of sale taxed the price less the trade (SOP "Money": tax after
+    // trade-in; "every figure is read off the sale once").
+    readPaperwork(sale.stepData, "billOfSale"),
     readMoney(sale.stepData),
     sale.funding.type,
   );

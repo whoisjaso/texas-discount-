@@ -1,5 +1,5 @@
 import { factOr } from "@/lib/dealership-config";
-import { dealership, notSet, SITE_URL, SITE_URL_CONFIGURED } from '@/lib/dealership-config';
+import { dealership } from '@/lib/dealership-config';
 
 /**
  * Dealer identity on a document.
@@ -15,8 +15,10 @@ import { dealership, notSet, SITE_URL, SITE_URL_CONFIGURED } from '@/lib/dealers
 export const DEALER_NAME = factOr(dealership.legalName, "dealer legal name");
 export const DEALER_ADDRESS = dealership.address.oneLine;
 export const DEALER_PHONE = dealership.phone.display;
-// Printed on paper: the configured domain, or its visible marker (never the dev host).
-export const DEALER_WEBSITE = SITE_URL_CONFIGURED ? SITE_URL.replace(/^https?:\/\//, '').replace(/\/$/, '') : notSet('website domain');
+// Printed on paper: the dealer's PUBLIC website (owner's instruction
+// 10/01/2026), never the desk origin that signing links use (SOP "The website
+// on paper versus the desk's own address"), or its visible marker.
+export const DEALER_WEBSITE = factOr(dealership.website, 'website domain');
 export const DEALER_LICENSE = factOr(dealership.license, "dealer licence (GDN)");
 
 export interface SignatureData {

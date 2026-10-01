@@ -41,6 +41,39 @@ export interface ContractData {
   paymentAmount?: number;
   /** The last payment, when it differs from the rest. */
   lastPaymentAmount?: number;
+  /**
+   * The trade-in the bill of sale took, which is part of the down payment on
+   * the note. Absent on contracts filed before it was carried, which compute
+   * exactly as they did (SOP "Money": one set of figures per sale, so the
+   * amount financed equals the bill of sale's balance).
+   */
+  tradeInAllowance?: number;
+}
+
+/**
+ * The contract's money, worked out once for the sheet and its tests.
+ *
+ * Total cash price is the car, the tax and the fees; the total down payment
+ * is the cash put down plus the trade-in; the amount financed is what is left
+ * (SOP "Money": total = salePrice - tradeIn + registrationCost, balance =
+ * total - paidToday).
+ */
+export function contractFigures(data: ContractData) {
+  const totalCashPrice = data.cashPrice + data.tax + data.titleFee + data.registrationFee + data.docFee;
+  const tradeIn = Math.max(0, Number(data.tradeInAllowance) || 0);
+  const cashDown = data.downPayment;
+  const totalDown = cashDown + tradeIn;
+  const amountFinanced = Math.max(0, totalCashPrice - totalDown);
+  // The payment as agreed when the desk agreed the payment; otherwise the
+  // equal one the rate and count produce. The last payment is the remainder.
+  const payment =
+    data.paymentAmount && data.paymentAmount > 0
+      ? data.paymentAmount
+      : calculatePayment(amountFinanced, data.apr, data.numberOfPayments, data.paymentFrequency);
+  const lastPayment = data.lastPaymentAmount && data.lastPaymentAmount > 0 ? data.lastPaymentAmount : payment;
+  const totalOfPayments = data.numberOfPayments > 0 ? payment * (data.numberOfPayments - 1) + lastPayment : 0;
+  const financeCharge = totalOfPayments - amountFinanced;
+  return { totalCashPrice, tradeIn, cashDown, totalDown, amountFinanced, payment, lastPayment, totalOfPayments, financeCharge };
 }
 
 export function calculatePayment(

@@ -1,12 +1,12 @@
 /* eslint-disable @next/next/no-img-element */
-import { ContractData, calculatePayment, formatCurrency } from '@/lib/documents/finance';
+import { ContractData, contractFigures, formatCurrency } from '@/lib/documents/finance';
 import { addWeeks, addMonths, format } from 'date-fns';
 import { SignatureData, DEALER_LICENSE } from '@/lib/documents/shared';
 import SignatureLinePreview from '@/components/documents/SignatureLinePreview';
 import { getDocStrings, type DocStrings } from '@/lib/documents/i18n';
 import SmsConsentSection from '@/components/documents/SmsConsentSection';
 import DocumentLetterhead from '@/components/documents/DocumentLetterhead';
-import { dealership } from '@/lib/dealership-config';
+import { dealership, dealerSignerPrintedName } from '@/lib/dealership-config';
 
 interface Props {
   data: ContractData;
@@ -14,27 +14,34 @@ interface Props {
   copyLabel?: string;
   strings?: DocStrings;
   smsConsent?: boolean;
+  /**
+   * The filing member's onboarding name, printed under the dealer line as
+   * "Legal Name (First Last)" (owner's instruction 10/01/2026; SOP "First
+   * sign-in: onboarding"). Absent on rows filed before it existed, which
+   * print exactly as they did.
+   */
+  dealerSignerName?: string | null;
 }
 
-export default function ContractPreview({ data, signatures, copyLabel, strings: stringsProp, smsConsent }: Props) {
+export default function ContractPreview({ data, signatures, copyLabel, strings: stringsProp, smsConsent, dealerSignerName }: Props) {
   const t = stringsProp || getDocStrings('en');
   const s = t.shared;
   const c = t.contract;
-  const totalCashPrice =
-    data.cashPrice + data.tax + data.titleFee + data.registrationFee + data.docFee;
-  const amountFinanced = Math.max(0, totalCashPrice - data.downPayment);
-  // The payment as agreed when the desk agreed the payment; otherwise the
-  // equal one the rate and count produce. The last payment is the remainder.
-  const paymentAmount =
-    data.paymentAmount && data.paymentAmount > 0
-      ? data.paymentAmount
-      : calculatePayment(amountFinanced, data.apr, data.numberOfPayments, data.paymentFrequency);
-  const lastPaymentAmount =
-    data.lastPaymentAmount && data.lastPaymentAmount > 0 ? data.lastPaymentAmount : paymentAmount;
+  // One computation for the sheet and its tests. The trade-in the bill of
+  // sale took counts toward the down payment, so the amount financed equals
+  // the bill of sale's balance (SOP "Money"); a contract with no trade-in
+  // computes exactly as before.
+  const {
+    totalCashPrice,
+    tradeIn,
+    totalDown,
+    amountFinanced,
+    payment: paymentAmount,
+    lastPayment: lastPaymentAmount,
+    totalOfPayments,
+    financeCharge,
+  } = contractFigures(data);
   const hasShorterLast = Math.abs(lastPaymentAmount - paymentAmount) >= 0.01;
-  const totalOfPayments =
-    data.numberOfPayments > 0 ? paymentAmount * (data.numberOfPayments - 1) + lastPaymentAmount : 0;
-  const financeCharge = totalOfPayments - amountFinanced;
   const hasCoBuyer = Boolean(
     data.coBuyerName ||
     data.coBuyerAddress ||
@@ -240,10 +247,24 @@ export default function ContractPreview({ data, signatures, copyLabel, strings: 
                 <span>{c.totalCashPrice}</span>
                 <span>{formatCurrency(totalCashPrice)}</span>
               </div>
-              <div className="flex justify-between border-b border-[#1a1a1a]/20 pb-3">
+              <div className={`flex justify-between${tradeIn > 0 ? '' : ' border-b border-[#1a1a1a]/20 pb-3'}`}>
                 <span>{c.downPaymentLine}</span>
-                <span className="text-[#8A3A1C]">- {formatCurrency(data.downPayment)}</span>
+                <span className="text-[#8A3A1C]">- {formatCurrency(totalDown)}</span>
               </div>
+              {/* The split, only when a trade-in is part of the down payment,
+                  so line 4 stays "2 minus 3" on the paper. */}
+              {tradeIn > 0 ? (
+                <>
+                  <div className="flex justify-between text-[color:var(--tj-ink)]">
+                    <span>&nbsp;&nbsp;&nbsp;{c.tradeInLine}</span>
+                    <span>{formatCurrency(tradeIn)}</span>
+                  </div>
+                  <div className="flex justify-between text-[color:var(--tj-ink)] border-b border-[#1a1a1a]/20 pb-3">
+                    <span>&nbsp;&nbsp;&nbsp;{c.cashDownLine}</span>
+                    <span>{formatCurrency(data.downPayment)}</span>
+                  </div>
+                </>
+              ) : null}
               <div className="flex justify-between font-bold pt-1 text-lg font-[family-name:var(--font-display)]">
                 <span>{c.amountFinancedLine}</span>
                 <span>{formatCurrency(amountFinanced)}</span>
@@ -394,7 +415,7 @@ export default function ContractPreview({ data, signatures, copyLabel, strings: 
           </div>
 
           <div className="grid grid-cols-2 gap-16 mt-8">
-            <SignatureLinePreview label={`${s.dealerRepSignature}. DL# ${DEALER_LICENSE}`} signatureImage={signatures.dealerSignature} signatureDate={signatures.dealerSignatureDate} />
+            <SignatureLinePreview label={`${s.dealerRepSignature}. DL# ${DEALER_LICENSE}`} signatureImage={signatures.dealerSignature} signatureDate={signatures.dealerSignatureDate} printedName={dealerSignerName ? dealerSignerPrintedName(dealerSignerName) : undefined} />
           </div>
         </div>
 

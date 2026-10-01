@@ -367,6 +367,8 @@
       "docFeeLine": "c. Cargo por Documentación",
       "totalCashPrice": "2. Precio Total en Efectivo",
       "downPaymentLine": "3. Enganche",
+      "tradeInLine": "a. Valor del Intercambio",
+      "cashDownLine": "b. Enganche en Efectivo",
       "amountFinancedLine": "4. Monto Financiado (2 menos 3)",
       "asIsTitle": "Tal Como Está - Sin Garantía del Concesionario",
       "asIsText": "EL VEHÍCULO SE VENDE TAL COMO ESTÁ. El concesionario no asume responsabilidad por ninguna reparación independientemente de cualquier declaración oral sobre el vehículo. Todas las garantías implícitas, incluyendo cualquier garantía implícita de comerciabilidad y aptitud para un propósito particular, son expresamente renunciadas.",
@@ -1734,6 +1736,43 @@
       "preparing": "Preparando",
       "ready": "Listo para confirmar.",
       "hint": "Mantén presionado durante 1.2 segundos y suelta para confirmar. Suelta antes para cancelar. Con tecnología de asistencia, activa una vez para preparar y otra vez cuando esté listo."
+    },
+    "onboarding": {
+      "stepOf": "Paso {current} de {total}",
+      "signOut": "Cerrar sesión",
+      "nav": "Primeros pasos",
+      "nameQuestion": "¿Cuál Es Su Nombre?",
+      "firstName": "Nombre",
+      "lastName": "Apellido",
+      "nameHelp": "Su nombre legal, como aparece en su identificación. Se imprime junto al nombre del concesionario en los formularios del estado y debajo de cada línea de firma del concesionario.",
+      "nameRequired": "Escriba su nombre y su apellido.",
+      "signatureQuestion": "Dibuje Su Firma",
+      "signatureHelp": "Firme en el recuadro como firma en papel. Va en la línea del concesionario de cada documento que usted archive.",
+      "signatureRequired": "Primero dibuje su firma en el recuadro.",
+      "saveSignature": "Guardar firma",
+      "doneQuestion": "Todo Está Listo",
+      "doneSigned": "Los documentos que usted archive dirán {printed}, con su firma guardada en la línea del concesionario.",
+      "doneUnsigned": "Su nombre quedó guardado como {name}.",
+      "startWorking": "Empezar a trabajar",
+      "notOnRoster": "Esta Cuenta Aún No Está En El Equipo",
+      "notOnRosterBody": "Pida a un dueño que agregue esta cuenta al equipo. No se puede guardar nada hasta entonces.",
+      "errors": {
+        "firstNameLabel": "nombre",
+        "lastNameLabel": "apellido",
+        "empty": "Escriba su {label}.",
+        "tooLong": "Su {label} tiene más de {max} caracteres. Escríbalo como aparece en su identificación.",
+        "badChars": "Use solo letras, espacios, apóstrofos, puntos y guiones en su {label}.",
+        "unprintable": "El formulario del estado no puede imprimir \"{char}\" en su {label}. Escríbalo como aparece impreso en su identificación.",
+        "tooLongForForm": "Su nombre completo es demasiado largo para imprimirse entero en la línea del vendedor del formulario del estado. Escríbalo como aparece impreso en su identificación; si ya está así, consulte a un dueño.",
+        "alreadyNamed": "Su nombre ya está registrado y se imprime en los documentos que usted archiva. Pida a un dueño que lo cambie.",
+        "signInAgain": "Primero vuelva a iniciar sesión.",
+        "notOnRoster": "Esta cuenta aún no está en la lista del equipo, así que no hay un perfil donde guardar un nombre. Pida a un dueño que lo agregue.",
+        "notActive": "Esta cuenta aún no está activa. Pida a un dueño que la apruebe.",
+        "saveFailed": "No se pudo guardar. Inténtelo de nuevo.",
+        "temporaryPassword": "Esta cuenta todavía usa la contraseña temporal que se le dio, y el sistema aún no puede reemplazarla. Consulte a un dueño.",
+        "nameFirst": "Primero agregue su nombre y su apellido.",
+        "signatureFirst": "Primero dibuje y guarde su firma. Es la que va en la línea del concesionario."
+      }
     }
   }
 }

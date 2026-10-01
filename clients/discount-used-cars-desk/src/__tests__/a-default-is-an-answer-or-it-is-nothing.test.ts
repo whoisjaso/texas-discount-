@@ -42,7 +42,9 @@ const sale = {
 /** Exactly what the preview action now builds. */
 function filed(documentType: string) {
   const answers = readPaperwork(sale.stepData, documentType);
-  const money = paperworkMoney(sale.vehicle?.salePrice, answers, readMoney(sale.stepData), sale.funding.type);
+  // As the preview action now reads it: the bill of sale's answers, where the
+  // trade-in is asked, for every document.
+  const money = paperworkMoney(sale.vehicle?.salePrice, readPaperwork(sale.stepData, "billOfSale"), readMoney(sale.stepData), sale.funding.type);
   const held = readBuyerId(sale.stepData);
   const resolved = paperworkAnswers(documentType, {
     funding: sale.funding.type,

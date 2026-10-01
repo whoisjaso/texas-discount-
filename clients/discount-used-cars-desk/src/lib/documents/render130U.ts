@@ -18,6 +18,7 @@ import { fill130U } from "@/lib/fill-130u/fill-pdf";
 import { buildAgreementData } from "@/lib/fill-130u/from-agreement";
 import { getStaffSignature } from "@/lib/actions/staff-signature";
 import { decodeCompletedLinkFromUrl } from "@/lib/documents/customerPortal";
+import { linkSignerName, resolveSellerSigner } from "@/lib/documents/dealer-signer";
 import { createServiceClient } from "@/lib/supabase/service";
 
 // ═════════════════════════════════════════════════════════════════════
@@ -93,11 +94,29 @@ export async function render130UPdf(
       ? (agreement.buyer_id_photo as string)
       : null);
 
-  // Filed copies retain the dealer's captured stroke, including buyer
-  // downloads that have no staff session. Drafts keep the existing fallback.
-  const staffSignatureDataUrl = options.includeSignatures === false ? null
-    : typeof decoded.ds === "string" && decoded.ds.startsWith("data:image/") ? decoded.ds
-    : await getStaffSignature().then((signature) => signature.dataUrl).catch(() => null);
+  /*
+    The seller band's stroke and the name printed beside it, from one person
+    (owner's instruction 10/01/2026; SOP 130-U bullet: the person is whoever
+    filed it). Filed copies keep the filer's captured stroke and name,
+    including buyer downloads with no staff session. A filed copy with no
+    stroke is left for ink and still names the filer: it never borrows the
+    signature or the name of whoever happens to open it later. Only a draft
+    or preview reads the viewer, so it shows what their filing would print.
+  */
+  const filed =
+    Boolean(agreement.finalized_at || agreement.completed_at) ||
+    agreement.status === "finalized" ||
+    agreement.status === "completed";
+  const linkStroke = typeof decoded.ds === "string" && decoded.ds.startsWith("data:image/") ? decoded.ds : null;
+  const includeSignatures = options.includeSignatures !== false;
+  const viewer =
+    includeSignatures && !linkStroke && !filed ? await getStaffSignature().catch(() => null) : null;
+  const seller = resolveSellerSigner(
+    { filed, includeSignatures, linkStroke, linkSignerName: linkSignerName(decoded.dd as Record<string, unknown>) },
+    viewer,
+  );
+  const staffSignatureDataUrl = seller.stroke;
+  agreementData.dealer_signer_name = seller.name;
 
   // The buyer's, on the applicant line only, and only when the buyer drew
   // it on the review screen's pad: it travels in the completed link as the

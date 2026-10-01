@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdminActionPermission } from "@/lib/admin/current-admin";
 import { createClient } from "@/lib/supabase/server";
-import { readPaperwork, writePaperwork } from "@/lib/sales/paperwork";
+import { readPaperwork, withDownPayment, writePaperwork } from "@/lib/sales/paperwork";
 import { casMergeStepData } from "@/lib/sales/step-data-write";
 import { corridorCompletedLink } from "@/lib/sales/corridor-link";
 import { getSaleDetail } from "@/lib/admin/sale-desk";
@@ -12,11 +12,13 @@ import { SITE_URL } from "@/lib/dealership-config";
 import { isLanguageSettled } from "@/lib/sales/deal-language";
 import { titleHoldsDocuments, titleRefusesDocuments, TITLE_STATUS_LABELS } from "@/lib/vehicles/title-status";
 import { readSalvagePlan } from "@/lib/sales/salvage-plan";
-import { requiredDocumentTypes } from "@/lib/sales/deal-type";
+import { readFunding, requiredDocumentTypes } from "@/lib/sales/deal-type";
+import { hasTeamPermission } from "@/lib/operations/team";
 import { settledPlan } from "@/lib/sales/sale-plan";
 import { spanishEsignBlocked } from "@/lib/legal/spanish-esign";
 import { businessDateToday } from "@/lib/documents/us-date";
-import { filingBlockedReason } from "@/lib/dealership-config";
+import { documentFilingBlockedReason, filingBlockedReason } from "@/lib/dealership-config";
+import { dealerSignerProblem, dealerStroke } from "@/lib/documents/dealer-signer";
 
 /**
  * The paperwork answers, and the document they end up as.
@@ -58,12 +60,38 @@ export async function savePaperworkAnswer(
   if (!access.ok) return { ok: false, error: access.error };
   if (!key.trim()) return { ok: false, error: "Nothing to save." };
 
+  /*
+    Who may move the money step from here. The down payment is one fact with
+    two homes, but the money step's "down today" belongs to sales
+    (sale-money.ts requires sales:manage), and this action also serves the
+    registration role, which holds paperwork:manage and not sales:manage
+    ("neither may borrow the other's unrelated authority", round 4, finding
+    3). So the contract's answer reaches money.paidTodayAmount only for a
+    caller with sales:manage, and only on a buy here pay here deal, the one
+    packet a financing contract belongs to. Anywhere else the answer stays
+    the contract's own, exactly as before, and a cash deal's balance and lien
+    can never be moved through a document that is not in its packet.
+  */
+  const movesMoney = hasTeamPermission(access.role, "sales:manage");
+
   try {
     const supabase = await createClient();
     // Version-checked merge: the patch is rebuilt from the blob as it
     // stands at each attempt, so an answer typed in a second tab a moment
     // earlier survives this one instead of being silently replayed over.
     const merged = await casMergeStepData(supabase, dealId, (current) => {
+      // The down payment is one fact with two homes: written to both in the
+      // same transform, so the bill of sale's balance and the contract's
+      // amount financed can never disagree (SOP "Money"; financing: "never
+      // asked twice"), within the bounds above.
+      if (
+        documentType === "financing" &&
+        key === "downPayment" &&
+        movesMoney &&
+        readFunding(current).type === "inHouse"
+      ) {
+        return withDownPayment(current, value);
+      }
       const answers = { ...readPaperwork(current, documentType), [key]: value };
       return writePaperwork(current, documentType, answers);
     });
@@ -103,6 +131,25 @@ export async function finalizePaperwork(
   // Never file a legal record over a dealer fact nobody has supplied.
   const blocked = filingBlockedReason();
   if (blocked) return { ok: false, error: blocked };
+  // A fact only this document prints (the Vehicle Responsibility late fee),
+  // refused for this document alone (SOP "Legal content each document must
+  // carry"; never invent a dealer fact).
+  const docBlocked = documentFilingBlockedReason(documentType);
+  if (docBlocked) return { ok: false, error: docBlocked };
+
+  /*
+    The person on the dealer line, before anything is read or written.
+
+    The 130-U's seller line prints "Legal Name (First Last)" and the filer's
+    saved stroke beside it (owner's instruction 10/01/2026; SOP "Legal
+    content each document must carry", 130-U bullet), and every dealer
+    signature line prints the same pairing. So the filer must be cleared to
+    sign and named at onboarding. This is the old "Authorised signer"
+    refusal, now satisfied by the person who actually signs.
+  */
+  const held = await getStaffSignature().catch(() => null);
+  const signerProblem = dealerSignerProblem(held);
+  if (signerProblem) return { ok: false, error: signerProblem };
 
   const now = new Date().toISOString();
   try {
@@ -211,9 +258,9 @@ export async function finalizePaperwork(
       };
     }
 
-    const staffSignature = await getStaffSignature()
-      .then((held) => held.dataUrl)
-      .catch(() => null);
+    // The filer's own stroke, and none once their signing is turned off.
+    const staffSignature = held ? dealerStroke(held) : null;
+    const dealerSignerName = held?.signerName ?? null;
     /*
       The signature is dated the business day it was drawn, at the desk.
 
@@ -229,6 +276,8 @@ export async function finalizePaperwork(
           buyerSignatureDate: input.signature ? signedOn : null,
           dealerSignature: staffSignature,
           dealerSignatureDate: staffSignature ? signedOn : null,
+          // The name printed beside that stroke, on every dealer line.
+          dealerSignerName,
         })
       : null;
 
@@ -254,6 +303,10 @@ export async function finalizePaperwork(
           ...input.formData,
           signature: input.signature,
           signedAt: now,
+          // Who signed for the dealer, kept on the record beside the buyer's
+          // evidence (SOP 130-U bullet).
+          dealerSignerName,
+          dealerSignerMemberId: access.member?.id ?? null,
         },
         ...(completedLink ? { completed_link: completedLink } : {}),
         has_buyer_signature: Boolean(input.signature),

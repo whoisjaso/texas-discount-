@@ -370,7 +370,53 @@ function getPreviewRows(table: string): Array<Record<string, unknown>> {
   if (table === "rental_ledger") return previewRentalLedger;
   if (table === "notification_log") return previewNotificationLog;
   if (table === "sms_messages") return previewSmsMessages;
+  if (table === "team_members") return previewTeamMembers();
   return [];
+}
+
+/**
+ * A team member for the preview session to onboard, only when asked for.
+ *
+ * The SOP says to test onboarding "with a fresh member in the preview mock
+ * (no name, no signature, onboarding not completed)". DESK_PREVIEW_MEMBER is
+ * read here and nowhere else: "fresh" is cleared to sign, "fresh-cannot-sign"
+ * is not. Unset, the table is empty and preview is what it always was.
+ *
+ * The name is empty, never invented: the person types it at onboarding. The
+ * `onboarding_completed_at` key is present (null), because the layout and the
+ * sign-in destination check for the key itself. Writes land in the mock's
+ * store and last until the dev server restarts. Production never reaches
+ * this: the service client is the real one whenever preview is off, and
+ * preview is always off when NODE_ENV is production.
+ */
+function previewTeamMembers(): Array<Record<string, unknown>> {
+  const flag = process.env.DESK_PREVIEW_MEMBER?.trim();
+  if (flag !== "fresh" && flag !== "fresh-cannot-sign") return [];
+  const at = "2026-10-01T15:00:00.000Z";
+  return [
+    {
+      id: "preview-team-member-1",
+      auth_user_id: "local-admin-preview",
+      full_name: "",
+      display_name: null,
+      username: null,
+      bio: null,
+      avatar_url: null,
+      email: null,
+      phone: null,
+      role: "owner",
+      language_preference: "en",
+      status: "active",
+      can_sign_contracts: flag === "fresh",
+      signature_data_url: null,
+      signature_updated_at: null,
+      invited_at: null,
+      last_invite_error: null,
+      onboarding_completed_at: null,
+      created_at: at,
+      updated_at: at,
+    },
+  ];
 }
 
 const previewDeals = [

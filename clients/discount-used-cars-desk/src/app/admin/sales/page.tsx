@@ -10,7 +10,9 @@ import { readSalvagePlan } from "@/lib/sales/salvage-plan";
 import { dealTitleBadge } from "@/lib/sales/deal-badge";
 import DealBadge from "@/components/admin/DealBadge";
 import { ArrowRight, Plus } from "@phosphor-icons/react/ssr";
-import { dealership, missingDealerFacts } from "@/lib/dealership-config";
+import { dealerFees, dealership, missingDealerFacts } from "@/lib/dealership-config";
+import { getStaffSignature } from "@/lib/actions/staff-signature";
+import { dealerSignerProblem } from "@/lib/documents/dealer-signer";
 
 export const metadata = { title: `Sale - ${dealership.name}` };
 export const dynamic = "force-dynamic";
@@ -164,6 +166,10 @@ function vehicleLabel(vehicle: SaleRow["vehicles"]): string {
 
 export default async function SalesPage() {
   const { rows, signedByDeal, error } = await getSalesInProgress();
+  // Said here, before the sale, rather than discovered at File: the dealer
+  // line carries the filer's own name and stroke (owner's instruction
+  // 10/01/2026; SOP 130-U bullet), and filing is refused without them.
+  const signerProblem = dealerSignerProblem(await getStaffSignature().catch(() => null));
 
   return (
     <div className="ed-admin px-5 py-8 md:px-10 md:py-12">
@@ -191,6 +197,24 @@ export default async function SalesPage() {
             title="Dealer details missing"
             message={`Documents print "Not set" and cannot be filed until the owner supplies: ${missingDealerFacts().join(", ")}.`}
           />
+        </div>
+      ) : null}
+
+      {/* Shown whenever the fee is unset, as the facts banner above is, so a
+          demo with filing unlocked still says what the owner owes the desk. */}
+      {dealerFees.lateHandlingFee === null || !Number.isFinite(dealerFees.lateHandlingFee) ? (
+        <div className="mt-4">
+          <AdminDataNotice
+            label="Owner Details Needed"
+            title="One document is waiting on a detail"
+            message="Vehicle Responsibility cannot be filed until the owner supplies: Late-handling fee."
+          />
+        </div>
+      ) : null}
+
+      {signerProblem ? (
+        <div className="mt-4">
+          <AdminDataNotice label="Before You File" title="Your name on the dealer line" message={signerProblem} />
         </div>
       ) : null}
 

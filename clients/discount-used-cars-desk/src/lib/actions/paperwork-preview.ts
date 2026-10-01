@@ -8,6 +8,7 @@ import { paperworkAnswers, paperworkMoney, readPaperwork } from "@/lib/sales/pap
 import { readMoney } from "@/lib/sales/money";
 import { readBuyerId } from "@/lib/sales/buyer-id";
 import { SITE_URL } from "@/lib/dealership-config";
+import { getStaffSignature } from "@/lib/actions/staff-signature";
 
 /**
  * "Preview The PDF", from any screen of the paperwork corridor.
@@ -52,7 +53,9 @@ export async function previewPaperworkPdf(
     const answers = readPaperwork(sale.stepData, documentType);
     const money = paperworkMoney(
       sale.vehicle?.salePrice,
-      answers,
+      // The bill of sale's answers, where the trade-in is asked, for every
+      // document: one sale, one set of figures (SOP "Money").
+      readPaperwork(sale.stepData, "billOfSale"),
       readMoney(sale.stepData),
       sale.funding.type,
     );
@@ -88,11 +91,17 @@ export async function previewPaperworkPdf(
         : {}),
     };
 
+    // The name the filing would print under the dealer line: the viewer's own
+    // onboarding name, the same rule the 130-U draft follows, so the preview
+    // is the sheet that will print (SOP: the review screen shows "the live
+    // preview of the exact sheet that will print").
+    const viewer = await getStaffSignature().catch(() => null);
     const completedLink = corridorCompletedLink(sale, documentType, formData, SITE_URL, {
       buyerSignature: null,
       buyerSignatureDate: null,
       dealerSignature: null,
       dealerSignatureDate: null,
+      dealerSignerName: viewer?.signerName ?? null,
     });
     if (!completedLink) {
       return { ok: false, error: "No preview is drawn for this document yet." };

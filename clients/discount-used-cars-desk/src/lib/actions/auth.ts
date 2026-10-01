@@ -13,7 +13,6 @@ import {
   localAdminSessionCookieOptions,
 } from "@/lib/auth/local-admin";
 import { createClient } from "@/lib/supabase/server";
-import { DEALERSHIP_HOME } from "@/lib/admin/workspace";
 import { destinationAfterSignIn } from "@/lib/auth/destination";
 import { resolveLoginEmail } from "@/lib/auth/username";
 
@@ -98,7 +97,11 @@ export async function loginAdmin(
   if (isLocalAdminPreviewEnabled()) {
     const cookieStore = await cookies();
     cookieStore.set(LOCAL_ADMIN_SESSION_COOKIE, email, localAdminSessionCookieOptions);
-    redirect(DEALERSHIP_HOME);
+    // The same one answer every other way in asks, so a preview member who
+    // has not onboarded lands on onboarding directly rather than through a
+    // chained layout redirect (a blank page). With no preview member it is
+    // DEALERSHIP_HOME, exactly as before.
+    redirect(await destinationAfterSignIn());
   }
 
   /*

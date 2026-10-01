@@ -1,0 +1,527 @@
+{
+  "project": "discount-used-cars",
+  "title": "Discount Used Cars and Trucks: site demo, part A",
+  "notes": [
+    "Times in each capture are seconds from that capture's frame 0. A scene plays capture seconds [scene.trimSec, scene.trimSec + scene.durationSec].",
+    "Selectors were read from clients/discount-used-cars-site/src (Home.tsx, Layout.tsx) and checked on the running preview at 1440x900 and 390x797.",
+    "clock pins the page's wall clock to a Wednesday 2 PM in Houston, so the site shows 'Open Now' (it is computed from the time).",
+    "The phone capture is 390x797: under iOS's 47 pt status bar that makes the iPhone 14 screen, 390x844 pt, exactly (capturing 844 tall would stretch the phone or put the header under the Dynamic Island).",
+    "Site content outside the on-screen fact list is hidden at capture time with the shot's injected css (the site source is untouched): shots 3 and 4 blur the Discover tiles' '$205/mo' and '4.8/5' figures and the '24 Google reviews' label (a Screen Studio style privacy blur; 'Hola. / Se habla español' and 'Easy financing' stay sharp); shot 2 hides the lineup fine print ('15% down, 12.9% APR, 48 months') with visibility:hidden, so the layout and every scroll target are unchanged. Delete the css lines and recapture to show them.",
+    "Part B (the sale desk) is inserted between shots 4 and 5: shot 4 ends held at 1.8x on the 'Admin · Staff Sign-In To The Sale Desk' row with the cursor resting on it, so part B can open on the click (same window, same 1440x900 viewport at DSF 2).",
+    "Shot 5 stops on the Trucks card: one more swipe reaches the lineup's fine print (finance terms), which is not in the on-screen fact list.",
+    "Shots 3 and 4 anchor their last/first scroll on the Discover tiles, not the review: the review carousel changes the quote's height every 6 s, which moved a quote-anchored scroll by ~100 px between the two captures.",
+    "Shot 2 parks the real mouse in the left page gutter (x 64) while the cursor is hidden during the first scroll: otherwise the cursor carried over from shot 1 (342, 579) sits over the cards as they scroll past, and the Trucks card is already in its hover state (photo zoomed, white arrow) before the visible cursor reaches it.",
+    "Shot 3's set-up click on the finder waits for the section's 0.9 s reveal transition (translateY 28 px): clicking mid-reveal put the cursor 4.7 px below where shot 2 ended. The typing ends 0.73 s before frame 0, so the caret is in the same blink phase as shot 2's last frame."
+  ],
+  "base": "http://localhost:5183",
+  "serve": {
+    "build": "cd clients/discount-used-cars-site && VITE_DESK_URL=https://desk.discountusedcarsandtrucks.com npx vite build --outDir $SCRATCH/dist-demo --emptyOutDir",
+    "preview": "cd clients/discount-used-cars-site && npx vite preview --outDir $SCRATCH/dist-demo --port 5183 --strictPort"
+  },
+  "capture": {
+    "command": "node .claude/skills/recordly-demo/scripts/capture.cjs --storyboard .claude/skills/recordly-demo/examples/discount-used-cars/storyboard.json --shot <id> --out $SCRATCH/captures/<id> --publish clients/discount-used-cars-demo/public/shots --clean",
+    "order": [
+      "1-hero",
+      "2-scroll",
+      "3-buy",
+      "4-menu",
+      "5-phone"
+    ],
+    "dsf": 2,
+    "dsfReason": "The window shows the 1440 px page ~1490 px wide and zooms up to 1.8x (≈2680 px): DSF 1 is visibly soft there, DSF 2 stays sharp (self-test dsf-compare-at-1.8x.png)."
+  },
+  "fps": 30,
+  "size": [
+    1920,
+    1080
+  ],
+  "introKey": "discount.intro.seen",
+  "clock": "2026-09-30T14:00:00-05:00",
+  "window": {
+    "url": "discountusedcarsandtrucks.com",
+    "lights": "mono"
+  },
+  "facts": [
+    "www.discountusedcarsandtrucks.com",
+    "(713) 900-5050",
+    "8108 Gulf Fwy, Houston",
+    "Tue – Sat 10 AM – 7 PM"
+  ],
+  "sfx": {
+    "auto": "From each capture's cursor.json (template shotCues): click → ios_tink −12 dB; every typed character → one keystroke (key_1..7, sliced from macbook_keyboard) −18 dB ±1.5 dB; every zoom-in → whoosh_short −20 dB, 2 frames early.",
+    "manual": [
+      {
+        "shot": "0-intro",
+        "at": 0.03,
+        "cue": "intro",
+        "file": "sfx/ios_note.wav",
+        "db": -8
+      },
+      {
+        "shot": "1-hero",
+        "at": 0.0,
+        "cue": "open",
+        "file": "sfx/open_ui.wav",
+        "db": -14,
+        "why": "window springs in"
+      },
+      {
+        "shot": "4-menu",
+        "onEvent": {
+          "type": "click",
+          "index": 0
+        },
+        "cue": "open",
+        "file": "sfx/open_ui.wav",
+        "db": -14,
+        "why": "menu drawer opens"
+      },
+      {
+        "shot": "5-phone",
+        "at": 0.0,
+        "cue": "open",
+        "file": "sfx/open_ui.wav",
+        "db": -16,
+        "why": "phone slides in"
+      },
+      {
+        "shot": "6-outro",
+        "at": 0.6,
+        "cue": "outro",
+        "file": "sfx/ios_received.wav",
+        "db": -4
+      }
+    ],
+    "music": "none"
+  },
+  "shots": [
+    {
+      "id": "0-intro",
+      "kind": "remotion",
+      "composition": "Intro",
+      "durationSec": 3.0,
+      "describe": "Dark charcoal mesh wallpaper (slow drift, grain); the red car-swoosh mark wipes and slides in; DISCOUNT staggers in beneath it letter by letter in wide-tracked Barlow Semi Condensed; fast exit (9 frames from 2.55 s)."
+    },
+    {
+      "id": "1-hero",
+      "describe": "macOS window springs in over the wallpaper; first load with the site's intro loader, the curtain lifts, the fixed hero photo settles (1.08 → 1 over 6 s); the cursor drifts in from bottom-right; 1.5x zoom eases onto the headline 'Cars & Trucks. For Less.' and back out.",
+      "url": "/",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "deviceScaleFactor": 2
+      },
+      "presetIntroSeen": false,
+      "readySelector": ".loader",
+      "durationSec": 9.0,
+      "cursor": {
+        "kind": "pointer",
+        "start": {
+          "x": 1560,
+          "y": 1010
+        }
+      },
+      "actions": [
+        {
+          "t": 3.0,
+          "type": "moveTo",
+          "x": 980,
+          "y": 700,
+          "durationSec": 1.5
+        },
+        {
+          "t": 4.7,
+          "type": "hover",
+          "selector": ".hero__title",
+          "tight": true,
+          "anchor": [
+            0.62,
+            0.8
+          ],
+          "durationSec": 0.9
+        }
+      ],
+      "zooms": [
+        {
+          "at": 4.6,
+          "until": 7.3,
+          "depth": 1.5,
+          "focus": ".hero__title",
+          "tight": true,
+          "follow": false
+        }
+      ],
+      "scene": {
+        "trimSec": 0.8,
+        "durationSec": 8.2,
+        "enter": true
+      }
+    },
+    {
+      "id": "2-scroll",
+      "describe": "Eased scroll to 'Find Your Fit.'; the cursor hovers the Trucks card (its photo zooms ~4%) under a 1.8x camera zoom; scroll on to the visit card and zoom on 'Open Now · Tue – Sat, 10 AM – 7 PM'; scroll to the finder, click the search field, type 'F-150' one key at a time (no submit).",
+      "url": "/",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "deviceScaleFactor": 2
+      },
+      "presetIntroSeen": true,
+      "prerollSec": 6.6,
+      "readySelector": ".hero__title",
+      "css": ".lineup + .band__fine { visibility: hidden; }",
+      "durationSec": 16.0,
+      "cursor": {
+        "kind": "pointer",
+        "start": {
+          "fromShot": "1-hero",
+          "x": 365,
+          "y": 568
+        }
+      },
+      "actions": [
+        {
+          "t": 0.4,
+          "type": "scrollTo",
+          "selector": "section.band--black:not(.glass-band) .band__title",
+          "align": "start",
+          "offset": 150,
+          "durationSec": 1.8
+        },
+        {
+          "t": 0.5,
+          "type": "moveTo",
+          "x": 64,
+          "y": 560,
+          "durationSec": 1.0,
+          "why": "park in the gutter while hidden by scroll 1, so the Trucks hover starts when the cursor arrives"
+        },
+        {
+          "t": 2.6,
+          "type": "scrollTo",
+          "selector": "a.model[href=\"/inventory?body=Truck\"]",
+          "align": "center",
+          "durationSec": 1.3
+        },
+        {
+          "t": 3.9,
+          "type": "hover",
+          "selector": "a.model[href=\"/inventory?body=Truck\"]",
+          "anchor": [
+            0.42,
+            0.55
+          ],
+          "durationSec": 0.9
+        },
+        {
+          "t": 7.2,
+          "type": "scrollTo",
+          "selector": ".split-card",
+          "align": "center",
+          "durationSec": 1.5
+        },
+        {
+          "t": 8.8,
+          "type": "hover",
+          "selector": ".split-card__hours",
+          "tight": true,
+          "anchor": [
+            1.05,
+            0.75
+          ],
+          "durationSec": 0.7
+        },
+        {
+          "t": 11.2,
+          "type": "scrollTo",
+          "selector": "#finder-q",
+          "align": "center",
+          "offset": 60,
+          "durationSec": 1.3
+        },
+        {
+          "t": 12.6,
+          "type": "click",
+          "selector": "#finder-q",
+          "anchor": [
+            0.22,
+            0.5
+          ],
+          "durationSec": 0.7
+        },
+        {
+          "t": 13.6,
+          "type": "type",
+          "text": "F-150",
+          "perCharSec": 0.14
+        }
+      ],
+      "zooms": [
+        {
+          "at": 4.2,
+          "until": 6.8,
+          "depth": 1.8,
+          "focus": "a.model[href=\"/inventory?body=Truck\"]",
+          "follow": true,
+          "anchor": [
+            0.5,
+            0.4
+          ]
+        },
+        {
+          "at": 8.6,
+          "until": 11.0,
+          "depth": 1.8,
+          "focus": ".split-card__hours",
+          "tight": true,
+          "follow": false
+        },
+        {
+          "at": 12.3,
+          "until": 15.0,
+          "depth": 1.5,
+          "focus": "#finder-q",
+          "anchor": [
+            0.35,
+            0.5
+          ],
+          "follow": true
+        }
+      ],
+      "scene": {
+        "trimSec": 0,
+        "durationSec": 16.0
+      }
+    },
+    {
+      "id": "3-buy",
+      "describe": "From the finder (F-150 still typed) scroll to the black 'We Buy Cars, Too.' band; hover 'We Buy Trucks' (photo zooms ~4.5%) under a gentle 1.5x zoom; continue to the Discover tiles and the review quote.",
+      "url": "/",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "deviceScaleFactor": 2
+      },
+      "presetIntroSeen": true,
+      "prerollSec": 2.4,
+      "readySelector": ".hero__title",
+      "css": ".tile--type:not(.tile--type-cool) .tile__type, .tile--type-warm .tile__label { filter: blur(14px); }",
+      "durationSec": 7.6,
+      "cursor": {
+        "kind": "pointer",
+        "start": {
+          "fromShot": "2-scroll",
+          "x": 254,
+          "y": 489
+        }
+      },
+      "actions": [
+        {
+          "t": -2.3,
+          "type": "scrollTo",
+          "selector": "#finder-q",
+          "align": "center",
+          "offset": 60,
+          "durationSec": 0.1
+        },
+        {
+          "t": -1.2,
+          "type": "click",
+          "selector": "#finder-q",
+          "anchor": [
+            0.22,
+            0.5
+          ],
+          "durationSec": 0.1
+        },
+        {
+          "t": -1.0,
+          "type": "type",
+          "text": "F-150",
+          "durationSec": 0.25
+        },
+        {
+          "t": 0.3,
+          "type": "scrollTo",
+          "selector": ".glass-band .band__title",
+          "align": "start",
+          "offset": 150,
+          "durationSec": 1.6
+        },
+        {
+          "t": 2.0,
+          "type": "hover",
+          "selector": ".glass-band .teasers a.tile",
+          "contains": "We buy trucks",
+          "anchor": [
+            0.5,
+            0.55
+          ],
+          "durationSec": 0.9
+        },
+        {
+          "t": 4.7,
+          "type": "scrollTo",
+          "selector": ".tile--type",
+          "align": "start",
+          "offset": 260,
+          "durationSec": 1.8
+        }
+      ],
+      "zooms": [
+        {
+          "at": 2.3,
+          "until": 4.5,
+          "depth": 1.5,
+          "focus": ".glass-band .teasers a.tile",
+          "contains": "We buy trucks",
+          "follow": true
+        }
+      ],
+      "scene": {
+        "trimSec": 0,
+        "durationSec": 7.6
+      }
+    },
+    {
+      "id": "4-menu",
+      "describe": "Click 'Menu' (top left); the drawer slides in; 1.8x zoom onto the 'Admin · Staff Sign-In To The Sale Desk' row; the cursor rests on it (no click in part A). CUT POINT for part B.",
+      "url": "/",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "deviceScaleFactor": 2
+      },
+      "presetIntroSeen": true,
+      "prerollSec": 6.5,
+      "readySelector": ".hero__title",
+      "css": ".tile--type:not(.tile--type-cool) .tile__type, .tile--type-warm .tile__label { filter: blur(14px); }",
+      "durationSec": 6.0,
+      "cursor": {
+        "kind": "pointer",
+        "start": {
+          "fromShot": "3-buy",
+          "x": 720,
+          "y": 635
+        }
+      },
+      "actions": [
+        {
+          "t": -2.0,
+          "type": "scrollTo",
+          "selector": ".tile--type",
+          "align": "start",
+          "offset": 260,
+          "durationSec": 0.1
+        },
+        {
+          "t": 0.4,
+          "type": "click",
+          "selector": ".header__menu",
+          "durationSec": 1.1
+        },
+        {
+          "t": 2.3,
+          "type": "hover",
+          "selector": ".drawer__link--admin",
+          "anchor": [
+            0.7,
+            0.42
+          ],
+          "durationSec": 0.9
+        }
+      ],
+      "zooms": [
+        {
+          "at": 2.2,
+          "until": null,
+          "depth": 1.8,
+          "focus": ".drawer__link--admin",
+          "follow": true
+        }
+      ],
+      "scene": {
+        "trimSec": 0,
+        "durationSec": 6.0
+      },
+      "cutAfter": "part-b"
+    },
+    {
+      "id": "5-phone",
+      "describe": "An iPhone slides in while the desktop window recedes and blurs (PhoneScene `behind`); the 390-wide capture: hero, then three smooth swipes down the lineup cards (SUVs, Sedans, Trucks) with touch ripples, resting on the Trucks card; the mobile dock (Call / Directions) stays in view.",
+      "url": "/",
+      "viewport": {
+        "width": 390,
+        "height": 797,
+        "deviceScaleFactor": 2
+      },
+      "mobile": true,
+      "presetIntroSeen": true,
+      "prerollSec": 0.6,
+      "readySelector": ".hero__title",
+      "durationSec": 9.0,
+      "cursor": {
+        "kind": "touch"
+      },
+      "actions": [
+        {
+          "t": 2.0,
+          "type": "scrollTo",
+          "selector": "section.band--black:not(.glass-band) .band__title",
+          "align": "start",
+          "offset": 90,
+          "durationSec": 1.2,
+          "touch": {
+            "x": 250,
+            "y": 600
+          }
+        },
+        {
+          "t": 3.9,
+          "type": "scrollBy",
+          "y": 430,
+          "durationSec": 1.1,
+          "touch": {
+            "x": 240,
+            "y": 620
+          }
+        },
+        {
+          "t": 5.8,
+          "type": "scrollBy",
+          "y": 450,
+          "durationSec": 1.1,
+          "touch": {
+            "x": 255,
+            "y": 610
+          }
+        }
+      ],
+      "zooms": [],
+      "scene": {
+        "trimSec": 0,
+        "durationSec": 9.0,
+        "behind": "last frame of 4-menu (or of part B) in its window"
+      }
+    },
+    {
+      "id": "6-outro",
+      "kind": "remotion",
+      "composition": "Outro",
+      "durationSec": 4.0,
+      "describe": "Full-colour logo on dark (discount-logo-reverse.png), then 'www.discountusedcarsandtrucks.com' and '(713) 900-5050 · 8108 Gulf Fwy, Houston' stagger in; ios_received."
+    }
+  ],
+  "totalSec": {
+    "partA": 53.8,
+    "breakdown": {
+      "0-intro": 3.0,
+      "1-hero": 8.2,
+      "2-scroll": 16.0,
+      "3-buy": 7.6,
+      "4-menu": 6.0,
+      "5-phone": 9.0,
+      "6-outro": 4.0
+    }
+  }
+}

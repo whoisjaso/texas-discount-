@@ -193,5 +193,9 @@ export function buildAgreementData(
     lienholder_city: hasLien ? lienholderCity : undefined,
     lienholder_state: hasLien ? lienholderState : undefined,
     lienholder_zip: hasLien ? lienholderZip : undefined,
+    // From the DEALER half only, never the merged record: the customer half
+    // of a portal link must not be able to name who signed for the dealer.
+    dealer_signer_name:
+      typeof dd.dealerSignerName === 'string' && dd.dealerSignerName.trim() ? dd.dealerSignerName.trim() : undefined,
   };
 }

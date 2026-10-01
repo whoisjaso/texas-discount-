@@ -1,4 +1,4 @@
-import { factOr } from "@/lib/dealership-config";
+import { dealerSignerPrintedName, factOr } from "@/lib/dealership-config";
 /**
  * 130-U PDF AcroForm Field Mapping
  *
@@ -92,7 +92,18 @@ export interface AgreementData {
   lienholder_city?: string;
   lienholder_state?: string;
   lienholder_zip?: string;
+
+  /**
+   * The person who signs the seller line for the dealer, as entered at
+   * onboarding ("First Last"). Printed in parentheses after the legal name;
+   * absent prints the "[Not set: signer name]" marker, never the entity
+   * alone (owner's instruction 10/01/2026; SOP 130-U bullet).
+   */
+  dealer_signer_name?: string | null;
 }
+
+/** The seller's printed name box beside the seller signature band. */
+export const SELLER_NAME_FIELD_ID = 'Seller  Name';
 
 export const APPLICANT_NAME_FIELD_ID = '16 Applicant First Name or Entity Name Middle Name Last Name Suffix if any';
 export const ADDITIONAL_APPLICANT_NAME_FIELD_ID = '17 Additional Applicant First Name if applicable Middle Name Last Name Suffix if any';
@@ -469,9 +480,12 @@ export const FIELD_MAPPINGS: FieldMapping[] = [
   // SELLER / APPLICANT SIGNATURE NAMES + DATES
   // ═══════════════════════════════════════════════════════════════════
   {
-    fieldId: 'Seller  Name',
+    // "Legal Name (First Last)": county offices no longer accept the entity
+    // alone (owner's instruction 10/01/2026; SOP 130-U bullet). DEALER.name
+    // stays the entity for box 20 and the lien in box 34.
+    fieldId: SELLER_NAME_FIELD_ID,
     type: 'text',
-    getValue: () => DEALER.name,
+    getValue: (d) => dealerSignerPrintedName(d.dealer_signer_name),
   },
   {
     fieldId: 'Date',

@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import DocumentLetterhead from '@/components/documents/DocumentLetterhead';
 import SignatureLinePreview from '@/components/documents/SignatureLinePreview';
 import { chicagoDateKey } from '@/lib/customers/recurring-dates';
-import { brand } from '@/lib/dealership-config';
+import { brand, dealerSignerPrintedName } from '@/lib/dealership-config';
 import { toTitleCaseDisplay } from '@/lib/display/title-case';
 import {
   BillOfSaleData,
@@ -97,6 +97,13 @@ interface Props {
     inspectionByDealer?: boolean;
     inspectionDone?: boolean;
   };
+  /**
+   * The filing member's onboarding name, printed under the dealer line as
+   * "Legal Name (First Last)" (owner's instruction 10/01/2026; SOP "First
+   * sign-in: onboarding"). Absent on rows filed before it existed, which
+   * print exactly as they did.
+   */
+  dealerSignerName?: string | null;
 }
 
 export default function BillOfSalePreview({
@@ -106,6 +113,7 @@ export default function BillOfSalePreview({
   copyLabel,
   strings: stringsProp,
   outstanding,
+  dealerSignerName,
 }: Props) {
   const t = stringsProp || getDocStrings('en');
   const s = t.shared;
@@ -892,6 +900,7 @@ export default function BillOfSalePreview({
                 dateLabel={s.date}
                 signatureImage={signatures.dealerSignature}
                 signatureDate={signatures.dealerSignatureDate || today}
+                printedName={dealerSignerName ? dealerSignerPrintedName(dealerSignerName) : undefined}
               />
               <SignatureLinePreview
                 label={b.witnessNotary}

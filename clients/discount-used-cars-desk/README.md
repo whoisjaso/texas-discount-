@@ -65,13 +65,20 @@ With no Supabase variables set, the desk runs on an in-memory preview mock
 `.env.local` to walk a sale all the way to a signed packet before the dealer
 facts exist.
 
+To walk a new member's first sign-in in preview, set
+`DESK_PREVIEW_MEMBER=fresh` (cleared to sign) or `fresh-cannot-sign`. The
+preview session then has a roster row with no name, no signature and
+onboarding not completed, and is sent to `/admin/account/onboarding` first.
+What onboarding saves lasts until the dev server restarts. Leave it empty for
+the ordinary preview. It is ignored in production.
+
 ## Dealer facts: nothing is invented
 
 Every dealer fact is in `src/lib/dealership-config.ts` and nowhere else. A
 guard test (`src/__tests__/no-hardcoded-dealer-facts.test.ts`) enforces it:
 
 - **This dealer's facts** (name, legal name, phone, both phone numbers,
-  street, ZIP, GDN, Facebook page, venue county) may appear only in the
+  street, ZIP, GDN, Facebook page, venue county, public website) may appear only in the
   config. It reads `src/`, `messages/`, `supabase/` and the root config
   files, with comments removed by the TypeScript parser. Tests and this
   documentation are not checked for them.
@@ -95,22 +102,36 @@ Verified 10/01/2026:
 | Dealer licence (GDN) | P145000 | TxDMV: Active, Motor Vehicle (independent), active since 11/06/2017, expires 09/30/2027 |
 | County | Harris | TxDMV |
 | Address | 8108 Gulf Fwy, Houston, TX 77017 | TxDMV, Comptroller, Google listing (ZIP+4 77017-3620, no suite) |
-| Phone | (713) 900-5050 | Google listing and the dealer's "713 900 50/50" sign, pending the owner's confirmation. The TxDMV licence record lists (713) 203-3890 |
+| Phone | (713) 900-5050 | Owner: billboard artwork and texts, confirmed 10/01/2026 (also the Google listing and the "713 900 50/50" sign). The TxDMV licence record lists (713) 203-3890, which is not printed |
 | Time zone | America/Chicago | Houston |
-| Hours | Monday to Friday, 10:00 AM to 5:00 PM; Saturday and Sunday closed | Google listing, read 10/01/2026, pending the owner's confirmation |
+| Hours | Tuesday to Saturday, 10:00 AM to 7:00 PM; Sunday and Monday closed | Owner: billboard artwork and texts, 10/01/2026 (supersedes the Google listing) |
+| Public website | www.discountusedcarsandtrucks.com | Owner: billboard artwork and texts, 10/01/2026. Printed on documents; never a base for links |
 | Languages | English and Spanish | "Se Habla Español" on the dealer's sign (historic), pending the owner's confirmation |
 | Facebook | https://www.facebook.com/Discountusedcars/ | The dealer's page |
 | What it sells | Pre-owned cars, trucks and SUVs | |
 
-**`null` until the owner supplies them:** owner, authorised signer,
-documentary fee, website domain, email, payment destinations (Zelle, Cash
-App, Apple Pay, PayPal), SMS provider, salvage dealer licence, lenders and
-map position.
+**`null` until the owner supplies them:** owner, documentary fee,
+late-handling fee (Vehicle Responsibility Acknowledgment), email, payment
+destinations (Zelle, Cash App, Apple Pay, PayPal), SMS provider, salvage
+dealer licence, lenders and map position.
 
 Until a fact is supplied, every screen and document prints `[Not set: …]` in
 its place, and filing a document is refused while a legal fact (legal name,
-licence, county, documentary fee, authorised signer, website domain) is
-missing. The Handle A Sale screen lists what is missing.
+licence, county, documentary fee, website domain) is missing, and while the
+desk's own address (`NEXT_PUBLIC_SITE_URL`, "Desk address") is unset. The
+Vehicle Responsibility Acknowledgment alone is also refused until the
+late-handling fee is supplied. The Handle A Sale screen lists what is
+missing.
+
+**Who signs for the dealer** is not a config fact. The 130-U seller line
+prints the legal name followed by the filing member's own name in
+parentheses, `Discount Used Cars And Trucks, LLC (First Last)`, and every
+dealer signature line prints the same pairing (owner's instruction
+10/01/2026: county offices no longer accept the entity alone). The name is
+the one the member entered at onboarding, and their saved signature goes on
+the line. Filing is refused for a member who is not cleared to sign or has no
+name on record; with `DESK_ALLOW_UNSET_FACTS=true` it files and prints
+`[Not set: signer name]` instead.
 
 ## Owner's manual steps before going live
 
@@ -121,30 +142,33 @@ missing. The Handle A Sale screen lists what is missing.
    role-permission map, the step-data merge and complete-sale functions,
    the public inventory view, realtime on `deals`, and the three **private**
    buckets (`buyer-ids`, `documents`, `title-work`).
-3. **Confirm the phone the desk prints.** It defaults to (713) 900-5050 from
-   the Google listing and the sign; the TxDMV licence record lists
-   (713) 203-3890. Set `NEXT_PUBLIC_DEALER_PHONE` if it should be the other.
-4. **Confirm the hours and the languages.** The desk prints the Google
-   listing's hours (Monday to Friday, 10:00 AM to 5:00 PM). The public site
-   has since taken Tuesday to Saturday, 10 AM to 7 PM from the owner's
-   billboard artwork. Once the owner confirms which is right, update `hours`
-   in `src/lib/dealership-config.ts` and `src/__tests__/dealer-hours.test.ts`.
-5. **Renew the GDN before 09/30/2027** and update `NEXT_PUBLIC_DEALER_LICENSE`
+3. **Confirm the languages.** The desk prints English and Spanish from the
+   dealer's historic sign. The phone, the hours and the public website were
+   confirmed by the owner on 10/01/2026.
+4. **Renew the GDN before 09/30/2027** and update `NEXT_PUBLIC_DEALER_LICENSE`
    if the number ever changes.
-6. **Set secrets in the host:** Supabase URL and keys,
+5. **Set secrets in the host:** Supabase URL and keys,
    `ADMIN_SESSION_SECRET`, `INTERNAL_RENDER_TOKEN`, and the SMS credentials
    once a provider is chosen.
-7. **Supply the remaining dealer facts** in `.env.example`
-   (`NEXT_PUBLIC_DEALER_*`): documentary fee, authorised signer (name and
-   title), website domain (`NEXT_PUBLIC_SITE_URL`) and email. Set the domain
-   before any email is sent: until it is set, links the desk builds point at
-   the local development address.
-8. **Confirm the fee and tax lines.** Texas 6.25% tax, $33 title fee and $75
+6. **Supply the remaining dealer facts** in `.env.example`
+   (`NEXT_PUBLIC_DEALER_*`): documentary fee, late-handling fee and email.
+   Set the desk's own address, `NEXT_PUBLIC_SITE_URL` (the recommended value
+   is in `.env.example`), before any email is sent: until it is set, links
+   the desk builds point at the local development address and filing is
+   refused. That address is never printed; documents print the public
+   website.
+7. **Confirm the fee and tax lines.** Texas 6.25% tax, $33 title fee and $75
    registration fee are the statutory defaults. The documentary fee is the
    dealer's own and must be supplied.
-9. **Confirm the financing rate ceilings** in `src/lib/documents/terms.ts`
+8. **Confirm the financing rate ceilings** in `src/lib/documents/terms.ts`
    (Tex. Fin. Code ch. 348, never below the 18% optional ceiling of §303.009)
    with counsel before selling buy here pay here.
+9. **Clear the signers and onboard them.** Signing is on for managers and
+   registration on approval; any other member who files sale documents
+   needs `can_sign_contracts` set. Each one's first sign-in asks their first
+   and last name and their signature (`/admin/account/onboarding`). An owner
+   who signs in through `ADMIN_EMAIL` without a team row has no name to
+   print and cannot file until a row is added for them.
 10. **Upload the dealer's signature** at `/admin/account/signature`. It prints
     on the dealer line of every document that person files.
 11. **Approve the Spanish documents.** They carry "translation pending counsel

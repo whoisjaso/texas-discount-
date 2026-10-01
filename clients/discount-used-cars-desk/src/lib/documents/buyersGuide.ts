@@ -5,8 +5,8 @@ import {
   DEALER_ADDRESS,
   DEALER_NAME,
   DEALER_PHONE,
-  DEALER_WEBSITE,
 } from "@/lib/documents/shared";
+import { dealership, factOr } from "@/lib/dealership-config";
 
 export const BUYERS_GUIDE_TEMPLATE_SOURCE_URL =
   "https://www.ftc.gov/system/files/documents/plain-language/buyersguide_eng_2016-11.pdf";
@@ -218,7 +218,10 @@ function drawPageThreeDealer(
   dealer: BuyersGuideDealerInput,
   layout: BuyersGuideLayout,
 ) {
-  const email = clean(dealer.email) || DEALER_WEBSITE;
+  // The FTC form's Email box holds an email address or its visible "Not set"
+  // marker, never the website: a website in that box is a real-looking value
+  // in the wrong field of a federal form (never invent a dealer fact).
+  const email = clean(dealer.email) || factOr(dealership.email, "dealer email");
   drawFitText({ page, font, text: dealer.name ?? DEALER_NAME, spot: layout.dealer.name });
   drawFitText({ page, font, text: dealer.address ?? DEALER_ADDRESS, spot: layout.dealer.address });
   drawFitText({ page, font, text: dealer.phone ?? DEALER_PHONE, spot: layout.dealer.phone });

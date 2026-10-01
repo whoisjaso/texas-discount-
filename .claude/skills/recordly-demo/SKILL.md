@@ -79,3 +79,45 @@ storyboard.json  →  capture (deterministic frames)  →  shots/*.mp4 + cursor 
 - `template/` — the Remotion project (Wallpaper, MacWindow, IPhone, Camera,
   Cursor, Sfx, theme).
 - `examples/discount-used-cars/storyboard.json` — the first production use.
+
+## Capture: how to run it, and what we learned
+
+```bash
+node scripts/capture.cjs --selftest --dsf 1,2 --out $SCRATCH/selftest   # site must be served on :5183
+node scripts/capture.cjs --storyboard sb.json --shot 2-scroll --out $SCRATCH/captures/2-scroll \
+     --publish <project>/public/shots --clean     # → public/shots/<id>/{shot.mp4,cursor.json}
+```
+Capture shots in storyboard order: `cursor.start.fromShot` starts a shot where the
+previous capture's cursor ended. Negative action times run in the preroll
+(e.g. re-type a field so the next shot matches the last). `clock` pins the
+page's wall clock (anything time-based, like "Open now", renders the same).
+
+- **Rendering is BeginFrameControl, not screenshots.** `Page.captureScreenshot`
+  under paused virtual time deadlocks intermittently (drawer transitions, async
+  image decodes, mouse input). The script launches the headless shell with
+  `--deterministic-mode`, creates the page with `enableBeginFrameControl` and
+  renders each frame with `HeadlessExperimental.beginFrame` at
+  `virtualTimeTicksBase + elapsed`. Frames sit on an exact 1/30 s grid.
+- **DSF needs two switches here**: Playwright's `deviceScaleFactor` (sets
+  `devicePixelRatio`) *and* `--force-device-scale-factor` (sets the rendered
+  surface). With only one you get a 1x picture or a 1x page.
+- **Input order**: queue mouse/keys, advance time, render, *then* await the
+  acks (mouse moves are rAF-aligned; awaiting them before a frame hangs).
+- **Determinism** (self-test): page clock exactly 33.333 ms/frame, identical
+  cursor track, frames identical or within raster noise (PSNR ≥ 55 dB).
+- **DSF 2 for desktop shots**: the window shows the page ~1490 px wide and
+  zooms to 1.8x; DSF 1 text goes soft there. ~0.2 s/frame, ~2.5 GB of PNGs
+  per 15 s shot before `--clean`.
+
+## Template: how to use it
+
+`cp -r template/. clients/<name>-demo/ && cd clients/<name>-demo &&
+scripts/prepare-sfx.sh && npm install`; copy the brand logos to
+`public/brand/` and the site font's woff2 files to `public/fonts/`; fill in
+`src/project.ts` (domain, logo paths, the confirmed facts). Compositions:
+`Intro`, `Outro`, `ShotPreview` / `PhonePreview` (any capture, via
+`--props='{"shot":"<id>","url":"<domain>"}'`). Build the film from
+`ShotScene` (window + camera + cursor + auto SFX, `trimSec`, `enter`, `exit`)
+and `PhoneScene` (`behind` = the receding desktop) in `<Series>`. Check stills
+with `node scripts/stills.cjs out/stills Comp:frame,frame …` (bundles once,
+deletes its webpack bundle).

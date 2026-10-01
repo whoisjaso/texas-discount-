@@ -32,7 +32,8 @@ const root = process.cwd();
  *
  * What it reads:
  *
- *   - THIS dealer's facts may sit only in the config. Checked in everything
+ *   - THIS dealer's facts (including its public website, supplied by the
+ *     owner 10/01/2026) may sit only in the config. Checked in everything
  *     that ships or runs: `src/`, `messages/`, `supabase/` and the root
  *     config files, with comments removed (a fact in a comment is a note to a
  *     programmer, not something a customer reads). Documentation (README,
@@ -87,6 +88,9 @@ const FACTS: { name: string; pattern: RegExp }[] = [
   { name: "dealer name (display and legal)", pattern: /Discount\s+Used\s+Cars\s+(?:and|&)\s+Trucks/i },
   { name: "Facebook page", pattern: /facebook\.com\/Discountusedcars/i },
   { name: "venue county", pattern: /\bHarris\s+County\b|\bCondado\s+de\s+Harris\b/i },
+  // OWNER, 10/01/2026: the public website. Config only; this also catches the
+  // desk's own host (desk.<domain>) typed into code, which must never print.
+  { name: "public website", pattern: /discountusedcarsandtrucks\.com/i },
 ];
 
 /**

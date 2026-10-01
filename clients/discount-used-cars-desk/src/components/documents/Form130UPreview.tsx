@@ -4,12 +4,18 @@ import { format } from 'date-fns';
 import { SignatureData } from '@/lib/documents/shared';
 import { getDocStrings, type DocLocale } from '@/lib/documents/i18n';
 import { DEALER } from '@/lib/fill-130u/field-mapping';
-import { brand } from "@/lib/dealership-config";
+import { dealerSignerPrintedName } from "@/lib/dealership-config";
 
 interface Props {
   data: Form130UData;
   signatures: SignatureData;
   locale?: DocLocale;
+  /**
+   * The filing member's onboarding name. The seller line prints "Legal Name
+   * (First Last)", or the "[Not set: signer name]" marker, never the entity
+   * alone (owner's instruction 10/01/2026; SOP 130-U bullet).
+   */
+  sellerSignerName?: string | null;
 }
 
 const CB = ({ checked }: { checked: boolean }) => (
@@ -19,7 +25,7 @@ const CB = ({ checked }: { checked: boolean }) => (
   </span>
 );
 
-export default function Form130UPreview({ data, signatures, locale }: Props) {
+export default function Form130UPreview({ data, signatures, locale, sellerSignerName }: Props) {
   const tax = calculateTax(data);
 
   /**
@@ -538,7 +544,9 @@ export default function Form130UPreview({ data, signatures, locale }: Props) {
               )}
             </div>
             <div className="flex justify-between text-[7px] text-[color:var(--tj-muted)] uppercase">
-              <span>{DEALER.name} ({DEALER.gdn})</span>
+              {/* The parentheses hold the person who signs, never the
+                  licence, which would read as a person's name. */}
+              <span>{dealerSignerPrintedName(sellerSignerName)} · GDN {DEALER.gdn}</span>
               <span>Date</span>
             </div>
           </div>
@@ -566,7 +574,7 @@ export default function Form130UPreview({ data, signatures, locale }: Props) {
             <div className="border-t border-r border-black px-3 py-2">
               <span className="text-[7px] text-[color:var(--tj-muted)] uppercase block mb-1">Printed Name of Seller</span>
               <div className="border-b border-black h-8 mb-1 flex items-end px-1">
-                <span className="text-[10px]">{brand.legal}</span>
+                <span className="text-[10px]">{dealerSignerPrintedName(sellerSignerName)}</span>
               </div>
               <div className="flex justify-between text-[7px] text-[color:var(--tj-muted)] uppercase">
                 <span>Name</span>
