@@ -35,10 +35,23 @@ export type PhotoSlot =
   /** The 404 page. */
   | 'not-found';
 
-export const photos: Partial<Record<PhotoSlot, string>> = {};
+export const photos: Partial<Record<PhotoSlot, string>> = {
+  // Brand images generated from the image brief (not vehicles in stock).
+  hero: '/photos/hero.webp',
+  'hero-mobile': '/photos/hero-mobile.webp',
+  inventory: '/photos/inventory.webp',
+  sell: '/photos/sell.webp',
+  financing: '/photos/financing.webp',
+  'not-found': '/photos/not-found.webp',
+};
 
 /** Where each banner's subject sits, so narrow screens crop to it. */
-export const photoFocus: Partial<Record<PhotoSlot, string>> = {};
+export const photoFocus: Partial<Record<PhotoSlot, string>> = {
+  inventory: '70% 62%',
+  sell: '68% 50%',
+  financing: '70% 58%',
+  'not-found': '50% 55%',
+};
 
 /** Where the hero photo's subject sits, so phones crop to it. */
-export const heroFocus = '72% 50%';
+export const heroFocus = '70% 55%';
