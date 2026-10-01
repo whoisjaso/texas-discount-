@@ -43,6 +43,8 @@ export const photos: Partial<Record<PhotoSlot, string>> = {
   sell: '/photos/sell.webp',
   financing: '/photos/financing.webp',
   'not-found': '/photos/not-found.webp',
+  // Area mood picture (the owner asked for an enhanced image, not the lot itself).
+  visit: '/photos/visit.webp',
   'body-suv': '/photos/body-suv.webp',
   'body-sedan': '/photos/body-sedan.webp',
   'body-truck': '/photos/body-truck.webp',
@@ -60,6 +62,7 @@ export const photoFocus: Partial<Record<PhotoSlot, string>> = {
   sell: '68% 50%',
   financing: '70% 58%',
   'not-found': '50% 55%',
+  visit: '70% 62%',
   'body-suv': '50% 62%',
   'body-sedan': '50% 62%',
   'body-truck': '50% 62%',
