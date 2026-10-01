@@ -52,6 +52,7 @@ export const photos: Partial<Record<PhotoSlot, string>> = {
   'sell-band': '/photos/sell-band.webp',
   'sell-cars': '/photos/sell-cars.webp',
   'sell-trucks': '/photos/sell-trucks.webp',
+  'sell-suvs': '/photos/sell-suvs.webp',
   // Transparent cut-out beside the inventory search.
   finder: '/photos/finder.webp',
 };
@@ -70,6 +71,7 @@ export const photoFocus: Partial<Record<PhotoSlot, string>> = {
   'sell-band': '45% 40%',
   'sell-cars': '55% 55%',
   'sell-trucks': '50% 55%',
+  'sell-suvs': '55% 55%',
 };
 
 /** Where the hero photo's subject sits, so phones crop to it. */
