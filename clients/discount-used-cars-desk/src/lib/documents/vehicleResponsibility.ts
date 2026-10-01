@@ -2,11 +2,11 @@
  * Vehicle Responsibility Acknowledgment — types, constants, and body copy.
  *
  * Signed by the buyer when they elect to handle their own title and
- * registration rather than have Triple J file it. It records that:
+ * registration rather than have the dealership file it. It records that:
  *   (1) the buyer takes responsibility for titling and registering the
  *       vehicle in their own name within the statutory window,
  *   (2) the buyer received the documents needed to do so,
- *   (3) if the buyer later asks Triple J to complete the filing, the cost is
+ *   (3) if the buyer later asks the dealership to complete the filing, the cost is
  *       the quoted registration amount plus a late-handling fee, because the
  *       dealership absorbs a WebDealer penalty on a late transfer.
  *

@@ -12,7 +12,7 @@ import {
 import { toTitleCaseDisplay } from "@/lib/display/title-case";
 
 /**
- * Triple J Admin Design System — shared primitives.
+ * Admin Design System — shared primitives.
  *
  * The admin surface spans ~12 top-level pages built across Phases 14–27.
  * To avoid the "every phase ships its own CSS" drift, this file is the

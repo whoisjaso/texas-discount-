@@ -38,8 +38,8 @@ import { placeName, stateCode, streetAddress } from "@/lib/documents/normalize";
  * ## What it will not do
  *
  * It is not a prefix autocomplete. The geocoder matches a street NAME, not the
- * first few letters of one: "8774 Almeda" finds nothing, "8774 Almeda Genoa"
- * finds the lot. So this fires when the line looks like a whole street rather
+ * first few letters of one: "100 Main" finds nothing, "100 Main St" finds
+ * the lot. So this fires when the line looks like a whole street rather
  * than on every keystroke, and finding nothing is a normal, silent outcome.
  */
 

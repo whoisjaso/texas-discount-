@@ -17,7 +17,7 @@ import { brand } from "@/lib/dealership-config";
 /**
  * Admin navigation.
  *
- * Triple J runs one desk now, so this is a single flat list — no workspace
+ * The dealership runs one desk, so this is a single flat list — no workspace
  * switch, no rental lane, no nested tool drawers. The four things the day
  * actually revolves around sit at the top; everything else is secondary.
  *

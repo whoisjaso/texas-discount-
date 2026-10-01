@@ -1,7 +1,7 @@
 /**
  * Admin workspace model.
  *
- * Triple J no longer rents vehicles, so there is exactly one workspace. The
+ * The dealership does not rent vehicles, so there is exactly one workspace. The
  * type is kept (rather than deleted outright) so the surrounding shell, cookie,
  * and permission plumbing stay intact and a second workspace could return
  * without another refactor — but nothing in the UI asks the operator to choose

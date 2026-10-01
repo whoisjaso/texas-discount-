@@ -12,6 +12,12 @@ export type VehicleStatus =
   | "Pending"
   | "Sold";
 
+/**
+ * The first two values are stored identifiers inherited with the data model
+ * this desk was ported with, not this dealer's lots. The data model is fixed,
+ * and renaming a stored value is a data migration, so they stay as they are.
+ * No code in this desk sets or labels them.
+ */
 export type VehicleLocation =
   | "almeda"
   | "lot_7813"

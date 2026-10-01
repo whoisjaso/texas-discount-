@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 /**
  * Hardship Bridge Program eligibility - single source of truth.
  *
- * Policy source: Triple J Renter Support Policy (Rev. 04/2026).
+ * Policy source: the reference dealership's Renter Support Policy (Rev. 04/2026).
  * Mandatory conditions:
  *   1. Four consecutive weeks in good standing.
  *   2. Verified loss event, not at fault, with documentation.

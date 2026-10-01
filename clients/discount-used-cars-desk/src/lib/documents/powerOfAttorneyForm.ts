@@ -98,7 +98,7 @@ const FIELD = {
 } as const;
 
 /**
- * Triple J is always the grantee — it is the dealership acting for the buyer.
+ * The dealership is always the grantee: it acts for the buyer.
  *
  * The city line used to be joined with two spaces, which lined the four
  * values up under the City box and left County, State and Zip empty. They

@@ -3,7 +3,7 @@
  *
  * Somebody at the desk types fast, with caps lock on, in a hurry, with a
  * customer waiting. What they type is not what should appear on a title
- * application. "TRIPLE J AUTO" is the dealership's name, not a shout, and a
+ * application. "ACME AUTO SALES" is the dealership's name, not a shout, and a
  * form that reproduces the shouting looks like it was filled in by an amateur
  * at exactly the moment it is being read by a county clerk.
  *
@@ -43,7 +43,7 @@ const SUFFIXES = new Map([
 /**
  * Business entity suffixes, which are initials rather than words.
  *
- * Caught by a test rather than by reading: "Triple J Auto Investment LLC"
+ * Caught by a test rather than by reading: "Acme Auto Investment LLC"
  * became "... Llc", which is the registered name of no company anywhere. A
  * legal entity's name on a title application has to be the name it is
  * registered under.
@@ -99,7 +99,7 @@ function capitaliseWord(word: string): string {
     return `Mac${lower.charAt(3).toUpperCase()}${lower.slice(4)}`;
   }
 
-  // A single letter is an initial and keeps its capital: the J in Triple J.
+  // A single letter is an initial and keeps its capital: the Q in John Q.
   return lower.charAt(0).toUpperCase() + lower.slice(1);
 }
 
@@ -110,7 +110,7 @@ function words(value: string): string[] {
 /**
  * A person's or business's name.
  *
- * "TRIPLE J AUTO" becomes "Triple J Auto". "john q. sample" becomes
+ * "ACME AUTO SALES" becomes "Acme Auto Sales". "john q. sample" becomes
  * "John Q. Sample".
  */
 export function personName(value: string | null | undefined): string {

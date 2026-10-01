@@ -9,7 +9,7 @@
  * It is deliberately NOT `toTitleCaseDisplay`. That one bails out on anything
  * reading as prose (four or more words ending in a full stop) and returns it
  * untouched, which is right for a heading pulled out of a sentence and wrong
- * here: "Your pre-approval with Triple J." would have come through unchanged.
+ * here: "Your pre-approval with the dealer." would have come through unchanged.
  * The instruction was "regardless of anything", so this one has no escape
  * hatch.
  *
@@ -19,7 +19,7 @@
  *   - Any token carrying a digit is left alone, so a code, a year or a trim
  *     badge is not reshaped.
  *   - An email address or a link is left whole. A subject carrying one is
- *     rare, but "Write To Info@Thetriplejauto.Com" is not a thing anyone
+ *     rare, but "Write To Info@Example.Com" is not a thing anyone
  *     wants to receive.
  *
  * Spanish gets the same treatment. Title Case is not a Spanish typographic

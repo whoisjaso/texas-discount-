@@ -1841,7 +1841,7 @@ select option:hover {
 /* ============================================================
    EDITORIAL HOMEPAGE DESIGN SYSTEM
    ------------------------------------------------------------
-   Token set for the cinematic Triple J homepage (see
+   Token set for the cinematic reference homepage (see
    docs/HOMEPAGE_IMPLEMENTATION.md). This is now the only palette:
    the legacy --color-tj-* brand tokens it was namespaced against
    were retired when the product moved onto paper.

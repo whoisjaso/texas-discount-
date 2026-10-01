@@ -61,7 +61,7 @@ export interface RentalData {
   hardshipPriorVehicleDescription?: string; // e.g. "2017 Hyundai Elantra"
   hardshipPriorVehicleVin?: string;
   hardshipPriorAgreementDate?: string;  // ISO date
-  // ── Triple J Representative ──
+  // ── Dealership Representative ──
   representativeName?: string;          // defaults to the configured authorised signer
   representativeLicense?: string;       // defaults to the dealership config licence
   // Maintenance protocol controls

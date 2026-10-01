@@ -226,8 +226,8 @@ export default function StartSale({ vehicles }: { vehicles: PickableVehicle[] })
    * its refusal stay below for any caller that does not come from here.
    */
   // This desk: the language starts EMPTY and the sale cannot advance until a
-  // person picks one. Triple J defaulted to English because nearly all of its
-  // sales are; Discount serves a bilingual clientele ("Se Habla Español" on
+  // person picks one. The reference desk defaulted to English because nearly
+  // all of its sales are; Discount serves a bilingual clientele ("Se Habla Español" on
   // its sign), and the SOP's rule is
   // "required, no default" because FTC 455.5 and Tex. Fin. Code §348.006 key
   // the Spanish-first duties to this answer.
@@ -557,8 +557,8 @@ export default function StartSale({ vehicles }: { vehicles: PickableVehicle[] })
    * Complete the address once the street line looks like a whole street.
    *
    * Debounced rather than per keystroke: the geocoder matches a street NAME,
-   * so "8774 Almeda" is a request spent to be told no, and only "8774 Almeda
-   * Genoa" can answer. `looksLikeAStreet` is the same gate the action applies,
+   * so "100 Main" is a request spent to be told no, and only "100 Main St"
+   * can answer. `looksLikeAStreet` is the same gate the action applies,
    * checked here too so a typing desk never opens a request that cannot win.
    *
    * It only ever fills boxes that are EMPTY. A dealer who typed a city because

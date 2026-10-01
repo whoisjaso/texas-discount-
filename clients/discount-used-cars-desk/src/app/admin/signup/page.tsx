@@ -118,8 +118,8 @@ function SignupScreen() {
             value={phone}
             aria-describedby={phone && phoneDigitsRemaining(phone) > 0 ? "phone-remaining" : undefined}
             // Deliberately no maxLength. The browser truncates a paste before
-            // React sees it, so "+1 (832) 818-6428 ext 9" arrived as
-            // "(832) 818-6" with the real number silently cut. Formatting the
+            // React sees it, so "+1 (713) 555-0100 ext 9" arrived as
+            // "(713) 555-0" with the real number silently cut. Formatting the
             // value here takes the ten digits out of whatever was pasted and
             // drops the rest, which is the same cap without the trap.
             onChange={(event) => setPhone(formatPhone(event.target.value))}

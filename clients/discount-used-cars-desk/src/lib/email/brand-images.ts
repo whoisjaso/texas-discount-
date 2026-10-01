@@ -4,7 +4,8 @@ import { join } from "node:path";
 /**
  * The monogram and the wordmark, carried inside the message.
  *
- * The stationery used to point at `https://thetriplejauto.com/brand/...`.
+ * The stationery used to point at the reference dealership's own domain
+ * (`https://<domain>/brand/...`).
  * Gmail fetches remote pictures through its own proxy, hides them until
  * the reader trusts the sender, and the bare domain answers with a redirect
  * to www on top of that. The owner opened the welcome and saw a letter with

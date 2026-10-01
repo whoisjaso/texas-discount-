@@ -236,7 +236,7 @@ function drawLienholderColumns(pdfDoc: PDFDocument, field: PDFTextField, font: P
  * beside it occupies y=80 to y=104. So the ink goes in the space above the
  * label and level with that box, left of the name.
  *
- * This is the dealership's own line. Triple J is the seller on these deals, so
+ * This is the dealership's own line. The dealership is the seller on these deals, so
  * a staff member signing it is signing for themselves. The applicant lines
  * below it belong to the buyer and are never touched here: a signature drawn
  * onto somebody else's line would be a forgery on a state title document, not
