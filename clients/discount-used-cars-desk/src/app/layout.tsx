@@ -1,7 +1,7 @@
 import type { Viewport } from "next";
 import { getLocale } from "next-intl/server";
 import { GeistMono } from "geist/font/mono";
-// Vega's one face, the public site's narrow grotesk, self hosted so the desk
+// The desk's one face, the public site's narrow grotesk, self hosted so the desk
 // makes no third party font request.
 import "@fontsource/barlow-semi-condensed/400.css";
 import "@fontsource/barlow-semi-condensed/500.css";

@@ -64,12 +64,13 @@
     min-height: 44px;
   }
 
-  /* Vega's emblem is full colour and must never be flattened to white. */
-  .tj-admin :is(.ed-admin-brand, .ed-access-mark) img:not([src*="/brand/vegas-logo"]) {
+  /* Discount's logo and swoosh are full colour and must never be flattened
+     to white. */
+  .tj-admin :is(.ed-admin-brand, .ed-access-mark) img:not([src*="/brand/discount-"]) {
     filter: var(--admin-brand-filter, none);
   }
 
-  .tj-admin .ed-admin-brand svg:not(.vega-glint) {
+  .tj-admin .ed-admin-brand svg {
     width: 165px;
     max-width: 100%;
   }
@@ -1026,8 +1027,8 @@
   -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 26px), transparent 100%);
 }
 
-/* Vega's: the rail and the phone tab bar are the public site's black band,
-   carrying the emblem and the wordmark in white. Every role flips inside
+/* The rail and the phone tab bar are the public site's black band, the rail
+   carrying the red swoosh over the wordmark in white. Every role flips inside
    them, so the nav keeps its own contrast without new rules. */
 @media screen {
   .tj-admin :is(.ed-admin-rail, .ed-admin-tabs) {

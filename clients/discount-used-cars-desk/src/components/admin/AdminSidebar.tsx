@@ -136,7 +136,7 @@ export default function AdminSidebar({
       .filter(Boolean)
       .slice(0, 2)
       .map((part) => part[0]?.toUpperCase())
-      .join("") || "V";
+      .join("") || "D";
 
   return (
     <>
@@ -144,7 +144,8 @@ export default function AdminSidebar({
       <aside className="ed-admin-rail fixed inset-y-0 left-0 z-40 hidden w-[264px] flex-col border-r border-[color:var(--tj-line)] bg-[color:var(--tj-plane)] md:flex">
         <div className="ed-admin-brand flex h-[72px] shrink-0 items-center border-b border-[color:var(--tj-line)] px-6">
           <Link href="/admin/sales" aria-label={`${brand.short} admin home`}>
-            <Wordmark width={130} tone="dark" emblem />
+            {/* The black band: the colour swoosh over the name in white. */}
+            <Wordmark width={130} tone="light" emblem />
           </Link>
         </div>
 

@@ -349,7 +349,7 @@ describe("the lien reaching the paper", () => {
   it("is red on the screen that files it too, and legibly", () => {
     // A colour defined only in a dark block, or only in a light one, is a
     // colour that disappears for half the people looking at it.
-    // Vega's desk is on the public site's pale grey ground (#eeeff2), where
+    // The Discount desk is on the public site's pale grey ground (#eeeff2), where
     // the paper red (#B3261E) measures about 5.8:1 and clears AA.
     expect(CSS).toMatch(/--tj-lien:\s*#B3261E/i);
     expect(CSS.match(/--tj-lien:/g)?.length).toBeGreaterThanOrEqual(3);

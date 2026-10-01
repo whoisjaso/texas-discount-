@@ -56,7 +56,8 @@ export default function RequestGranted({ message }: Props) {
       <div className="ed-granted-seal" aria-hidden="true">
         <span className="ed-granted-ring" />
         <span className="ed-granted-mark">
-          <Monogram height={40} tone="ink" title="" />
+          {/* The logo is wide: 30px tall keeps it inside the 96px ring. */}
+          <Monogram height={30} tone="ink" title="" />
         </span>
       </div>
 

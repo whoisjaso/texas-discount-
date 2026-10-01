@@ -4,7 +4,7 @@ import { saleMoney, typedDollars } from "@/lib/sales/money";
 /**
  * The Handle A Sale SOP's money vectors, verbatim. The fee stack they assume
  * ($33 title + $75 registration + $292 doc fee = $400) is supplied as a test
- * fixture in vitest.config.ts; Vega's real doc fee comes from the owner.
+ * fixture in vitest.config.ts; Discount's real doc fee comes from the owner.
  * The SOP's "balance" is `lien` here: an unpaid cash balance is the lien.
  */
 const cash = (amount: string, priceBasis: "outTheDoor" | "vehicleOnly", extra: Record<string, string> = {}) =>

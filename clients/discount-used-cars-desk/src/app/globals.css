@@ -1857,8 +1857,9 @@ select option:hover {
   --gutter-mobile: 16px;
   --grid-gap: 28px;
 
-  /* Palette — Vega's, matched to the public site: a pale grey ground, white
-     cards, black ink and black actions. The emblem is the only colour.
+  /* Palette — Discount Used Cars and Trucks, matched to the public site: a
+     pale grey ground, white cards, black ink and black actions. The logo is
+     the only colour.
      The eight roles: ground --tj-surface, panel --tj-plane, well
      --tj-cream-warm, line --tj-line, ink --tj-ink, muted --tj-muted,
      faint --tj-muted-light, accent --tj-copper. The names are inherited from
@@ -1908,7 +1909,7 @@ select option:hover {
   /* Errors and refusals: a red that clears AA on the pale ground. */
   --tj-danger: #B00020;
   /* Aliases some ported screens read without ever defining. Pointed at
-     Vega's roles so no screen falls back to the reference's paper colours. */
+     this desk's roles so no screen falls back to the reference's paper colours. */
   --ed-ink: var(--tj-ink);
   --ed-rule: var(--tj-line);
   --ed-accent: var(--tj-copper);
@@ -13650,7 +13651,7 @@ html[data-walk-dir="back"]::view-transition-new(walk-stage) {
 }
 
 /* ============================================================
-   VEGA'S: THE CURRENT ANSWER
+   THE CURRENT ANSWER
    Marked with the accent AND a check, never with colour alone (SOP: "The
    current answer is marked with the accent and a check"). One rule for every
    kind of choice the corridor offers, so no screen can disagree.
@@ -13683,7 +13684,7 @@ html[data-walk-dir="back"]::view-transition-new(walk-stage) {
   pointer-events: none;
 }
 
-/* Vega's: figures in a tabular face, and the live total is the one figure
+/* Figures in a tabular face, and the live total is the one figure
    the accent marks (SOP: the accent is for the live figure, the current
    focus and the primary action). */
 .ed-money-line dd {
@@ -13697,7 +13698,7 @@ html[data-walk-dir="back"]::view-transition-new(walk-stage) {
   color: var(--tj-copper);
 }
 
-/* Vega's: the kept-signature panel is paper (it shows the buyer's ink stroke),
+/* The kept-signature panel is paper (it shows the buyer's ink stroke),
    so everything written on it is set in paper ink, not the screen's ivory. */
 .ed-sign-kept,
 .ed-sign-kept .ed-sign-consent {
@@ -13712,7 +13713,7 @@ html[data-walk-dir="back"]::view-transition-new(walk-stage) {
   color: #4a4a45;
 }
 
-/* Vega's: surfaces that are deliberately white paper on screen (the signing
+/* Surfaces that are deliberately white paper on screen (the signing
    pad in the ceremony, the kept-signature panel) take the paper values for
    every role, so any text set on them stays legible (AA on white). */
 .ed-sign-pad-box,

@@ -1,5 +1,4 @@
 import Monogram from "@/components/site/shared/Monogram";
-import Wordmark from "@/components/site/shared/Wordmark";
 import {
   DEALER_ADDRESS,
   DEALER_LICENSE,
@@ -9,11 +8,13 @@ import {
 } from "@/lib/documents/shared";
 
 /**
- * The letterhead every Triple J document carries.
+ * The letterhead every document this dealer files carries.
  *
- * Typographic, not a badge: the wordmark, a hairline, and the dealer block set
- * small. A document is read and filed, sometimes photocopied — so it is built
- * out of black type and rules rather than a logo that turns to mud on a fax.
+ * The dealer's logo in black ink, a hairline, and the dealer block set small.
+ * A document is read and filed, sometimes photocopied — so it is built out of
+ * black type and rules, and the logo is the ink version rather than the red
+ * and navy one that turns to mud on a fax. The logo already sets the name, so
+ * no drawn wordmark repeats it beside the mark.
  *
  * Dealer details come from the shared config. Nobody types them onto a form.
  */
@@ -31,9 +32,8 @@ export default function DocumentLetterhead({
     <header className="doc-letterhead">
       <div className="doc-letterhead-row">
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          {/* The owner's marks, in ink: copper turns to mud on a copier. */}
-          <Monogram height={54} tone="ink" />
-          <Wordmark width={168} tone="dark" withSubline />
+          {/* The owner's logo, in ink: colour turns to mud on a copier. */}
+          <Monogram height={58} tone="ink" />
         </div>
         <div className="doc-dealer">
           <p className="doc-dealer-name">{DEALER_NAME}</p>

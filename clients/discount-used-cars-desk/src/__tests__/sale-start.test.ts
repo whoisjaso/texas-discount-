@@ -203,7 +203,7 @@ describe("starting a sale asks one answer group at a time", () => {
     const carScreen = stageSource("car");
     expect(EN.start.odometer).toBe("Odometer (miles)");
     expect(carScreen).toContain("t.start.odometer");
-    // Vega's: required, NO default (SOP). A bilingual lot cannot let the
+    // Discount: required, NO default (SOP). A bilingual lot cannot let the
     // Spanish-first duty (FTC 455.5, Tex. Fin. Code 348.006) ride on a default.
     expect(EN.saleLanguage.question).toBe("What Language Is The Sale In?");
     expect(startSaleScreen).toMatch(

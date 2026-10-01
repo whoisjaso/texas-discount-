@@ -7,7 +7,7 @@ export default defineConfig({
     globals: true,
     // The SOP's money test vectors are written against a $400 fee stack
     // ($33 title + $75 registration + $292 doc fee). This is a TEST FIXTURE,
-    // not Vega's fee: production reads NEXT_PUBLIC_DEALER_DOC_FEE from the
+    // not Discount's fee: production reads NEXT_PUBLIC_DEALER_DOC_FEE from the
     // owner, and files nothing until it is set.
     env: { NEXT_PUBLIC_DEALER_DOC_FEE: '292' },
   },

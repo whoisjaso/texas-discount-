@@ -3,19 +3,24 @@
  * print. Nothing else in `src/` may type one of these values (a guard test
  * enforces it).
  *
- * Nothing here may be invented. Vega's Auto Sales & Glass Co. has not supplied
- * its FACTS block yet, so:
+ * This desk belongs to Discount Used Cars and Trucks, LLC (8108 Gulf Fwy,
+ * Houston). Nothing here may be invented. The facts below were verified on
+ * 10/01/2026 and each carries its source:
  *
- * - values visible on the business's own public listings (Facebook page,
- *   Google Business listing via Birdeye, MapQuest, Waze) are filled in and
- *   marked PUBLIC, pending the owner's confirmation;
- * - values on the state's licence record are filled in and marked TXDMV:
- *   the Independent (GDN) Motor Vehicle Dealers List, data current as of
- *   09/26/2026 (licence P113248, Active, expires 01/31/2027, Harris County,
- *   7722 Galveston Rd, (713) 941-1622);
- * - every other fact is `null`. Screens say it is missing, previews print a
- *   visible "Not set" marker in its place, and filing a document is refused
- *   until it is supplied (see `missingDealerFacts`).
+ * - TXDMV: the Independent (GDN) Motor Vehicle Dealers List, data current as
+ *   of 10/01/2026: business name DISCOUNT USED CARS AND TRUCKS, LLC, DBA
+ *   Discount Used Cars and Trucks, GDN P145000 (Active, licence type Motor
+ *   Vehicle, active since 11/06/2017, expires 09/30/2027), Harris County,
+ *   8108 Gulf Fwy, Houston, TX 77017. The Texas Secretary of State file
+ *   0802832466 (domestic LLC, formed 10/09/2017) and the Comptroller agree on
+ *   the entity and the address.
+ * - PUBLIC: the Google listing at 8108 Gulf Fwy and the dealer's own sign,
+ *   pending the owner's confirmation (phone, hours, languages).
+ * - every other fact is `null`: owner, authorised signer, documentary fee,
+ *   website domain, email, payment destinations, SMS provider, salvage
+ *   licence, lenders and map position. Screens say it is missing, previews
+ *   print a visible "Not set" marker in its place, and filing a document is
+ *   refused until it is supplied (see `missingDealerFacts`).
  *
  * Each value is overridable through an environment variable so the owner can
  * supply it without a code change.
@@ -61,10 +66,13 @@ export type SocialProfile = {
   href: string;
 };
 
-// PUBLIC: (713) 941-1622 on the Facebook page, Google listing and MapQuest.
-const RAW_PHONE = env(process.env.NEXT_PUBLIC_DEALER_PHONE) ?? "+17139411622";
+// PUBLIC: (713) 900-5050 on the current Google listing at 8108 Gulf Fwy and on
+// the dealer's "713 900 50/50" sign, pending the owner's confirmation. The
+// TxDMV licence record lists (713) 203-3890; the owner says which one the
+// desk prints. One phone field only, never two that can disagree.
+const RAW_PHONE = env(process.env.NEXT_PUBLIC_DEALER_PHONE) ?? "+17139005050";
 
-/** "+17139411622" -> "(713) 941-1622" */
+/** "+17139005050" -> "(713) 900-5050" */
 function formatUsPhone(e164: string): string {
   const digits = e164.replace(/\D/g, "").replace(/^1(?=\d{10}$)/, "");
   if (digits.length !== 10) return e164;
@@ -72,14 +80,17 @@ function formatUsPhone(e164: string): string {
 }
 
 export const dealership = {
-  // PUBLIC: the name on the Facebook page and the Google listing.
-  name: env(process.env.NEXT_PUBLIC_DEALER_NAME) ?? "Vega's Auto Sales & Glass Co.",
-  shortName: env(process.env.NEXT_PUBLIC_DEALER_SHORT_NAME) ?? "Vega's",
+  // TXDMV: the DBA on GDN P145000. PUBLIC: the Google listing at 8108 Gulf Fwy.
+  name: env(process.env.NEXT_PUBLIC_DEALER_NAME) ?? "Discount Used Cars and Trucks",
+  // The wordmark on the dealer's logo.
+  shortName: env(process.env.NEXT_PUBLIC_DEALER_SHORT_NAME) ?? "Discount",
   /**
-   * TXDMV: the licence is held by Constantino Vega (business name) doing
-   * business as VEGA'S AUTO SALES (DBA).
+   * TXDMV: BusinessName "DISCOUNT USED CARS AND TRUCKS, LLC" on the
+   * Independent (GDN) Motor Vehicle Dealers List, current 10/01/2026. Texas
+   * SOS file 0802832466 (domestic LLC, formed 10/09/2017). An LLC contracts
+   * under its entity name as licensed, so there is no "DBA" construction.
    */
-  legalName: (env(process.env.NEXT_PUBLIC_DEALER_LEGAL_NAME) ?? "Constantino Vega DBA Vega's Auto Sales") as string | null,
+  legalName: (env(process.env.NEXT_PUBLIC_DEALER_LEGAL_NAME) ?? "Discount Used Cars and Trucks, LLC") as string | null,
   url: SITE_URL,
 
   googleSiteVerification: env(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION) ?? undefined,
@@ -107,9 +118,10 @@ export const dealership = {
 
   /**
    * TXDMV: Texas GDN (General Distinguishing Number), Active, licence type
-   * Motor Vehicle, expires 01/31/2027. Renewal is the owner's to track.
+   * Motor Vehicle (independent), active since 11/06/2017, expires 09/30/2027.
+   * Renewal is the owner's to track.
    */
-  license: env(process.env.NEXT_PUBLIC_DEALER_LICENSE) ?? "P113248",
+  license: env(process.env.NEXT_PUBLIC_DEALER_LICENSE) ?? "P145000",
 
   /** Texas salvage vehicle dealer licence (Occ. Code ch. 2302), when held. */
   salvageDealerLicense: env(process.env.NEXT_PUBLIC_SALVAGE_DEALER_LICENSE),
@@ -129,15 +141,16 @@ export const dealership = {
     defaultApr: Number(env(process.env.NEXT_PUBLIC_FINANCING_DEFAULT_APR)) || 18,
   },
 
-  // PUBLIC: 7722 Galveston Rd, Houston, TX 77034 on every listing.
+  // TXDMV + Comptroller + PUBLIC (Google listing): 8108 Gulf Fwy, Houston,
+  // TX 77017 (ZIP+4 77017-3620). No suite.
   address: {
-    street: env(process.env.NEXT_PUBLIC_DEALER_STREET) ?? "7722 Galveston Rd",
+    street: env(process.env.NEXT_PUBLIC_DEALER_STREET) ?? "8108 Gulf Fwy",
     locality: env(process.env.NEXT_PUBLIC_DEALER_CITY) ?? "Houston",
     region: env(process.env.NEXT_PUBLIC_DEALER_STATE) ?? "TX",
-    postalCode: env(process.env.NEXT_PUBLIC_DEALER_ZIP) ?? "77034",
+    postalCode: env(process.env.NEXT_PUBLIC_DEALER_ZIP) ?? "77017",
     country: "US",
     /** Single-line form for compact UI. */
-    oneLine: `${env(process.env.NEXT_PUBLIC_DEALER_STREET) ?? "7722 Galveston Rd"}, ${env(process.env.NEXT_PUBLIC_DEALER_CITY) ?? "Houston"}, ${env(process.env.NEXT_PUBLIC_DEALER_STATE) ?? "TX"} ${env(process.env.NEXT_PUBLIC_DEALER_ZIP) ?? "77034"}`,
+    oneLine: `${env(process.env.NEXT_PUBLIC_DEALER_STREET) ?? "8108 Gulf Fwy"}, ${env(process.env.NEXT_PUBLIC_DEALER_CITY) ?? "Houston"}, ${env(process.env.NEXT_PUBLIC_DEALER_STATE) ?? "TX"} ${env(process.env.NEXT_PUBLIC_DEALER_ZIP) ?? "77017"}`,
   },
 
   /** TXDMV: the county on the dealer licence record, which the 130-U names. */
@@ -145,29 +158,36 @@ export const dealership = {
 
   /**
    * The business clock. Every date on a document or signature is the business
-   * date here, never the server's UTC date. Texas (Houston) default; the owner
-   * confirms it with the rest of the facts.
+   * date here, never the server's UTC date. Houston, Texas keeps Central time
+   * (the lot is at 8108 Gulf Fwy, Houston); the owner confirms it with the
+   * rest of the facts.
    */
   timeZone: env(process.env.NEXT_PUBLIC_DEALER_TIME_ZONE) ?? "America/Chicago",
 
+  /** Not supplied: no map position is printed until the owner confirms one. */
   geo: null as { latitude: number; longitude: number } | null,
 
-  // PUBLIC: Monday to Saturday 9:00 to 18:00, closed Sunday (Google, Waze).
+  // PUBLIC: Monday to Friday 10:00 to 17:00, Saturday and Sunday closed, on
+  // the Google listing at 8108 Gulf Fwy (read 10/01/2026), pending the
+  // owner's confirmation.
   hours: [
     {
-      days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-      opens: "09:00",
-      closes: "18:00",
+      days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+      opens: "10:00",
+      closes: "17:00",
     },
-    { days: ["Sunday"], opens: null, closes: null },
+    { days: ["Saturday", "Sunday"], opens: null, closes: null },
   ] satisfies DealershipHours[],
 
   priceRange: null as string | null,
   serviceArea: "Houston and surrounding areas",
+  // PUBLIC: the dealer's Facebook page.
   socials: [
-    { label: "Facebook", href: "https://www.facebook.com/profile.php?id=100064755109997" },
+    { label: "Facebook", href: "https://www.facebook.com/Discountusedcars/" },
   ] as SocialProfile[],
 
+  // PUBLIC (historic): "Se Habla Español" on the dealer's sign, pending the
+  // owner's confirmation.
   languages: ["en", "es"] as const,
   defaultLanguage: "en" as const,
 
@@ -183,6 +203,7 @@ export const dealership = {
     paypal: env(process.env.NEXT_PUBLIC_DEALER_PAYPAL),
   } as Record<string, string | null>,
 
+  /** Not supplied: no lender is named until the owner lists them. */
   lenders: [] as Lender[],
 
   /** TxDMV webDEALER, where Texas dealers file title since 1 July 2025. */
@@ -197,7 +218,8 @@ export const dealership = {
   profile: {
     owner: env(process.env.NEXT_PUBLIC_DEALER_OWNER),
     locale: env(process.env.NEXT_PUBLIC_DEALER_LOCALE) ?? "Houston, Texas",
-    segment: env(process.env.NEXT_PUBLIC_DEALER_SEGMENT) ?? "pre-owned cars, trucks and SUVs, and auto glass",
+    // What the lot sells. No second line of business.
+    segment: env(process.env.NEXT_PUBLIC_DEALER_SEGMENT) ?? "pre-owned cars, trucks and SUVs",
     offers: env(process.env.NEXT_PUBLIC_DEALER_OFFERS),
   },
 
@@ -258,10 +280,35 @@ export function filingBlockedReason(): string | null {
   return `Add these dealer details before filing: ${missing.join(", ")}.`;
 }
 
+/**
+ * Day names as they sit inside a sentence. Spanish keeps them lower case; the
+ * line's first letter is capitalised where the line is built.
+ */
 const DAY_NAMES: Record<"en" | "es", Record<string, string>> = {
-  en: { Monday: "Monday", Saturday: "Saturday", Sunday: "Sunday" },
-  es: { Monday: "Lunes", Saturday: "sábado", Sunday: "Domingo" },
+  en: {
+    Monday: "Monday",
+    Tuesday: "Tuesday",
+    Wednesday: "Wednesday",
+    Thursday: "Thursday",
+    Friday: "Friday",
+    Saturday: "Saturday",
+    Sunday: "Sunday",
+  },
+  es: {
+    Monday: "lunes",
+    Tuesday: "martes",
+    Wednesday: "miércoles",
+    Thursday: "jueves",
+    Friday: "viernes",
+    Saturday: "sábado",
+    Sunday: "domingo",
+  },
 };
+
+/** "sábado y domingo" -> "Sábado y domingo" */
+function capitalizeFirst(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
 
 /** "09:00" -> "9:00 AM" */
 function to12Hour(time: string): string {
@@ -272,29 +319,48 @@ function to12Hour(time: string): string {
 }
 
 export type HoursLines = {
+  /** The open rule: "Monday to Friday, 10:00 AM to 5:00 PM". */
   weekday: string;
+  /**
+   * The closed days: "Saturday And Sunday: Closed". The key keeps the name
+   * it had when only Sunday was closed, so no caller changes shape.
+   */
   sunday: string;
   closedWord: string;
 };
 
+/**
+ * The hours as two lines of copy, built from `dealership.hours`: one open
+ * rule (a run of days with one opening and one closing time) and every day
+ * the lot is closed, joined into one line ("Saturday And Sunday: Closed",
+ * "Sábado y domingo: Cerrado").
+ */
 export function hoursLines(locale: string): HoursLines {
   const isEs = locale === "es";
   const names = DAY_NAMES[isEs ? "es" : "en"];
   const day = (name: string) => names[name] ?? name;
 
-  const open = dealership.hours.find((rule) => rule.opens && rule.closes) ?? dealership.hours[0];
-  const shut = dealership.hours.find((rule) => !rule.opens);
-
-  const first = day(open.days[0]);
-  const last = day(open.days[open.days.length - 1]);
-  const from = to12Hour(open.opens ?? "09:00");
-  const until = to12Hour(open.closes ?? "18:00");
+  const open = dealership.hours.find((rule) => rule.opens && rule.closes);
+  const shutDays = dealership.hours.filter((rule) => !rule.opens).flatMap((rule) => rule.days.map(day));
   const closedWord = isEs ? "Cerrado" : "Closed";
-  const closedDay = day(shut?.days[0] ?? "Sunday");
+  const and = isEs ? " y " : " And ";
+
+  let weekday = notSet("business hours");
+  if (open?.opens && open.closes) {
+    const first = day(open.days[0]);
+    const last = day(open.days[open.days.length - 1]);
+    const from = to12Hour(open.opens);
+    const until = to12Hour(open.closes);
+    weekday = capitalizeFirst(isEs ? `${first} a ${last}, ${from} a ${until}` : `${first} to ${last}, ${from} to ${until}`);
+  }
+
+  const closedDays = shutDays.length > 1
+    ? `${shutDays.slice(0, -1).join(", ")}${and}${shutDays[shutDays.length - 1]}`
+    : shutDays[0];
 
   return {
-    weekday: isEs ? `${first} a ${last}, ${from} a ${until}` : `${first} to ${last}, ${from} to ${until}`,
-    sunday: `${closedDay}: ${closedWord}`,
+    weekday,
+    sunday: closedDays ? `${capitalizeFirst(closedDays)}: ${closedWord}` : "",
     closedWord,
   };
 }
@@ -352,8 +418,12 @@ const HOST = SITE_URL.replace(/^https?:\/\//, "").replace(/\/$/, "");
 const MAIL_HOST = HOST.replace(/^www\./, "");
 
 /**
- * The brand layer. Vega's has an emblem (`logo`) but no wordmark or monogram
- * artwork, so the name is drawn and the emblem stands in for the monogram.
+ * The brand layer. Discount Used Cars and Trucks has a full logo (the red car
+ * swoosh, DISCOUNT in red, the name in navy and the road), a white-text
+ * version of it for black grounds, the swoosh on its own, and black-ink
+ * versions of the logo and the swoosh for paper. There is no separate
+ * wordmark or monogram artwork: the name is drawn in wide capitals and the
+ * logo stands in for the monogram.
  */
 export const brand = {
   wordmarkArtwork: {
@@ -370,11 +440,18 @@ export const brand = {
   /** Registered entity for contracts, or its visible "Not set" marker. */
   legal: factOr(dealership.legalName, "dealer legal name"),
 
-  wordmark: env(process.env.NEXT_PUBLIC_BRAND_WORDMARK) ?? "VEGA'S",
-  subline: env(process.env.NEXT_PUBLIC_BRAND_SUBLINE) ?? "Auto Sales · Glass Co.",
+  wordmark: env(process.env.NEXT_PUBLIC_BRAND_WORDMARK) ?? "DISCOUNT",
+  subline: env(process.env.NEXT_PUBLIC_BRAND_SUBLINE) ?? "Used Cars and Trucks",
 
-  /** The emblem the owner supplied: gold ring, Texas flag, black SS. */
-  logo: env(process.env.NEXT_PUBLIC_BRAND_LOGO) ?? "/brand/vegas-logo-sm.png",
+  /** The full-colour logo (480 × 185, transparent), for light grounds. */
+  logo: env(process.env.NEXT_PUBLIC_BRAND_LOGO) ?? "/brand/discount-logo-sm.png",
+  /** The same logo with the navy turned white, for the black rail. */
+  logoReverse: env(process.env.NEXT_PUBLIC_BRAND_LOGO_REVERSE) ?? "/brand/discount-logo-reverse-sm.png",
+  /** The red car swoosh alone (640 × 87), set over the drawn name. */
+  mark: env(process.env.NEXT_PUBLIC_BRAND_MARK) ?? "/brand/discount-mark.png",
+  /** Black ink only, for printed documents: a copier turns colour to mud. */
+  logoInk: env(process.env.NEXT_PUBLIC_BRAND_LOGO_INK) ?? "/brand/discount-logo-ink-sm.png",
+  markInk: env(process.env.NEXT_PUBLIC_BRAND_MARK_INK) ?? "/brand/discount-mark-ink.png",
   logoPrint: env(process.env.BRAND_LOGO_PRINT),
 
   /** The website as printed on paper; a marker until the domain is supplied. */
@@ -386,7 +463,7 @@ export const brand = {
   supportFrom: env(process.env.SUPPORT_FROM_EMAIL) ?? `support@${MAIL_HOST}`,
   supportReplyTo: env(process.env.SUPPORT_REPLY_TO) ?? env(process.env.NEXT_PUBLIC_DEALER_EMAIL) ?? `support@${MAIL_HOST}`,
 
-  filePrefix: "Vegas",
+  filePrefix: "Discount",
 };
 
 export const seoKeywords: string[] = [dealership.shortName, dealership.name];

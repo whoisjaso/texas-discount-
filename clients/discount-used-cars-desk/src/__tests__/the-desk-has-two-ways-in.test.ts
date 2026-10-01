@@ -21,8 +21,8 @@ import { buildGuideSteps } from "@/lib/sales/guide";
 const STEP = readFileSync("src/components/admin/guide/BuyerIdStep.tsx", "utf8");
 const UPLOAD = readFileSync("src/components/admin/guide/ScannerUpload.tsx", "utf8");
 const ROUTE = readFileSync("src/app/api/capture/route.ts", "utf8");
-// Vega's buckets are created by the desk migration.
-const BUCKETS = readFileSync("supabase/migrations/20260926000000_vegas_sale_desk.sql", "utf8");
+// The desk's buckets are created by the desk migration.
+const BUCKETS = readFileSync("supabase/migrations/20260926000000_discount_sale_desk.sql", "utf8");
 const CSS = readFileSync("src/app/globals.css", "utf8");
 
 describe("what the desk is offered", () => {

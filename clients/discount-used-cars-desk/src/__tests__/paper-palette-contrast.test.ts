@@ -37,7 +37,7 @@ function over(fg: string, alpha: number, bg: string): string {
 // is large enough to earn the 3:1 exemption, so one bar applies to all of it.
 const AA_BODY = 4.5;
 
-// Vega's desk grounds: the page, the raised panel and the well. All three are
+// The desk's grounds: the page, the raised panel and the well. All three are
 // obsidian, so every text colour is measured against the dark end.
 const GROUNDS = [
   ["ground", "tj-surface"],
@@ -49,7 +49,7 @@ const GROUNDS = [
 // ramp is the colour set for paper, so it is measured against paper.
 const PAPER = "#ffffff";
 
-describe("Vega's palette contrast", () => {
+describe("Discount desk palette contrast", () => {
   // Every colour the product sets on text, and the grounds it can land on.
   // The previous sweep checked these at 2.2:1, which is not a standard —
   // text at 4.0:1 passed that bar and was still unreadable in practice.

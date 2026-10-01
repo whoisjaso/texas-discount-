@@ -71,6 +71,16 @@ export function calculateTax(data: Form130UData) {
   return { netPrice, taxDue };
 }
 
+/**
+ * The dealer's own legal name is a configured fact, not typed input, so it
+ * prints exactly as configured ("Discount Used Cars and Trucks, LLC"). The
+ * typed-input normaliser would re-case it ("... And Trucks, LLC") and the
+ * 130-U would disagree with the bill of sale. Anything else is normalised.
+ */
+function dealerOrPersonName(name: string): string {
+  return name.trim().toLowerCase() === brand.legal.toLowerCase() ? brand.legal : normalise.personName(name);
+}
+
 export function prefillFromBillOfSale(bos: BillOfSaleData): Partial<Form130UData> {
   const sellerLien = getSellerLienSummary(bos);
   const odometerBrand: 'A' | 'N' | 'X' =
@@ -102,13 +112,13 @@ export function prefillFromBillOfSale(bos: BillOfSaleData): Partial<Form130UData
     mailingState: normalise.stateCode(bos.buyerState), mailingZip: bos.buyerZip,
     applicantPhone: bos.buyerPhone, applicantEmail: bos.buyerEmail,
     coApplicantName: normalise.personName(bos.coBuyerName),
-    previousOwnerName: normalise.personName(brand.legal),
+    previousOwnerName: dealerOrPersonName(brand.legal),
     previousOwnerCity: 'Houston', previousOwnerState: 'TX',
     salesPrice: bos.salePrice, tradeInAllowance: bos.tradeInAllowance,
     tradeInDescription: normalise.vehicleTerm(bos.tradeInDescription),
     tradeInVin: normalise.vin(bos.tradeInVin), saleDate: bos.saleDate,
     hasLien: sellerLien.enabled,
-    lienholderName: sellerLien.enabled ? normalise.personName(sellerLien.lienholderName) : '',
+    lienholderName: sellerLien.enabled ? dealerOrPersonName(sellerLien.lienholderName) : '',
     lienholderAddress: sellerLien.enabled ? normalise.streetAddress(sellerLien.lienholderAddress) : '',
     lienholderCity: sellerLien.enabled ? normalise.placeName(sellerLien.lienholderCity) : '',
     lienholderState: sellerLien.enabled ? normalise.stateCode(sellerLien.lienholderState) : '',

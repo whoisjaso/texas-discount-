@@ -113,7 +113,7 @@ describe("admin button luxury system", () => {
   it("keeps danger red, because red is what danger means", () => {
     // The only variant that does not use a neutral — a destructive action
     // should not look like every other button.
-    // Vega's danger red, lifted to clear AA on obsidian.
+    // The desk's danger red, lifted to clear AA on obsidian.
     expect(cssBlock(".tj-action-danger")).toContain("var(--tj-danger)");
   });
 

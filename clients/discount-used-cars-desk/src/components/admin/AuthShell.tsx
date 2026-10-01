@@ -68,7 +68,8 @@ export default function AuthShell({ title, lede, ledeEs, children, footer, showL
       <div className="ed-access-leaf">
         {bare ? null : (
           <Link href="/" className="ed-access-mark" aria-label={`${brand.short} website`}>
-            <Monogram height={46} tone="copper" title="" />
+            {/* The colour logo is wide and carries a small sub-line: 60px tall keeps it legible. */}
+            <Monogram height={60} tone="copper" title="" />
           </Link>
         )}
 

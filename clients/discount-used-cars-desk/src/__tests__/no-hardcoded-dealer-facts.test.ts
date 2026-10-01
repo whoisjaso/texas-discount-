@@ -7,11 +7,13 @@ const root = process.cwd();
 /**
  * No dealership fact may be written anywhere but `dealership-config.ts`.
  *
- * This repository is the template every future dealer site is forked from, so
- * a hardcoded fact is not a tidiness problem. It is a fact that will still be
- * Triple J's after someone else's name is on the site, and the failure is
- * silent: the page renders, the build passes, and a customer gets texted
- * another dealership's phone number.
+ * This is the sale desk of Discount Used Cars and Trucks, LLC (8108 Gulf Fwy,
+ * Houston, GDN P145000). It was forked from Vega's desk, which was ported from
+ * Triple J's, and it will be forked again. So a hardcoded fact is not a
+ * tidiness problem. It is a fact that will still be another dealer's after
+ * someone else's name is on the desk, and the failure is silent: the page
+ * renders, the build passes, and a customer gets texted another dealership's
+ * phone number.
  *
  * The pattern that made this urgent was real and shipped:
  *
@@ -34,26 +36,36 @@ const SKIP_DIRS = new Set(["node_modules", ".next", "dist", "build"]);
 const CONFIG = "src/lib/dealership-config.ts";
 
 /**
- * Tests may name Triple J: they assert against this deployment's real values,
- * and a fork replaces them along with the config. Scripts under `scripts/` are
- * one-off developer harnesses, not shipped code. Everything else is in scope.
+ * Tests may name this dealer: they assert against this deployment's real
+ * values, and a fork replaces them along with the config. Scripts under
+ * `scripts/` are one-off developer harnesses, not shipped code. Everything
+ * else is in scope.
  */
 const ALLOWED = [/^src\/__tests__\//, /^scripts\//, new RegExp(`^${CONFIG}$`)];
 
-/** Vega's facts: allowed in the config file only. */
+/** Discount Used Cars and Trucks' facts: allowed in the config file only. */
 const FACTS: { name: string; pattern: RegExp }[] = [
-  { name: "phone number", pattern: /\(?713\)?[\s.-]?941[\s.-]?1622|\+?1?7139411622/ },
-  { name: "street address", pattern: /7722\s+Galveston/i },
-  { name: "postal code", pattern: /\b77034\b/ },
+  { name: "phone number", pattern: /\(?713\)?[\s.-]?900[\s.-]?5050|\+?1?7139005050/ },
+  { name: "licence-record phone number", pattern: /\(?713\)?[\s.-]?203[\s.-]?3890|\+?1?7132033890/ },
+  { name: "street address", pattern: /8108\s+Gulf/i },
+  { name: "postal code", pattern: /\b77017\b/ },
+  { name: "dealer licence", pattern: /\bP145000\b/ },
 ];
 
 /**
- * The reference dealership's facts, which this desk was ported from. Allowed
- * nowhere, not even in the config: a Triple J phone, address, licence or
- * payment handle surviving the port would route Vega's customers to another
- * business.
+ * The facts of the dealerships this desk was forked from: Vega's Auto Sales
+ * (the desk this one was copied from) and Triple J (the reference desk Vega's
+ * was ported from). Allowed nowhere, not even in the config: another dealer's
+ * phone, address, licence, name or payment handle surviving the port would
+ * route Discount's customers to another business.
  */
 const FOREIGN_FACTS: { name: string; pattern: RegExp }[] = [
+  { name: "Vega's phone", pattern: /\(?713\)?[\s.-]?941[\s.-]?1622|\+?1?7139411622/ },
+  { name: "Vega's street", pattern: /7722\s+Galveston/i },
+  { name: "Vega's licence", pattern: /\bP113248\b/ },
+  { name: "Vega's postal code", pattern: /\b77034\b/ },
+  { name: "Vega's licence holder", pattern: /Constantino/i },
+  { name: "Vega's name", pattern: /Vega['’]s|\bVEGA['’]S\b/ },
   { name: "reference phone", pattern: /\(?832\)?[\s.-]?(?:818[\s.-]?6428|400[\s.-]?9760)|8328186428|8324009760/ },
   { name: "reference street", pattern: /8774\s+Almeda/i },
   { name: "reference licence", pattern: /\bP171632\b/ },
@@ -189,7 +201,7 @@ describe("dealership facts live in exactly one file", () => {
     )) {
       const source = withoutComments(readFileSync(join(root, file), "utf8"));
       const matches = source.match(
-        /process\.env\.[A-Z_]+\s*\|\|\s*["'`][^"'`]*(?:832|713|Almeda|Galveston|77075|77034|Triple|Vega)[^"'`]*["'`]/g,
+        /process\.env\.[A-Z_]+\s*\|\|\s*["'`][^"'`]*(?:832|713|Almeda|Galveston|Gulf|77075|77034|77017|Triple|Vega|Discount)[^"'`]*["'`]/g,
       );
       if (matches) offenders.push(`${file}: ${matches.join(", ")}`);
     }

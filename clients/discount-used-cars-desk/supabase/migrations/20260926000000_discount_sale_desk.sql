@@ -1,7 +1,7 @@
--- Vega's Auto Sales & Glass Co. — Handle A Sale desk schema.
+-- Discount Used Cars and Trucks — Handle A Sale desk schema.
 --
 -- One consolidated, additive migration for a NEW Supabase project dedicated to
--- Vega's. Derived from the schema the reference desk runs on, trimmed to what
+-- Discount Used Cars and Trucks. Derived from the schema the reference desk runs on, trimmed to what
 -- this desk reads and writes. NOT run by the build: the owner applies it
 -- (supabase db push) after reviewing it. Nothing here drops or rewrites data.
 --

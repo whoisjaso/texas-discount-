@@ -72,7 +72,7 @@ describe("admin workspace routing", () => {
   });
 
   it("points the desk at the dealership dashboard", () => {
-    // Vega's admin is the sale desk: signing in lands on Handle A Sale.
+    // Discount's admin is the sale desk: signing in lands on Handle A Sale.
     expect(DEALERSHIP_HOME).toBe("/admin/sales");
   });
 });

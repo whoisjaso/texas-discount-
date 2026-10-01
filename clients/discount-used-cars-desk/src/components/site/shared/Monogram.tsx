@@ -1,12 +1,18 @@
 import { brand } from "@/lib/dealership-config";
-import LoneStar from "@/components/site/shared/LoneStar";
 
 /**
- * The royal cypher: the owner's Gothic triple-J monogram, delivered
- * 29 Aug 2026. Copper is the artwork's own color and belongs on paper
- * surfaces; cream carries dark surfaces (the homescreen header per the
- * owner: the cipher alone, never the full name); ink is for print,
- * because copper turns to mud on a photocopier.
+ * The single mark where a screen or a page has room for one shape: the
+ * sign-in leaf, the request-received seal and the document letterhead.
+ *
+ * Discount Used Cars and Trucks has no monogram artwork, so its logo stands
+ * in, in the version each ground needs:
+ *
+ * - `copper` (light screen grounds): the full-colour logo;
+ * - `cream` (dark screen grounds): the logo with the navy turned white;
+ * - `ink` (print): the black-ink logo, because a photocopier turns the red
+ *   and navy to mud.
+ *
+ * The tone names are the reference desk's; the artwork is this dealer's.
  */
 
 type Props = {
@@ -18,10 +24,10 @@ type Props = {
   title?: string;
 };
 
-/** The delivered artwork's intrinsic proportions (w:h). */
+/** Proportions of monogram artwork supplied through the environment (w:h). */
 const ASPECT = 740 / 1122;
-/** Vega's emblem (public/brand/vegas-logo-sm.png), width over height. */
-const EMBLEM_ASPECT = 1285 / 1006;
+/** The logo (public/brand/discount-logo-*-sm.png, 480 × 185), width over height. */
+const LOGO_ASPECT = 480 / 185;
 
 export default function Monogram({
   height = 44,
@@ -29,18 +35,11 @@ export default function Monogram({
   className,
   title,
 }: Props) {
-  // Vega's has no monogram artwork, so the emblem stands in on screen. Print
-  // (`ink`) keeps the lone star in ink: a photocopier turns the emblem to mud.
-  const emblem = !brand.monogramArtwork[tone] && tone !== "ink" ? brand.logo : null;
-  const src = brand.monogramArtwork[tone] || emblem;
-  const width = Math.round(height * (emblem ? EMBLEM_ASPECT : ASPECT));
-  if (!src) {
-    return (
-      <span className={className} role={title ? "img" : undefined} aria-label={title || undefined} aria-hidden={title ? undefined : true}>
-        <LoneStar size={Math.round(height * 0.72)} color={tone === "ink" ? "var(--tj-ink)" : "#d9a54e"} />
-      </span>
-    );
-  }
+  const artwork = brand.monogramArtwork[tone];
+  const logo = tone === "ink" ? brand.logoInk : tone === "cream" ? brand.logoReverse : brand.logo;
+  const src = artwork || logo;
+  if (!src) return null;
+  const width = Math.round(height * (artwork ? ASPECT : LOGO_ASPECT));
   return (
     // Plain img: this renders in headers, loaders and print letterheads.
     // No inline display so consumers can hide/show responsively.

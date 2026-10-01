@@ -1,21 +1,24 @@
 /**
- * The dealership's crest, when it has one.
+ * The dealership's logo on a printed document, when it has one.
  *
- * Returns `null` when `brand.logo` is null, which is a supported state rather
+ * Returns `null` when no logo is configured, which is a supported state rather
  * than an error: the drawn `Wordmark` is a complete mark on its own, and a
- * dealership that has not commissioned a crest should render nothing here, not
- * a broken image. Every call site must tolerate the null.
+ * dealership without a logo should render nothing here, not a broken image.
+ * Every call site must tolerate the null.
+ *
+ * Its one call site is a printed agreement, so it sets the black-ink logo
+ * (`brand.logoInk`): a photocopier turns Discount's red and navy to mud. It
+ * falls back to the colour logo only when no ink version is configured.
  *
  * A plain `img` rather than `next/image` on purpose. These marks are 28px to
- * 72px, so the optimisation is worth nothing, and three of the call sites are
- * print or portal documents where lazy loading means the crest is missing from
- * the printed page. One element, one behaviour, everywhere it appears.
+ * 96px, so the optimisation is worth nothing, and on a print document lazy
+ * loading means the logo is missing from the printed page.
  */
 
 import { brand } from "@/lib/dealership-config";
 
 type Props = {
-  /** Rendered edge length in px. The mark is square. */
+  /** Rendered edge length in px of the square box the logo is fitted into. */
   size: number;
   className?: string;
   /** Accessible name. Leave empty when adjacent text already names the business. */
@@ -23,12 +26,13 @@ type Props = {
 };
 
 export default function BrandLogo({ size, className, alt = "" }: Props) {
-  if (!brand.logo) return null;
+  const src = brand.logoInk ?? brand.logo;
+  if (!src) return null;
 
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={brand.logo}
+      src={src}
       alt={alt}
       width={size}
       height={size}

@@ -19,8 +19,8 @@ export type AdminWorkspace = "dealership";
  */
 export const SOLE_ADMIN_WORKSPACE: AdminWorkspace = "dealership";
 
-export const ADMIN_WORKSPACE_STORAGE_KEY = "vegas.admin.workspace";
-export const ADMIN_WORKSPACE_COOKIE = "vegas-admin-workspace";
+export const ADMIN_WORKSPACE_STORAGE_KEY = "discount.admin.workspace";
+export const ADMIN_WORKSPACE_COOKIE = "discount-admin-workspace";
 
 export const DEALERSHIP_HOME = "/admin/sales";
 

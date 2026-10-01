@@ -225,9 +225,10 @@ export default function StartSale({ vehicles }: { vehicles: PickableVehicle[] })
    * somebody makes rather than a field nobody can reach. The empty state and
    * its refusal stay below for any caller that does not come from here.
    */
-  // Vega's: the language starts EMPTY and the sale cannot advance until a
+  // This desk: the language starts EMPTY and the sale cannot advance until a
   // person picks one. Triple J defaulted to English because nearly all of its
-  // sales are; Vega's serves a bilingual clientele, and the SOP's rule is
+  // sales are; Discount serves a bilingual clientele ("Se Habla Español" on
+  // its sign), and the SOP's rule is
   // "required, no default" because FTC 455.5 and Tex. Fin. Code §348.006 key
   // the Spanish-first duties to this answer.
   const [saleLanguage, setSaleLanguage] = useState<"" | "en" | "es">("");
