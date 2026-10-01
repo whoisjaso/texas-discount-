@@ -934,6 +934,12 @@ html.is-loading .hero * {
   color: var(--mute-dark);
 }
 
+/* The same fine print on a light band takes the on-white grey (#5f6265, AA on white). */
+.band--white .band__fine,
+.band--surface .band__fine {
+  color: var(--mute);
+}
+
 .lede {
   max-width: 540px;
   font-size: 19px;
