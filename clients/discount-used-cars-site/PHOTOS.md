@@ -1,13 +1,15 @@
-# Photos for the Vega's site
+# Photos for the Discount Used Cars and Trucks site
 
 Every picture on the site is a named slot in `src/data/media.ts`. A slot with
 no photo shows a drawn stand-in, so nothing is ever broken while images are
-pending. Send a finished image with its number and it is cropped, compressed
-and mapped.
+pending. The team generates each image in ChatGPT from the prompts below and
+sends it back named with its number and slot (e.g. `00-hero.png`); Claude
+crops, compresses and maps it.
 
-**Vehicles for sale always come from Vega's own photos** (Facebook posts or the
-lot). The generated images below are mood and brand pictures: no badges, no
-plates, nothing that claims to be a car in stock.
+**Vehicles for sale always come from the dealer's own photos** (the lot,
+Facebook posts). The generated images are mood and brand pictures: no badges,
+no plates, nothing that claims to be a car in stock. The Visit picture must be
+a real phone photo of the lot.
 
 ## House style (paste at the end of every prompt)
 
@@ -17,41 +19,93 @@ plates, nothing that claims to be a car in stock.
 > Range Rover campaign. No text, no logos, no badges or emblems on any vehicle,
 > no licence plate lettering, no people unless described.
 
-For any shot with a truck, upload `public/photos/hero-truck.jpg` to ChatGPT
-first and add: *"Use the same black truck and the same light as this image."*
+Make the hero first. For every later prompt with a vehicle or outdoor light,
+upload the finished hero to ChatGPT first and add: *"Use the same light and
+colour grade as this image."* (For 03, add *"and the same red truck."*)
+
+## 00 · `hero` — first, wide 16:9, the largest size available
+
+A deep candy-red full-size crew-cab pickup truck, clean and polished, parked on
+the paved shoulder of a straight, empty two-lane Texas highway. The truck sits
+on the RIGHT third of the frame at a three-quarter front angle, facing slightly
+left toward the camera. The road's dashed centre line runs away from the camera
+to a flat horizon just left of centre, with the low sun on that horizon raking
+warm light across the hood and doors. Flat Gulf Coast prairie and a few distant
+live oaks. The LEFT 45% of the frame is calm: open road and soft sky fading to
+dusk, slightly darker, no objects, room for a headline. Nothing written on the
+doors, grille or tailgate.
+
+(The phone crop, `hero-mobile`, is made from this image; no separate prompt.)
 
 ## Page banners — wide landscape, subject right, left 45% calm and darker
 
-1. `inventory` — A black full-size SUV and a silver four-door sedan parked side by side at a slight angle on the right of the frame, on clean pale concrete beside a low stucco wall with live oak shadows. The left side is open wall and sky.
-2. `glass` — Close-up of the windshield and A-pillar of a black pickup truck, the glass perfectly clean and reflecting a warm sunset sky and oak branches, a thin bead of black urethane visible along the edge. Subject on the right, dark soft background on the left.
-3. `financing` — A hand holding a single car key in an open palm, sharp on the right of the frame, a black pickup truck softly out of focus behind it at golden hour. Only the hand and wrist are visible.
-4. `visit` — Best as a real phone photo of the lot. If generating: a quiet Houston street at blue hour, warm streetlights and palm trees, glowing tail-lights receding, no storefronts, no signs.
-5. `not-found` — An empty two-lane Texas road at dusk curving away into the distance, fence posts and live oaks on the right, a warm orange horizon, no vehicles.
+01 · `inventory` — A silver four-door sedan and a white compact SUV parked side
+by side at a slight angle on the RIGHT of the frame, on clean pale concrete
+beside a low white stucco wall with live oak shadows. The LEFT side is open
+wall and evening sky.
+
+02 · `sell` — Close-up of two hands meeting over the hood of a dark grey pickup
+truck, one passing a single car key to the other, sharp on the RIGHT of the
+frame, golden-hour light on the paint. Only hands and forearms are visible. The
+LEFT 45% is soft, dark and out of focus.
+
+03 · `financing` — A hand holding a single car key in an open palm, sharp on
+the RIGHT of the frame, the deep red pickup truck softly out of focus behind it
+at golden hour. Only the hand and wrist are visible.
+
+04 · `visit` — **A real phone photo, not generated:** the lot at 8108 Gulf Fwy
+from across the feeder road, landscape, late afternoon or dusk, cars and office
+in frame, phone held level. Only if that is impossible, a clearly temporary
+stand-in: *A quiet Houston freeway frontage road at blue hour, warm
+streetlights, live oaks, no storefronts, no signs, no vehicles.*
+
+05 · `not-found` — An empty two-lane Texas highway at dusk running straight
+toward the horizon and curving away at the end, dashed centre line, fence posts
+and live oaks on the RIGHT, a warm red-orange horizon, no vehicles.
 
 ## Body-type cards — square, same dark showroom, vehicle in the lower middle, top quarter empty and dark
 
-A real vehicle's photo replaces these automatically once that body type is in stock.
+A real vehicle's photo replaces these automatically once that body type is in
+stock.
 
-6. `body-suv` — A black full-size three-row SUV, three-quarter front view, in a dark showroom with three long ceiling light strips reflecting on its roof and hood, on a polished dark floor with a soft reflection.
-7. `body-sedan` — A silver four-door executive sedan, three-quarter front view, in the same dark showroom with ceiling light strips and a polished dark floor.
-8. `body-truck` — A white crew-cab pickup truck, three-quarter front view, in the same dark showroom with ceiling light strips and a polished dark floor.
-9. `body-coupe` — A deep red two-door sports coupe, three-quarter front view, in the same dark showroom with ceiling light strips and a polished dark floor.
+06 · `body-suv` — A black full-size three-row SUV, three-quarter front view, in
+a dark showroom with three long ceiling light strips reflecting on its roof and
+hood, on a polished dark floor with a soft reflection.
 
-## Glass tiles — landscape 4:3, dark and moody, glass is the subject
+07 · `body-sedan` — A silver four-door sedan, three-quarter front view, in the
+same dark showroom with ceiling light strips and a polished dark floor.
 
-10. `glass-windshield` — A new windshield on a black truck seen from a low front angle, the glass spotless and mirror-like, reflecting a sunset sky, the hood edge in the foreground, dark background.
-11. `glass-door` — A close side view of a black vehicle's front door with the window glass half lowered, crisp reflections of oak branches on the glass, dark background.
-12. `glass-back` — The rear window of a black crew-cab pickup truck seen from behind at a slight angle, the glass clean with thin defroster lines catching the light, dark background.
+08 · `body-truck` — A white crew-cab pickup truck, three-quarter front view, in
+the same dark showroom with ceiling light strips and a polished dark floor.
 
-## Before and after — make these as a pair, same frame, landscape 5:3
+09 · `body-coupe` — A deep red two-door sports coupe, three-quarter front view,
+in the same dark showroom with ceiling light strips and a polished dark floor.
 
-13. `glass-after` — The windshield of a black truck seen straight on from slightly above the hood, filling the frame, the glass perfectly clean and reflecting a warm sunset sky.
-14. `glass-before` — Upload image 13 back to ChatGPT and say: *"Edit this image: add a realistic stone-chip impact with long cracks spreading across the lower left of the windshield. Change nothing else."*
+## We Buy Cars band — landscape, dark and moody
+
+10 · `sell-band` (5:3) — A handshake over the open driver's door of a silver
+four-door sedan at golden hour. Only the two hands and forearms are visible, the
+door glass reflecting a warm sky, dark soft background.
+
+11 · `sell-cars` (4:3) — A silver mid-size four-door sedan, three-quarter front
+view, parked alone on dark wet asphalt at dusk, a warm rim light along its
+roofline, dark background.
+
+12 · `sell-trucks` (4:3) — A white crew-cab pickup truck, three-quarter rear view
+showing the tailgate and bed, parked alone on dark wet asphalt at dusk, warm rim
+light, dark background.
+
+13 · `sell-suvs` (4:3) — A black mid-size SUV, three-quarter front view, parked
+alone on dark wet asphalt at dusk, warm rim light along the roof rails, dark
+background.
 
 ## Inventory search
 
-15. `finder` — Three vehicles in white paint (a crew-cab pickup truck, a mid-size SUV and a four-door sedan), side profile facing left, staggered and overlapping from back to front, the pickup largest in front, on a transparent background, soft natural contact shadows. **Ask for a transparent PNG.**
+14 · `finder` — Three vehicles in white paint (a crew-cab pickup truck, a
+mid-size SUV and a four-door sedan), side profile facing left, staggered and
+overlapping from back to front, the pickup largest in front, on a transparent
+background, soft natural contact shadows. **Ask for a transparent PNG.**
 
-## Already in place
+## Status
 
-- `hero` / `hero-mobile`: the black truck at sunset (brand image, not a vehicle in stock).
+Done and live: none yet. Still needed: 00–14.

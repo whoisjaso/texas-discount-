@@ -11,9 +11,9 @@ const adminHref = deskUrl ? `${deskUrl}/admin/login` : null;
 
 const NAV = [
   { to: '/inventory', label: 'The Collection', note: 'Pre-owned cars, trucks & SUVs' },
-  { to: '/glass', label: 'Auto Glass', note: 'Windshield, door & back glass' },
-  { to: '/financing', label: 'Financing', note: 'Easy credit, clear terms' },
-  { to: '/visit', label: 'Visit & Contact', note: '7722 Galveston Rd, Houston' },
+  { to: '/sell', label: 'We Buy Cars', note: 'Sell yours or trade it in' },
+  { to: '/financing', label: 'Financing', note: 'Easy financing, clear terms' },
+  { to: '/visit', label: 'Visit & Contact', note: `${business.street}, Houston` },
 ];
 
 function Header({ onMenu, lightTop }: { onMenu: () => void; lightTop: boolean }) {
@@ -35,13 +35,13 @@ function Header({ onMenu, lightTop }: { onMenu: () => void; lightTop: boolean })
           <IconMenu size={22} />
           <span>Menu</span>
         </button>
-        <Link to="/" className="header__brand" aria-label="Vega's Auto Sales and Glass Co., home">
+        <Link to="/" className="header__brand" aria-label={`${business.name}, home`}>
           <Wordmark compact />
         </Link>
         <div className="header__tools">
           <span className={`status ${openNow ? 'status--open' : ''}`}>
             <span className="status__dot" />
-            {openNow ? 'Open now' : 'Opens 9 AM'}
+            {openNow ? 'Open now' : business.opensLabel}
           </span>
           <a className="header__icon" href={business.phoneHref} aria-label={`Call ${business.phoneDisplay}`}>
             <IconPhone size={22} />
@@ -76,7 +76,7 @@ function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
           <button ref={closeRef} className="drawer__close" onClick={onClose} aria-label="Close menu">
             <IconClose size={24} />
           </button>
-          <Logo size={52} />
+          <Logo width={150} />
         </div>
         <nav className="drawer__nav" aria-label="Primary">
           {NAV.map((n, i) => (
@@ -106,20 +106,26 @@ function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
           <a className="btn btn--primary btn--block" href={business.phoneHref}>
             Call {business.phoneDisplay}
           </a>
-          <a className="btn btn--outline btn--block" href={business.smsHref}>
-            Text us
-          </a>
+          {business.smsHref && (
+            <a className="btn btn--outline btn--block" href={business.smsHref}>
+              Text us
+            </a>
+          )}
           <p>
             <span className={`status status--ink ${openNow ? 'status--open' : ''}`}>
               <span className="status__dot" />
               {openNow ? 'Open now' : 'Closed now'}
             </span>
             <br />
-            Monday – Saturday, 9 AM – 6 PM
+            {business.hoursShort}
             <br />
             {business.street}, {business.cityLine}
-            <br />
-            Se habla español
+            {business.spanish && (
+              <>
+                <br />
+                Se habla español
+              </>
+            )}
           </p>
         </div>
       </div>
@@ -165,13 +171,15 @@ function Footer() {
             <a className="footer__link" href={business.phoneHref}>
               {business.phoneDisplay}
             </a>
-            <a className="footer__link" href={business.smsHref}>
-              Text us
-            </a>
+            {business.smsHref && (
+              <a className="footer__link" href={business.smsHref}>
+                Text us
+              </a>
+            )}
             <a className="footer__link" href={business.facebookHref} target="_blank" rel="noreferrer">
               Facebook
             </a>
-            <p className="footer__mute">Se habla español</p>
+            {business.spanish && <p className="footer__mute">Se habla español</p>}
           </div>
           <div>
             <h2 className="footer__head">Explore</h2>
@@ -184,13 +192,13 @@ function Footer() {
         </div>
 
         <div className="footer__base">
-          <Logo size={44} />
+          <Logo width={168} reverse />
           <p>© {new Date().getFullYear()} {business.name}</p>
           <p className="footer__mute">
             {business.legalName} · Texas Dealer License (GDN) {business.dealerLicense}
           </p>
           <p className="footer__mute">
-            Brand names describe pre-owned vehicles we sell; Vega’s is an independent dealer. Prices exclude tax, title, license and fees.
+            Brand names describe pre-owned vehicles we sell; {business.name} is an independent dealer. Prices exclude tax, title, license and fees.
           </p>
         </div>
       </div>
@@ -213,10 +221,12 @@ function MobileDock() {
         <IconPhone size={20} />
         Call
       </a>
-      <a href={business.smsHref}>
-        <IconChat size={20} />
-        Text
-      </a>
+      {business.smsHref && (
+        <a href={business.smsHref}>
+          <IconChat size={20} />
+          Text
+        </a>
+      )}
       <a href={business.mapsHref} target="_blank" rel="noreferrer">
         <IconPin size={20} />
         Directions

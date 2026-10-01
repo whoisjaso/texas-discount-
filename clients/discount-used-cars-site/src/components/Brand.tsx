@@ -1,26 +1,34 @@
-import type { CSSProperties } from 'react';
+/** The logo's proportions (1402 × 540). */
+const LOGO_RATIO = 540 / 1402;
+/** The car swoosh's proportions (640 × 87). */
+const MARK_RATIO = 87 / 640;
 
-/** The lone star from Vega's emblem. */
-export function LoneStar({ size = 18, className = '', style }: { size?: number; className?: string; style?: CSSProperties }) {
-  return (
-    <svg className={className} style={style} width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">
-      <path d="M24 2 L29.9 17.9 L46.8 18.6 L33.5 29.1 L38.1 45.4 L24 36 L9.9 45.4 L14.5 29.1 L1.2 18.6 L18.1 17.9 Z" fill="currentColor" />
-    </svg>
-  );
-}
-
-/** Vega's emblem: the gold ring, the Texas flag and the black SS. */
-export function Logo({ size = 64, className = '', priority = false }: { size?: number; className?: string; priority?: boolean }) {
-  const small = size <= 160;
-  const base = small ? '/brand/vegas-logo-sm' : '/brand/vegas-logo';
+/**
+ * The Discount Used Cars and Trucks logo: the red car swoosh, DISCOUNT in red,
+ * the name in navy and the road. `reverse` swaps the navy for white so it
+ * reads on black.
+ */
+export function Logo({
+  width = 160,
+  reverse = false,
+  className = '',
+  priority = false,
+}: {
+  width?: number;
+  reverse?: boolean;
+  className?: string;
+  priority?: boolean;
+}) {
+  const small = width <= 480;
+  const base = `/brand/discount-logo${reverse ? '-reverse' : ''}${small ? '-sm' : ''}`;
   return (
     <picture className={`logo ${className}`}>
       <source srcSet={`${base}.webp`} type="image/webp" />
       <img
         src={`${base}.png`}
-        alt="Vega's Auto Sales & Glass Co."
-        width={size}
-        height={Math.round(size * 0.783)}
+        alt="Discount Used Cars and Trucks"
+        width={width}
+        height={Math.round(width * LOGO_RATIO)}
         loading={priority ? 'eager' : 'lazy'}
         decoding="async"
       />
@@ -28,12 +36,29 @@ export function Logo({ size = 64, className = '', priority = false }: { size?: n
   );
 }
 
-/** The emblem with the name set wide, as a marque's logotype is. */
+/** The red car swoosh from the top of the logo. */
+export function Mark({ width = 120, className = '', priority = false }: { width?: number; className?: string; priority?: boolean }) {
+  return (
+    <picture className={`mark ${className}`}>
+      <source srcSet="/brand/discount-mark.webp" type="image/webp" />
+      <img
+        src="/brand/discount-mark.png"
+        alt=""
+        width={width}
+        height={Math.round(width * MARK_RATIO)}
+        loading={priority ? 'eager' : 'lazy'}
+        decoding="async"
+      />
+    </picture>
+  );
+}
+
+/** The swoosh over the name set wide, as a marque's logotype is. */
 export function Wordmark({ compact = false }: { compact?: boolean }) {
   return (
-    <span className={`wordmark ${compact ? 'wordmark--compact' : ''}`}>
-      <Logo size={compact ? 46 : 72} className="wordmark__logo" priority />
-      <span className="wordmark__name">VEGA’S</span>
+    <span className={`wordmark wordmark--stack ${compact ? 'wordmark--compact' : ''}`}>
+      <Mark width={compact ? 132 : 176} className="wordmark__mark" priority />
+      <span className="wordmark__name">DISCOUNT</span>
     </span>
   );
 }

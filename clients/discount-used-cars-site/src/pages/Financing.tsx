@@ -31,7 +31,7 @@ function Calculator({ initialPrice }: { initialPrice: number }) {
         <span>Vehicle price</span>
         <strong>{currency(price)}</strong>
       </label>
-      <input className="range" type="range" min={5000} max={70000} step={250} value={price} onChange={(e) => setPrice(Number(e.target.value))} aria-label="Vehicle price" />
+      <input className="range" type="range" min={2000} max={40000} step={250} value={price} onChange={(e) => setPrice(Number(e.target.value))} aria-label="Vehicle price" />
       <label className="calc__row">
         <span>Down payment</span>
         <strong>{currency(down)}</strong>
@@ -79,11 +79,11 @@ export function Financing() {
         <div className="container split">
           <div className="reveal">
             <h2 className="band__title band__title--left">Estimate your payment</h2>
-            <Calculator initialPrice={vehicle?.price ?? 18000} />
+            <Calculator initialPrice={vehicle?.price ?? 9000} />
             <div className="pillars">
               <div>
-                <h3>Easy credit</h3>
-                <p>Limited or bruised credit is welcome here. Steady income goes a long way.</p>
+                <h3>Easy financing</h3>
+                <p>Good credit, bruised credit or none yet: start the conversation. Steady income goes a long way.</p>
               </div>
               <div>
                 <h3>Trade-ins</h3>

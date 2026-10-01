@@ -1,7 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CarSilhouette } from '../components/CarSilhouette';
-import { GlassReveal } from '../components/GlassReveal';
 import { IconArrowDown, IconArrowRight, IconSearch } from '../components/Icons';
 import { Scene } from '../components/Scene';
 import { business, isOpenNow } from '../data/business';
@@ -25,15 +24,15 @@ function Hero() {
         photoMobile={photos['hero-mobile']}
         focus={heroFocus}
         eager
-        alt="A black pickup truck parked at sunset"
+        alt="A red pickup truck on an open Texas highway at sunset"
         className="hero__scene"
       />
       <div className="hero__copy container">
         <h1 className="hero__title">
-          <span>Trucks, cars</span>
-          <span>& SUVs.</span>
+          <span>Cars & trucks.</span>
+          <span>For less.</span>
         </h1>
-        <p className="hero__lede">Easy credit and auto glass at 7722 Galveston Road, Houston.</p>
+        <p className="hero__lede">Easy financing and fair prices at 8108 Gulf Freeway, Houston.</p>
         <div className="hero__cta">
           <Link to="/inventory" className="btn btn--light">
             Explore the inventory
@@ -52,6 +51,27 @@ function Hero() {
 
 function Teasers() {
   const picks = getFeatured().slice(0, 3);
+  // No vehicles are listed yet: say so plainly rather than show sample cars.
+  if (!picks.length) {
+    return (
+      <section className="band band--white" id="after-hero">
+        <div className="container lot-note reveal">
+          <h2 className="band__title">The lot changes daily.</h2>
+          <p className="lot-note__lede">
+            New arrivals post here as they land. For what’s on the lot right now, call <span className="nowrap">{business.phoneDisplay}</span>.
+          </p>
+          <div className="lot-note__cta">
+            <a className="btn btn--primary" href={business.phoneHref}>
+              Call {business.phoneDisplay}
+            </a>
+            <Link className="btn btn--outline" to="/inventory">
+              Explore the collection
+            </Link>
+          </div>
+        </div>
+      </section>
+    );
+  }
   return (
     <section className="band band--white" id="after-hero">
       <div className="container teasers">
@@ -72,10 +92,10 @@ function Teasers() {
 }
 
 const RANGE: { body: BodyStyle; name: string; line: string; paint: string }[] = [
-  { body: 'SUV', name: 'SUVs', line: 'Room for the family and the week: two and three rows, AWD and 4WD.', paint: '#e6e3dc' },
-  { body: 'Sedan', name: 'Sedans', line: 'Daily drivers and European comfort: four doors, five seats.', paint: '#1f3a6b' },
-  { body: 'Truck', name: 'Trucks', line: 'Crew cabs ready to work: towing packages, beds and V8 power.', paint: '#4b4f55' },
-  { body: 'Coupe', name: 'Coupes', line: 'Two doors, low roofline: sports cars and grand tourers.', paint: '#8e1018' },
+  { body: 'SUV', name: 'SUVs', line: 'Room for the family and the week, at a payment that fits.', paint: '#e6e3dc' },
+  { body: 'Sedan', name: 'Sedans', line: 'Daily drivers that are easy on gas and easy on the budget.', paint: '#1f3a6b' },
+  { body: 'Truck', name: 'Trucks', line: 'Pickups ready to work, from half-tons to crew cabs.', paint: '#4b4f55' },
+  { body: 'Coupe', name: 'Coupes', line: 'Two doors and a low roofline for the drive to work.', paint: '#8e1018' },
 ];
 
 function Range() {
@@ -135,22 +155,22 @@ function VisitCard() {
       <div className="container">
         <div className="split-card reveal">
           <div className="split-card__text">
-            <h2>Visit us on Galveston Road</h2>
+            <h2>Visit us on the Gulf Freeway</h2>
             <p>
-              {business.street}, {business.cityLine}. {business.crossStreets}. Walk the lot, sit in the car, or bring yours in for a glass estimate.
+              {business.street}, {business.cityLine}. {business.crossStreets}. Walk the lot, sit in the car, or bring yours in for an offer.
             </p>
             <p className="split-card__hours">
               <span className={`status ${openNow ? 'status--open' : ''}`}>
                 <span className="status__dot" />
                 {openNow ? 'Open now' : 'Closed now'}
               </span>{' '}
-              Mon – Sat, 9 AM – 6 PM
+              {business.hoursShort}
             </p>
             <a className="btn btn--light" href={business.mapsHref} target="_blank" rel="noreferrer">
               Get directions
             </a>
           </div>
-          <Scene kind="dusk" photo={photos.visit} focus={photoFocus.visit} alt="A car lot at dusk" className="split-card__scene" />
+          <Scene kind="dusk" photo={photos.visit} focus={photoFocus.visit} alt="The Discount Used Cars and Trucks lot on the Gulf Freeway" className="split-card__scene" />
         </div>
       </div>
     </section>
@@ -169,14 +189,14 @@ function Finder() {
       <div className="container finder__grid">
         <div className="reveal">
           <h2 className="finder__title">Find your next pre-owned vehicle.</h2>
-          <p className="finder__lede">Search the lot by make, model or colour. Every car is priced plainly, with the monthly estimate beside it.</p>
+          <p className="finder__lede">Search the lot by make, model or colour. Every price is shown plainly, or call for today’s price.</p>
           <form className="search" onSubmit={submit} role="search">
             <label htmlFor="finder-q" className="search__label">
               Make, model or colour
             </label>
             <div className="search__field">
               <IconSearch size={20} />
-              <input id="finder-q" type="search" placeholder="e.g. GMC, Acura, silver" value={q} onChange={(e) => setQ(e.target.value)} />
+              <input id="finder-q" type="search" placeholder="e.g. Toyota, F-150, silver" value={q} onChange={(e) => setQ(e.target.value)} />
               <button type="submit" className="btn btn--primary btn--sm">
                 Search
               </button>
@@ -199,60 +219,33 @@ function Finder() {
   );
 }
 
-const GLASS: { title: string; slot: PhotoSlot; path: string }[] = [
-  { title: 'Windshields', slot: 'glass-windshield', path: 'M20 40 C60 18 180 18 220 40 L234 128 C165 138 75 138 6 128 Z' },
-  { title: 'Door & quarter glass', slot: 'glass-door', path: 'M40 130 L40 60 C40 40 60 26 90 26 L200 26 L200 130 Z' },
-  { title: 'Back glass', slot: 'glass-back', path: 'M30 44 C80 28 160 28 210 44 L222 118 C160 128 80 128 18 118 Z' },
+const BUY: { title: string; slot: PhotoSlot; body: BodyStyle }[] = [
+  { title: 'We buy cars', slot: 'sell-cars', body: 'Sedan' },
+  { title: 'We buy trucks', slot: 'sell-trucks', body: 'Truck' },
+  { title: 'We buy SUVs', slot: 'sell-suvs', body: 'SUV' },
 ];
 
-function GlassBand() {
+function SellBand() {
   return (
     <section className="band band--black glass-band">
       <div className="container glass-band__grid">
         <div className="glass-band__copy reveal">
-          <h2 className="band__title band__title--left">Auto glass, from the same team.</h2>
+          <h2 className="band__title band__title--left">We buy cars, too.</h2>
           <p>
-            Windshield, door and back glass for cars, trucks, SUVs and work vans. We confirm the part and the price before any work begins, and seal it properly.
+            Selling outright or trading toward your next one: tell us the year, make, model and miles, and bring it by the lot for an offer.
           </p>
-          <Link to="/glass" className="text-link">
-            Go to Auto Glass <IconArrowRight size={18} />
+          <Link to="/sell" className="text-link">
+            Go to We Buy Cars <IconArrowRight size={18} />
           </Link>
         </div>
         <div className="glass-band__demo reveal">
-          <GlassReveal before={photos['glass-before']} after={photos['glass-after']} />
-          <p className="caption">Drag across the glass to compare.</p>
+          <Scene kind="road" body="Truck" paint="#2a2d31" photo={photos['sell-band']} focus={photoFocus['sell-band']} alt="A car key handed over the hood of a pickup" className="sell-band__scene" />
         </div>
       </div>
       <div className="container teasers teasers--dark">
-        {GLASS.map((g, i) => (
-          <Link key={g.title} to="/glass" className="tile tile--glass reveal" style={{ transitionDelay: `${i * 0.07}s` }}>
-            {photos[g.slot] ? (
-              <Scene kind="glass" photo={photos[g.slot]} focus={photoFocus[g.slot]} alt={g.title} className="tile__scene" />
-            ) : (
-            <div className="tile__scene tile__scene--glass" aria-hidden="true">
-              <svg viewBox="0 0 240 150">
-                <defs>
-                  <linearGradient id={`gt-${i}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0" stopColor="#465b68" />
-                    <stop offset="0.6" stopColor="#141b21" />
-                    <stop offset="1" stopColor="#07090b" />
-                  </linearGradient>
-                  <linearGradient id={`gs-${i}`} x1="0" y1="0" x2="1" y2="0.3">
-                    <stop offset="0" stopColor="#fff" stopOpacity="0" />
-                    <stop offset="0.5" stopColor="#fff" stopOpacity="0.3" />
-                    <stop offset="1" stopColor="#fff" stopOpacity="0" />
-                  </linearGradient>
-                  <clipPath id={`gc-${i}`}>
-                    <path d={g.path} />
-                  </clipPath>
-                </defs>
-                <path d={g.path} fill={`url(#gt-${i})`} stroke="#2a2f34" strokeWidth="5" strokeLinejoin="round" />
-                <g clipPath={`url(#gc-${i})`}>
-                  <rect className="tile__sweep" x="-120" y="0" width="120" height="150" fill={`url(#gs-${i})`} />
-                </g>
-              </svg>
-            </div>
-            )}
+        {BUY.map((g, i) => (
+          <Link key={g.title} to="/sell" className="tile tile--glass reveal" style={{ transitionDelay: `${i * 0.07}s` }}>
+            <Scene kind="studio" body={g.body} paint="#3a3d42" photo={photos[g.slot]} focus={photoFocus[g.slot]} alt={g.title} className="tile__scene" />
             <span className="tile__label">{g.title}</span>
             <span className="arrow-btn" aria-hidden="true">
               <IconArrowRight size={18} />
@@ -278,10 +271,10 @@ function Discover() {
         <div className="teasers">
           <Link to="/financing" className="tile tile--type reveal">
             <span className="tile__type">
-              {currency(estimatePayment(18000))}
+              {currency(estimatePayment(9000))}
               <small>/mo</small>
             </span>
-            <span className="tile__label">Easy credit</span>
+            <span className="tile__label">Easy financing</span>
             <span className="arrow-btn" aria-hidden="true">
               <IconArrowRight size={18} />
             </span>
@@ -296,13 +289,15 @@ function Discover() {
               <IconArrowRight size={18} />
             </span>
           </Link>
-          <Link to="/visit" className="tile tile--type tile--type-cool reveal" style={{ transitionDelay: '0.14s' }}>
-            <span className="tile__type">Hola.</span>
-            <span className="tile__label">Se habla español</span>
-            <span className="arrow-btn" aria-hidden="true">
-              <IconArrowRight size={18} />
-            </span>
-          </Link>
+          {business.spanish && (
+            <Link to="/visit" className="tile tile--type tile--type-cool reveal" style={{ transitionDelay: '0.14s' }}>
+              <span className="tile__type">Hola.</span>
+              <span className="tile__label">Se habla español</span>
+              <span className="arrow-btn" aria-hidden="true">
+                <IconArrowRight size={18} />
+              </span>
+            </Link>
+          )}
         </div>
 
         <figure className="quote reveal" aria-live="polite">
@@ -312,6 +307,7 @@ function Discover() {
             {r.author}, via {r.source}
           </figcaption>
         </figure>
+        <p className="band__fine reveal">{business.rating.note}</p>
       </div>
     </section>
   );
@@ -326,7 +322,7 @@ export function Home() {
       <Range />
       <VisitCard />
       <Finder />
-      <GlassBand />
+      <SellBand />
       <Discover />
     </>
   );

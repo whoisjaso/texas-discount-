@@ -63,7 +63,7 @@ export function LeadForm({
         <div className="form-success__mark" aria-hidden="true" />
         <h3>{successTitle}</h3>
         <p>
-          During business hours we typically reply within the hour. Need us sooner? Call{' '}
+          We reply during business hours. Need us sooner? Call{' '}
           <a href={business.phoneHref}>{business.phoneDisplay}</a>.
         </p>
       </div>
@@ -116,7 +116,7 @@ export function LeadForm({
         </p>
       )}
       <p className="form__fine">
-        By sending, you agree Vega’s may contact you by call or text about your request. Message and data rates may apply.
+        By sending, you agree Discount Used Cars and Trucks may contact you by call or text about your request. Message and data rates may apply.
       </p>
     </form>
   );

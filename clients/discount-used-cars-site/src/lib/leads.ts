@@ -1,4 +1,4 @@
-export type LeadType = 'vehicle-inquiry' | 'glass-quote' | 'pre-qualification' | 'contact' | 'trade-in';
+export type LeadType = 'vehicle-inquiry' | 'pre-qualification' | 'contact' | 'trade-in';
 
 export interface Lead {
   type: LeadType;
@@ -10,7 +10,7 @@ export interface Lead {
   details?: Record<string, string>;
 }
 
-const QUEUE_KEY = 'vegas.leads.pending';
+const QUEUE_KEY = 'discount.leads.pending';
 
 /**
  * Sends a lead to VITE_LEADS_ENDPOINT when configured. Without an endpoint the

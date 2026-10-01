@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Logo } from './Brand';
+import { Mark } from './Brand';
 
-const SEEN_KEY = 'vegas.intro.seen';
+const SEEN_KEY = 'discount.intro.seen';
 
 function alreadySeen(): boolean {
   try {
@@ -12,7 +12,7 @@ function alreadySeen(): boolean {
 }
 
 /**
- * Intro: the emblem resolves out of black, the name draws beneath it in wide
+ * Intro: the car swoosh resolves out of black, the name draws beneath it in wide
  * capitals, a hairline runs out, and the curtain lifts. Once per session.
  */
 export function Loader() {
@@ -46,9 +46,9 @@ export function Loader() {
   return (
     <div className={`loader ${phase === 'exit' ? 'loader--exit' : ''}`} role="presentation">
       <div className="loader__stage">
-        <Logo size={220} className="loader__emblem" priority />
+        <Mark width={360} className="loader__emblem" priority />
         <div className="loader__word" aria-hidden="true">
-          VEGA’S
+          DISCOUNT
         </div>
         <div className="loader__line" />
       </div>

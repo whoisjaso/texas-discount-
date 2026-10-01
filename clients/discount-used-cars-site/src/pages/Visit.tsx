@@ -12,7 +12,7 @@ export function Visit() {
     <>
       <PageHero
         title="Come see it in person."
-        lede="Walk the lot, sit in the car, bring your vehicle in for glass. We’re on Galveston Road six days a week."
+        lede="Walk the lot, sit in the car, bring your trade. We’re on the Gulf Freeway feeder, Monday through Friday."
         kind="dusk"
         photo={photos.visit}
         focus={photoFocus.visit}
@@ -34,10 +34,12 @@ export function Visit() {
                       <span className="status__dot" />
                       {openNow ? 'Open now' : 'Closed now'}
                     </span>
-                    <br />
-                    Monday – Saturday, 9 AM – 6 PM
-                    <br />
-                    Sunday closed
+                    {business.hours.map((h) => (
+                      <span key={h.days}>
+                        <br />
+                        {h.days}, {h.time}
+                      </span>
+                    ))}
                   </dd>
                 </div>
                 <div>
@@ -46,21 +48,29 @@ export function Visit() {
                     <a href={business.phoneHref}>{business.phoneDisplay}</a>
                   </dd>
                 </div>
-                <div>
-                  <dt>We accept</dt>
-                  <dd>{business.payments.join(' · ')}</dd>
-                </div>
+                {business.payments.length > 0 && (
+                  <div>
+                    <dt>We accept</dt>
+                    <dd>{business.payments.join(' · ')}</dd>
+                  </div>
+                )}
               </dl>
               <div className="page-hero__cta">
                 <a className="btn btn--light" href={business.mapsHref} target="_blank" rel="noreferrer">
                   Get directions
                 </a>
-                <a className="btn btn--frost" href={business.smsHref}>
-                  Text us
-                </a>
+                {business.smsHref ? (
+                  <a className="btn btn--frost" href={business.smsHref}>
+                    Text us
+                  </a>
+                ) : (
+                  <a className="btn btn--frost" href={business.phoneHref}>
+                    Call {business.phoneDisplay}
+                  </a>
+                )}
               </div>
             </div>
-            <Scene kind="dusk" photo={photos.visit} focus={photoFocus.visit} alt="A car lot at dusk" className="split-card__scene" />
+            <Scene kind="dusk" photo={photos.visit} focus={photoFocus.visit} alt="The Discount Used Cars and Trucks lot on the Gulf Freeway" className="split-card__scene" />
           </div>
         </div>
       </section>
@@ -70,6 +80,7 @@ export function Visit() {
           <h2 className="band__title reveal">
             {business.rating.score} out of 5, from {business.rating.count} Google reviews
           </h2>
+          <p className="band__fine reveal">{business.rating.note}</p>
           <div className="quotes">
             {business.reviews.map((r, i) => (
               <figure key={r.author} className="quote-card reveal" style={{ transitionDelay: `${i * 0.08}s` }}>
@@ -88,13 +99,13 @@ export function Visit() {
         <div className="container split">
           <div className="reveal">
             <h2 className="band__title band__title--left">Questions, trade-ins, anything.</h2>
-            <p className="lede">Leave a note and a number. A real person from our team will call or text you back. Se habla español.</p>
+            <p className="lede">Leave a note and a number. A real person from our team will call you back.{business.spanish && ' Se habla español.'}</p>
           </div>
           <div className="form-card reveal">
             <LeadForm
               type="contact"
               fields={[
-                { name: 'topic', label: 'Topic', type: 'select', options: ['Buying a vehicle', 'Financing', 'Auto glass', 'Selling / trade-in', 'Something else'], required: true },
+                { name: 'topic', label: 'Topic', type: 'select', options: ['Buying a vehicle', 'Financing', 'Selling / trade-in', 'Something else'], required: true },
                 { name: 'language', label: 'Preferred language', type: 'select', options: ['English', 'Español'], half: true },
                 { name: 'contactBy', label: 'Best way to reach you', type: 'select', options: ['Text', 'Call', 'Email'], half: true },
               ]}

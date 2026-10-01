@@ -57,7 +57,7 @@ export function VehicleDetail() {
   }
 
   const title = vehicleTitle(v);
-  const smsBody = encodeURIComponent(`Hi Vega's, I'm interested in the ${title}${v.stock ? ` (stock ${v.stock})` : ''}${v.price ? ` listed at ${currency(v.price)}` : ''}.`);
+  const smsBody = encodeURIComponent(`Hi ${business.shortName}, I'm interested in the ${title}${v.stock ? ` (stock ${v.stock})` : ''}${v.price ? ` listed at ${currency(v.price)}` : ''}.`);
   const related = getInventory()
     .filter((o) => o.slug !== v.slug && (o.body === v.body || o.make === v.make))
     .slice(0, 3);
@@ -91,15 +91,23 @@ export function VehicleDetail() {
               </h1>
               <div className="detail__price">
                 <strong>{priceLabel(v)}</strong>
-                {v.price ? <span>est. {currency(estimatePayment(v.price))}/mo with approved credit</span> : <span>Call or text for today’s price</span>}
+                {v.price ? <span>est. {currency(estimatePayment(v.price))}/mo with approved credit</span> : <span>Call for today’s price</span>}
               </div>
               <div className="detail__actions">
-                <a className="btn btn--primary btn--block" href={`${business.smsHref}?&body=${smsBody}`}>
-                  Text about this car
-                </a>
-                <a className="btn btn--outline btn--block" href={business.phoneHref}>
-                  Call {business.phoneDisplay}
-                </a>
+                {business.smsHref ? (
+                  <>
+                    <a className="btn btn--primary btn--block" href={`${business.smsHref}?&body=${smsBody}`}>
+                      Text about this car
+                    </a>
+                    <a className="btn btn--outline btn--block" href={business.phoneHref}>
+                      Call {business.phoneDisplay}
+                    </a>
+                  </>
+                ) : (
+                  <a className="btn btn--primary btn--block" href={business.phoneHref}>
+                    Call about this car
+                  </a>
+                )}
                 <Link className="btn btn--outline btn--block" to={`/financing?vehicle=${v.slug}`}>
                   Get pre-qualified
                 </Link>

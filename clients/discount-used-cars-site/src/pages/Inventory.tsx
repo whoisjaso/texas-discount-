@@ -4,6 +4,7 @@ import { PageHero } from '../components/PageHero';
 import { photoFocus, photos } from '../data/media';
 import { VehicleCard } from '../components/VehicleCard';
 import type { BodyStyle } from '../data/inventory';
+import { business } from '../data/business';
 import { getInventory } from '../lib/inventoryStore';
 import { useReveal } from '../lib/useReveal';
 
@@ -56,7 +57,7 @@ export function Inventory() {
     <>
       <PageHero
         title="The Collection."
-        lede="Clear prices, honest miles, and a team that answers the phone. Something caught your eye? Text us the stock number."
+        lede="Pre-owned cars, trucks and SUVs at fair prices. Something caught your eye? Call us with the stock number."
         kind="studio"
         body="Sedan"
         paint="#15171b"
@@ -109,6 +110,14 @@ export function Inventory() {
               {list.map((v, i) => (
                 <VehicleCard key={v.slug} v={v} index={i} />
               ))}
+            </div>
+          ) : !all.length ? (
+            <div className="empty">
+              <h3>Today’s lot is posting soon.</h3>
+              <p>For what’s on the lot right now, call {business.phoneDisplay} or come by {business.street}.</p>
+              <a className="btn btn--outline" href={business.phoneHref}>
+                Call {business.phoneDisplay}
+              </a>
             </div>
           ) : (
             <div className="empty">

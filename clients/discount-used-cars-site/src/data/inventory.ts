@@ -32,45 +32,21 @@ export interface Vehicle {
   featured?: boolean;
 }
 
-const photoSet = (slug: string, n: number) =>
+/** Photo paths for a vehicle whose files live in public/photos/inventory/<slug>/1.webp … n.webp. */
+export const photoSet = (slug: string, n: number) =>
   Array.from({ length: n }, (_, i) => `/photos/inventory/${slug}/${i + 1}.webp`);
 
 /**
- * Vega's real vehicles, from the dealership's own Facebook posts.
+ * Discount Used Cars and Trucks' vehicles, from the dealership's own photos
+ * and posts only.
  *
- * Only what the photos show is filled in: make, model, body, colour, the
- * badges (AWD, 5.6) and the interior. Year, price and miles were not in the
- * posts, so they are left out: the site hides the year and shows "Call for
- * price" until they are supplied. Never fill them in from a guess.
+ * Empty until the owner sends the current lot (Facebook collages, phone
+ * photos or a DMS export): as of 10/01/2026 no current inventory is listed
+ * anywhere online. Fill in only what the photos or the post show; leave out
+ * year, price and miles unless stated (the site then hides the year and shows
+ * "Call for price"). Never fill them in from a guess.
  */
-export const inventory: Vehicle[] = [
-  {
-    slug: 'gmc-terrain-awd',
-    make: 'GMC', model: 'Terrain', body: 'SUV',
-    exterior: 'Gray', interior: 'Black leather', drivetrain: 'AWD', paint: '#4a4d52',
-    highlights: ['AWD', 'Leather seats', 'Touchscreen infotainment', 'Chrome grille'],
-    photos: photoSet('gmc-terrain-awd', 6),
-    coverFocus: '30% 55%',
-    featured: true,
-  },
-  {
-    slug: 'acura-rdx-awd',
-    make: 'Acura', model: 'RDX', body: 'SUV',
-    exterior: 'Silver', interior: 'Gray leather', drivetrain: 'AWD', paint: '#b9bcc0',
-    highlights: ['AWD', 'Leather seats', 'Sunroof', 'Rear spoiler'],
-    photos: photoSet('acura-rdx-awd', 6),
-    featured: true,
-  },
-  {
-    slug: 'infiniti-q70-5-6',
-    make: 'INFINITI', model: 'Q70', trim: '5.6', body: 'Sedan',
-    exterior: 'Brown', interior: 'Beige leather', engine: '5.6L V8', paint: '#4a3a33',
-    highlights: ['5.6L V8', 'Leather seats', 'Wood trim', 'Parking sensors'],
-    photos: photoSet('infiniti-q70-5-6', 5),
-    coverFocus: '28% 55%',
-    featured: true,
-  },
-];
+export const inventory: Vehicle[] = [];
 
 export function vehicleTitle(v: Vehicle): string {
   return [v.year, v.make, v.model, v.trim].filter(Boolean).join(' ');
