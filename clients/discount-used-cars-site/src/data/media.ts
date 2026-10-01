@@ -43,6 +43,7 @@ export const photos: Partial<Record<PhotoSlot, string>> = {
   sell: '/photos/sell.webp',
   financing: '/photos/financing.webp',
   'not-found': '/photos/not-found.webp',
+  'body-suv': '/photos/body-suv.webp',
 };
 
 /** Where each banner's subject sits, so narrow screens crop to it. */
@@ -51,6 +52,7 @@ export const photoFocus: Partial<Record<PhotoSlot, string>> = {
   sell: '68% 50%',
   financing: '70% 58%',
   'not-found': '50% 55%',
+  'body-suv': '50% 62%',
 };
 
 /** Where the hero photo's subject sits, so phones crop to it. */
