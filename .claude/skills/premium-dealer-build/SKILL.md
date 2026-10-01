@@ -127,6 +127,15 @@ secrets.
 - Collage seams aren't white; crop with an inset and check the contact sheet.
 - Headlines over a hero must be pinned to the left gutter so they never cross
   the vehicle on wide screens.
+- The 130-U seller line must read `<Legal Name> (<First Last>)`: the entity
+  alone is now rejected at the county. The person's name comes from their
+  onboarding, and their saved signature sits on the same line.
+- The first-login onboarding page (name, then signature) must ship with the
+  desk: the Vega's port redirected new members to a route that did not exist.
+- The website printed on documents is the public domain; the desk's origin is
+  only for signing links. Keep them as two values.
+- Demo videos: `references/demo-video.md` (Recordly-style screen capture with
+  zoom, cursor and macOS window, cut with the jason-video-editor template).
 
 ## Scripts
 

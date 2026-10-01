@@ -226,6 +226,35 @@ Storage buckets, all **private**: `buyer-ids` (licence photos),
 `documents` (filed PDFs). Serve files only through signed URLs that expire
 in 10 minutes, and never cache the pages that mint them.
 
+### First sign-in: onboarding
+
+A new staff member's first sign-in lands on `/admin/account/onboarding`
+before anything else (the admin layout redirects there while
+`team_members.onboarding_completed_at` is null). One question per screen,
+the same corridor styling:
+
+1. **What Is Your Name?** First name and last name, two fields, required.
+   Saved as `full_name` ("First Last") and `display_name` (first name). This
+   is the name that prints in parentheses on the 130-U and under the dealer
+   signature lines, so it is the person's legal name, not a nickname.
+2. **Draw Your Signature.** Shown only when the member is cleared to sign
+   (`can_sign_contracts`): the signature pad, saved through the same action
+   as `/admin/account/signature` (one stored signature, reused on every
+   dealer line). Members not cleared to sign skip it.
+3. **Done.** Sets `onboarding_completed_at` and goes to Handle A Sale.
+
+The page must exist before the redirect is deployed: a redirect to a missing
+route locks every new member out. Test it with a fresh member in the preview
+mock (no name, no signature, onboarding not completed).
+
+### The website on paper versus the desk's own address
+
+The dealer's public website (e.g. `www.dealer.com`) is a dealer fact that
+prints on documents. The desk's own origin (`desk.dealer.com`) is where
+signing links and capture QR codes point. They are two values: never print
+the desk origin as the website, and never build links from the public
+website.
+
 Dealer facts live in ONE file, `src/lib/dealership-config.ts`: legal name,
 DBA, address, county, phone, email, licence number, time zone, signer name
 and title, fee lines, tax rate, brand tokens. Add a unit test that fails if
@@ -599,6 +628,17 @@ Legal content each document must carry:
   balance and the lien that secures it.
 - **130-U:** the application in the buyer's hand, the seller line signed by
   the dealer, the lien section written from the funding answer.
+  **Seller printed name = the dealer's legal name followed by the signing
+  person's own name in parentheses**, e.g. `Triple J Auto Investment LLC
+  (First Last)`. County tax offices now reject the entity name alone on
+  the seller line. The person is whoever's saved signature lands on the
+  seller signature band (the staff member filing it, who must be cleared to
+  sign), named exactly as they entered it at onboarding (first and last
+  name). If that person has no name on record, the parentheses print the
+  visible `[Not set: signer name]` marker and filing is refused, never the
+  entity name alone. The same pairing (entity, then the person in
+  parentheses) is used wherever a state form asks for the dealer's printed
+  name beside a dealer signature.
 - **Insurance acknowledgment:** no proof shown, the law requires it, they will
   get it before driving, the dealer is not their insurer, and registration
   waits on proof.
