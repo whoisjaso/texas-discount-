@@ -12,7 +12,7 @@ export function Visit() {
     <>
       <PageHero
         title="Come see it in person."
-        lede="Walk the lot, sit in the car, bring your trade. We’re on the Gulf Freeway feeder, Monday through Friday."
+        lede="Walk the lot, sit in the car, bring your trade. We’re on the Gulf Freeway feeder, Tuesday through Saturday."
         kind="dusk"
         photo={photos.visit}
         focus={photoFocus.visit}
@@ -70,7 +70,7 @@ export function Visit() {
                 )}
               </div>
             </div>
-            <Scene kind="dusk" photo={photos.visit} focus={photoFocus.visit} alt="The Discount Used Cars and Trucks lot on the Gulf Freeway" className="split-card__scene" />
+            <Scene kind="dusk" photo={photos.visit} focus={photoFocus.visit} alt="A Houston freeway frontage road at dusk" className="split-card__scene" />
           </div>
         </div>
       </section>

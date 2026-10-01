@@ -9,8 +9,9 @@ is the shared doc: https://claude.ai/code/artifact/c0d9d2fc-1a4d-469f-b04f-9cc56
 
 **Vehicles for sale always come from the dealer's own photos** (the lot,
 Facebook posts). The generated images are mood and brand pictures: no badges,
-no plates, nothing that claims to be a car in stock. The Visit picture must be
-a real phone photo of the lot.
+no plates, nothing that claims to be a car in stock. The owner asked for an
+enhanced image on the Visit card instead of the current lot (10/01/2026), so 04
+is a mood picture of the area that never shows a storefront or a sign.
 
 ## House style (paste at the end of every prompt)
 
@@ -54,11 +55,12 @@ LEFT 45% is soft, dark and out of focus.
 the RIGHT of the frame, the deep red pickup truck softly out of focus behind it
 at golden hour. Only the hand and wrist are visible.
 
-04 · `visit` — **A real phone photo, not generated:** the lot at 8108 Gulf Fwy
-from across the feeder road, landscape, late afternoon or dusk, cars and office
-in frame, phone held level. Only if that is impossible, a clearly temporary
-stand-in: *A quiet Houston freeway frontage road at blue hour, warm
-streetlights, live oaks, no storefronts, no signs, no vehicles.*
+04 · `visit` — A Houston freeway frontage road beside the elevated Gulf
+Freeway at blue hour, warm streetlights glowing, live oaks along a clean
+sidewalk, the sky deep blue fading to orange at the horizon on the RIGHT. No
+storefronts, no signs, no lettering, no vehicles. The LEFT side calm and
+darker. (Owner's choice: an enhanced picture of the area, never a fake of the
+lot itself.)
 
 05 · `not-found` — An empty two-lane Texas highway at dusk running straight
 toward the horizon and curving away at the end, dashed centre line, fence posts

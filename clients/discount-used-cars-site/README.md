@@ -29,8 +29,9 @@ Deploys as a static SPA (`vercel.json` rewrites every route to `index.html`).
 | Legal name | Discount Used Cars and Trucks, LLC | TxDMV GDN list, current 10/01/2026 |
 | Dealer licence | GDN P145000, Active, expires 09/30/2027 | TxDMV |
 | Address | 8108 Gulf Fwy, Houston, TX 77017 | TxDMV, Comptroller, Google listing |
-| Phone | (713) 900-5050 | Google listing, the dealer's "713 900 50/50" sign |
-| Hours | Mon–Fri 10 AM–5 PM, Sat–Sun closed | Google listing (pending owner) |
+| Phone | (713) 900-5050 | Owner (text + billboard); Google listing |
+| Hours | Tue–Sat 10 AM–7 PM, Sun & Mon closed | Owner (billboard artwork) |
+| Domain | www.discountusedcarsandtrucks.com | Owner (billboard artwork); Namecheap |
 | Rating | 4.8 from 24 Google reviews | Google listing before the move to Gulf Fwy |
 | Spanish | Se habla español | the dealer's lot sign (pending owner) |
 
@@ -41,6 +42,6 @@ warranty.
 ## Before launch
 
 1. Real inventory: the owner's photos into `public/photos/inventory/<slug>/`, records in `src/data/inventory.ts`.
-2. The images in `PHOTOS.md`, and a real phone photo of the lot for the Visit card.
+2. The images in `PHOTOS.md`. The owner asked for an enhanced brand image on the Visit card rather than a photo of the current lot; it must not show a storefront or sign, so it never poses as the lot.
 3. `VITE_LEADS_ENDPOINT` so forms deliver, and `VITE_DESK_URL` once the sale desk is live (shows the Admin link in the menu).
-4. Point the domain (likely `discountusedcarsandtrucks.com`) at the Vercel project.
+4. Point `discountusedcarsandtrucks.com` (Namecheap) at the Vercel project.

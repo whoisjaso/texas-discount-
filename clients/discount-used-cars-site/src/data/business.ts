@@ -3,6 +3,8 @@
  * it came from. Nothing here is invented: a fact nobody has confirmed is
  * `null` and the site leaves it out.
  *
+ * OWNER  = supplied by the dealership (its billboard artwork and texts,
+ *          10/01/2026). Outranks every other source.
  * TXDMV  = Independent (GDN) Motor Vehicle Dealers List, current 10/01/2026.
  * PUBLIC = the dealer's own listings (Google Business listing at 8108 Gulf
  *          Fwy, the Facebook page, the lot sign), pending the owner's
@@ -16,8 +18,9 @@ export const business = {
   legalName: 'Discount Used Cars and Trucks, LLC',
   // TXDMV: Active, Motor Vehicle (independent), expires 09/30/2027.
   dealerLicense: 'P145000',
-  // PUBLIC: the Google listing at 8108 Gulf Fwy and the dealer's "713 900 50/50" sign.
-  // (713) 203-3890 is the number on the TxDMV licence record.
+  // OWNER: confirmed by text and on the billboard artwork. Also the Google
+  // listing and the "713 900 50/50" sign. (713) 203-3890 is the number on the
+  // TxDMV licence record.
   phoneDisplay: '(713) 900-5050',
   phoneHref: 'tel:+17139005050',
   // No number customers can text has been published or confirmed: the Text
@@ -32,19 +35,22 @@ export const business = {
   crossStreets: 'On the southbound Gulf Freeway feeder, between Dixie Dr & Delwood St',
   mapsHref:
     'https://www.google.com/maps/dir/?api=1&destination=Discount%20Used%20Cars%20and%20Trucks%2C%208108%20Gulf%20Fwy%2C%20Houston%2C%20TX%2077017',
+  // OWNER: the billboard artwork prints www.Discountusedcarsandtrucks.com.
+  siteUrl: 'https://www.discountusedcarsandtrucks.com',
   // PUBLIC: facebook.com/Discountusedcars (page id 494130167427998).
   facebookHref: 'https://www.facebook.com/Discountusedcars/',
-  // PUBLIC: the Google listing at 8108 Gulf Fwy, read 10/01/2026, pending the owner's confirmation.
+  // OWNER: billboard artwork, "TUES-SAT 10AM-7PM, SUN/MON CLOSED" (supersedes
+  // the Google listing's Mon–Fri 10–5).
   hours: [
-    { days: 'Monday – Friday', time: '10:00 AM – 5:00 PM' },
-    { days: 'Saturday – Sunday', time: 'Closed' },
+    { days: 'Tuesday – Saturday', time: '10:00 AM – 7:00 PM' },
+    { days: 'Sunday & Monday', time: 'Closed' },
   ],
-  hoursShort: 'Mon – Fri, 10 AM – 5 PM',
+  hoursShort: 'Tue – Sat, 10 AM – 7 PM',
   opensLabel: 'Opens 10 AM',
-  // Mon=1 ... Fri=5 open 10–17; Sat and Sun closed.
-  openDays: [1, 2, 3, 4, 5],
+  // Tue=2 ... Sat=6 open 10–19; Sun and Mon closed.
+  openDays: [2, 3, 4, 5, 6],
   openHour: 10,
-  closeHour: 17,
+  closeHour: 19,
   // Not confirmed: the only list online sits on a directory entry shared with
   // another dealer, so none is shown until the owner supplies it.
   payments: [] as string[],

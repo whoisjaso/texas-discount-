@@ -170,7 +170,7 @@ function VisitCard() {
               Get directions
             </a>
           </div>
-          <Scene kind="dusk" photo={photos.visit} focus={photoFocus.visit} alt="The Discount Used Cars and Trucks lot on the Gulf Freeway" className="split-card__scene" />
+          <Scene kind="dusk" photo={photos.visit} focus={photoFocus.visit} alt="A Houston freeway frontage road at dusk" className="split-card__scene" />
         </div>
       </div>
     </section>
