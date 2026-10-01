@@ -20,12 +20,14 @@ export const LogoSting: React.FC<{
   wordDelay?: number;
   linesDelay?: number;
   exitAt?: number;
-}> = ({ mark, markWidth = 560, logo, logoWidth = 760, word, wordSize = 46, lines = [], lineSize = 40, wordDelay = 14, linesDelay = 24, exitAt }) => {
+  /** frames the exit takes */
+  exitFrames?: number;
+}> = ({ mark, markWidth = 560, logo, logoWidth = 760, word, wordSize = 46, lines = [], lineSize = 40, wordDelay = 14, linesDelay = 24, exitAt, exitFrames = 9 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const p = spring({ frame, fps, config: theme.spring.smooth });
   const wipe = interpolate(frame, [0, 22], [0, 100], { easing: theme.ease.out, extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-  const exit = exitAt === undefined ? 0 : interpolate(frame, [exitAt, exitAt + 9], [0, 1], { easing: theme.ease.in, extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const exit = exitAt === undefined ? 0 : interpolate(frame, [exitAt, exitAt + exitFrames], [0, 1], { easing: theme.ease.in, extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   const breathe = 1 + Math.sin(frame / 22) * 0.006;
   return (
     <AbsoluteFill style={{ alignItems: "center", justifyContent: "center" }}>

@@ -34,6 +34,7 @@ export const TapRipple: React.FC<{
           height: 2 * r,
           borderRadius: "50%",
           border: `${2 * k}px solid ${theme.colors.touchRing}`,
+          boxShadow: `0 0 0 ${1 * k}px ${theme.colors.touchEdge}`,
           background: theme.colors.touch,
           opacity: 0.85 * (1 - theme.ease.in(p)),
         }}
@@ -60,7 +61,7 @@ export const TapRipple: React.FC<{
           height: 2 * r,
           borderRadius: "50%",
           background: theme.colors.touch,
-          boxShadow: `0 0 0 ${1.5 * k}px ${theme.colors.touchRing}`,
+          boxShadow: `0 0 0 ${1.5 * k}px ${theme.colors.touchRing}, 0 0 0 ${2.5 * k}px ${theme.colors.touchEdge}, 0 ${2 * k}px ${6 * k}px ${theme.colors.touchEdge}`,
           opacity: theme.ease.inOut(touchOpacity),
         }}
       />,

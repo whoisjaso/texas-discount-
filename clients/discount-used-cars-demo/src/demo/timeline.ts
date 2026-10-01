@@ -18,9 +18,11 @@ export const partASegments: DesktopSegment[] = [
   // Trucks card (572 px tall) under 1.8x (a 500 px view): aim at y 360 so both frame edges fall in the photo
   // (the gap above the card, the floor below the truck) instead of through the "Ask About Availability" pill.
   { shot: "2-scroll", durationInFrames: sec(16), zoomFocus: { 0: { point: [418.5, 360] } } },
-  // "We Buy Trucks" under 1.5x: the captured focus is clamped at the page bottom (view 300–900), whose top edge
-  // slices the "Go To We Buy Cars" link; view 275–875 keeps the link whole and the three tiles still fit the width.
-  { shot: "3-buy", durationInFrames: sec(7.6), zoomFocus: { 0: { point: [720, 575] } } },
+  // "We Buy Trucks": at the captured 1.5x the view is clamped at the page bottom (y 300–900) and its top edge
+  // slices the "Go To We Buy Cars" link (x 132–285, y 286–308); no 1.5x framing both clears the link and fits the
+  // three tiles (x 242–1198). 1.55x, bottom-clamped (x 255–1185, y 319–900): link out, all tile labels and arrows
+  // in with ~23 px to spare, only ~13 px of photo trimmed off the outer tiles.
+  { shot: "3-buy", durationInFrames: sec(7.6), zoomFocus: { 0: { point: [720, 612], depth: 1.55 } } },
   // the drawer opens on the first click: open_ui on top of the click's tink
   { shot: "4-menu", durationInFrames: sec(6), eventCues: [{ type: "click", index: 0, file: S.open.file, db: S.open.db, offsetFrames: 1 }] },
 ];
@@ -29,9 +31,11 @@ export const partASegments: DesktopSegment[] = [
 export const partBSegments: DesktopSegment[] = [];
 
 export const buildTimeline = (partB: DesktopSegment[] = partBSegments) => {
-  const intro = { from: 0, durationInFrames: sec(3) };
-  // the window starts rising while the intro sting blurs out
-  const desktopA = { from: intro.durationInFrames - sec(0.2), durationInFrames: desktopLength(partASegments) };
+  // the sting leaves fast (blur + fade) from 2.55 s; the window's spring starts on the sting's last exit frame
+  // (where the window is still at 0 opacity), so there is no empty frame between them and no overlap. Overlapping
+  // them more doubled the logo: the site's own loader shows the same mark and DISCOUNT at nearly the same spot.
+  const intro = { from: 0, durationInFrames: sec(3), exitAt: sec(2.55), exitFrames: Math.round(0.3 * theme.fps) };
+  const desktopA = { from: intro.exitAt + intro.exitFrames - 1, durationInFrames: desktopLength(partASegments) };
   const cutPoint = desktopA.from + desktopA.durationInFrames;
   const desktopB = { from: cutPoint, durationInFrames: desktopLength(partB) };
   const phone = { from: desktopB.from + desktopB.durationInFrames, durationInFrames: sec(9) };

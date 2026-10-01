@@ -28,7 +28,7 @@ export type DesktopSegment = {
    * Re-aim a capture's zoom (by index) at a fixed point in viewport CSS px. Composition data only (the capture's
    * pixels do not depend on it), used when the captured focus puts a frame edge through a line of text.
    */
-  zoomFocus?: Record<number, { point: Vec; follow?: boolean }>;
+  zoomFocus?: Record<number, { point: Vec; follow?: boolean; depth?: number }>;
 };
 
 /** A copy of the shot data with the segment's zoom-focus overrides applied. */
@@ -36,7 +36,7 @@ const withZoomFocus = (d: ShotData, over?: DesktopSegment["zoomFocus"]): ShotDat
   over
     ? {
         ...d,
-        zooms: d.zooms.map((z, i) => (over[i] ? { ...z, follow: over[i].follow ?? false, focus: { point: over[i].point } } : z)),
+        zooms: d.zooms.map((z, i) => (over[i] ? { ...z, follow: over[i].follow ?? false, depth: over[i].depth ?? z.depth, focus: { point: over[i].point } } : z)),
       }
     : d;
 

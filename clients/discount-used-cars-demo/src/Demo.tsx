@@ -44,7 +44,7 @@ export const Demo: React.FC = () => {
 
       {/* 0 · Intro: the red mark draws in, DISCOUNT staggers in under it, fast exit */}
       <Sequence from={T.intro.from} durationInFrames={T.intro.durationInFrames} name="0 Intro">
-        <LogoSting mark={project.mark} markWidth={project.markWidth} word={project.word} exitAt={Math.round(2.55 * fps)} />
+        <LogoSting mark={project.mark} markWidth={project.markWidth} word={project.word} exitAt={T.intro.exitAt} exitFrames={T.intro.exitFrames} />
       </Sequence>
 
       {/* 1–4 · one macOS window: hero → scroll → we buy → menu (ends held on the Admin row) */}

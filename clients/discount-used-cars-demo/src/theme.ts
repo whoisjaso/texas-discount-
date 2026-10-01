@@ -31,8 +31,10 @@ export const theme = {
     cursorStroke: "#FFFFFF",
     cursorShadow: "rgba(0,0,0,0.35)",
     clickRing: "rgba(255,255,255,0.85)",
-    touch: "rgba(255,255,255,0.32)",
-    touchRing: "rgba(255,255,255,0.75)",
+    // touch indicator: neutral grey disc, white inner ring, faint dark edge, so it reads on white and on black
+    touch: "rgba(128,128,134,0.45)",
+    touchRing: "rgba(255,255,255,0.85)",
+    touchEdge: "rgba(0,0,0,0.22)",
     // iPhone
     phoneEdge: "#3A3A3F",
     phoneEdgeHi: "#8A8A90",
