@@ -119,9 +119,10 @@ transparent PNG** and skip the house style line.
 ## Status
 
 Done and live: 00 hero (+ phone crop), 02 sell, 03 financing, 05 not-found,
-06 body-suv, 07 body-sedan, 08 body-truck, 09 body-coupe, 10 sell-band.
+06 body-suv, 07 body-sedan, 08 body-truck, 09 body-coupe, 10 sell-band,
+11 sell-cars, 12 sell-trucks.
 Optional: 06 was made in a different room from 07–09 (redo it with 07 as the
 reference so the four cards match).
 01 inventory is placed but needs a redo (emblems on both grilles; the cars sit
 too far left, so the title touches the SUV at 1440). Still needed: 01 redo, 04,
-11–14.
+13, 14.

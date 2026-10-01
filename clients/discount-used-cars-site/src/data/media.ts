@@ -48,6 +48,8 @@ export const photos: Partial<Record<PhotoSlot, string>> = {
   'body-truck': '/photos/body-truck.webp',
   'body-coupe': '/photos/body-coupe.webp',
   'sell-band': '/photos/sell-band.webp',
+  'sell-cars': '/photos/sell-cars.webp',
+  'sell-trucks': '/photos/sell-trucks.webp',
 };
 
 /** Where each banner's subject sits, so narrow screens crop to it. */
@@ -61,6 +63,8 @@ export const photoFocus: Partial<Record<PhotoSlot, string>> = {
   'body-truck': '50% 62%',
   'body-coupe': '50% 62%',
   'sell-band': '45% 40%',
+  'sell-cars': '55% 55%',
+  'sell-trucks': '50% 55%',
 };
 
 /** Where the hero photo's subject sits, so phones crop to it. */
