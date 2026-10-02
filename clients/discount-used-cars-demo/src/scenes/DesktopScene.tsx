@@ -16,8 +16,29 @@ import { Finish } from "../components/Overlays";
 
 const CLAMP = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 
-/** A sound tied to a capture event (e.g. the drawer's open_ui on the first click of the menu shot). */
-export type EventCue = { type: "click" | "type" | "scroll" | "touch" | "tap"; index: number; file: string; db: number; offsetSec?: number };
+/**
+ * A sound tied to a capture event (e.g. the drawer's open_ui on the first click of the menu shot). `at: "end"` places it
+ * on the event's endFrame (a hold's release, a pen's last stroke) or, for a zoom, where the zoom lands (start + in).
+ */
+export type EventCue = {
+  type: "click" | "type" | "scroll" | "touch" | "tap" | "hold" | "draw" | "zoom";
+  index: number;
+  file: string;
+  db: number;
+  offsetSec?: number;
+  at?: "start" | "end";
+};
+
+/** The capture frame an EventCue refers to (null when the shot has no such event). */
+export const eventCueFrame = (d: ShotData, ec: EventCue): number | null => {
+  if (ec.type === "zoom") {
+    const z = d.zooms[ec.index];
+    return z ? (ec.at === "end" ? z.startFrame + z.inFrames : z.startFrame) : null;
+  }
+  const ev = d.events.filter((e) => e.type === ec.type)[ec.index];
+  if (!ev) return null;
+  return ec.at === "end" && "endFrame" in ev ? ev.endFrame : ev.frame;
+};
 
 export type DesktopSegment = {
   shot: string;
@@ -34,19 +55,31 @@ export type DesktopSegment = {
    * pixels do not depend on it), used when the captured focus puts a frame edge through a line of text.
    */
   zoomFocus?: Record<number, { point: Vec; follow?: boolean; depth?: number }>;
+  /**
+   * Move a capture's zoom (by index) later or earlier, in capture seconds: `startSec` shifts where it starts, `outSec`
+   * where it starts to leave. Composition data only, like zoomFocus: used when a segment's head is trimmed, so the
+   * camera still holds still on the first frame shown (the cut stays matched) and moves as late after the cut as it did.
+   */
+  zoomShift?: Record<number, { startSec?: number; outSec?: number }>;
 };
 
 /** A solid patch over part of the page (viewport CSS px), drawn until `untilFrame` (scene frames). */
 export type Cover = { rect: readonly [number, number, number, number]; color: string; untilFrame: number };
 
-/** A copy of the shot data with the segment's zoom-focus overrides applied. */
-const withZoomFocus = (d: ShotData, over?: DesktopSegment["zoomFocus"]): ShotData =>
-  over
-    ? {
-        ...d,
-        zooms: d.zooms.map((z, i) => (over[i] ? { ...z, follow: over[i].follow ?? false, depth: over[i].depth ?? z.depth, focus: { point: over[i].point } } : z)),
-      }
-    : d;
+/** A copy of the shot data with the segment's zoom-focus and zoom-timing overrides applied. */
+export const withZoomFocus = (d: ShotData, over?: DesktopSegment["zoomFocus"], shift?: DesktopSegment["zoomShift"]): ShotData => {
+  if (!over && !shift) return d;
+  const f = (sec?: number) => Math.round((sec ?? 0) * d.fps);
+  return {
+    ...d,
+    zooms: d.zooms.map((z, i) => {
+      let out = z;
+      if (over && over[i]) out = { ...out, follow: over[i].follow ?? false, depth: over[i].depth ?? out.depth, focus: { point: over[i].point } };
+      if (shift && shift[i]) out = { ...out, startFrame: out.startFrame + f(shift[i].startSec), outFrame: out.outFrame === null ? null : out.outFrame + f(shift[i].outSec) };
+      return out;
+    }),
+  };
+};
 
 export type DesktopSceneProps = {
   segments: DesktopSegment[];
@@ -95,7 +128,7 @@ export const DesktopScene: React.FC<DesktopSceneProps> = ({ segments, url, enter
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
   const raw = useShotsData(segments.map((s) => s.shot));
-  const data = useMemo(() => (raw ? raw.map((d, i) => withZoomFocus(d, segments[i].zoomFocus)) : null), [raw, segments]);
+  const data = useMemo(() => (raw ? raw.map((d, i) => withZoomFocus(d, segments[i].zoomFocus, segments[i].zoomShift)) : null), [raw, segments]);
   const tracks = useMemo(() => (data ? data.map(computeTracks) : null), [data]);
 
   const plan = useMemo(() => {
@@ -113,13 +146,14 @@ export const DesktopScene: React.FC<DesktopSceneProps> = ({ segments, url, enter
     let zoomsSoFar = 0;
     plan.forEach((p, i) => {
       const d: ShotData = data[i];
-      if (autoSfx) out.push(...shotCues(d, { trimFrames: p.trim, durationInFrames: p.durationInFrames, zoomIndexOffset: zoomsSoFar }).map((c) => ({ ...c, frame: c.frame + p.start })));
-      zoomsSoFar += d.zooms.length;
+      const auto = shotCues(d, { trimFrames: p.trim, durationInFrames: p.durationInFrames, zoomIndexOffset: zoomsSoFar });
+      if (autoSfx) out.push(...auto.map((c) => ({ ...c, frame: c.frame + p.start })));
+      zoomsSoFar += auto.filter((c) => (theme.sfx.zoomIn.files as readonly string[]).includes(c.file)).length;
       for (const c of p.cues ?? []) out.push({ ...c, frame: c.frame + p.start });
       for (const ec of p.eventCues ?? []) {
-        const ev = d.events.filter((e) => e.type === ec.type)[ec.index];
-        if (!ev) continue;
-        out.push({ frame: ev.frame - p.trim + p.start + Math.round((ec.offsetSec ?? 0) * fps), file: ec.file, db: ec.db });
+        const at = eventCueFrame(d, ec);
+        if (at === null) continue;
+        out.push({ frame: at - p.trim + p.start + Math.round((ec.offsetSec ?? 0) * fps), file: ec.file, db: ec.db });
       }
     });
     return out.sort((a, b) => a.frame - b.frame);

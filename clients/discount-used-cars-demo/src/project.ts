@@ -1,13 +1,30 @@
 // Discount Used Cars and Trucks (Houston): the facts this film may show, and its assets.
-// On-screen facts are limited to: the web address, (713) 900-5050, 8108 Gulf Fwy, Houston, Tue – Sat 10 AM – 7 PM.
+// On-screen facts are limited to: the web address, (713) 900-5050, 8108 Gulf Fwy, Houston, Tue – Sat 10 AM – 7 PM;
+// part B adds the desk host desk.discountusedcarsandtrucks.com, GDN P145000 and Discount Used Cars And Trucks, LLC.
 export const project = {
   /** shown in the window's URL pill */
   domain: "discountusedcarsandtrucks.com",
   /**
-   * The URL pill for part B (the sale desk). The desk host is NOT on the confirmed fact list: leave null (the pill then
-   * keeps the public domain) until the owner confirms the host may be shown, e.g. "desk.discountusedcarsandtrucks.com".
+   * The URL pill for part B (the sale desk): the desk host being set up on the owner's domain
+   * (clients/discount-used-cars-desk/.env.example, README). It is on the film's allowed fact list.
    */
-  partBDomain: null as string | null,
+  partBDomain: "desk.discountusedcarsandtrucks.com" as string | null,
+  /**
+   * B6: the off-camera deal's filled Form 130-U, page 1 at 300 dpi (pdftoppm -r 300 of 130-U_Carter_812345.pdf from
+   * the packet). Boxes are [x, y, w, h] in px of the PNG. The seller band holds Maria Lopez's drawn signature (the same
+   * strokes as B2), the printed name "Discount Used Cars And Trucks, LLC (Maria Lopez)", the date and the labels.
+   * `privacy`: money on the page (box 38(a), "$ 3663.06"), always under a privacy blur.
+   */
+  doc: {
+    src: "docs/130u-p1.png",
+    size: [2550, 3300],
+    fileName: "130-U_Carter_812345.pdf",
+    page: 1,
+    pages: 2,
+    sellerBand: [392, 2860, 2000, 132],
+    privacy: [[1046, 2243, 148, 56]],
+    caption: "Signed Once. On Every Title Application.",
+  },
   /** public/ paths (copied from clients/discount-used-cars-site/public/brand) */
   mark: "brand/discount-mark.png", // the red car swoosh, 640 × 87
   logoReverse: "brand/discount-logo-reverse.png", // full-colour logo for dark backgrounds, 1402 × 540

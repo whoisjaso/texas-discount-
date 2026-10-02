@@ -22,7 +22,7 @@ export const Sfx: React.FC<{ cues: Cue[] }> = ({ cues }) => {
 };
 
 /** Frame (from the zoom's start) at which the zoom-in ease moves fastest. */
-const peakVelocityFrame = (inFrames: number) => {
+export const peakVelocityFrame = (inFrames: number) => {
   const e = theme.recordly.zoomInEase;
   let best = 0;
   let bestV = -1;
@@ -48,7 +48,7 @@ export const shotCues = (
     durationInFrames = Infinity,
     zoomWhoosh = true,
     zoomIndexOffset = 0,
-  }: { trimFrames?: number; durationInFrames?: number; zoomWhoosh?: boolean; /** zooms before this capture in the film (rotates the whoosh variants across captures) */ zoomIndexOffset?: number } = {},
+  }: { trimFrames?: number; durationInFrames?: number; zoomWhoosh?: boolean; /** whooshes heard before this capture in the film (rotates the variants across captures) */ zoomIndexOffset?: number } = {},
 ): Cue[] => {
   const S = theme.sfx;
   const fps = data.fps;
@@ -68,11 +68,16 @@ export const shotCues = (
     }
   }
   if (zoomWhoosh) {
-    data.zooms.forEach((z, i) => {
+    // the variants rotate over the whooshes actually heard (a zoom that opens a capture already at depth, at a cut,
+    // has none and does not count), so consecutive zooms never repeat one sample
+    let heard = 0;
+    data.zooms.forEach((z) => {
       if (z.sfx === false) return;
       const f = z.startFrame - trimFrames + peakVelocityFrame(z.inFrames) - toFrames(S.zoomIn.peakSec, fps) - toFrames(S.zoomIn.leadSec, fps);
-      const file = S.zoomIn.files[(i + zoomIndexOffset) % S.zoomIn.files.length];
-      if (inScene(f)) cues.push({ frame: f, file, db: S.zoomIn.db, maxSec: S.zoomIn.maxSec });
+      if (!inScene(f)) return;
+      const file = S.zoomIn.files[(heard + zoomIndexOffset) % S.zoomIn.files.length];
+      cues.push({ frame: f, file, db: S.zoomIn.db, maxSec: S.zoomIn.maxSec });
+      heard++;
     });
   }
   return cues.sort((a, b) => a.frame - b.frame);

@@ -34,10 +34,14 @@
  *                     count verified (disk is limited: use it for big shots)
  *   --no-encode       write frames + cursor.json only
  *   --preset P        x264 preset (default medium)
+ *   --var NAME=VALUE  fills {NAME} in the shot's url (repeatable), e.g. a deal made by an off-camera set-up script:
+ *                     "url": "/admin/sales/{deal}/packet" with --var deal=preview-deals-7 (shot.vars holds defaults)
  *
  * SHOT FORMAT (times in seconds, relative to frame 0)
  *   {
  *     "id": "2-scroll", "url": "/",
+ *     "base": "http://localhost:5190",   // optional: this shot's origin, over storyboard.base / --base (a desk shot
+ *                                      // in a storyboard whose base is the site)
  *     "viewport": { "width": 1440, "height": 900, "deviceScaleFactor": 2 },
  *     "mobile": false,                 // true → isMobile + hasTouch, touch cursor
  *     "presetIntroSeen": true,         // sessionStorage[introKey] = '1' before load
@@ -63,8 +67,33 @@
  *       { "t": 9.0, "type": "wait" }
  *     ],
  *     "zooms": [ { "at": 4.0, "until": 6.5, "depth": 1.8, "focus": "a.model[href*=Truck]", "tight": false, "follow": true } ],
- *     "track": { "name": "css selector" }   // extra rects recorded per frame
+ *     "track": { "name": "css selector" },  // extra rects recorded per frame
+ *     "cookies": [{ "name": "session", "value": "x" }]  // set for the shot's origin before load (or storyboard.cookies;
+ *                                      // a shot's own list, even [], replaces the storyboard's)
  *   }
+ *   More actions:
+ *     { "t": 2.0, "type": "hold", "selector": "[data-confirm-hold]", "holdSec": 2.4 }
+ *         travel like a click, press on arrival, keep the button down holdSec, release (a press-and-hold button).
+ *     { "t": 4.0, "type": "draw", "selector": "canvas", "strokes": [[[0.1, 0.6], [0.2, 0.3], …], …], "inkSec": 1.6 }
+ *         a pen on a pad: travel (pen up, approachSec) to the first point, then each stroke with the button down,
+ *         lifting between strokes (liftSec each). Points are fractions of the selector's box (units "px": CSS px from
+ *         its top-left). Each stroke is a centripetal Catmull-Rom spline through its points, traced at handwriting
+ *         speed (two-thirds power law: slower in tight turns, eased at each end); the strokes share inkSec in
+ *         proportion to their natural time. Mouse moves are sampled subSteps times per frame (default 2 = 60 Hz,
+ *         one extra rendered, uncaptured frame each) so a pad that samples pointer moves gets a smooth line.
+ *         "timeScale": 3 lets the page live 3 frames of time per film frame while the pen is on the pad, for a pad that
+ *         throttles moves to one per 16 ms (signature_pad): it then gets subSteps × timeScale points per film frame
+ *         (the ink looks as if drawn at 1/3 speed: a steadier, bolder line). Frames' vt jumps accordingly.
+ *     { "t": -1.0, "type": "fill", "selector": "input[name=buyerFirstName]", "value": "James" }
+ *         set an input / select / textarea value at once (React-safe), no keystrokes: for off-camera set-up.
+ *     { "t": -0.9, "type": "domClick", "selector": "button.ed-pick", "contains": "Camry" }
+ *         element.click() without moving the pointer: for off-camera set-up.
+ *     { "t": 0.0, "type": "eval", "js": "document.documentElement.classList.add('enter')" }
+ *         run a script in the page at that frame (e.g. start a video-only CSS entrance on frame 0).
+ *     { "t": -0.2, "type": "moveTo", "to": "start", "durationSec": 0.1 }
+ *         travel back to the shot's (resolved) cursor.start, e.g. after a set-up preroll moved the mouse.
+ *   A zoom may start before frame 0 ("at": -0.034, "inSec": 0.034) to open a shot already at depth, e.g. on the camera
+ *   the previous capture ended on.
  *   Every action starts at `t`. Pointer actions (moveTo / hover / click) travel
  *   from wherever the cursor is along an eased, gently bowed curve for
  *   `durationSec` (default from distance, 0.6–1.3 s); a click presses when the
@@ -81,7 +110,9 @@
  * 'p' pointing hand over links/buttons, 't' I-beam in text fields, from the element's computed `cursor`);
  * `cursor.hiddenAtStart` when the preroll ended with typing (macOS hides the pointer until the mouse moves);
  * for phone shots `screenEdges.top/bottom`, the page's colour along the top and bottom edge per frame (status-bar tint,
- * home-indicator colour).
+ * home-indicator colour). Per frame `down` is true while the button is held (a click's 100 ms, a hold, a pen stroke).
+ * Events, besides click / type / key / scroll / touch / tap: `hold` {frame, endFrame, x, y} (press → release) and
+ * `draw` {frame, endFrame, strokes: [[downFrame, upFrame], …]} (the pointer IS the pen there: draw it unsmoothed).
  */
 'use strict';
 
@@ -162,6 +193,135 @@ function swipeProfile(n, dragFrames, tauFrames) {
   return v.map((x) => (acc += x) / sum);
 }
 
+// ----------------------------------------------------------- pen (draw action)
+
+/** Centripetal Catmull-Rom spline through pts ([[x, y], …]), `per` samples per segment, passing through every point. */
+function catmullRom(pts, per = 24) {
+  if (pts.length < 2) return pts.map((p) => [p[0], p[1]]);
+  const n = pts.length;
+  const P = [[2 * pts[0][0] - pts[1][0], 2 * pts[0][1] - pts[1][1]], ...pts, [2 * pts[n - 1][0] - pts[n - 2][0], 2 * pts[n - 1][1] - pts[n - 2][1]]];
+  const knot = (a, b) => Math.max(1e-4, Math.sqrt(Math.hypot(b[0] - a[0], b[1] - a[1])));
+  const out = [];
+  for (let i = 1; i < P.length - 2; i++) {
+    const [p0, p1, p2, p3] = [P[i - 1], P[i], P[i + 1], P[i + 2]];
+    const t0 = 0, t1 = t0 + knot(p0, p1), t2 = t1 + knot(p1, p2), t3 = t2 + knot(p2, p3);
+    const lerp = (a, b, ta, tb, t) => [((tb - t) * a[0] + (t - ta) * b[0]) / (tb - ta), ((tb - t) * a[1] + (t - ta) * b[1]) / (tb - ta)];
+    for (let j = i === 1 ? 0 : 1; j <= per; j++) {
+      const t = t1 + ((t2 - t1) * j) / per;
+      const A1 = lerp(p0, p1, t0, t1, t), A2 = lerp(p1, p2, t1, t2, t), A3 = lerp(p2, p3, t2, t3, t);
+      const B1 = lerp(A1, A2, t0, t2, t), B2 = lerp(A2, A3, t1, t3, t);
+      out.push(lerp(B1, B2, t1, t2, t));
+    }
+  }
+  return out;
+}
+
+/**
+ * A pen's schedule for a set of strokes (px, relative to the pad's top-left): each stroke a dense spline traced with the
+ * speed of handwriting (two-thirds power law, v ∝ curvature^-1/3, clamped; ramps at the ends), the strokes sharing inkSec
+ * in proportion to their natural time; the pen travels up between strokes in liftSec. at(t) → {x, y, down}, t in s from
+ * the first pen-down; total = last pen-up.
+ */
+function penPlan(strokesPx, { inkSec = 1.6, liftSec = 0.14, minStrokeSec = 0.08, curvePow = 1 / 3, kFloor = 1 / 120, kMax = 1 / 3 } = {}) {
+  const strokes = strokesPx.map((pts) => {
+    const path = catmullRom(pts);
+    const n = path.length;
+    const seg = [0];
+    for (let i = 1; i < n; i++) seg.push(Math.hypot(path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1]));
+    const len = seg.reduce((a, b) => a + b, 0);
+    const kappa = path.map((p, i) => {
+      if (i === 0 || i === n - 1) return 0;
+      const a1 = Math.atan2(p[1] - path[i - 1][1], p[0] - path[i - 1][0]);
+      const a2 = Math.atan2(path[i + 1][1] - p[1], path[i + 1][0] - p[0]);
+      let d = Math.abs(a2 - a1);
+      if (d > Math.PI) d = 2 * Math.PI - d;
+      return d / Math.max(0.5, (seg[i] + seg[i + 1]) / 2);
+    });
+    let s = 0;
+    const ramp = Math.min(len * 0.2, 40);
+    let v = path.map((p, i) => {
+      s += seg[i];
+      const k = Math.min(kMax, kappa[i]); // radius ≥ 1/kMax px
+      const base = Math.pow(k + kFloor, -curvePow); // speed ∝ curvature^-curvePow; kFloor caps the speed on straight runs
+      const ends = Math.min(1, Math.min(s, len - s) / Math.max(1, ramp));
+      return base * (0.35 + 0.65 * ease.pointer(ends));
+    });
+    v = v.map((_, i) => { // smooth the speed (a hand has inertia)
+      let acc = 0, c = 0;
+      for (let j = Math.max(0, i - 4); j <= Math.min(n - 1, i + 4); j++) { acc += v[j]; c++; }
+      return acc / c;
+    });
+    const time = [0];
+    for (let i = 1; i < n; i++) time.push(time[i - 1] + seg[i] / ((v[i] + v[i - 1]) / 2));
+    return { path, time, natural: time[n - 1] };
+  });
+  const natural = strokes.reduce((a, st) => a + st.natural, 0);
+  const k = inkSec / Math.max(1e-6, natural);
+  const spans = [];
+  let at = 0;
+  strokes.forEach((st, i) => {
+    // a dot or a tick still takes a hand ~80 ms (and must outlast the 60 Hz sampling, or it is never drawn)
+    const kk = Math.max(k, minStrokeSec / Math.max(1e-6, st.natural));
+    st.time = st.time.map((x) => x * kk);
+    spans.push({ start: at, end: at + st.time[st.time.length - 1] });
+    at = spans[i].end + (i < strokes.length - 1 ? liftSec : 0);
+  });
+  const total = at;
+  const posOn = (st, t) => {
+    const T = st.time;
+    if (t <= 0) return st.path[0];
+    if (t >= T[T.length - 1]) return st.path[st.path.length - 1];
+    let lo = 0, hi = T.length - 1;
+    while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (T[mid] <= t) lo = mid; else hi = mid; }
+    const f = (t - T[lo]) / Math.max(1e-9, T[hi] - T[lo]);
+    return [st.path[lo][0] + (st.path[hi][0] - st.path[lo][0]) * f, st.path[lo][1] + (st.path[hi][1] - st.path[lo][1]) * f];
+  };
+  const at_ = (t) => {
+    for (let i = 0; i < strokes.length; i++) {
+      const sp = spans[i];
+      if (t <= sp.end || i === strokes.length - 1) {
+        if (t >= sp.start) { const p = posOn(strokes[i], t - sp.start); return { x: p[0], y: p[1], down: t <= sp.end }; }
+        // lifted, travelling from the end of stroke i-1 to the start of stroke i (eased, a slight hop)
+        const a = strokes[i - 1].path[strokes[i - 1].path.length - 1], b = strokes[i].path[0];
+        const u = ease.pointer((t - spans[i - 1].end) / Math.max(1e-6, sp.start - spans[i - 1].end));
+        return { x: a[0] + (b[0] - a[0]) * u, y: a[1] + (b[1] - a[1]) * u - Math.sin(Math.PI * u) * 6, down: false };
+      }
+    }
+    return { x: 0, y: 0, down: false };
+  };
+  return { at: at_, total, spans, strokes: strokes.map((st) => st.path) };
+}
+
+/** The draw action's strokes in px relative to its box (fractions of the box unless units "px"). */
+function drawStrokesPx(a, rect) {
+  const px = a.units === 'px';
+  return (a.strokes || []).map((st) => st.map(([x, y]) => (px ? [x, y] : [x * rect[2], y * rect[3]])));
+}
+
+/** Runs in the page: set an input / select / textarea value the way React listens for it (native setter + events). */
+function fillValue(arg) {
+  const { q, value } = arg;
+  let list = Array.from(document.querySelectorAll(q.selector));
+  if (q.contains) list = list.filter((el) => (el.textContent || '').toLowerCase().includes(String(q.contains).toLowerCase()));
+  const el = list[q.nth || 0];
+  if (!el) return false;
+  const proto = el instanceof HTMLSelectElement ? HTMLSelectElement.prototype : el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+  Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, String(value));
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+  el.dispatchEvent(new Event('change', { bubbles: true }));
+  return true;
+}
+
+/** Runs in the page: element.click() (no pointer movement). */
+function domClick(q) {
+  let list = Array.from(document.querySelectorAll(q.selector));
+  if (q.contains) list = list.filter((el) => (el.textContent || '').toLowerCase().includes(String(q.contains).toLowerCase()));
+  const el = list[q.nth || 0];
+  if (!el) return false;
+  el.click();
+  return true;
+}
+
 /** Runs in the page: the cursor the OS would show at a point ('p' hand over links/buttons, 't' I-beam in fields, 'a' arrow). */
 function cursorKind(pt) {
   const el = document.elementFromPoint(pt.x, pt.y);
@@ -196,7 +356,13 @@ function parseArgs(argv) {
     if (a.startsWith('--')) {
       const k = a.slice(2);
       const next = argv[i + 1];
-      if (next === undefined || next.startsWith('--')) out[k] = true;
+      if (k === 'var' && next !== undefined) {
+        // --var NAME=VALUE (repeatable) → out.vars
+        const eq = next.indexOf('=');
+        if (eq <= 0) throw new Error(`--var expects NAME=VALUE, got "${next}"`);
+        out.vars = Object.assign(out.vars || {}, { [next.slice(0, eq)]: next.slice(eq + 1) });
+        i++;
+      } else if (next === undefined || next.startsWith('--')) out[k] = true;
       else {
         out[k] = next;
         i++;
@@ -321,7 +487,17 @@ function normalizeShot(shot, sb = {}) {
   s.cursor = { kind, start };
   s.zooms = (s.zooms || []).map((z) => Object.assign({}, z));
   s.track = s.track || {};
+  s.cookies = (s.cookies !== undefined ? s.cookies : sb.cookies || []).map((c) => Object.assign({}, c));
+  s.vars = Object.assign({}, s.vars || {});
   return s;
+}
+
+/** Fills {NAME} in a shot url from vars; an unfilled name is an error (never capture the wrong page). */
+function fillUrl(u, vars) {
+  return String(u || '/').replace(/\{(\w+)\}/g, (m, name) => {
+    if (vars[name] === undefined) throw new Error(`url needs --var ${name}=…: ${u}`);
+    return encodeURI(String(vars[name]));
+  });
 }
 
 /** The cursor.json an earlier capture wrote: the sibling folder of --out first, then the --publish folder. */
@@ -383,8 +559,10 @@ async function captureShot(rawShot, opts) {
     throw new Error(`[${shot.id}] presetIntroSeen needs introKey (storyboard.introKey = the SEEN_KEY in the site's Loader.tsx)`);
   }
   if (opts.dsf) shot.viewport.deviceScaleFactor = Number(opts.dsf);
-  const base = (opts.base || DEFAULT_BASE).replace(/\/+$/, '');
-  const url = /^https?:/.test(shot.url || '') ? shot.url : base + (shot.url || '/');
+  // a shot may name its own origin (part B's desk on :5190 in a storyboard whose base is the site on :5183)
+  const base = (shot.base || opts.base || DEFAULT_BASE).replace(/\/+$/, '');
+  const shotUrl = fillUrl(shot.url, Object.assign({}, shot.vars, opts.vars || {}));
+  const url = /^https?:/.test(shotUrl) ? shotUrl : base + shotUrl;
   const outDir = path.resolve(opts.out);
   const framesDir = path.join(outDir, 'frames');
   fs.rmSync(framesDir, { recursive: true, force: true });
@@ -451,6 +629,11 @@ async function captureShot(rawShot, opts) {
       .concat(process.env.CAPTURE_FLAGS ? process.env.CAPTURE_FLAGS.split(' ') : []),
   });
   try {
+    if (shot.cookies.length) {
+      // per-shot cookies (e.g. a session), set for the shot's origin before the page loads
+      await context.addCookies(shot.cookies.map(({ name, value, domain, path: p, ...rest }) =>
+        (domain ? { name, value, domain, path: p || '/', ...rest } : { name, value, url: new URL(url).origin + (p || '/'), ...rest })));
+    }
     if (shot.presetIntroSeen) {
       await context.addInitScript((key) => {
         try { sessionStorage.setItem(key, '1'); } catch (e) { /* ignore */ }
@@ -473,6 +656,11 @@ async function captureShot(rawShot, opts) {
     page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
     const cdp = await context.newCDPSession(page);
     const dbg = process.env.CAPTURE_DEBUG ? (...a) => console.log('[debug]', ...a) : () => {};
+    if (process.env.CAPTURE_DEBUG) {
+      page.on('request', (r) => dbg('request', r.method(), r.url().slice(0, 140)));
+      page.on('requestfinished', (r) => dbg('finished', r.url().slice(0, 140)));
+      page.on('requestfailed', (r) => dbg('failed', r.url().slice(0, 140)));
+    }
 
     // Virtual time: paused from the start, wall clock pinned to shot.clock.
     const policy = { policy: 'pause' };
@@ -481,10 +669,31 @@ async function captureShot(rawShot, opts) {
     let elapsedMs = 0; // virtual ms since virtual time started
     let budgetWaiter = null;
     cdp.on('Emulation.virtualTimeBudgetExpired', () => { if (budgetWaiter) { const f = budgetWaiter; budgetWaiter = null; f(); } });
+    // Network watchdog. Time normally stops while anything is downloading (no half-loaded images). A response the page
+    // holds open (a Next.js server action's streamed redirect, read by code that waits on timers) would then freeze
+    // virtual time for good: when a budget has not expired after NET_STALL_MS of real time, time runs on regardless
+    // ('advance') until the requests in flight have drained. Recorded in cursor.json `stalls` (why "network: …").
+    const NET_STALL_MS = 4000;
+    const pendingReq = new Map();
+    page.on('request', (r) => pendingReq.set(r, Date.now()));
+    page.on('requestfinished', (r) => pendingReq.delete(r));
+    page.on('requestfailed', (r) => pendingReq.delete(r));
+    let netStall = false;
+    let loopFrame = null;
     const advance = (ms) => new Promise((resolve, reject) => {
-      budgetWaiter = resolve;
+      let timer = null;
+      budgetWaiter = () => { if (timer) clearTimeout(timer); resolve(); };
       elapsedMs += ms;
-      cdp.send('Emulation.setVirtualTimePolicy', { policy: 'pauseIfNetworkFetchesPending', budget: ms }).catch(reject);
+      if (netStall && pendingReq.size === 0) netStall = false;
+      cdp.send('Emulation.setVirtualTimePolicy', { policy: netStall ? 'advance' : 'pauseIfNetworkFetchesPending', budget: ms }).catch(reject);
+      if (!netStall) {
+        timer = setTimeout(() => {
+          if (!budgetWaiter) return;
+          netStall = true;
+          stalls.push({ frame: loopFrame, why: `network: ${[...pendingReq.keys()].map((r) => `${r.method()} ${r.url().slice(0, 100)}`).join(', ') || 'none in flight'}` });
+          cdp.send('Emulation.setVirtualTimePolicy', { policy: 'advance', budget: ms }).catch(reject);
+        }, NET_STALL_MS);
+      }
     });
     // Render one frame at the current virtual time; with `png` the frame comes back as a screenshot.
     let lastFrameTicks = 0;
@@ -509,6 +718,7 @@ async function captureShot(rawShot, opts) {
         const r = await Promise.race([promise.then((v) => ({ v }), (e) => ({ e })), sleep(waitMs).then(() => null)]);
         if (r && 'e' in r) throw r.e;
         if (r) return r.v;
+        if (i === 3 || i % 50 === 49) dbg(`waiting on ${why} at frame ${frame} (${i + 1} nudges)`);
         await nudge(why, frame);
       }
       throw new Error(`${why} never returned`);
@@ -531,7 +741,7 @@ async function captureShot(rawShot, opts) {
     stalls.length = 0;
     log(`page ready after ${warmMs.toFixed(0)} ms of virtual time`);
     // Frame k (k = -preroll … total-1) shows virtual time gridBase + (k + preroll + 1) / FPS exactly.
-    const gridBase = elapsedMs;
+    let gridBase = elapsedMs; // moved on only by a draw's timeScale (page time running faster than the film)
     const frameBudget = (k) => {
       const end = gridBase + Math.round(((k + preroll + 1) * 1e6) / FPS) / 1000;
       return Math.max(0.001, Math.round((end - elapsedMs) * 1000) / 1000);
@@ -566,8 +776,15 @@ async function captureShot(rawShot, opts) {
       inflight.push(cdp.send('Input.dispatchMouseEvent', p));
     };
     const KEYS = { Enter: [13, '\r'], Escape: [27, ''], Tab: [9, ''], Backspace: [8, ''], ArrowDown: [40, ''], ArrowUp: [38, ''] };
+    // Characters whose virtual key is not their char code ('.' would be 46 = VK_DELETE); [vk, code, shift]
+    const CHAR_KEYS = { '.': [190, 'Period'], ',': [188, 'Comma'], '/': [191, 'Slash'], '@': [50, 'Digit2', true], '_': [189, 'Minus', true], "'": [222, 'Quote'] };
     const key = (k, isChar) => {
-      if (isChar) {
+      if (isChar && CHAR_KEYS[k]) {
+        const [vk, code, shift] = CHAR_KEYS[k];
+        const modifiers = shift ? 8 : 0;
+        inflight.push(cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: k, code, text: k, unmodifiedText: k, windowsVirtualKeyCode: vk, modifiers }));
+        inflight.push(cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: k, code, windowsVirtualKeyCode: vk, modifiers }));
+      } else if (isChar) {
         const code = k >= '0' && k <= '9' ? `Digit${k}` : /[a-z]/i.test(k) ? `Key${k.toUpperCase()}` : k === '-' ? 'Minus' : k === ' ' ? 'Space' : '';
         const vk = /[a-z]/i.test(k) ? k.toUpperCase().charCodeAt(0) : k === '-' ? 189 : k.charCodeAt(0);
         inflight.push(cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: k, code, text: k, unmodifiedText: k, windowsVirtualKeyCode: vk }));
@@ -587,6 +804,7 @@ async function captureShot(rawShot, opts) {
 
     const inViewport = (p) => p.x >= 0 && p.y >= 0 && p.x < vw && p.y < vh;
     const targetPoint = (a, rects) => {
+      if (a.to === 'start') return { x: shot.cursor.start.x, y: shot.cursor.start.y };
       if (a.selector) {
         const r = rects[`a${a.i}`];
         if (!r) throw new Error(`selector not found at t=${a.t}: ${a.selector}${a.contains ? ` (contains "${a.contains}")` : ''}`);
@@ -596,16 +814,49 @@ async function captureShot(rawShot, opts) {
       return { x: a.x, y: a.y };
     };
 
+    // ---- pen (draw action): the pointer follows penPlan, sampled subSteps times per frame
+    let pen = null;
+    const penSample = (tau) => {
+      const r = pen.rect;
+      const first = pen.plan.strokes[0][0];
+      if (tau < pen.approach) {
+        const T = { x: r[0] + first[0], y: r[1] + first[1] };
+        const u = ease.pointer(clamp(tau / pen.approach, 0, 1));
+        return { x: pen.from.x + (T.x - pen.from.x) * u, y: pen.from.y + (T.y - pen.from.y) * u, down: false };
+      }
+      const t = tau - pen.approach;
+      const s = pen.plan.at(Math.min(t, pen.plan.total));
+      return { x: r[0] + s.x, y: r[1] + s.y, down: s.down && t <= pen.plan.total };
+    };
+    const penInput = (s, k) => {
+      const pos = { x: round1(s.x), y: round1(s.y) };
+      const moved = !lastMouse || lastMouse.x !== pos.x || lastMouse.y !== pos.y;
+      if (s.down && !pen.isDown) {
+        if (moved) mouse('mouseMoved', pos);
+        mouse('mousePressed', pos);
+        pen.isDown = true;
+        pen.marks.push([k, null]);
+      } else if (!s.down && pen.isDown) {
+        if (moved) mouse('mouseMoved', pos);
+        mouse('mouseReleased', pos);
+        pen.isDown = false;
+        pen.marks[pen.marks.length - 1][1] = k;
+      } else if (moved) mouse('mouseMoved', pos);
+      lastMouse = pos;
+    };
+
     for (let k = -preroll; k < total; k++) {
       const capturing = k >= 0;
+      loopFrame = k;
       // 1. Start actions due at this frame (set-up actions run at -preroll + their offset).
       const due = plan.filter((a) => a.startFrame === k || (k === -preroll && a.startFrame < -preroll));
       // Queries this frame needs: active pointer target, new scroll target, tracks.
       const queries = {};
       for (const [name, q] of Object.entries(tracks)) queries[name] = q;
-      const pointerTypes = new Set(['moveTo', 'hover', 'click']);
-      for (const a of due) if (a.selector && (pointerTypes.has(a.type) || a.type === 'scrollTo')) queries[`a${a.i}`] = queryOf(a);
+      const pointerTypes = new Set(['moveTo', 'hover', 'click', 'hold']);
+      for (const a of due) if (a.selector && (pointerTypes.has(a.type) || a.type === 'scrollTo' || a.type === 'draw')) queries[`a${a.i}`] = queryOf(a);
       if (move && move.a.selector) queries[`a${move.a.i}`] = queryOf(move.a);
+      if (pen && pen.a.selector) queries[`a${pen.a.i}`] = queryOf(pen.a);
 
       // Measure first (scroll targets need the current layout), then apply this frame's scroll.
       let m = await evalSafe(pageFrame, { scrollY: null, queries }, k);
@@ -663,6 +914,19 @@ async function captureShot(rawShot, opts) {
           }
         } else if (a.type === 'press') {
           keyQueue.push({ frame: k, key: a.key });
+        } else if (a.type === 'draw') {
+          const rect = a.selector ? m.rects[`a${a.i}`] : [Number(a.x || 0), Number(a.y || 0), 1, 1];
+          if (!rect) throw new Error(`draw target not found at t=${a.t}: ${a.selector}`);
+          if (shot.cursor.kind !== 'pointer') throw new Error('draw needs a pointer cursor');
+          const plan_ = penPlan(drawStrokesPx(a, rect), { inkSec: a.inkSec ?? a.durationSec ?? 1.6, liftSec: a.liftSec ?? 0.14 });
+          move = null;
+          pen = { a, start: k, from: { ...cur }, approach: a.approachSec ?? 0.5, plan: plan_, rect, isDown: false, marks: [], sub: Math.max(1, Math.round(a.subSteps || 2)), timeScale: Math.max(1, Math.round(a.timeScale || 1)) };
+        } else if (a.type === 'fill') {
+          if (!(await evalSafe(fillValue, { q: queryOf(a), value: a.value }, k))) throw new Error(`fill target not found at t=${a.t}: ${a.selector}`);
+        } else if (a.type === 'domClick') {
+          if (!(await evalSafe(domClick, queryOf(a), k))) throw new Error(`domClick target not found at t=${a.t}: ${a.selector}${a.contains ? ` (contains "${a.contains}")` : ''}`);
+        } else if (a.type === 'eval') {
+          await waitOrNudge(page.evaluate(String(a.js)), 'evaluate', k);
         }
       }
 
@@ -674,9 +938,10 @@ async function captureShot(rawShot, opts) {
         wantScroll = scroll.from + (scroll.to - scroll.from) * frac;
         if (p >= 1) scroll = null;
       }
-      if (wantScroll !== null || (move && move.a.selector)) {
+      if (wantScroll !== null || (move && move.a.selector) || pen) {
         m = await evalSafe(pageFrame, { scrollY: wantScroll, queries }, k);
       }
+      if (pen && pen.a.selector && m.rects[`a${pen.a.i}`]) pen.rect = m.rects[`a${pen.a.i}`];
       lastScrollY = m.scrollY;
       lastRects = m.rects;
 
@@ -702,6 +967,11 @@ async function captureShot(rawShot, opts) {
           move = null;
         }
       }
+      let penNow = null;
+      if (pen) {
+        penNow = penSample((k - pen.start) / FPS);
+        cur = { x: penNow.x, y: penNow.y };
+      }
       let down = false;
       if (touch) {
         // the finger stays on the content it grabbed: it moves exactly as far as the page has scrolled
@@ -718,12 +988,46 @@ async function captureShot(rawShot, opts) {
       // 4. Real input: move the mouse, press, type. Mouse moves are rAF-aligned in Chromium (delivered in the next
       //    rendered frame), so input is queued now and its acks collected after this frame is rendered; CDP keeps
       //    message order. Discrete events (press, keys) are handled at once and their effects land in this frame.
-      if (shot.cursor.kind === 'pointer' && inViewport(cur)) {
+      let subAdvanced = 0;
+      if (pen) {
+        // Sub-frame pen samples: each one is dispatched and rendered (uncaptured) at its own virtual time, so the pad
+        // sees pointer moves at subSteps × 30 Hz (moves are coalesced per rendered frame).
+        if (k > pen.start) {
+          // timeScale > 1: the page lives timeScale frames of time per film frame while the pen moves (a pad that
+          // throttles pointer moves to one per 16 ms then still gets subSteps × timeScale points per film frame)
+          const n = pen.sub * pen.timeScale;
+          if (pen.timeScale > 1) gridBase += ((pen.timeScale - 1) * 1000) / FPS;
+          const subMs = Math.round((1e6 / FPS) / pen.sub) / 1000;
+          for (let j = 1; j < n; j++) {
+            penInput(penSample((k - 1 - pen.start + j / n) / FPS), k);
+            await advance(subMs);
+            subAdvanced += subMs;
+            await waitOrNudge(beginFrame(false), 'frame', k, 20000);
+            await settleInput(k);
+          }
+        }
+        penInput(penNow, k);
+        down = pen.isDown;
+      } else if (shot.cursor.kind === 'pointer' && inViewport(cur)) {
         const pos = { x: round1(cur.x), y: round1(cur.y) };
         if (!lastMouse || lastMouse.x !== pos.x || lastMouse.y !== pos.y) {
           mouse('mouseMoved', pos);
           lastMouse = pos;
         }
+      }
+      if (pen && (k - pen.start) / FPS > pen.approach + pen.plan.total) {
+        // the last stroke has lifted: the draw is over
+        if (k >= 0) events.push({ frame: Math.max(0, pen.start), endFrame: k, type: 'draw', strokes: pen.marks.map(([a, b]) => [a, b === null ? k : b]) });
+        pen = null;
+      }
+      if (arrived && arrived.type === 'hold') {
+        if (shot.cursor.kind !== 'pointer') throw new Error('hold needs a pointer cursor');
+        const pos = { x: round1(cur.x), y: round1(cur.y) };
+        if (!lastMouse || lastMouse.x !== pos.x || lastMouse.y !== pos.y) mouse('mouseMoved', pos);
+        mouse('mousePressed', pos);
+        lastMouse = pos;
+        pressUntil = k + Math.max(1, Math.round(Number(arrived.holdSec ?? 2.4) * FPS));
+        if (capturing) events.push({ frame: k, endFrame: pressUntil, type: 'hold', x: pos.x, y: pos.y });
       }
       if (arrived && arrived.type === 'click') {
         if (shot.cursor.kind === 'touch') {
@@ -757,7 +1061,7 @@ async function captureShot(rawShot, opts) {
       // 5. Advance virtual time to this frame's slot on the 1/30 s grid, render it, then collect input acks.
       if (k === 0) hiddenAtStart = typedSinceMove;
       const budget = frameBudget(k);
-      const vtFrame = m.vt + budget; // performance.now() at the moment this frame renders
+      const vtFrame = m.vt + subAdvanced + budget; // performance.now() at the moment this frame renders
       await advance(budget);
       const r = await waitOrNudge(beginFrame(capturing), 'frame', k, 20000);
       await settleInput(k);
@@ -1026,4 +1330,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { captureShot, runShot, normalizeShot, resolveFromShot, unfilled, bezier, cursorKind };
+module.exports = { captureShot, runShot, normalizeShot, resolveFromShot, unfilled, bezier, cursorKind, penPlan, catmullRom };

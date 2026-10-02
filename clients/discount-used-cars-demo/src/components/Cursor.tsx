@@ -1,6 +1,7 @@
 // macOS pointer drawn from the shot's cursor track: the arrow, the pointing hand over links and buttons, the I-beam in
 // text fields (the shape the capture recorded under the pointer), spring-smoothed position, click bounce (scale 0.82
-// and back over 350 ms) and a soft ring with a faint dark edge (it reads on white pages and on black bands). It fades
+// and back over 350 ms; held at 0.82 through a press-and-hold or a pen stroke) and a soft ring with a faint dark edge
+// (it reads on white pages and on black bands). It fades
 // AND shrinks a little while the page scrolls by itself or while typing.
 import React from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
@@ -80,9 +81,10 @@ export const Cursor: React.FC<{
   let bounce = 0;
   const rings: React.ReactNode[] = [];
   for (const e of data.events) {
-    if (e.type !== "click") continue;
+    // a hold rings once, at the press (its pressed scale comes from tracks.cursor.press)
+    if (e.type !== "click" && e.type !== "hold") continue;
     const d = f - e.frame;
-    if (d >= 0 && d < clickFrames) {
+    if (e.type === "click" && d >= 0 && d < clickFrames) {
       const p = d / clickFrames;
       bounce = p < 0.3 ? theme.ease.out(p / 0.3) : 1 - theme.ease.inOut((p - 0.3) / 0.7);
     }
@@ -110,7 +112,8 @@ export const Cursor: React.FC<{
     }
   }
   const hide = R.cursorHideScale + (1 - R.cursorHideScale) * opacity; // fades are paired with a slight shrink
-  const scale = (1 - (1 - R.clickScale) * bounce) * (1 + (cam.s - 1) * R.cursorZoomGrow) * hide;
+  const pressed = Math.max(bounce, tracks.cursor.press[i] ?? 0); // a click's bounce, or a hold / pen stroke held down
+  const scale = (1 - (1 - R.clickScale) * pressed) * (1 + (cam.s - 1) * R.cursorZoomGrow) * hide;
   const sh = SHAPES[kind];
   const unit = R.cursorHeight / 30;
   // While zoomed, the cursor is clipped to the page; at rest it may sit outside the window (drifting in).
