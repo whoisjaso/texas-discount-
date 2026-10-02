@@ -62,19 +62,43 @@ const PLACEHOLDER = {
   outroLines: ['www.example.com', '(000) 000-0000 · Street, City', 'Day – Day 0 AM – 0 PM'],
 };
 
+/** Every string value still holding a template placeholder ({{…}}); keys starting with "_" are notes. */
+function placeholders(node, at = '', out = []) {
+  if (typeof node === 'string') { if (/\{\{|\}\}/.test(node)) out.push(`${at}: ${JSON.stringify(node.length > 70 ? node.slice(0, 67) + '…' : node)}`); }
+  else if (Array.isArray(node)) node.forEach((x, i) => placeholders(x, `${at}[${i}]`, out));
+  else if (node && typeof node === 'object') for (const [k, v] of Object.entries(node)) if (!k.startsWith('_')) placeholders(v, at ? `${at}.${k}` : k, out);
+  return out;
+}
+
 function problems(inp) {
   const p = [];
   const need = (cond, msg) => { if (!cond) p.push(msg); };
+  for (const h of placeholders(inp)) p.push(`still a placeholder, fill it: ${h}`);
   need(typeof inp.slug === 'string' && /^[a-z0-9-]+$/.test(inp.slug), 'slug: kebab-case, e.g. "discount-used-cars"');
   need(typeof inp.domain === 'string' && !/^https?:|^www\.|\//.test(inp.domain), 'domain: bare host without www, e.g. "discountusedcarsandtrucks.com"');
-  need(Array.isArray(inp.facts) && inp.facts.length >= 3, 'facts: the owner-confirmed on-screen facts (URL, phone, address, hours)');
+  need(Array.isArray(inp.facts) && inp.facts.length === 4, 'facts: exactly the 4 owner-confirmed on-screen facts, in order: web address, phone, street and city, short hours');
   need(Array.isArray(inp.outroLines) && inp.outroLines.length === 3, 'outroLines: exactly 3 lines (URL; "phone · street, city"; short hours)');
+  if (Array.isArray(inp.facts) && inp.facts.length === 4) {
+    const [web, phone, street, hours] = inp.facts;
+    need(web === `www.${inp.domain}`, `facts[0] must be "www.${inp.domain}" (the domain as the URL pill and outro show it), not ${JSON.stringify(web)}`);
+    need(/^\(\d{3}\) \d{3}-\d{4}$/.test(phone || ''), `facts[1] is the phone written (000) 000-0000, not ${JSON.stringify(phone)}`);
+    if (Array.isArray(inp.outroLines) && inp.outroLines.length === 3) {
+      need(inp.outroLines[0] === web, 'outroLines[0] must equal facts[0]');
+      need(inp.outroLines[1] === `${phone} · ${street}`, `outroLines[1] must be facts[1] + " · " + facts[2]: ${JSON.stringify(`${phone} · ${street}`)}`);
+      need(inp.outroLines[2] === hours, 'outroLines[2] must equal facts[3] (the short hours)');
+    }
+  }
   if (Array.isArray(inp.outroLines) && Array.isArray(inp.facts)) {
     const blob = inp.outroLines.join(' ');
     const stray = (blob.match(/\$\s?\d|\d+(\.\d+)?\s?%|\bAPR\b|\bfree\b|\bbest\b|\bcheapest\b/gi) || []);
     need(!stray.length, `outroLines contain a price or claim (${stray.join(', ')}): only confirmed facts go on screen`);
   }
-  need(inp.brand && inp.brand.mark && inp.brand.logoReverse, 'brand.mark (the image the loader shows) and brand.logoReverse (full-colour logo for dark)');
+  need(inp.brand && inp.brand.mark, 'brand.mark: the image the loader shows (measure-site.cjs --into fills it with the .png twin)');
+  need(inp.brand && inp.brand.logoReverse, 'brand.logoReverse: the full-colour logo the site shows on dark (footer or black bands)');
+  if (inp.overrides !== undefined) {
+    need(Array.isArray(inp.overrides) && inp.overrides.every((o) => o && typeof o.shot === 'string' && typeof o.path === 'string' && 'value' in o && typeof o.why === 'string' && o.why.trim()),
+      'overrides: a list of { shot, path, value, why } (every override needs its reason)');
+  }
   need(typeof inp.word === 'string' && inp.word.length > 0, 'word: the text of .loader__word (scripts/measure-site.cjs fills it)');
   const L = inp.loader;
   need(L && typeof L === 'object', 'loader: run scripts/measure-site.cjs --into <client-inputs.json> on the served site');
@@ -85,7 +109,8 @@ function problems(inp) {
     need(typeof L.wordDoneSec === 'number' && L.wordDoneSec > 0.5 && L.wordDoneSec < 2.2, 'loader.wordDoneSec: when the loader word is at rest (1.5 on every premium-dealer-build site)');
   }
   need(typeof inp.introKey === 'string' && /intro/.test(inp.introKey), 'introKey: the SEEN_KEY in the site\'s Loader.tsx (measure-site.cjs finds it)');
-  need(typeof inp.clock === 'string' && !Number.isNaN(Date.parse(inp.clock)), 'clock: ISO instant with offset on an open weekday mid-afternoon, e.g. 2026-09-30T14:00:00-05:00');
+  need(typeof inp.clock === 'string' && !Number.isNaN(Date.parse(inp.clock)) && /T14:00:00[+-]\d\d:\d\d$/.test(inp.clock),
+    'clock: 2 PM local with the dealer\'s UTC offset that day: Wednesday 2026-09-30T14:00:00-05:00 for Central time, or the next open weekday at 14:00 if closed on Wednesdays');
   return p;
 }
 
@@ -191,6 +216,37 @@ function fillDeep(node, v, missing) {
   return node;
 }
 
+/** inputs.overrides → the filled storyboard: [{ shot, path: "actions.8.perCharSec", value, why }]. */
+function applyOverrides(sb, inp) {
+  for (const o of inp.overrides || []) {
+    const shot = (sb.shots || []).find((x) => x.id === o.shot);
+    if (!shot) throw new Error(`override: no shot "${o.shot}"`);
+    const keys = String(o.path).split('.');
+    let node = shot;
+    for (const k of keys.slice(0, -1)) {
+      if (node == null || typeof node !== 'object' || !(k in node)) throw new Error(`override: ${o.shot}.${o.path} does not exist in the storyboard`);
+      node = node[k];
+    }
+    const last = keys[keys.length - 1];
+    if (node == null || typeof node !== 'object' || !(last in node)) throw new Error(`override: ${o.shot}.${o.path} does not exist in the storyboard`);
+    node[last] = o.value;
+    node.override = Object.assign({}, node.override, { [last]: o.why });
+  }
+  return sb;
+}
+
+/** README blocks that list per-client decisions. */
+function readmeValues(inp) {
+  const zc = inp.zoomCopy || {};
+  const zoomCopy = Object.keys(zc).length
+    ? Object.entries(zc).map(([k, lines]) => `  - ${k}: ${lines.length ? lines.map((t) => `"${t}"`).join(', ') : '(no text)'}`).join('\n')
+    : '  - (not measured yet: run measure-site.cjs --storyboard storyboard.json --into client-inputs.json, then fill-client.cjs readme)';
+  const ov = (inp.overrides || []).length
+    ? inp.overrides.map((o) => `  - \`${o.shot}.${o.path}\` = ${JSON.stringify(o.value)}: ${o.why}`).join('\n')
+    : '  - None: every timing is the house recipe.';
+  return { FACTS_LINE: inp.facts.join(', '), ZOOM_COPY: zoomCopy, OVERRIDES: ov };
+}
+
 function main() {
   if (cmd === 'project' && flag('placeholder')) {
     write(flag('out'), projectTs(PLACEHOLDER, true));
@@ -218,8 +274,9 @@ function main() {
     if (!tpl) { console.error(`${cmd}: give the template file`); process.exit(2); }
     const missing = new Set();
     let text;
-    if (cmd === 'storyboard') text = JSON.stringify(fillDeep(readJson(tpl), values(inp), missing), null, 2) + '\n';
-    else text = fillDeep(fs.readFileSync(tpl, 'utf8'), Object.assign(values(inp), { FACTS_LINE: inp.facts.join(', ') }), missing);
+    if (bad.length) { console.error(`client-inputs incomplete:\n  - ${bad.join('\n  - ')}`); process.exit(1); }
+    if (cmd === 'storyboard') text = JSON.stringify(applyOverrides(fillDeep(readJson(tpl), values(inp), missing), inp), null, 2) + '\n';
+    else text = fillDeep(fs.readFileSync(tpl, 'utf8'), Object.assign(values(inp), readmeValues(inp)), missing);
     write(flag('out'), text);
     if (missing.size) {
       console.error(`${cmd}: still to fill (measure them on the served site, see references/storyboard.md): ${[...missing].sort().join(', ')}`);
