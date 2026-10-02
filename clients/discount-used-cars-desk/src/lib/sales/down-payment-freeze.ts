@@ -35,10 +35,77 @@ export function filedBillOfSale(finalizedTypes: readonly string[]): string | nul
   return BILL_OF_SALE_TYPES.find((type) => finalizedTypes.includes(type)) ?? null;
 }
 
+export type FiledAgreementRow = {
+  document_type: string | null;
+  status?: string | null;
+  completed_at?: string | null;
+  finalized_at?: string | null;
+};
+
+/**
+ * Whether a document row counts as filed: the same rule the packet is drawn
+ * with (`getSaleDetail`, sale-desk.ts), so a bill of sale the desk shows as
+ * filed or signed always freezes the down payment. The desk's own filing sets
+ * `finalized_at`; the older e-sign path completes a deal-linked row with
+ * `completed_at` and status "completed" and no `finalized_at`.
+ */
+export function isFiledAgreement(row: FiledAgreementRow): boolean {
+  return (
+    Boolean(row.finalized_at) ||
+    Boolean(row.completed_at) ||
+    row.status === "completed" ||
+    row.status === "finalized"
+  );
+}
+
 export const DOWN_PAYMENT_FROZEN_CODE = "downPaymentFrozen" as const;
 
 export const DOWN_PAYMENT_FROZEN_MESSAGE =
   "The bill of sale is already filed with the down payment it states. Void the bill of sale and file it again before changing the down payment.";
+
+export const PAID_TODAY_INVALID_CODE = "paidTodayInvalid" as const;
+
+export const PAID_TODAY_INVALID_MESSAGE = "Type a dollar amount, like 1500. It cannot be less than zero.";
+
+/**
+ * The paid-today figure as the deal stores it: digits and cents only, or ""
+ * for an empty box (which means "nothing typed", not $0.00), or null when
+ * what was typed is not a dollar amount of zero or more.
+ *
+ * Every reader of the down payment must read the same text. The money step
+ * strips "$", "," and spaces and clamps; the contract's printed itemisation
+ * strips but never clamps; the note's payment solver did neither, so "1,500"
+ * financed the whole total there while the contract printed it as $1,500 down,
+ * and "-500" left the bill of sale's balance alone while the contract
+ * financed $500 more. Stored as one plain figure, all three agree, and the
+ * freeze's "same figure" is the same stored value. The arithmetic is
+ * untouched: this only decides what text the arithmetic is handed.
+ */
+export function canonicalPaidToday(typed: string): string | null {
+  const digits = typed.replace(/[$,\s]/g, "");
+  if (digits === "") return "";
+  if (!/^(\d+(\.\d*)?|\.\d+)$/.test(digits)) return null;
+  return String(Math.round(Number(digits) * 100) / 100);
+}
+
+/**
+ * The down payment a paid-today answer stands for, as a figure: the typed
+ * amount itself, never clamped to the total (the contract prints what was
+ * typed, so a figure above the total is still a different down payment), or,
+ * for an empty box, what the deal implies crossed the desk.
+ */
+function downPaymentFigure(
+  advertised: number | null | undefined,
+  bill: Record<string, string>,
+  money: MoneyAnswers,
+  funding: ReturnType<typeof readFunding>["type"],
+  typed: string,
+): number {
+  const digits = typed.replace(/[$,\s]/g, "");
+  const parsed = digits === "" ? Number.NaN : Number(digits);
+  if (Number.isFinite(parsed)) return Math.round(parsed * 100) / 100;
+  return paperworkMoney(advertised, bill, { ...money, paidTodayAmount: typed }, funding).paidToday;
+}
 
 /**
  * Whether writing `to` as the paid-today answer changes the down payment the
@@ -47,7 +114,9 @@ export const DOWN_PAYMENT_FROZEN_MESSAGE =
  * Measured as the figure, not the typing: "1,500", "$1500.00" and "1500" are
  * one down payment, and on a financed deal an empty box and a typed 0 are the
  * same $0.00 (nothing is implied to cross the desk). The trade-in is the bill
- * of sale's, as on every document (`paperworkMoney`).
+ * of sale's, as on every document (`paperworkMoney`). Not clamped to the
+ * total: the contract prints the typed figure, so any other figure is a
+ * change.
  */
 export function downPaymentChanges(input: {
   /** The vehicle row's price, read only when the deal has no typed amount. */
@@ -62,7 +131,7 @@ export function downPaymentChanges(input: {
   const bill = readPaperwork(input.stepData, "billOfSale");
   const funding = readFunding(input.stepData).type;
   const from = readMoney(input.stepData).paidTodayAmount;
-  const before = paperworkMoney(input.advertised, bill, { ...money, paidTodayAmount: from }, funding).paidToday;
-  const after = paperworkMoney(input.advertised, bill, { ...money, paidTodayAmount: input.to }, funding).paidToday;
+  const before = downPaymentFigure(input.advertised, bill, { ...money, paidTodayAmount: from }, funding, from);
+  const after = downPaymentFigure(input.advertised, bill, { ...money, paidTodayAmount: input.to }, funding, input.to);
   return before !== after;
 }

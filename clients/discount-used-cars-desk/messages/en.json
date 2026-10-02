@@ -798,7 +798,8 @@
       "downToday": "Down payment today",
       "handingToday": "Handing over today",
       "otherAmount": "They are paying some other amount today",
-      "downPaymentFrozen": "The bill of sale is already filed with the down payment it states. Void the bill of sale and file it again before changing the down payment."
+      "downPaymentFrozen": "The bill of sale is already filed with the down payment it states. Void the bill of sale and file it again before changing the down payment.",
+      "paidTodayInvalid": "Type a dollar amount, like 1500. It cannot be less than zero."
     },
     "paperwork": {
       "billOfSale": {

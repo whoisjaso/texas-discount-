@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import {
@@ -269,5 +270,81 @@ describe("the VTR-61 routes", () => {
     };
     const response = await POST(new NextRequest("http://localhost/api/documents/vtr-61", { method: "POST", body: JSON.stringify(values) }));
     expect(response.status).toBe(403);
+  });
+});
+
+/*
+  Review round 10/02/2026. The standalone form takes the owner and the
+  rebuilder as free text, so the dealership is recognised however its name
+  was typed. A spelling the old exact match missed was read as a stranger:
+  the form printed the entity alone beside the dealer's signature and asked
+  for no cleared, onboarded signer at all.
+*/
+describe("the dealership typed another way", () => {
+  // The variants are spelled from the default legal name the desk ships with.
+  const VARIANTS = [
+    "Discount Used Cars And Trucks LLC",
+    "Discount Used Cars & Trucks, LLC",
+    "Discount Used Cars And Trucks",
+    "Discount Used Cars And Trucks, L.L.C.",
+    "discount used cars and trucks,llc.",
+    "Discount Used Cars and Trucks",
+  ];
+
+  it("ships with the legal name the variants are spelled from", () => {
+    expect(dealership.legalName).toBe("Discount Used Cars And Trucks, LLC");
+  });
+
+  it.each(VARIANTS)("recognises %j as the dealership, as owner or as rebuilder", (typed) => {
+    expect(vtr61DealerParties({ ownerName: typed })).toEqual({ owner: true, rebuilder: true });
+    expect(vtr61DealerParties({ ownerName: "Avery Collins", rebuilderName: typed })).toEqual({ owner: false, rebuilder: true });
+  });
+
+  it.each(["Discount Used Cars And Trucks of Dallas, LLC", "Discount Auto Repair", "Bayou Auto Repair"])(
+    "keeps %j a party of its own",
+    (typed) => {
+      expect(vtr61DealerParties({ ownerName: "Avery Collins", rebuilderName: typed })).toEqual({ owner: false, rebuilder: false });
+    },
+  );
+
+  it("prints the legal name in the entity rows and the pairing beside the signature", async () => {
+    const pdf = await PDFDocument.load(
+      await fillVtr61({ ...car, ownerName: "Discount Used Cars & Trucks LLC", dealerSignerName: "Maria Gonzalez" }),
+    );
+    const form = pdf.getForm();
+    expect(form.getTextField(OWNER_ENTITY).getText()).toBe(dealership.legalName);
+    expect(form.getTextField(REBUILDER_ENTITY).getText()).toBe(dealership.legalName);
+    expect(form.getTextField(OWNER_BOX).getText()).toBe(`${dealership.legalName} (Maria Gonzalez)`);
+    expect(form.getTextField(REBUILDER_BOX).getText()).toBe(`${dealership.legalName} (Maria Gonzalez)`);
+  });
+
+  it.each(VARIANTS)("refuses a standalone form naming %j when the member is not cleared", async (typed) => {
+    state.held = { dataUrl: null, hasMember: true, canSign: false, signerName: null, fullName: "Maria Gonzalez" };
+    const values = {
+      vehicleVin: "1HGCM82633A004352", vehicleYear: "2003", vehicleMake: "Honda", vehicleModel: "Accord", vehicleBodyStyle: "Sedan",
+      ownerName: typed, rebuilderIsOwner: "yes",
+      rebuilderStreet: "1200 Repair Lane", rebuilderCity: "Houston", rebuilderState: "TX", rebuilderZip: "77002",
+      workPerformed: "Replaced the hood.", dateWorkCompleted: "2026-09-01", partsUsed: "no",
+    };
+    const response = await POST(new NextRequest("http://localhost/api/documents/vtr-61", { method: "POST", body: JSON.stringify(values) }));
+    expect(response.status).toBe(403);
+    expect((await response.json()).error).toMatch(/cleared to sign/);
+  });
+
+  it("refuses the title-work form when the rebuilder is the dealership typed another way and the member is not cleared", async () => {
+    state.held = { dataUrl: null, hasMember: true, canSign: false, signerName: null, fullName: "Maria Gonzalez" };
+    const response = await GET(
+      new NextRequest(`http://localhost/api/documents/vtr-61?vehicleId=v1&rebuilder=${encodeURIComponent("Discount Used Cars & Trucks LLC")}`),
+    );
+    expect(response.status).toBe(403);
+  });
+});
+
+describe("the title-work screen", () => {
+  it("says before the link, not in a bare tab, why this member cannot print the VTR-61", () => {
+    const page = readFileSync("src/app/admin/inventory/[id]/title-work/page.tsx", "utf8");
+    expect(page).toContain('dealerPrintedNameProblem(held, "VTR-61")');
+    expect(page).toMatch(/\{printProblem \? \([\s\S]*?<AdminDataNotice[\s\S]*?message=\{printProblem\}[\s\S]*?<TitleWorkChecklist/);
+    expect(page).toContain("dealerSignerFixIsOnboarding(held) ? { href: ONBOARDING_PATH");
   });
 });

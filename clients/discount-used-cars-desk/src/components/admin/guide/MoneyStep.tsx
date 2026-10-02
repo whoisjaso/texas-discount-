@@ -120,6 +120,9 @@ export default function MoneyStep({
       setAnswers((current) => ({ ...current, paidTodayAmount: initial.paidTodayAmount }));
       return t.money.downPaymentFrozen;
     }
+    // Not a dollar amount of zero or more: nothing was saved, and the box
+    // keeps what was typed so it can be corrected.
+    if (result.code === "paidTodayInvalid") return t.money.paidTodayInvalid;
     return result.error ?? t.chrome.couldNotSave;
   }
 

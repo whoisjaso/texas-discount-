@@ -423,7 +423,14 @@ export function financingTerms(
 ): FinancingTerms | TermsProblem | null {
   const total = context.dealTotal;
   if (total === null || total === undefined) return null;
-  const down = answers.downPayment?.trim() ? Number(answers.downPayment) || 0 : (context.paidToday ?? 0);
+  // Read the way the contract's itemisation reads it (corridor-link `num`):
+  // "$", "," and spaces stripped. A deal saved before the down payment was
+  // stored as a plain figure can hold "1,500", which Number() alone read as
+  // nothing down, solving the payment on a different principal than the
+  // amount financed printed beside it.
+  const down = answers.downPayment?.trim()
+    ? Number(answers.downPayment.replace(/[$,\s]/g, "")) || 0
+    : (context.paidToday ?? 0);
   const principal = Math.max(0, Math.round((total - down) * 100) / 100);
   const frequency = frequencyOf(answers.paymentFrequency);
   const by = answers.termsBy;

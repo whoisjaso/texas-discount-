@@ -10,6 +10,9 @@ import { readFunding } from "@/lib/sales/deal-type";
 import {
   DOWN_PAYMENT_FROZEN_CODE,
   DOWN_PAYMENT_FROZEN_MESSAGE,
+  PAID_TODAY_INVALID_CODE,
+  PAID_TODAY_INVALID_MESSAGE,
+  canonicalPaidToday,
   downPaymentChanges,
 } from "@/lib/sales/down-payment-freeze";
 import { filedBillOfSaleOn } from "@/lib/sales/filed-bill-of-sale";
@@ -26,14 +29,33 @@ import { filedBillOfSaleOn } from "@/lib/sales/filed-bill-of-sale";
  * when they are filed.
  */
 
-export type MoneyState = { ok: boolean; error?: string; code?: typeof DOWN_PAYMENT_FROZEN_CODE };
+export type MoneyState = {
+  ok: boolean;
+  error?: string;
+  code?: typeof DOWN_PAYMENT_FROZEN_CODE | typeof PAID_TODAY_INVALID_CODE;
+};
 
 export async function saveSaleMoney(
   dealId: string,
-  patch: Partial<MoneyAnswers>,
+  typedPatch: Partial<MoneyAnswers>,
 ): Promise<MoneyState> {
   const access = await requireAdminActionPermission("sales:manage");
   if (!access.ok) return { ok: false, error: access.error };
+
+  /*
+    The paid-today figure is stored as one plain figure ("1,500" as "1500"),
+    or refused when it is not a dollar amount of zero or more: the contract's
+    payment, its printed itemisation and the bill of sale's balance must all
+    read the same text (down-payment-freeze.ts, canonicalPaidToday).
+  */
+  let patch = typedPatch;
+  if (typedPatch.paidTodayAmount !== undefined) {
+    const paidTodayAmount = canonicalPaidToday(typedPatch.paidTodayAmount);
+    if (paidTodayAmount === null) {
+      return { ok: false, error: PAID_TODAY_INVALID_MESSAGE, code: PAID_TODAY_INVALID_CODE };
+    }
+    patch = { ...typedPatch, paidTodayAmount };
+  }
 
   try {
     const supabase = await createClient();

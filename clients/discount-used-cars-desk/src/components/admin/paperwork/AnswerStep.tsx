@@ -60,7 +60,9 @@ export default function AnswerStep({
         setError(
           result.code === "downPaymentFrozen"
             ? t.money.downPaymentFrozen
-            : result.error ?? t.chrome.couldNotSave,
+            : result.code === "paidTodayInvalid"
+              ? t.money.paidTodayInvalid
+              : result.error ?? t.chrome.couldNotSave,
         );
         setChoosing(null);
         return;

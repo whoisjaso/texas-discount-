@@ -148,14 +148,26 @@ title work) prints the same pairing in the owner's and the rebuilder's
 "Printed Name (Same as Signature)" wherever the dealership is that party,
 naming the member who prints it, by the same fit rules; a member who is not
 cleared to sign or not named is refused the form (owner's decision
-10/01/2026).
+10/01/2026). The title work screen says so before the link, with Finish
+Onboarding when the fix is the member's own. On the standalone form the
+dealership is recognised however its name is typed ("&" for "And", with or
+without "LLC" or the punctuation), and its entity rows then print the legal
+name.
 
 **The down payment goes on the money step**, in "Down today", before any
 document is filed. Once the bill of sale is filed, the down payment is
 frozen: changing it on the money step or on the financing contract is
 refused until the bill of sale is voided and filed again (owner's decision
 10/01/2026). That keeps the bill of sale's balance and the contract's amount
-financed one figure.
+financed one figure. The desk stores the down payment as a plain figure
+("$1,500.00" is saved as 1500), so the same amount typed another way is not a
+change, and it refuses a figure below zero or one that is not a dollar
+amount, filed or not. "Filed" here is what the packet shows as filed or
+signed, including a bill of sale completed through the older e-sign path.
+The freeze covers the down payment only, as decided: changing the price,
+what it includes, the funding or the bill of sale's trade-in after the bill
+of sale is filed still moves the balance it states. Whether those should be
+frozen too is a decision for the owner.
 
 ## Owner's manual steps before going live
 
@@ -203,7 +215,11 @@ financed one figure.
      turns `can_sign_contracts` on for that one person on their
      `team_members` row in Supabase (or off for someone cleared by default).
      A reset keeps that per-person choice. Only a cleared member can file:
-     the dealer line carries the filer's own name and signature.
+     the dealer line carries the filer's own name and signature. The default
+     applies at approval only: members approved before 10/01/2026 keep the
+     value they have (an Owner approved earlier started not cleared), so
+     check the existing Owner, Manager and Registration rows and turn
+     `can_sign_contracts` on for each person who should sign.
    - *Each staff member completes onboarding:* their first sign-in goes to
      `/admin/account/onboarding`. An account still on the temporary password
      an approval or a reset issued starts with **Choose A Password** (at
@@ -211,6 +227,12 @@ financed one figure.
      account recovery); saving it replaces the temporary password and clears
      the flag for that account only. Nobody else sees that screen, and a
      password chosen through the emailed invite link clears the flag too.
+     A reset does not sign out a device that is still signed in to the
+     account: that device is taken to Choose A Password and can set a new
+     one without the old password. Reset an account only for the person it
+     belongs to; if a signed-in device may be in the wrong hands, set that
+     member's `team_members.status` to something other than `active` first
+     (the password screen refuses an inactive member).
      Then **What Is Your Name?** (first and last
      name, their legal name as on their ID, kept exactly as typed),
      **Draw Your Signature** (cleared members only; the same stored

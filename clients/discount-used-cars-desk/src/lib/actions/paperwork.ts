@@ -22,6 +22,9 @@ import { dealerSignerProblem, dealerStroke } from "@/lib/documents/dealer-signer
 import {
   DOWN_PAYMENT_FROZEN_CODE,
   DOWN_PAYMENT_FROZEN_MESSAGE,
+  PAID_TODAY_INVALID_CODE,
+  PAID_TODAY_INVALID_MESSAGE,
+  canonicalPaidToday,
   downPaymentChanges,
 } from "@/lib/sales/down-payment-freeze";
 import { filedBillOfSaleOn } from "@/lib/sales/filed-bill-of-sale";
@@ -44,7 +47,11 @@ import { filedBillOfSaleOn } from "@/lib/sales/filed-bill-of-sale";
  * express a document signed at the desk in front of you.
  */
 
-export type PaperworkState = { ok: boolean; error?: string; code?: typeof DOWN_PAYMENT_FROZEN_CODE };
+export type PaperworkState = {
+  ok: boolean;
+  error?: string;
+  code?: typeof DOWN_PAYMENT_FROZEN_CODE | typeof PAID_TODAY_INVALID_CODE;
+};
 
 /**
  * The deal id is never taken from the client for the document write.
@@ -58,7 +65,7 @@ export async function savePaperworkAnswer(
   dealId: string,
   documentType: string,
   key: string,
-  value: string,
+  typedValue: string,
 ): Promise<PaperworkState> {
   // The document corridor belongs to two roles: sales under its own
   // scope, registration under its title-work scope (round 4, finding 3).
@@ -80,6 +87,13 @@ export async function savePaperworkAnswer(
   */
   const movesMoney = hasTeamPermission(access.role, "sales:manage");
   const isDownPayment = documentType === "financing" && key === "downPayment";
+
+  // The down payment is stored as one plain figure, or refused when it is
+  // not a dollar amount of zero or more, exactly as the money step stores
+  // it (down-payment-freeze.ts, canonicalPaidToday): the note's payment, the
+  // contract's itemisation and the bill of sale's balance read the same text.
+  const value = isDownPayment ? canonicalPaidToday(typedValue) : typedValue;
+  if (value === null) return { ok: false, error: PAID_TODAY_INVALID_MESSAGE, code: PAID_TODAY_INVALID_CODE };
 
   try {
     const supabase = await createClient();

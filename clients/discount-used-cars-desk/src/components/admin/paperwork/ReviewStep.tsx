@@ -415,7 +415,8 @@ function FinancingFigures({
   money: PaperworkMoney;
   answers: Record<string, string>;
 }) {
-  const down = Number(answers.downPayment) || 0;
+  // Stripped as the contract strips it, so "1,500" reads as $1,500 down here too.
+  const down = Number((answers.downPayment ?? "").replace(/[$,\s]/g, "")) || 0;
   const financed = Math.max(0, Math.round((money.total - down) * 100) / 100);
   const count = Number(answers.numberOfPayments) || 0;
   const frequency =

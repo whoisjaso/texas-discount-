@@ -202,8 +202,10 @@ async function clearTemporaryPasswordFlag(
 ): Promise<void> {
   if (!user || user.app_metadata?.requires_password_change !== true) return;
   try {
+    // Only the one key: the auth server merges app_metadata key by key, so
+    // nothing read earlier is written back over a newer value.
     await createServiceClient().auth.admin.updateUserById(user.id, {
-      app_metadata: { ...(user.app_metadata ?? {}), requires_password_change: false },
+      app_metadata: { requires_password_change: false },
     });
   } catch {
     // Onboarding asks again; nothing is lost.

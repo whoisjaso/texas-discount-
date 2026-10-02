@@ -44,4 +44,17 @@ describe("the filed bill of sale", () => {
     await file("freeze-deal-3", "salvageBillOfSale", true);
     expect(await filedBillOfSaleOn("freeze-deal-3")).toMatchObject({ type: "salvageBillOfSale" });
   });
+
+  it("counts a deal-linked bill of sale the older e-sign path completed, with no finalized_at", async () => {
+    await createMockSupabaseClient()
+      .from("document_agreements")
+      .insert({
+        deal_id: "freeze-deal-4",
+        document_type: "billOfSale",
+        status: "completed",
+        completed_at: "2026-10-01T15:00:00.000Z",
+        finalized_at: null,
+      });
+    expect(await filedBillOfSaleOn("freeze-deal-4")).toMatchObject({ type: "billOfSale" });
+  });
 });

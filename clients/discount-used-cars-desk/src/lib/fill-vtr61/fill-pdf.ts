@@ -105,24 +105,46 @@ function clean(value: unknown): string {
   return value === null || value === undefined ? "" : String(value).trim();
 }
 
-function sameName(a: string, b: string): boolean {
-  const fold = (value: string) => value.normalize("NFC").trim().replace(/\s+/g, " ").toLowerCase();
-  return fold(a) === fold(b);
+/**
+ * An entity name folded so the dealership is recognised however it was typed:
+ * case, spacing, "&" for "and", the punctuation, and the closing "LLC" (or
+ * "L.L.C.") ignored. The standalone form takes the owner and the rebuilder as
+ * free text, and "Discount Used Cars & Trucks LLC" is still the dealership:
+ * read as a stranger, it would print the entity alone beside the dealer's
+ * signature and skip the cleared, onboarded signer the pairing requires.
+ */
+function foldEntityName(value: string): string {
+  return value
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[.,'’"]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/ (llc|l l c|limited liability company)$/, "")
+    .trim();
+}
+
+/** Whether a typed party is the dealership: its legal name or the name it trades under. */
+function isDealershipName(typed: string): boolean {
+  const folded = foldEntityName(typed);
+  if (!folded) return false;
+  return [dealership.legalName, dealership.name].some((name) => Boolean(name) && foldEntityName(name ?? "") === folded);
 }
 
 /**
  * Which of the two certifying parties is the dealership: the owner when the
  * form is filled for the dealership's own car (no owner given) or names the
- * dealer's legal name, and the rebuilder when it is the owner (no other
- * rebuilder given) or names the dealer's legal name. Exported so the routes
- * ask for a signer exactly when the form will print one.
+ * dealership, and the rebuilder when it is the owner (no other rebuilder
+ * given) or names the dealership (`isDealershipName`: however the name was
+ * typed). Exported so the routes ask for a signer exactly when the form will
+ * print one.
  */
 export function vtr61DealerParties(input: Pick<Vtr61Input, "ownerName" | "rebuilderName">): {
   owner: boolean;
   rebuilder: boolean;
 } {
-  const legal = dealership.legalName;
-  const isDealer = (name: string) => Boolean(legal) && sameName(name, legal ?? "");
+  const isDealer = isDealershipName;
   const owner = input.ownerName === undefined || isDealer(clean(input.ownerName));
   const rebuilderGiven = clean(input.rebuilderName);
   const rebuilder = rebuilderGiven ? isDealer(rebuilderGiven) : owner;
@@ -135,9 +157,11 @@ export async function fillVtr61(input: Vtr61Input): Promise<Uint8Array> {
   const form = pdf.getForm();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
 
-  const owner = input.ownerName === undefined ? factOr(dealership.legalName, "dealer legal name") : clean(input.ownerName);
-  const rebuilder = clean(input.rebuilderName) || owner;
   const dealerParty = vtr61DealerParties(input);
+  // The dealership's entity rows print its legal name, however it was typed.
+  const legal = factOr(dealership.legalName, "dealer legal name");
+  const owner = input.ownerName === undefined || dealerParty.owner ? legal : clean(input.ownerName);
+  const rebuilder = dealerParty.rebuilder ? legal : clean(input.rebuilderName) || owner;
   // The pairing, never the entity alone, beside a signature the dealership gives.
   const printedByDealer = dealerSignerPrintedName(input.dealerSignerName);
   const address = input.rebuilderAddress === undefined ? `${dealership.address.street}, ${dealership.address.locality}, ${dealership.address.region} ${dealership.address.postalCode}` : clean(input.rebuilderAddress);

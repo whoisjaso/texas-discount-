@@ -127,7 +127,8 @@ async function currentOnboardee(): Promise<Onboardee> {
  * never named by the form: the new password and the cleared
  * `requires_password_change` flag go together, so there is no moment where
  * the password is new and the flag still sends the account back here (or
- * the other way round). Every other app_metadata key is kept as it was.
+ * the other way round). Only that key is sent: every other app_metadata key
+ * is kept as the auth server holds it at write time.
  * Once it is cleared the layout stops sending the account to onboarding for
  * the password, and onboarding carries on to the name.
  *
@@ -155,9 +156,13 @@ export async function chooseOnboardingPasswordAction(formData: FormData): Promis
   if (problem) return refusePassword(problem);
 
   try {
+    // Only the one key. The auth server merges app_metadata key by key, so
+    // every other key stays as it is at write time; spreading the copy read
+    // at the top of this action would write back a stale access_status or
+    // desk_role if an owner changed the account in between.
     const { error } = await createServiceClient().auth.admin.updateUserById(access.user.id, {
       password: password as string,
-      app_metadata: { ...(access.user.app_metadata ?? {}), requires_password_change: false },
+      app_metadata: { requires_password_change: false },
     });
     if (error) throw error;
   } catch {

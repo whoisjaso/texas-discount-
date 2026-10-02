@@ -172,15 +172,26 @@ describe("Choose A Password", () => {
       passwords("a new one of mine", "a new one of mine", { id: "someone-else", user_id: "someone-else", member_id: "x" }),
     );
     expect(result).toEqual({ ok: true });
+    // Only the flag is sent: the auth server merges app_metadata key by key,
+    // so every other key is kept as it stands at write time, and nothing read
+    // earlier (a stale access_status or desk_role) is written back.
     expect(state.authWrites).toEqual([
       {
         id: "auth-1",
         attributes: {
           password: "a new one of mine",
-          app_metadata: { access_status: "active", desk_role: "sales", requires_password_change: false, can_sign_contracts: false },
+          app_metadata: { requires_password_change: false },
         },
       },
     ]);
+    const held = { access_status: "active", desk_role: "sales", requires_password_change: true, can_sign_contracts: false };
+    const sent = (state.authWrites[0].attributes as { app_metadata: Record<string, unknown> }).app_metadata;
+    expect({ ...held, ...sent }).toEqual({
+      access_status: "active",
+      desk_role: "sales",
+      requires_password_change: false,
+      can_sign_contracts: false,
+    });
     // The roster row is not touched; the replacement is logged, never the password.
     expect(state.updates).toEqual([]);
     expect(state.inserts).toHaveLength(1);
@@ -298,8 +309,9 @@ describe("the emailed recovery link", () => {
     state.verifiedUser = { id: "auth-7", app_metadata: { desk_role: "registration", requires_password_change: true } };
     await expect(recovery("my own password")).rejects.toThrow("REDIRECT:");
     expect(state.passwordSet).toEqual(["my own password"]);
+    // Only the flag: the auth server merges it in and desk_role stays as held.
     expect(state.authWrites).toEqual([
-      { id: "auth-7", attributes: { app_metadata: { desk_role: "registration", requires_password_change: false } } },
+      { id: "auth-7", attributes: { app_metadata: { requires_password_change: false } } },
     ]);
   });
 

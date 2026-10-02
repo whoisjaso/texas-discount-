@@ -8,6 +8,12 @@ import { loadTitleWork } from "@/lib/vehicles/title-work-load";
 import { dealership } from "@/lib/dealership-config";
 import { TITLE_STATUS_LABELS, isTitleStatus, type TitleStatus } from "@/lib/vehicles/title-status";
 import type { TitleWorkRow } from "@/lib/vehicles/title-path";
+import { getStaffSignature } from "@/lib/actions/staff-signature";
+import {
+  ONBOARDING_PATH,
+  dealerPrintedNameProblem,
+  dealerSignerFixIsOnboarding,
+} from "@/lib/documents/dealer-signer";
 
 export const metadata = { title: `Title Work - ${dealership.name}` };
 export const dynamic = "force-dynamic";
@@ -50,6 +56,13 @@ export default async function TitleWorkPage({ params }: { params: Promise<{ id: 
   const rawStatus = car?.title_status;
   const status: TitleStatus = isTitleStatus(rawStatus) ? rawStatus : "unknown";
   const name = [car?.year, car?.make, car?.model].filter(Boolean).join(" ") || "This vehicle";
+
+  // Said here, before the link, rather than as a bare refusal in a new tab:
+  // the VTR-61 prints the dealer as "Legal Name (First Last)" beside the
+  // dealer's signature, and only a cleared, onboarded member may print it
+  // (owner's decision 10/01/2026; the route refuses anyone else).
+  const held = status === "salvage_unrebuilt" ? await getStaffSignature().catch(() => null) : null;
+  const printProblem = status === "salvage_unrebuilt" ? dealerPrintedNameProblem(held, "VTR-61") : null;
 
   return (
     <div className="ed-admin mx-auto w-full max-w-3xl px-5 py-8 md:px-8 md:py-12">
@@ -95,6 +108,16 @@ export default async function TitleWorkPage({ params }: { params: Promise<{ id: 
             A salvage title cannot be assigned to a buyer. It becomes a rebuilt salvage title in our name first, at
             the county tax office, and then the car sells like any other, with its disclosure.
           </p>
+          {printProblem ? (
+            <div className="mt-6">
+              <AdminDataNotice
+                label="Before You Print"
+                title="Your name on the VTR-61"
+                message={printProblem}
+                action={dealerSignerFixIsOnboarding(held) ? { href: ONBOARDING_PATH, label: "Finish Onboarding" } : undefined}
+              />
+            </div>
+          ) : null}
           <TitleWorkChecklist vehicleId={car?.id ?? id} rows={rows} />
         </>
       )}

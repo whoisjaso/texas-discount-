@@ -96,6 +96,13 @@ const failures = [];
       await p.waitForURL((u) => u.href !== url, { timeout: 90000 }).catch(() => {});
       await settle(); continue;
     }
+    if (a === undefined && /(^|\/)after:/.test(step)) {
+      // An in-between page that sends itself on (paperwork/<doc>/after:<key>).
+      // Read mid-redirect it has no answer; wait for it to move instead.
+      await p.waitForURL((u) => u.href !== url, { timeout: 90000 }).catch(() => {});
+      await settle();
+      if (p.url() !== url) continue;
+    }
     if (a === undefined) { log('NO ANSWER FOR', step); break; }
     for (const act of [].concat(a)) {
       if (act.fill) { await p.locator(act.fill).first().fill(String(act.value)); await p.waitForTimeout(300); }

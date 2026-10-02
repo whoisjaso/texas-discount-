@@ -242,14 +242,21 @@ corridor styling, the counter counting only the screens this member gets
    rule (at least 10 characters, one shared constant), typed twice (new and
    confirm), with a Show/Hide control for both boxes. Saving replaces the
    password and clears the flag in one write, on the signed-in account only
-   (resolved from the session, never named by the form; every other
-   app_metadata key kept), logs the replacement (never the password) in
+   (resolved from the session, never named by the form). The write sends
+   the flag key alone: the auth server merges app_metadata key by key, so
+   every other key stays as it is at write time, and a copy read earlier
+   (an access_status or desk_role an owner changed meanwhile) is never
+   written back. It logs the replacement (never the password) in
    `team_activity_events`, and goes on to the name, the counter carrying on
    from the screens the visit started with ("Step 2 Of 4"; a reload counts
    from the name). There is no Back to it once saved. A member who had already finished onboarding (a reset) gets
    this screen and Done only. Choosing a password through the emailed
    recovery link clears the flag too, so the invite link is not followed by
-   a second password screen.
+   a second password screen. A reset does not sign out a device already
+   signed in to the account, and that device can choose the new password
+   without the old one; the screen refuses a roster row that is not active,
+   so an owner who suspects a device sets the member inactive rather than
+   resetting them.
 1. **What Is Your Name?** First name and last name, two fields, required.
    Saved as `full_name` ("First Last") and `display_name` (first name). This
    is the name that prints in parentheses on the 130-U and under the dealer
@@ -293,7 +300,9 @@ starting value, written when an owner approves the member, is cleared for
 the Owner, Manager and Registration roles and not cleared for every other
 role (owner's decision 10/01/2026). An owner turns it on or off for one
 person afterwards; a reset never rewrites that choice (the auth account's
-mirror of it keeps the person's value, not the role's).
+mirror of it keeps the person's value, not the role's). The default applies
+at approval only: nothing backfills members approved before it, so an Owner
+approved earlier stays not cleared until an owner turns signing on for them.
 
 ### The website on paper versus the desk's own address
 
@@ -590,8 +599,17 @@ They Putting Down?" (which writes back to it, whoever answers it), is
 refused with "Void the bill of sale and file it again before changing the
 down payment", in the corridor's language. Only a change to the figure is
 refused: the same amount typed again ("1,500" for 1500), or $0.00 typed on a
-financed deal with nothing down, goes through. The check fails closed when
-the filed documents cannot be read. So the down payment belongs on the money
+financed deal with nothing down, goes through. The figure is compared as
+typed, never clamped to the total (the contract prints what was typed). Both
+homes store the down payment as one plain figure ("$1,500.00" is saved as
+"1500"; an empty box stays empty, which is not $0.00), so the bill of sale's
+balance, the contract's itemisation and the note's payment read the same
+text; a figure below zero or one that is not a dollar amount is refused
+outright, filed or not. "Filed" is the packet's own rule: finalized at the
+desk, or completed through the older e-sign path. The check fails closed when
+the filed documents cannot be read. The freeze names the down payment only:
+the price, its basis, the funding and the bill of sale's trade-in are not
+frozen by it (an open decision for the owner). So the down payment belongs on the money
 step, before anything is filed: that is what makes the bill of sale's
 balance and the contract's amount financed one figure. A signed document
 must never silently reattach to changed terms.
@@ -719,7 +737,14 @@ Legal content each document must carry:
   prints it (owner's decision 10/01/2026): the same name source, the same fit
   rules (9.5pt down to the 7.25pt floor) and the same two-line layout as the
   130-U seller line, at baselines measured between each box's rule and the
-  text above it. The entity rows stay the entity alone. Printing is refused
+  text above it. The entity rows stay the entity alone. The dealership is
+  recognised however its name was typed on the standalone form (case,
+  spacing, "&" for "and", punctuation, a closing "LLC" or "L.L.C.", its legal
+  or trading name), and its entity rows then print the legal name: a
+  spelling read as a stranger would print the entity alone beside the
+  dealer's signature and ask for no signer. Title work says before the link
+  why a member cannot print it, with Finish Onboarding when the fix is
+  theirs, rather than leaving the refusal to a bare tab. Printing is refused
   (with the reason) for a member who is not cleared to sign or not named,
   rather than handing over a form with the `[Not set: signer name]` marker;
   `DESK_ALLOW_UNSET_FACTS=true` lifts it for a demo and the marker prints. A
@@ -885,12 +910,15 @@ Sales** beneath it (and **Sale Times** and **Promises** if built).
 - Down-payment freeze: a filed bill of sale (or salvage bill of sale) refuses
   a changed down payment from the money step and from the contract, with no
   write; the same figure typed differently, and $0.00 on a financed deal
-  with nothing down, go through.
+  with nothing down, go through, stored as the plain figure with the note's
+  principal and payment unchanged; "-500" and "abc" are refused with no
+  write; a bill of sale completed through the older e-sign path freezes too.
 - Onboarding: "Choose A Password" only with `requires_password_change`; the
   10-character floor and the confirmation; the write goes to the session's
   own account and clears the flag; Done refuses until it is cleared; signing
   clearance at approval is Owner, Manager and Registration only.
-- VTR-61: the dealer's printed name is the pairing in one line or two at the
+- VTR-61: the dealership recognised however its name is typed, on both
+  routes; the dealer's printed name is the pairing in one line or two at the
   floor, the marker when nobody is named, refused for a member not cleared
   or not named.
 - Documents: `requiredDocumentTypes` for all 3 fundings × both registration
