@@ -1,13 +1,14 @@
 // theme.ts — the single source of truth: brand, motion, Recordly tuning, sound map.
 // Components never inline a colour, easing, spring or timing; they read it from here. Timings are in SECONDS and
 // converted with Math.round(x * fps) where they are used, so the film keeps its pace at any frame rate.
-// This file IS the house recipe (recordly-demo references/house-recipe.md): per client nothing here changes except,
-// with a reason, outro.logoWidth for a near-square logo. Client values live in src/project.ts.
+// This file IS the house recipe (recordly-demo references/house-recipe.md): per client nothing here changes except
+// outro.logoWidth, which new-project.sh sets from the logo's shape. Client values live in src/project.ts.
 import { Easing } from "remotion";
 
 export const theme = {
   colors: {
-    // Brand: black and white; the logo's red is the ONE colour (max one red element per frame).
+    // Brand: black and white; the logo's colour is the ONE colour (max one logo-colour element per frame). `primary`
+    // feeds only the Wallpaper glow, which is 0, so it stays as it is for every client whatever the logo's colour.
     // Wallpaper: neutral charcoal (no blue cast), lifted enough that the window's edge and shadow read.
     bg: "#171717",
     bgAlt: "#242424",

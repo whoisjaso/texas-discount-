@@ -5,7 +5,7 @@
   "notes": [
     "Times in each capture are seconds from that capture's frame 0. A scene plays capture seconds [scene.trimSec, scene.trimSec + scene.durationSec].",
     "Every selector is a premium-dealer-build hook (Home.tsx, Layout.tsx). Check them on the served build with scripts/measure-site.cjs --storyboard before capturing.",
-    "clock pins the page's wall clock to an open weekday mid-afternoon in the dealer's time zone, so the site shows 'Open Now' (it is computed from the time).",
+    "clock pins the page's wall clock to Wednesday 2026-09-30 at 14:00 in the dealer's time zone (or the next open weekday at 14:00), so the site shows 'Open Now' (it is computed from the time).",
     "The phone capture is 390x797: under iOS's 47 pt status bar that makes the iPhone 14 screen, 390x844 pt, exactly.",
     "Part B (the app / desk segment) is inserted between shots 4 and 5: shot 4 ends held at 1.8x on the 'Admin · Staff Sign-In To The Sale Desk' row with the cursor resting on it, so part B can open on the click (same window, same 1440x900 viewport at DSF 2).",
     "Shot 5 stops on the Trucks card (third of four): one more swipe would reach the lineup's finance fine print, which is never a confirmed fact.",
@@ -14,12 +14,13 @@
     "captureCss is injected into every shot by capture.cjs: video-only brand fixes (see captureCss.why).",
     "Shot 3's set-up click on the finder waits for the section's 0.9 s reveal; its re-typing ends so the caret is in the same blink half as at the end of shot 2.",
     "Shot 4 repeats shot 3's last scroll in its preroll, then jiggles the mouse (fromShot: 3-buy's last cursor point + 6, + 2) and hovers the same tile point, so frame 0 matches shot 3's last frame.",
-    "`frame` on a zoom (documentation for measure-site.cjs --rects, ignored by capture.cjs): `target` is what the zoom is about, `in` must be fully inside the view, `out` fully outside it."
+    "`frame` on a zoom (read by measure-site.cjs --storyboard, ignored by capture.cjs): `target` is what the zoom is about (its centre seeds the suggested focus), `in` must be fully inside the view at full depth, `out` fully outside it.",
+    "`rest` on the phone shot (read by measure-site.cjs --storyboard, ignored by capture.cjs): after the last swipe, `target`'s top sits `gap` px under `below` and every `out` element is below the screen."
   ],
   "base": "http://localhost:5183",
   "serve": {
     "build": "cd {{SITE_DIR}} && VITE_DESK_URL={{DESK_URL}} npm run build -- --outDir $SCRATCH/dist-demo --emptyOutDir",
-    "preview": "cd {{SITE_DIR}} && ./node_modules/.bin/vite preview --outDir $SCRATCH/dist-demo --port 5183 --strictPort (vite's own binary, so the PID you keep is vite's; SCRATCH absolute)"
+    "preview": "(cd {{SITE_DIR}} && echo $BASHPID > $SCRATCH/preview.pid && exec ./node_modules/.bin/vite preview --outDir $SCRATCH/dist-demo --port 5183 --strictPort): vite's own binary via exec, so the PID kept is vite's; SCRATCH absolute"
   },
   "capture": {
     "command": "node .claude/skills/recordly-demo/scripts/capture.cjs --storyboard clients/{{SLUG}}-demo/storyboard.json --shot <id> --out $SCRATCH/captures/<id> --publish clients/{{SLUG}}-demo/public/shots --clean",
@@ -113,7 +114,15 @@
           "adapt": "BODY: Truck if the dealer has trucks in stock, else SUV if it has SUVs, else Truck. Every premium-dealer-build lineup is the same four square cards in two columns, SUV | Sedan / Truck | Coupe, whatever is in stock (a type with no stock keeps its card with 'Ask about availability'), so Truck and SUV both sit in the left column and BODY_FOCUS {x 375, y 385} frames either one. Never feature a right-column card unless the user asks; then re-measure BODY_FOCUS with --rects."
         },
         { "t": 7.3, "type": "scrollTo", "selector": ".split-card", "align": "center", "durationSec": 1.5 },
-        { "t": 8.8, "type": "hover", "selector": ".split-card__hours", "tight": true, "anchor": [1.05, 0.6], "durationSec": 0.7 },
+        {
+          "t": 8.8,
+          "type": "hover",
+          "selector": ".split-card__hours",
+          "tight": true,
+          "anchor": [1.05, 0.6],
+          "durationSec": 0.7,
+          "adapt": "Rests just right of the hours line's glyph box, on empty card (arrow cursor, never on a glyph). The house anchor holds for any hours line; measure-site.cjs --storyboard fails the run if the point lands on a glyph or not on the arrow, and --rects prints the line's glyph box."
+        },
         { "t": 12.2, "type": "scrollTo", "selector": "#finder-q", "align": "center", "offset": 60, "durationSec": 1.3 },
         { "t": 13.6, "type": "click", "selector": "#finder-q", "anchor": [0.22, 0.5], "durationSec": 0.7 },
         {
@@ -137,7 +146,7 @@
             "in": ["a.model[href=\"/inventory?body={{BODY}}\"] .model__sig"],
             "out": ["a.model:not([href=\"/inventory?body={{BODY}}\"])", "a.model[href=\"/inventory?body={{BODY}}\"] .model__body"]
           },
-          "adapt": "Discount (Truck): {x 375, y 385} frames x 15-735, y 160-610 of the viewport: the card's name in, its chips row and every other card out. The same for SUV (left column, same size, scrolled to the same place). measure-site.cjs --rects checks it against `frame` and suggests a focus when it fails."
+          "adapt": "Discount (Truck): {x 375, y 385} frames x 15-735, y 160-610 of the viewport: the card's name in, its chips row and every other card out. The same for SUV (left column, same size, scrolled to the same place). measure-site.cjs --storyboard checks it against `frame` and prints a suggested focus when it fails (with BODY_FOCUS null, --into writes the suggestion: {x 375, y 387} on Discount, where the hand-set {x 375, y 385} is kept; both pass)."
         },
         {
           "at": 8.7,
@@ -147,7 +156,7 @@
           "follow": false,
           "why": "the visit card's text half centred (clamped to the page's left edge): page above and below it, the hours line in the lower third",
           "frame": { "target": ".split-card__text", "in": [".split-card__text"] },
-          "adapt": "Discount: {x 400, y 422}: the text half's centre after its scroll (x 132-655 → 393, clamped to 400 so the view starts at the page edge; y 204-639 → 422). Card copy of another length changes its height: take --rects' suggestion."
+          "adapt": "Discount: {x 400, y 422}: the text half's centre after its scroll (x 132-655 → 393, clamped to 400 so the view starts at the page edge; y 206-638 → 422). Card copy of another length changes its height: measure-site.cjs --storyboard fails the zoom if the text half is not wholly inside, and prints the suggested focus (on Discount it suggests exactly {x 400, y 422})."
         },
         { "at": 13.3, "until": 16.0, "depth": 1.5, "focus": "#finder-q", "anchor": [0.35, 0.5], "follow": true }
       ],
@@ -191,7 +200,7 @@
             "in": [{ "selector": ".glass-band .teasers a.tile .tile__label", "contains": "{{SERVICE_TILE}}" }],
             "out": [".glass-band__demo", ".glass-band + *"]
           },
-          "adapt": "Always re-measure: the band's photo, compare widget and copy move the tile row. Run measure-site.cjs --storyboard … --rects and use its suggested focus (nearest point to the hovered tile's centre where the `frame` rules hold and no zoom edge cuts a text line). Discount: tiles y 492-723, photo ends y 396, band ends y 851; the tool suggests {x 738, y 622}, the hand-set {x 740, y 623} is kept for Discount (both pass)."
+          "adapt": "Always measured: the band's photo, compare widget and copy move the tile row. Leave SERVICE_FOCUS null; measure-site.cjs --storyboard … --into client-inputs.json writes its suggested focus (the nearest point to the hovered tile's centre where the `frame` rules hold and no zoom edge cuts a text line), then refill and re-run until PREFLIGHT CLEAN. Discount: tile [571, 492, 299, 231], photo ends y 396, next section starts y 852; the tool suggests {x 730, y 621}, the hand-set {x 740, y 623} is kept for Discount (both pass)."
         }
       ],
       "scene": { "trimSec": 0, "durationSec": 5.7 }
@@ -248,9 +257,17 @@
           "type": "scrollBy",
           "y": "{{PHONE_SWIPE_3}}",
           "touch": { "x": 255, "y": 610 },
-          "adapt": "The phone always rests on the Trucks card (third in the one-column lineup), whatever BODY is: the lineup is the same four cards on every premium-dealer-build site, so 430 then 450 px is the house value. measure-site.cjs --rects prints where the card rests: its top must sit 55-70 px below the header (Discount: 124.8, header bottom 64, so 60.8) and the fine print below the screen. If it does not, change PHONE_SWIPE_3 by the difference (its suggestion); keep three swipes."
+          "adapt": "The phone always rests on the Trucks card (third in the one-column lineup), whatever BODY is: the lineup is the same four cards on every premium-dealer-build site, so 430 then 450 px is the house value. measure-site.cjs --storyboard checks the shot's `rest` rule: the card's top 55-70 px below the header (Discount: 124.8 − 64 = 60.8) and the fine print below the screen. If it fails, set PHONE_SWIPE_3 to the value it prints (aimed at 61 px); keep three swipes."
         }
       ],
+      "rest": {
+        "target": "a.model[href=\"/inventory?body=Truck\"]",
+        "below": ".header",
+        "gap": [55, 70],
+        "aim": 61,
+        "out": [".lineup + .band__fine"],
+        "why": "Documentation for measure-site.cjs (capture.cjs ignores it): where the phone comes to rest after the last swipe. The Trucks card sits whole under the header with a little page above it, and the lineup's finance fine print stays below the screen."
+      },
       "zooms": [],
       "scene": { "trimSec": 0, "durationSec": 9.0, "behind": "last frame of 4-menu (or of part B) in its window" }
     },

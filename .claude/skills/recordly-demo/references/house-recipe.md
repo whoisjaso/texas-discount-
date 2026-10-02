@@ -18,7 +18,7 @@ anyone re-typing them.
 **Changing a value needs a reason and a re-verify.** Most of these numbers were fixed by a reviewer finding (F-numbers,
 see `lessons.md`). Changing one to taste reopens that defect. If a client genuinely needs a change, say why in the
 project README, change it in one place, and run the full gates (`verification.md`) again. The only per-client theme
-value is `outro.logoWidth`, for a near-square logo.
+value is `outro.logoWidth`, which `new-project.sh` derives from the logo's shape (§9).
 
 All timings are seconds in `theme.ts`, converted with `toFrames(s, fps) = Math.round(s * fps)`. Frame numbers below
 are at 30 fps with part B empty.
@@ -173,7 +173,8 @@ so the window's edge and shadow read. v0 was near black (mean 20) with a violet 
 
 - Drift: d1 = sin(t/1.9)·70, d2 = cos(t/2.4)·60, d3 = sin(t/3.1 + 1.3)·50 (t in seconds).
 - Sheen: `linear-gradient(115deg, transparent 30%, sheen 48%, transparent 62%)`, translateX sin(t/4)·80.
-- Brand glow: 0. There is one logo-colour element per frame at most, and the site supplies it.
+- Brand glow: 0. There is one logo-colour element per frame at most, and the site supplies it. `theme.colors.primary`
+  (Discount's red, `#9A1414`) feeds only this glow, so it stays as it is for every client, whatever the logo's colour.
 
 **Finish layers** (`Overlays.tsx`, on the backdrop, in order):
 
@@ -246,7 +247,7 @@ used.
 | Shot | Depth | Focus | Capture window | Film | Framing |
 |---|---|---|---|---|---|
 | 1-hero | 1.5 | `.hero__title` tight, centre, no follow | 3.8–6.4 | f124–232 | The headline |
-| 2-scroll | 2.0 | point (375, 385) | 3.6–6.0 | from f346 | A 720×450 view, x 15–735, y 160–610. Right edge in the gutter before the red Coupe; bottom above the chip (F14) |
+| 2-scroll | 2.0 | point (375, 385) | 3.6–6.0 | from f346 | A 720×450 view, x 15–735, y 160–610. Right edge in the gutter before the next card (Discount's red Coupe); bottom above the chip (F14) |
 | 2-scroll | 1.8 | point (400, 422) | 8.7–10.9 | from f499 | The visit card centred, 33 px of page above and below (F15) |
 | 2-scroll | 1.5 | `#finder-q` anchor (0.35, 0.5), follow | 13.3–16.0 | from f637 | The zoom-out lands exactly on the cut at f748 |
 | 3-buy | 2.0 | point (740, 623) | 2.3–4.5 | from f817 | All band and tiles. "We Buy Cars" fully out, "We Buy SUVs" fully in (F13) |
@@ -256,12 +257,13 @@ used.
 
 - No frame edge may run through text or a pill.
 - A neighbour's label is either fully in or fully out.
-- At most one logo-colour (red) element per frame.
+- At most one logo-colour element per frame (Discount's is red; a client's is whatever its logo is).
 - Go to 2.0 when 1.5 or 1.8 cannot frame cleanly, rather than recapturing.
 - `zoom.at` sits within ±0.3 s of the pointer action it accompanies.
 - Holds last 2.2–2.7 s.
-- `scripts/measure-site.cjs --storyboard` reports edge cuts for fixed-focus zooms. Follow zooms are checked on their
-  stills.
+- `scripts/measure-site.cjs --storyboard` checks every fixed-focus zoom for edge cuts and against its storyboard
+  `frame` rules (`in` wholly inside, `out` wholly outside), and prints the nearest passing focus when one fails. Follow
+  zooms are checked on their stills.
 
 `DesktopSegment.zoomFocus` can re-aim a captured zoom at composition time. It is not used in the approved film; the
 focus points live in the storyboard.
@@ -279,7 +281,7 @@ From `theme.recordly`, `lib/shot.ts` and `Cursor.tsx`.
 | Click pin | within ±0.2 s of a click or tap, blended to the raw point with a triangular weight | The ring is exactly on the target |
 | Click bounce | 350 ms: 30% `ease.out` to full, then `ease.inOut` back; scale to 0.82 | Recordly |
 | Click ring | radius 10 → 34 with `ease.out` over 450 ms; 2.5 px `rgba(255,255,255,.9)` with a 1 px `rgba(0,0,0,.3)` edge inside and out; opacity 0.9·(1 − ease.in p); scale 0.9 → 1 | A white-only ring was invisible on white UI (F22) |
-| Shapes | arrow (20×30 view, hotspot 2,1.5; black fill, white 1.7 stroke); pointing hand (24×27, hotspot 9.6,1.2; white fill, black 1.3 stroke); I-beam (14×24, hotspot 7,12); drop-shadow 0 1.5u 2.4u `rgba(0,0,0,.35)` | The macOS shapes |
+| Shapes | arrow (20×30 view, hotspot 2,1.5; black fill, white 1.7 stroke); pointing hand (24×27, hotspot 9.6,1.2; white fill, black 1.3 stroke); I-beam (14×24, hotspot 7,12; white 3.4 stroke under a black 1.4 stroke); drop-shadow 0 1.5u 2.4u `rgba(0,0,0,.35)` | The macOS shapes |
 | Shape source | recorded per frame (`c`) from the computed CSS cursor: pointer → hand; text, or auto on an editable input/textarea → I-beam; anything else → arrow | Static text keeps the arrow (F12, half rejected) |
 | Hide / show | over `cursorHideFadeSec` 0.17 (5 frames) with `ease.inOut`, always paired with a shrink to 0.85 | A lone opacity fade is forbidden (F30) |
 | When hidden | During self-scrolls (`cursor: "hide"`, the default). Scrolls less than `scrollMergeSec` 0.67 s apart merge into one hidden stretch. From any keystroke until the mouse next moves. From frame 0 when `cursor.hiddenAtStart` | A real user's pointer does not wander during a scripted scroll; it blinked in the gutter before (F10) |
@@ -315,7 +317,7 @@ shape, the same hover state, and the caret in the same blink phase.
 
 | Cut | PSNR, last vs first frame | Note |
 |---|---|---|
-| 1 | 45.1 dB | Only the site's own bobbing scroll arrow differs |
+| 1 | 45.1 dB | Only the site's own bobbing scroll arrow differs: changed region [712, 850.5, 16, 10] CSS px. `.hero__down` bobs on a 2.4 s loop whose phase depends on page time, so it cannot be staged. A new site under 45 dB here may pass only with `--allow-cut` (verification.md §6) |
 | 2 | 55.4 dB | |
 | 3 | 51.1 dB | |
 
@@ -378,12 +380,13 @@ From `theme.phone`, `IPhone.tsx`, `PhoneScene.tsx` and `TapRipple.tsx`.
 - The finger drags the page 1:1 for `dragSec`. The default is 0.3 s; the first swipe uses 0.25. Its speed ramps up
   over the first 45% with minimum jerk.
 - Then the page coasts with exponential decay, `tauSec` 0.32. The default length is drag + 4.5τ.
-- The finger rides with the content and drifts 6 px in x.
+- The finger rides with the content and drifts 6 px in x with `bezier(0.25, 0.1, 0.25, 1)` (`EASE.touch` in
+  `capture.cjs`).
 
 **Touch indicator.**
 
 - Ripple: r = (12 + 30·ease.out p)·k over 0.53 s (16 frames), with a 2k `rgba(255,255,255,.85)` ring, a 1k
-  `rgba(0,0,0,.22)` edge and a `rgba(128,128,134,.45)` fill.
+  `rgba(0,0,0,.22)` edge and a `rgba(128,128,134,.45)` fill; opacity 0.85·(1 − ease.in p).
 - Finger disc: r = 19k(0.8 + 0.2t). It fades over 0.1 s and grows with it; a fade is never used alone.
 - A white disc vanished on white sections, which is why the disc is grey with edges.
 
@@ -394,15 +397,19 @@ From `theme.phone`, `IPhone.tsx`, `PhoneScene.tsx` and `TapRipple.tsx`.
   - 2.0 s: to the lineup band title, offset 90; touch at (250, 690); drag 0.25 s
   - 3.9 s: scrollBy 430; touch at (240, 620)
   - 5.8 s: scrollBy 450; touch at (255, 610)
-- It rests on the featured card. One more swipe would show the finance fine print.
+- It rests on the Trucks card (third in the stacked lineup), whatever the featured desktop card is: card top 60.8 px
+  under the 64 px header. One more swipe would show the finance fine print. `measure-site.cjs` checks this (the
+  shot's `rest` rule: 55–70 px, fine print below the screen).
 - In the film, the swipes start at f1159, f1216 and f1273.
 
 ## 9. Outro
 
 From `theme.outro`, `LogoSting.tsx` and `Title.tsx`.
 
-- **Logo:** `project.logoReverse` (full colour on dark), 760 px wide. Spring `smooth`; translateY 36 → 0, scale
-  0.9 → 1, blur (1−p)·10, opacity p.
+- **Logo:** `project.logoReverse` (full colour on dark: the logo the site itself shows on its black bands or footer;
+  never recoloured or inverted). Width `theme.outro.logoWidth` = min(760, round(300 × width / height)): 760 for
+  Discount's 1402×540 logo (2.6:1), 384 for a 1.28:1 logo. `new-project.sh` computes it when `logoWidth` is null and
+  writes it into the project's inputs. Spring `smooth`; translateY 36 → 0, scale 0.9 → 1, blur (1−p)·10, opacity p.
 - **Spacing:** a column gap of 30 between the logo and the lines; 18 between lines.
 - **Lines** (`project.outroLines`): URL, then "phone · street, city", then short hours.
   - Sizes 42 / 30 / 30.
@@ -451,7 +458,7 @@ peak around −4 dBTP (F20). There is no music: the user adds a track.
 | Tap | `ios_tink` | −16 dB | 2 frames early (no taps in part A) |
 | Typing | one keystroke per character from `key_1..7` | −18 dB ±1.5 | 1 frame early. The file is `floor(random("key-<shot>-<frame>")·7)` and the jitter `(random("keydb-…")·2 − 1)·1.5`, both from Remotion's deterministic `random` |
 | Window opens | `open_ui` | −14 dB | 2 frames before `desktopA.from` |
-| Menu drawer opens | `open_ui` | −14 dB | 1 frame after the click's tink (4-menu `eventCues`) |
+| Menu drawer opens | `open_ui` | −14 dB | 1 frame after the click (4-menu `eventCues`, offset 1/fps): click f964 → f965. The click's tink leads the click by 2 frames (f962), so the two sounds are 3 frames apart |
 | Phone slides in | `open_ui` | −16 dB | 2 frames early |
 | Zoom in | `whoosh_short`, `_lo`, `_hi`, rotating `(i + zoomIndexOffset) % 3` | −20 dB | See below; capped at 0.45 s |
 | Intro | `ios_note` | −8 dB | frame 1 |
@@ -548,9 +555,18 @@ The share copy is `ffmpeg -i <master> -c:v libx264 -preset slow -crf 23 -pix_fmt
 
 ## 14. Content rules
 
-- **On-screen facts:** only the owner-confirmed list in `client-inputs.json` → `facts` (URL, phone, address, hours).
+- **On-screen facts:** only the owner-confirmed list in `client-inputs.json` → `facts` (URL, phone, address, hours),
+  copied character for character from where the site prints them.
 - **Overlays:** the film's own overlays carry no prices and no claims.
-- **Site copy:** site copy inside a zoom is the owner's decision, so list it in the README.
+- **Two classes of site text** in frame (`measure-site.cjs` sorts them):
+  - **(a) Never in frame:** numbers about money or credit (a price, payment, `/mo`, APR, rate or %, term length in
+    months), ratings ("4.8/5") and review counts. Re-stage or re-aim so they never enter the frame; never blur. The
+    lineup's fine print and price chips are hidden with `visibility: hidden` (shots 2 and 5).
+  - **(b) Allowed, listed for the owner:** claim-like site copy without numbers ("Easy financing, clear terms",
+    "Every price is shown plainly", "All credit welcome"). It stays, and the project README lists it (from
+    `zoomCopy`) so the owner can decide.
+- **Service band:** the middle tile is zoomed. If every tile carries class (a) text, stop and ask the user before
+  capturing; the house cut has no recipe for that.
 - **Colour:** at most one logo-colour element per frame. The brand is black and white, and the traffic lights are mono.
 - **Type:** Title Case, in the site's own font.
 - **Hiding content:** re-stage so unconfirmed content never enters the frame; never blur it.

@@ -10,6 +10,9 @@
 #
 # Exit 0 = every gate passed (then still look at the contact sheet and the zoom stills at 100%).
 # A spike or onset you have looked at and explained can be allowed: --allow-spikes 812 --allow-onsets 1450.
+# A cut under 45 dB whose diff is only the site's own small looping animation: --allow-cut <film frame> (granted only at
+# PSNR >= 40 dB with the changed region inside one 64x64 CSS px box). Name every allowance in the report.
+# Takes 2.5-4 minutes (in Claude Code, give the Bash call a 600000 ms timeout).
 set -euo pipefail
 SKILL="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT="$(cd "${1:?usage: verify.sh <project-dir> [film.mp4] [out-dir]}" && pwd)"

@@ -73,12 +73,14 @@ function placeholders(node, at = '', out = []) {
 function problems(inp) {
   const p = [];
   const need = (cond, msg) => { if (!cond) p.push(msg); };
-  for (const h of placeholders(inp)) p.push(`still a placeholder, fill it: ${h}`);
-  need(typeof inp.slug === 'string' && /^[a-z0-9-]+$/.test(inp.slug), 'slug: kebab-case, e.g. "discount-used-cars"');
+  const holes = placeholders(inp);
+  for (const h of holes) p.push(`still a placeholder, fill it: ${h}`);
+  const filled = (...keys) => !holes.some((h) => keys.some((k) => h.startsWith(k)));
+  if (filled('slug')) need(typeof inp.slug === 'string' && /^[a-z0-9-]+$/.test(inp.slug), 'slug: kebab-case, e.g. "discount-used-cars"');
   need(typeof inp.domain === 'string' && !/^https?:|^www\.|\//.test(inp.domain), 'domain: bare host without www, e.g. "discountusedcarsandtrucks.com"');
   need(Array.isArray(inp.facts) && inp.facts.length === 4, 'facts: exactly the 4 owner-confirmed on-screen facts, in order: web address, phone, street and city, short hours');
   need(Array.isArray(inp.outroLines) && inp.outroLines.length === 3, 'outroLines: exactly 3 lines (URL; "phone · street, city"; short hours)');
-  if (Array.isArray(inp.facts) && inp.facts.length === 4) {
+  if (Array.isArray(inp.facts) && inp.facts.length === 4 && filled('domain', 'facts', 'outroLines')) {
     const [web, phone, street, hours] = inp.facts;
     need(web === `www.${inp.domain}`, `facts[0] must be "www.${inp.domain}" (the domain as the URL pill and outro show it), not ${JSON.stringify(web)}`);
     need(/^\(\d{3}\) \d{3}-\d{4}$/.test(phone || ''), `facts[1] is the phone written (000) 000-0000, not ${JSON.stringify(phone)}`);
@@ -93,6 +95,7 @@ function problems(inp) {
     const stray = (blob.match(/\$\s?\d|\d+(\.\d+)?\s?%|\bAPR\b|\bfree\b|\bbest\b|\bcheapest\b/gi) || []);
     need(!stray.length, `outroLines contain a price or claim (${stray.join(', ')}): only confirmed facts go on screen`);
   }
+  need(inp.logoWidth == null || (Number.isInteger(inp.logoWidth) && inp.logoWidth >= 200 && inp.logoWidth <= 760), 'logoWidth: null (new-project.sh computes min(760, round(300 × logo width / height))) or a whole number of px up to 760');
   need(inp.brand && inp.brand.mark, 'brand.mark: the image the loader shows (measure-site.cjs --into fills it with the .png twin)');
   need(inp.brand && inp.brand.logoReverse, 'brand.logoReverse: the full-colour logo the site shows on dark (footer or black bands)');
   if (inp.overrides !== undefined) {
@@ -109,7 +112,7 @@ function problems(inp) {
     need(typeof L.wordDoneSec === 'number' && L.wordDoneSec > 0.5 && L.wordDoneSec < 2.2, 'loader.wordDoneSec: when the loader word is at rest (1.5 on every premium-dealer-build site)');
   }
   need(typeof inp.introKey === 'string' && /intro/.test(inp.introKey), 'introKey: the SEEN_KEY in the site\'s Loader.tsx (measure-site.cjs finds it)');
-  need(typeof inp.clock === 'string' && !Number.isNaN(Date.parse(inp.clock)) && /T14:00:00[+-]\d\d:\d\d$/.test(inp.clock),
+  if (filled('clock')) need(typeof inp.clock === 'string' && !Number.isNaN(Date.parse(inp.clock)) && /T14:00:00[+-]\d\d:\d\d$/.test(inp.clock),
     'clock: 2 PM local with the dealer\'s UTC offset that day: Wednesday 2026-09-30T14:00:00-05:00 for Central time, or the next open weekday at 14:00 if closed on Wednesdays');
   return p;
 }
@@ -188,6 +191,7 @@ function values(inp) {
     SITE_DIR: inp.siteDir,
     FACTS: inp.facts,
     WWW: `www.${inp.domain}`,
+    LOGO_WIDTH: inp.logoWidth || 760,
   }, inp.storyboard || {});
   return v;
 }
@@ -275,7 +279,10 @@ function main() {
     const missing = new Set();
     let text;
     if (bad.length) { console.error(`client-inputs incomplete:\n  - ${bad.join('\n  - ')}`); process.exit(1); }
-    if (cmd === 'storyboard') text = JSON.stringify(applyOverrides(fillDeep(readJson(tpl), values(inp), missing), inp), null, 2) + '\n';
+    if (cmd === 'storyboard') {
+      try { text = JSON.stringify(applyOverrides(fillDeep(readJson(tpl), values(inp), missing), inp), null, 2) + '\n'; }
+      catch (e) { console.error(`${e.message} (client-inputs.json → overrides; path indexes follow the template)`); process.exit(1); }
+    }
     else text = fillDeep(fs.readFileSync(tpl, 'utf8'), Object.assign(values(inp), readmeValues(inp)), missing);
     write(flag('out'), text);
     if (missing.size) {

@@ -205,8 +205,9 @@ IDs in "Source": F1–F20 are critic LOOK round 2, F21–F34 critic RULES round 
 
 **P6. Frame every zoom by hand.**
 - *Rule:* When the captured focus cuts text, use a fixed point (`follow: false`). No frame edge runs through text or a
-  pill. A neighbour's label is fully in or fully out, and frame edges fall in the gutters. At most one red element per
-  frame. Go to 2.0 rather than recapture. Write each focus point's `why` into the storyboard.
+  pill. A neighbour's label is fully in or fully out, and frame edges fall in the gutters. At most one logo-colour
+  element per frame. Go to 2.0 rather than recapture. Write each focus point's `why` and its `frame` rules into the
+  storyboard, so `measure-site.cjs` can check them and suggest a passing focus.
 - *Why:* A zoom is the close-up, so every slice is magnified.
 - *Symptom:* The Trucks card was cut through "Ask About Availability"; a label read "ars →"; an 80 px grey strip of the
   next section showed; a red Coupe sliver sat at the edge; the hours zoom was aimed low (F13–F15).
@@ -352,8 +353,8 @@ pages and on black bands (F22).
 - *Rule:* Extract film frame f with `ffmpeg -ss (f − 0.5)/fps`. Check once against `select=eq(n,f)`, which should give
   PSNR inf. Grab the last frame with `-sseof`.
 - *Why:* `-ss` returns the first frame at or after t.
-- *Symptom:* Plain f/30 returned the next frame, (f + 0.5)/30 crops were one frame early, and a seek at the end
-  returned nothing.
+- *Symptom:* (f + 0.5)/30 always returned frame f + 1. Plain f/30 returned f or f + 1 depending on how the time was
+  rounded (36.6667 → f1101, 36.666667 → f1100). A seek at the very end returned nothing.
 
 **R2. Scan the luma of every full render.**
 - *Rule:* After every full render, scan the MP4's per-frame YAVG for one-frame spikes, and explain or fix each one.
@@ -378,10 +379,11 @@ pages and on black bands (F22).
 
 **R6. Check your own crop before reporting a slice.**
 - *Rule:* Before reporting a sliced element, confirm the crop coordinates (CSS px × DSF for captures; film px × window
-  scale for renders). Expect the site's own animations to cap cut PSNR around 45 dB, and look at the diff image before
-  chasing a low number.
+  scale for renders). Look at the diff image and the printed changed region before chasing a low cut number: a
+  site's own small looping animation can hold a cut near 45 dB. Under 45 it passes only with `--allow-cut`, which
+  verify-film grants when PSNR ≥ 40 and the change fits in one 64 × 64 CSS px box.
 - *Symptom:* A reported "slice" was the reviewer's own crop box. Cut 1 is 45.1 dB because of the site's bobbing
-  scroll arrow.
+  scroll arrow (changed region 16 × 10 px).
 
 **R7. Use two critics, one merged list.**
 - *Rule:* Review each render with two independent critics, LOOK and RULES. Merge their findings into one numbered list.
@@ -396,8 +398,10 @@ pages and on black bands (F22).
 - *Rule:* Run renders with `nice -n 15` (about 11–12 min for about 1500 frames at concurrency 3). Run the typecheck in
   the foreground BEFORE backgrounding a render. Capture with `--clean`, since a 15 s DSF 2 shot is about 2.5 GB of PNG.
   Delete the `/tmp/remotion-webpack-bundle-*` your runs created. Never run `playwright install`.
-- *Rule:* Serve the demo build on its own port (5183) with `./node_modules/.bin/vite preview`, so `$!` is vite's own
-  PID, and kill it by that PID. An `npx` wrapper's PID leaves vite running. Never touch other workflows' ports.
+- *Rule:* Serve the demo build on its own port (5183) with `./node_modules/.bin/vite preview`, started through `exec`
+  after writing `$BASHPID` (in a subshell) to the pid file, so the PID kept is vite's own, and kill it by that PID. An
+  `npx` wrapper's PID leaves vite running, and `$$` in a subshell is the parent's PID. Never touch other workflows'
+  ports.
 - *Symptom:* A backgrounded `tsc && render &` hid the typecheck result, and frame folders filled the disk.
 
 **O2. Write the browser path so bash expands it.**
@@ -436,6 +440,11 @@ Reviewers proposed each of these, and each was rejected with a reason. They are 
 - **Traffic lights:** mono grey; `color` only on request.
 - **Visit card copy** (zip, cross streets) and a few pixels of the next card under the phone's dock: site rendering,
   left as is.
+- **Admin hold framing:** the 1.8× follow zoom on `.drawer__link--admin` is not moved up about 45 px to push the
+  "Open Now" row out of frame (R1-11 alternative). The green dot is recoloured by `captureCss` instead, which also
+  fixes the header and the hours zoom.
+- **Cut 1's scroll arrow:** the hero's bobbing arrow is not hidden or phase-matched to lift cut 1 above 45.1 dB; it is
+  the site's own motion, and the cut passes.
 
 ## Open items
 

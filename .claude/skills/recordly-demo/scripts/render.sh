@@ -6,8 +6,11 @@
 #   out/<name>.mp4        h264 CRF 16 (JPEG frames q95, concurrency 3; remotion.config.ts) + AAC, 1920x1080 30 fps
 #   out/<name>-share.mp4  libx264 slow CRF 23 (raised until <= 24 MB), yuv420p, AAC 160k, +faststart
 #
-# Before rendering it checks that every file the film needs is in public/ (sfx, fonts, logos, captures) and runs the
-# typecheck in the foreground (a typecheck chained in front of a backgrounded render hides its result).
+# Before rendering it checks that every file the film needs is in public/ (sfx, fonts, logos, every capture including
+# the phone's), that no double-brace placeholder is left in src/project.ts or storyboard.json, and runs the typecheck in
+# the foreground (a typecheck chained in front of a backgrounded render hides its result).
+# In Claude Code: run `render.sh <dir> <name> --check` in the foreground, then the render itself with run_in_background
+# (it takes longer than one foreground Bash call may run) and poll its log.
 # The render runs under nice -n 15 (~11-12 min for ~1500 frames). Only the webpack bundles this run creates in /tmp
 # are deleted afterwards (another render may be using its own).
 set -euo pipefail
@@ -25,14 +28,21 @@ for f in $(grep -o '"\(sfx\|fonts\)/[^"]*"' src/theme.ts | tr -d '"' | sort -u) 
          $(grep -oE '(mark|logoReverse): "[^"]+"' src/project.ts | sed -E 's/.*"(.+)"/\1/'); do
   [ -f "public/$f" ] || { echo "MISSING public/$f"; missing=1; }
 done
-PLAN="$(node "$SKILL/scripts/verify-film.cjs" --project . --plan 2>/dev/null)" || {
-  echo "MISSING captures: public/shots/<id>/cursor.json for a timeline segment (capture first), or npm ci not run"; missing=1; PLAN=""; }
+ERR="$(mktemp)"
+PLAN="$(node "$SKILL/scripts/verify-film.cjs" --project . --plan 2>"$ERR")" || {
+  echo "MISSING: verify-film.cjs could not build the plan (a capture's cursor.json, or npm ci not run):"
+  { grep -m1 -E "ENOENT|Error|Cannot" "$ERR" || head -1 "$ERR"; } | sed 's/^/  /' || true; missing=1; PLAN=""; }
+rm -f "$ERR"
 if [ -n "$PLAN" ]; then
-  for id in $(printf '%s' "$PLAN" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const p=JSON.parse(s);console.log([...new Set(p.segments.map(x=>x.shot))].join(" "))})'); do
-    [ -f "public/shots/$id/shot.mp4" ] || { echo "MISSING public/shots/$id/shot.mp4"; missing=1; }
+  # every capture the film plays: the desktop segments and the phone shot
+  for id in $(printf '%s' "$PLAN" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const p=JSON.parse(s);console.log([...new Set([...p.segments.map(x=>x.shot),...(p.phone?[p.phone.shot]:[])])].join(" "))})'); do
+    for f in shot.mp4 cursor.json; do [ -f "public/shots/$id/$f" ] || { echo "MISSING public/shots/$id/$f"; missing=1; }; done
   done
 fi
 grep -q 'stage: \[0, 0, 0, 0\]' src/project.ts && { echo "project.loader is still the template placeholder: run measure-site.cjs and fill-client.cjs"; missing=1; }
+if grep -n '{{[^{}]*}}' src/project.ts storyboard.json 2>/dev/null; then
+  echo "placeholders left (above): fill client-inputs.json and refill (fill-client.cjs), never render a film that could show them"; missing=1
+fi
 [ "$missing" = 0 ] || exit 1
 
 echo "== typecheck"

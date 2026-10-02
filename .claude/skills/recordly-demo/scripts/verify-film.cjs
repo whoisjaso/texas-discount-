@@ -4,7 +4,7 @@
  * verify-film.cjs — the gates a rendered film must pass before it is sent (references/verification.md).
  *
  *   node verify-film.cjs --project clients/<slug>-demo --mp4 out/demo-v1.mp4 --out $SCRATCH/verify
- *                        [--allow-spikes 812,1203] [--allow-onsets 1450] [--no-stills]
+ *                        [--allow-spikes 812,1203] [--allow-onsets 1450] [--allow-cut 238] [--no-stills]
  *   node verify-film.cjs --project clients/<slug>-demo --plan          (print the plan, no film needed)
  *   node verify-film.cjs --project clients/<slug>-demo --cuts-only --out DIR   (after capture, before the render)
  *
@@ -15,7 +15,13 @@
  * Writes <out>/stills/<frame>_<label>.png, <out>/contact-sheet.png, <out>/cuts/*.png (last | first | diff ×8),
  * <out>/report.json, and prints PASS / FAIL per gate. Exit 1 on any FAIL. Read-only on the project.
  *
- * --plan prints the derived plan (timeline, stills, cuts, expected sound cues) and exits: use it before rendering.
+ * --plan prints the derived plan (timeline, segments, the phone shot, stills, cuts, expected sound cues, and any
+ * double-brace placeholder left in src/project.ts or storyboard.json) and exits: use it before rendering.
+ *
+ * Cut rule: last vs first frame PSNR ≥ 45 dB, same cursor point, shape and scroll. Every cut also prints where the two
+ * frames differ beyond codec noise (the "changed region", CSS px). A cut under 45 dB fails unless you looked at its
+ * diff image, it shows only the site's own small animation, and you pass --allow-cut <film frame>: the allowance holds
+ * only when PSNR ≥ 40 dB and the changed region fits in one box of at most 64 × 64 CSS px.
  */
 'use strict';
 const fs = require('fs');
@@ -66,6 +72,17 @@ function loadProjectModule() {
   m.paths = Module._nodeModulePaths(PROJECT);
   m._compile(out.outputFiles[0].text, m.filename);
   return m.exports;
+}
+
+/** Double-brace placeholders left in the files the film and the capture read (a film must never show "{{phone}}"). */
+function placeholderHoles() {
+  const holes = [];
+  for (const f of ['src/project.ts', 'storyboard.json']) {
+    const p = path.join(PROJECT, f);
+    if (!fs.existsSync(p)) continue;
+    fs.readFileSync(p, 'utf8').split('\n').forEach((line, i) => { if (/\{\{[^{}]*\}\}/.test(line)) holes.push(`${f}:${i + 1}: ${line.trim().slice(0, 90)}`); });
+  }
+  return holes;
 }
 
 function phoneShotId() {
@@ -186,7 +203,7 @@ function buildPlan() {
     if (a.part !== b.part) continue; // the A→B boundary is checked separately (it is part B's own recipe)
     cuts.push({ film: b.from, a: a.shot, aFrame: a.trim + a.durationInFrames - 1, b: b.shot, bFrame: b.trim });
   }
-  return { M, T, fps, segs, shots, phoneId, cues, stills: stillsU, cuts };
+  return { M, T, fps, segs, shots, phoneId, cues, stills: stillsU, cuts, holes: placeholderHoles() };
 }
 
 // ------------------------------------------------------------------ media helpers
@@ -210,9 +227,52 @@ function psnr(pngA, pngB) {
   return m ? (m[1] === 'inf' ? Infinity : Number(m[1])) : NaN;
 }
 
+/**
+ * Where two frames differ beyond codec noise: the max-channel |a − b|, box-blurred over 11 × 11 device px, above 12
+ * levels. Returns the bounding box in CSS px (null when nothing is above the noise) and the device-px count.
+ * Calibrated on the approved film: cut 1 (45.1 dB) → only the hero's bobbing scroll arrow, a 16 × 10 px box; cuts 2
+ * and 3 → nothing.
+ */
+function changedRegion(pa, pb, dsf) {
+  const dims = (f) => { const b = fs.readFileSync(f); return [b.readUInt32BE(16), b.readUInt32BE(20)]; };
+  const [w, h] = dims(pa);
+  const r = ff(['-v', 'error', '-i', pa, '-i', pb, '-lavfi', '[0:v]format=gbrp[a];[1:v]format=gbrp[b];[a][b]blend=all_mode=difference,format=rgb24', '-f', 'rawvideo', '-']);
+  const px = r.stdout;
+  if (!px || px.length !== w * h * 3) return { error: 'could not diff the two frames' };
+  const m = new Uint8Array(w * h);
+  for (let i = 0, j = 0; i < m.length; i++, j += 3) m[i] = Math.max(px[j], px[j + 1], px[j + 2]);
+  const R = 5, K = (2 * R + 1) * (2 * R + 1);
+  const hs = new Uint32Array(w * h);
+  for (let y = 0; y < h; y++) {
+    let acc = 0;
+    const row = y * w;
+    for (let x = -R; x < w + R; x++) {
+      if (x + R < w) acc += m[row + Math.min(w - 1, x + R)];
+      if (x - R - 1 >= 0) acc -= m[row + x - R - 1];
+      if (x >= 0 && x < w) hs[row + x] = acc;
+    }
+  }
+  let x0 = Infinity, y0 = Infinity, x1 = -1, y1 = -1, n = 0;
+  for (let x = 0; x < w; x++) {
+    let acc = 0;
+    for (let y = -R; y < h + R; y++) {
+      if (y + R < h) acc += hs[(y + R) * w + x];
+      if (y - R - 1 >= 0) acc -= hs[(y - R - 1) * w + x];
+      if (y >= 0 && y < h && acc > 12 * K) { n++; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    }
+  }
+  if (!n) return { box: null, px: 0 };
+  const q = (v) => Math.round((v / dsf) * 10) / 10;
+  return { box: [q(x0), q(y0), q((x1 - x0 + 1)), q((y1 - y0 + 1))], px: n };
+}
+
 // ------------------------------------------------------------------ gates
-/** Cut continuity from the captures alone: pixels (PSNR ≥ 45 dB) and cursor / scroll from both cursor.json files. */
+/**
+ * Cut continuity from the captures alone: pixels (PSNR ≥ 45 dB, or --allow-cut for a small site animation) and
+ * cursor / scroll from both cursor.json files.
+ */
 function checkCuts({ cuts, shots, fps }) {
+  const allowCut = listArg('allow-cut');
   for (const c of cuts) {
     const A = path.join(PROJECT, 'public', 'shots', c.a, 'shot.mp4'), B = path.join(PROJECT, 'public', 'shots', c.b, 'shot.mp4');
     const pa = path.join(OUT, 'cuts', `${c.film}_${c.a}_last.png`), pb = path.join(OUT, 'cuts', `${c.film}_${c.b}_first.png`);
@@ -222,7 +282,17 @@ function checkCuts({ cuts, shots, fps }) {
     ff(['-v', 'error', '-y', '-i', pa, '-i', pb, '-lavfi', 'blend=all_mode=difference,lutrgb=r=val*8:g=val*8:b=val*8', path.join(OUT, 'cuts', `${c.film}_diff_x8.png`)]);
     const fa = shots[c.a].frames[c.aFrame], fb = shots[c.b].frames[c.bFrame];
     const dCur = Math.hypot(fa.x - fb.x, fa.y - fb.y), dScroll = Math.abs(fa.scrollY - fb.scrollY);
-    gate(db >= 45, `cut f${c.film} ${c.a}→${c.b} pixels`, `PSNR ${db === Infinity ? 'inf' : db.toFixed(1)} dB (≥ 45; look at cuts/${c.film}_diff_x8.png)`);
+    const reg = changedRegion(pa, pb, (shots[c.a].viewport && shots[c.a].viewport.deviceScaleFactor) || 1);
+    c.psnr = db === Infinity ? 'inf' : Math.round(db * 10) / 10;
+    c.changed = reg;
+    const where = reg.error ? reg.error : reg.box ? `changed region [${reg.box.join(', ')}] CSS px (x, y, w, h)` : 'no change above codec noise';
+    let ok = db >= 45, note = '';
+    if (!ok && allowCut.has(c.film)) {
+      const small = !reg.error && (!reg.box || (reg.box[2] <= 64 && reg.box[3] <= 64));
+      if (db >= 40 && small) { ok = true; note = '; ALLOWED by --allow-cut (a small site animation: name it in the report)'; }
+      else note = `; --allow-cut REFUSED: it needs PSNR ≥ 40 dB and a changed region of at most 64 × 64 CSS px`;
+    }
+    gate(ok, `cut f${c.film} ${c.a}→${c.b} pixels`, `PSNR ${db === Infinity ? 'inf' : db.toFixed(1)} dB (≥ 45); ${where}; look at cuts/${c.film}_diff_x8.png${note}`);
     gate(dCur <= 0.5 && dScroll <= 0.5 && (fa.c || 'a') === (fb.c || 'a'), `cut f${c.film} ${c.a}→${c.b} cursor`, `(${fa.x}, ${fa.y}) ${fa.c || 'a'} scroll ${fa.scrollY} → (${fb.x}, ${fb.y}) ${fb.c || 'a'} scroll ${fb.scrollY}`);
   }
 }
@@ -231,10 +301,12 @@ function run() {
   const plan = buildPlan();
   const { T, fps, segs, shots, cues, stills, cuts, M } = plan;
   if (args.plan) {
-    console.log(JSON.stringify({ timeline: T, segments: segs.map(({ eventCues, cues: c, ...s }) => s), cuts, stills, cues }, null, 1));
+    const phone = plan.phoneId ? { shot: plan.phoneId, from: T.phone.from, durationInFrames: T.phone.durationInFrames } : null;
+    console.log(JSON.stringify({ timeline: T, segments: segs.map(({ eventCues, cues: c, ...s }) => s), phone, cuts, stills, cues, holes: plan.holes }, null, 1));
     return 0;
   }
   fs.mkdirSync(path.join(OUT, 'cuts'), { recursive: true });
+  gate(plan.holes.length === 0, 'no placeholders left', plan.holes.length ? plan.holes.join(' | ') : 'src/project.ts and storyboard.json hold no double-brace values');
   if (args['cuts-only']) {
     checkCuts(plan);
     const failedCuts = results.filter((r) => r.ok === false);
@@ -301,7 +373,10 @@ function run() {
     }
   }
   if (white.length) gate(white.every((w) => w.ok), 'white page reads white at the window edges', white.map((w) => `f${w.film} [${w.box.map(Math.round).join(',')}] ${Math.min(...w.capture)}→${Math.min(...w.render)}`).join('; '));
-  else gate(null, 'white page at the window edges', 'no white page corner at 1x in the sampled frames: check a still by eye');
+  else {
+    const look = stills.filter((x) => /^cut1-first$|-zoom0-/.test(x.label)).slice(0, 2).map((x) => `${String(x.frame).padStart(5, '0')}_${x.label}.png`);
+    gate(null, 'white page at the window edges', `no white page corner at 1x in the sampled frames, so this gate is by eye: open ${look.join(' and ') || 'the cut and zoom stills'} at 100% and confirm page white stays white (255) right to the window's edge; say so in the report`);
+  }
 
   // 5. audio: true peak, loudness, and every onset on an on-screen event
   const eb = ff(['-v', 'info', '-nostats', '-i', MP4, '-vn', '-af', 'ebur128=peak=true', '-f', 'null', '-']);
@@ -350,7 +425,7 @@ function run() {
   }
 
   const failed = results.filter((r) => r.ok === false);
-  fs.writeFileSync(path.join(OUT, 'report.json'), JSON.stringify({ mp4: MP4, project: PROJECT, timeline: T, results, cuts, stills, cues, onsets, blips, spikes, white }, null, 1));
+  fs.writeFileSync(path.join(OUT, 'report.json'), JSON.stringify({ mp4: MP4, project: PROJECT, timeline: T, results, cuts, stills, cues, onsets, blips, spikes, white, holes: plan.holes }, null, 1));
   console.log(failed.length ? `VERIFY FAIL (${failed.length} gates) → ${path.join(OUT, 'report.json')}` : `VERIFY PASS → ${path.join(OUT, 'report.json')}`);
   return failed.length ? 1 : 0;
 }

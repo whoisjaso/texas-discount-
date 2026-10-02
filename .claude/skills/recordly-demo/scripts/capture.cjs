@@ -364,7 +364,7 @@ function resolveFromShot(shot, opts) {
 
 /** Paths in a normalized shot that still hold a {{PLACEHOLDER}} or a non-number where a number belongs. */
 function unfilled(node, at = '', out = []) {
-  const DOC = new Set(['why', 'adapt', 'describe', 'notes', 'scene', 'frame']);
+  const DOC = new Set(['why', 'adapt', 'describe', 'notes', 'scene', 'frame', 'rest', 'override', 'cssWhy']);
   if (typeof node === 'string') { if (/\{\{[^{}]*\}\}/.test(node)) out.push(`${at || '(shot)'} "${node.slice(0, 60)}"`); }
   else if (typeof node === 'number') { if (!Number.isFinite(node)) out.push(`${at} ${node}`); }
   else if (Array.isArray(node)) node.forEach((x, i) => unfilled(x, `${at}[${i}]`, out));
@@ -394,7 +394,7 @@ async function captureShot(rawShot, opts) {
   resolveFromShot(shot, opts);
   const holes = unfilled(shot);
   if (holes.length) {
-    throw new Error(`[${shot.id}] the storyboard still has unfilled placeholders: ${holes.join('; ')}. Fill them in client-inputs.json and refill the storyboard (fill-client.cjs storyboard), or measure them (measure-site.cjs --storyboard … --rects).`);
+    throw new Error(`[${shot.id}] the storyboard still has unfilled placeholders: ${holes.join('; ')}. Fill them in client-inputs.json, or let measure-site.cjs --storyboard … --into client-inputs.json measure them, then refill the storyboard (fill-client.cjs storyboard).`);
   }
   const total = Math.round(shot.durationSec * FPS);
   const preroll = Math.round(shot.prerollSec * FPS);
@@ -1026,4 +1026,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { captureShot, runShot, normalizeShot, resolveFromShot, unfilled, bezier };
+module.exports = { captureShot, runShot, normalizeShot, resolveFromShot, unfilled, bezier, cursorKind };

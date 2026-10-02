@@ -38,5 +38,54 @@
     "SERVICE_FOCUS": { "x": 740, "y": 623 },
     "PHONE_SWIPE_2": 430,
     "PHONE_SWIPE_3": 450
+  },
+  "overrides": [],
+  "_zoomCopy": "Written by measure-site.cjs --storyboard … --into: the text each zoom shows (follow zooms approximate). The README lists it for the owner.",
+  "zoomCopy": {
+    "1-hero zoom 0 (1.5x)": [
+      "Cars & trucks.",
+      "For less.",
+      "Easy financing and fair prices at 8108 Gulf Freeway, Houston.",
+      "Explore the inventory",
+      "Get pre-qualified"
+    ],
+    "2-scroll zoom 0 (2x)": [
+      "Trucks"
+    ],
+    "2-scroll zoom 1 (1.8x)": [
+      "Visit us on the Gulf Freeway",
+      "8108 Gulf Fwy",
+      "Houston, TX 77017",
+      "On the southbound Gulf Freeway feeder, between Dixie Dr & Delwood St",
+      ". Walk the lot, sit in the car, or bring yours in for an offer.",
+      "Open now",
+      "Tue – Sat, 10 AM – 7 PM",
+      "Get directions"
+    ],
+    "2-scroll zoom 2 (1.5x), approx.": [
+      "Find your next pre-owned vehicle.",
+      "Search the lot by make, model or colour. Every price is shown plainly, or call for today’s price.",
+      "Make, model or colour",
+      "Search"
+    ],
+    "3-buy zoom 0 (2x)": [
+      "We buy trucks",
+      "We buy SUVs"
+    ],
+    "4-menu zoom 0 (1.8x), approx.": [
+      "Financing",
+      "Easy financing, clear terms",
+      "Visit & Contact",
+      "8108 Gulf Fwy, Houston",
+      "Admin",
+      "Staff sign-in to the sale desk",
+      "Call",
+      "(713) 900-5050",
+      "Open now",
+      "Tue – Sat, 10 AM – 7 PM",
+      "Go to We Buy Cars",
+      "We buy cars",
+      "We buy trucks"
+    ]
   }
 }

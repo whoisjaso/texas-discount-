@@ -1,5 +1,5 @@
 {
-  "_note": "Copy to clients/<slug>-demo-inputs.json (outside the skill) and fill every double-brace value in step 2; scripts/fill-client.cjs check refuses any value still in double braces. Leave the null fields null: scripts/measure-site.cjs --into <this file> fills loader, word, introKey and brand.mark (the .png twin of the loader's image) in step 4, and --rects suggests SERVICE_FOCUS in step 6. Copy every fact character for character from where the site prints it (the visit card or the footer). examples/discount-used-cars/client-inputs.json is a filled copy.",
+  "_note": "Copy to clients/<slug>-demo/client-inputs.json (the project folder, created before the project; the only copy) and fill every double-brace value in step 2; scripts/fill-client.cjs check refuses any value still in double braces. Leave the null fields null: scripts/measure-site.cjs --into <this file> fills loader, word, introKey and brand.mark (the .png twin of the loader's image) in step 4, new-project.sh fills logoWidth in step 5, and measure-site.cjs --storyboard … --into fills SERVICE_FOCUS and zoomCopy in step 6. Copy every fact character for character from where the site prints it (the visit card or the footer). examples/discount-used-cars/client-inputs.json is a filled copy.",
   "slug": "{{client-slug, kebab-case, e.g. vegas-auto-sales}}",
   "client": "{{Dealer name (City)}}",
   "siteDir": "clients/{{client-slug}}-site",
@@ -40,5 +40,7 @@
     "_storyboard": "Defaults are the house values (Discount's). BODY: Truck if the dealer has trucks in stock, else SUV if it has SUVs, else Truck. SERVICE_FOCUS is always measured (measure-site.cjs --storyboard … --rects); the others are checked by the same run. See references/storyboard.md, 'Adapting the house storyboard'."
   },
   "overrides": [],
-  "_overrides": "Timing changes the page forces (e.g. a longer FINDER_QUERY), applied after filling: [{ \"shot\": \"2-scroll\", \"path\": \"actions.8.perCharSec\", \"value\": 0.12, \"why\": \"…\" }]. path is dot-separated into the filled shot (array indexes as in the template). Every override is listed in the README; each one needs a reason and a full re-verify."
+  "_overrides": "Timing changes the page forces (e.g. a longer FINDER_QUERY), applied after filling: [{ \"shot\": \"2-scroll\", \"path\": \"actions.8.perCharSec\", \"value\": 0.12, \"why\": \"…\" }]. path is dot-separated into the filled shot (array indexes as in the template). Every override is listed in the README; each one needs a reason and a full re-verify.",
+  "zoomCopy": null,
+  "_zoomCopy": "Leave null: measure-site.cjs --storyboard … --into writes the text each zoom shows (step 6); the README lists it for the owner."
 }

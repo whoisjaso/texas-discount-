@@ -7,25 +7,33 @@
 | Share copy | `out/discount-demo-part-a-preview.mp4`: CRF 23, 10.6 MB |
 | Status | Approved by the user: "I love it, let's make this a skill … exactly this way" |
 
-- `storyboard.json` is the capture storyboard as shipped. It predates the automatic `captureCss`, so each shot carries
-  a pasted copy; `capture.cjs` does not add it twice.
+- `storyboard.json` is the capture storyboard as shipped, kept byte for byte. It predates the automatic `captureCss`,
+  so each shot carries a pasted copy; `capture.cjs` does not add it twice. Its `serve` notes (npx) also predate lesson
+  O1: build and serve as SKILL.md step 3 says.
 - `client-inputs.json` holds the inputs that rebuild this project with `scripts/new-project.sh`.
 
 ## Reproduction check (done when the skill was locked)
 
 1. **Project:** `new-project.sh examples/discount-used-cars/client-inputs.json <scratch>`
-   - Produced a project whose `src/` differs from the shipped one only in comments: `project.ts` comments and one
-     comment line in `theme.ts`. Every value is identical.
+   - Produced a project whose `src/` differs from the shipped one only in comments (in `project.ts` and
+     `theme.ts`). Every value is identical, and `logoWidth` comes out 760.
    - Every sound, font and logo file is byte-identical.
    - `tsc --noEmit` passes.
 2. **Storyboard:** filling `assets/storyboard-dealer-site.json` with these inputs gives, for every shot, the same
-   normalised capture instructions as `storyboard.json`: actions, zooms, viewport, clock, intro key and the set of CSS
-   rules.
-3. **Pixels:** stills rendered from the rebuilt project with the shipped captures match `demo-v1.mp4` at 41.5–48.3 dB
-   on frames 56, 175, 397, 748, 1036, 1104, 1302 and 1420. That is codec noise; neighbouring frames score as low as
-   17 dB.
-4. **Gates:** `scripts/verify.sh` on `demo-v1.mp4` passes every gate.
-5. **Full rebuild:** `scripts/render.sh` on the rebuilt project gave a 1477-frame film.
+   normalised capture instructions as `storyboard.json` (`capture.cjs` normalizeShot + resolveFromShot, compared with
+   sorted keys): actions, zooms, viewport, clock, intro key and CSS. Shot 4's jiggle, a `fromShot: "3-buy"` move in
+   the template, resolves to the same (726, 622). The only addition is the template's price-chip rule in shots 2 and 5
+   (`.model__price, .model .chips .chip + .chip`), which matches no element on Discount (no priced stock: every card
+   reads "Ask about availability"), so no pixel changes.
+3. **Preflight:** `measure-site.cjs --storyboard` on that filled storyboard prints `PREFLIGHT CLEAN`. With
+   BODY_FOCUS, HOURS_FOCUS and SERVICE_FOCUS unset it suggests {375, 387}, {400, 422} and {730, 621}; the hand-set
+   values kept here also pass.
+4. **Pixels:** stills rendered from the rebuilt project (`scripts/stills.cjs`) with the shipped captures match
+   `demo-v1.mp4` (frames taken with `select=eq(n,f)`) on frames 2, 56, 175, 391, 667, 963, 1030, 1098, 1100, 1300,
+   1380 and 1460 at 41.7–47.9 dB RGB and 45.7–51.3 dB luma (pass mark 38). That is codec noise; neighbouring frames
+   score as low as 16 dB. The final fix round re-ran it and got byte-identical stills.
+5. **Gates:** `scripts/verify.sh` on `demo-v1.mp4` passes every gate.
+6. **Full rebuild:** `scripts/render.sh` on the rebuilt project gave a 1477-frame film.
    - It passes every gate with the same numbers.
    - Against `demo-v1.mp4`, every frame scores ≥ 49 dB (average 61.7 dB; many are identical).
    - The decoded audio is byte-identical.
@@ -75,19 +83,20 @@ Shot 4 ends with the hand at (344.8, 542.1). Part B's first capture starts there
 | Loader geometry | stage [540, 378.53, 360, 142.94], mark [540, 378.53, 360, 48.94], word [607.5, 451.47, 240, 45], cover [520, 366, 400, 136] | Measured per client (`measure-site.cjs`). The Loader component and timing are generic. |
 | Mark / word | `discount-mark.png` (640×87 swoosh), "DISCOUNT" | Per client. Vega's has an 1100×861 emblem and "VEGA’S". |
 | Sting width | 600 (k = 1.667) | The ratio is house; the width follows the loader's mark width. |
-| Outro logo | `discount-logo-reverse.png` (1402×540), 760 px wide | 760 suits a ~2.6:1 logo; a near-square logo needs ~360–420. |
+| Outro logo | `discount-logo-reverse.png` (1402×540), 760 px wide | Derived: min(760, round(300 × 1402/540)) = 760; a 1.28:1 logo gets 384 |
 | Intro key | `discount.intro.seen` | Per client: the `SEEN_KEY` in Loader.tsx (Vega's: `vegas.intro.seen`) |
-| Clock | 2026-09-30T14:00-05:00 (Wednesday, 2 PM Houston) | Per client: an open weekday with the right DST offset |
-| Featured card | Truck, focus (375, 385) | Left column is generic; Sedan or Coupe need a new focus. Priced cards need re-staging. |
+| Clock | 2026-09-30T14:00-05:00 (Wednesday, 2 PM Houston) | House date and time; per client only the zone's offset (or the next open weekday at 14:00) |
+| Featured card | Truck, focus (375, 385) | Generic rule: Truck if in stock, else SUV, else Truck (both left column, same focus). Price chips are hidden by the shot CSS |
 | Finder query | "F-150" | Per client (in stock) |
-| Service band | "We Buy Cars, Too.", tile "We buy trucks", focus (740, 623) | The selector is generic; the label and focus are re-measured per band |
-| Shot 4 jiggle | (726, 622) | Follows shot 3's last cursor point |
-| Phone swipes | 430, 450 px to the Truck card | Re-set for another featured card |
+| Service band | "We Buy Cars, Too.", tile "We buy trucks", focus (740, 623) | The selector is generic; the label is copied and the focus measured per band (the tool suggests {730, 621} here) |
+| Shot 4 jiggle | (726, 622) | Not a placeholder: `capture.cjs` resolves 3-buy's last cursor point + (6, 2) |
+| Phone swipes | 430, 450 px to the Truck card (top 60.8 px under the header) | House values: the phone always rests on the Trucks card; the 5-phone `rest` rule checks it |
 | Hero anchor | [0.75, 0.72] for "Cars & Trucks. / For Less." | Re-check per headline |
 
 ## Owner decisions recorded in the project README
 
-- Site copy visible in the zooms: the hero lede, "Every Price Is Shown Plainly", "Easy Financing, Clear Terms".
+- Site copy visible in the zooms: the hero lede, "Every Price Is Shown Plainly", "Easy Financing, Clear Terms". These
+  are exactly the class (b) lines `measure-site.cjs` lists for this storyboard.
 - Video-only CSS: the status dot in the text colour, the search × hidden, the hours line aligned.
 - The lineup fine print is hidden in shot 2.
 - The desk host (`desk.discountusedcarsandtrucks.com`) is not shown in the URL pill until confirmed.
