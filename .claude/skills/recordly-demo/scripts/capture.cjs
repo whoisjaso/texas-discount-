@@ -24,7 +24,7 @@
  * USAGE
  *   node capture.cjs --storyboard storyboard.json --shot 1-hero --out DIR [options]
  *   node capture.cjs --shot-file shot.json --out DIR [options]
- *   node capture.cjs --selftest [--base http://localhost:5183] [--out DIR] [--dsf 1,2]
+ *   node capture.cjs --selftest [--base http://localhost:5183] [--out DIR] [--dsf 1,2] [--clock ISO]
  *
  * OPTIONS
  *   --base URL        site origin (default: storyboard.base or http://localhost:5183)
@@ -41,12 +41,14 @@
  *     "viewport": { "width": 1440, "height": 900, "deviceScaleFactor": 2 },
  *     "mobile": false,                 // true → isMobile + hasTouch, touch cursor
  *     "presetIntroSeen": true,         // sessionStorage[introKey] = '1' before load
- *     "introKey": "discount.intro.seen",
- *     "clock": "2026-09-30T14:00:00-05:00",  // virtual wall clock at load
+ *     "introKey": "discount.intro.seen", // the site's Loader SEEN_KEY (or storyboard.introKey); required with presetIntroSeen
+ *     "clock": "2026-09-30T14:00:00-05:00",  // virtual wall clock at load (or storyboard.clock)
+ *     "timezone": "America/Chicago",   // page time zone (or storyboard.timezone; default America/Chicago)
  *     "durationSec": 14,
  *     "prerollSec": 6.5,               // virtual time run (not captured) before frame 0
  *     "readySelector": ".hero__title", // warm-up waits for it (and fonts, load)
- *     "css": "",                       // optional extra CSS injected in the page
+ *     "css": "",                       // optional extra CSS injected in the page, after storyboard.captureCss
+ *                                      // (captureCss: a string or {css, why}; skipped when this css already contains it)
  *     "cursor": { "kind": "pointer"|"touch"|"none", "start": { "x": 1500, "y": 980 } },
  *                                      // or "start": { "fromShot": "1-hero", "x": 365, "y": 568 } (x/y = fallback)
  *     "actions": [
@@ -89,7 +91,8 @@ const { execSync, execFileSync, spawnSync } = require('child_process');
 
 const FPS = 30;
 const DEFAULT_BASE = 'http://localhost:5183';
-const DEFAULT_INTRO_KEY = 'discount.intro.seen';
+const DEFAULT_TIMEZONE = 'America/Chicago';
+const DEFAULT_SELFTEST_CLOCK = '2026-09-30T14:00:00-05:00';
 const ZOOM_LEVELS = [1.25, 1.5, 1.8, 2.2, 3.5]; // Recordly depth levels 1..5 (default 3 = 1.8)
 const ZOOM_IN_SEC = 1.5;
 const ZOOM_OUT_SEC = 1.0;
@@ -297,8 +300,15 @@ function normalizeShot(shot, sb = {}) {
   const s = JSON.parse(JSON.stringify(shot));
   s.viewport = Object.assign({ width: 1440, height: 900, deviceScaleFactor: 1 }, s.viewport || {});
   s.mobile = !!s.mobile;
-  s.introKey = s.introKey || sb.introKey || DEFAULT_INTRO_KEY;
+  // No default key: a missing key would silently replay the site's intro loader mid-film on a new client.
+  s.introKey = s.introKey || sb.introKey || null;
   s.clock = s.clock || sb.clock || null;
+  s.timezone = s.timezone || sb.timezone || DEFAULT_TIMEZONE;
+  // storyboard.captureCss (video-only brand fixes) goes into every shot, before the shot's own css. A storyboard that
+  // already pasted it into the shot (the Discount example) is left exactly as it was.
+  const shared = typeof sb.captureCss === 'string' ? sb.captureCss : (sb.captureCss && sb.captureCss.css) || '';
+  const own = s.css || '';
+  s.css = shared && !own.includes(shared) ? [shared, own].filter(Boolean).join(' ') : own;
   s.durationSec = Number(s.durationSec || 4);
   s.actions = (s.actions || []).map((a) => Object.assign({}, a)).sort((a, b) => a.t - b.t);
   const minT = Math.min(0, ...s.actions.map((a) => a.t));
@@ -320,6 +330,9 @@ function queryOf(a) {
 async function captureShot(rawShot, opts) {
   const pw = loadPlaywright();
   const shot = normalizeShot(rawShot, opts.storyboard || {});
+  if (shot.presetIntroSeen && !shot.introKey) {
+    throw new Error(`[${shot.id}] presetIntroSeen needs introKey (storyboard.introKey = the SEEN_KEY in the site's Loader.tsx)`);
+  }
   if (opts.dsf) shot.viewport.deviceScaleFactor = Number(opts.dsf);
   const base = (opts.base || DEFAULT_BASE).replace(/\/+$/, '');
   const url = /^https?:/.test(shot.url || '') ? shot.url : base + (shot.url || '/');
@@ -388,7 +401,7 @@ async function captureShot(rawShot, opts) {
     isMobile: shot.mobile,
     hasTouch: shot.mobile,
     locale: 'en-US',
-    timezoneId: 'America/Chicago',
+    timezoneId: shot.timezone,
     colorScheme: 'light',
     reducedMotion: 'no-preference',
     args: ['--deterministic-mode', '--hide-scrollbars', '--force-color-profile=srgb', '--disable-lcd-text',
@@ -845,7 +858,7 @@ async function selftest(opts) {
     url: '/',
     durationSec: 4,
     presetIntroSeen: false,
-    clock: '2026-09-30T14:00:00-05:00',
+    clock: typeof opts.clock === 'string' ? opts.clock : DEFAULT_SELFTEST_CLOCK,
     readySelector: '.loader',
     cursor: { kind: 'pointer', start: { x: 1520, y: 980 } },
     actions: [

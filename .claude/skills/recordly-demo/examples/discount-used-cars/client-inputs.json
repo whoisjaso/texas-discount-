@@ -1,0 +1,44 @@
+{
+  "_note": "The worked example: these inputs reproduce clients/discount-used-cars-demo (part A, out/demo-v1.mp4). Paths are relative to the repo root.",
+  "slug": "discount-used-cars",
+  "client": "Discount Used Cars and Trucks (Houston)",
+  "siteDir": "clients/discount-used-cars-site",
+  "domain": "discountusedcarsandtrucks.com",
+  "partBDomain": null,
+  "deskUrl": "https://desk.discountusedcarsandtrucks.com",
+  "facts": ["www.discountusedcarsandtrucks.com", "(713) 900-5050", "8108 Gulf Fwy, Houston", "Tue – Sat 10 AM – 7 PM"],
+  "outroLines": ["www.discountusedcarsandtrucks.com", "(713) 900-5050 · 8108 Gulf Fwy, Houston", "Tue – Sat 10 AM – 7 PM"],
+  "brand": {
+    "mark": "clients/discount-used-cars-site/public/brand/discount-mark.png",
+    "logoReverse": "clients/discount-used-cars-site/public/brand/discount-logo-reverse.png"
+  },
+  "word": "DISCOUNT",
+  "introKey": "discount.intro.seen",
+  "clock": "2026-09-30T14:00:00-05:00",
+  "timezone": "America/Chicago",
+  "loader": {
+    "viewport": [1440, 900],
+    "stage": [540, 378.53, 360, 142.94],
+    "mark": [540, 378.53, 360, 48.94],
+    "word": [607.5, 451.47, 240, 45],
+    "wordFont": { "size": 30, "lineHeight": 45, "weight": 600, "trackingEm": 0.5, "color": "#FFFFFF" },
+    "cover": [520, 366, 400, 136],
+    "coverColor": "#000000",
+    "wordDoneSec": 1.5
+  },
+  "stingMarkWidth": 600,
+  "logoWidth": 760,
+  "storyboard": {
+    "HERO_ANCHOR": [0.75, 0.72],
+    "BODY": "Truck",
+    "BODY_FOCUS": { "x": 375, "y": 385 },
+    "HOURS_FOCUS": { "x": 400, "y": 422 },
+    "FINDER_QUERY": "F-150",
+    "SERVICE_TILE": "We buy trucks",
+    "SERVICE_FOCUS": { "x": 740, "y": 623 },
+    "SERVICE_JIGGLE_X": 726,
+    "SERVICE_JIGGLE_Y": 622,
+    "PHONE_SWIPE_2": 430,
+    "PHONE_SWIPE_3": 450
+  }
+}

@@ -1,37 +1,41 @@
-// Per-project constants. The template ships placeholders; a project instance fills these in.
-// Only facts the client has confirmed go on screen.
+// Per-client values. This is the TEMPLATE copy (placeholders, never rendered): recordly-demo/scripts/new-project.sh
+// overwrites it from the client's client-inputs.json (scripts/fill-client.cjs project). Edit that JSON, not this file.
+// On-screen facts are limited to: www.example.com, (000) 000-0000, Street, City, Day – Day 0 AM – 0 PM.
 export const project = {
   /** shown in the window's URL pill */
   domain: "example.com",
-  /** the URL pill for part B (e.g. an admin desk) once the client confirms its host may be shown; null keeps `domain` */
+  /**
+   * The URL pill for part B (the app / desk segment). The desk host is NOT on the confirmed fact list: leave null (the
+   * pill then keeps the public domain) until the owner confirms the host may be shown.
+   */
   partBDomain: null as string | null,
-  /** public/ paths */
-  mark: "brand/mark.png",
-  logoReverse: "brand/logo-reverse.png",
-  /** the word under the mark in the intro */
+  /** public/ paths (copied from the site's public/brand) */
+  mark: "brand/mark.png", // the image the site's loader shows (.loader__emblem img)
+  logoReverse: "brand/logo-reverse.png", // full-colour logo that reads on the dark outro
+  /** the word under the mark in the intro: the text of .loader__word */
   word: "BRAND",
   /**
-   * The site's own intro loader, if it has one and the first desktop shot shows it: measure it on the running site at
-   * the capture viewport (getBoundingClientRect of the stage, the mark <img> and the word; the word's computed font) and
-   * the Demo hands the intro sting off to it in a MATCH CUT. null = a plain sting that exits before the window enters.
+   * The site's intro loader at the 1440 × 900 capture viewport, measured on the served build by scripts/measure-site.cjs
+   * (getBoundingClientRect at rest). The intro sting is drawn in exactly this layout, stingMarkWidth / mark[2] times
+   * larger, so it can land on the loader in a match cut.
    */
-  loader: null as null | {
-    viewport: readonly [number, number];
-    stage: readonly [number, number, number, number];
-    mark: readonly [number, number, number, number];
-    word: readonly [number, number, number, number];
-    wordFont: { size: number; lineHeight: number; weight: number; trackingEm: number; color: string };
-    /** a patch (CSS px) that hides the loader's mark + word in the window until the sting lands; and its colour */
-    cover: readonly [number, number, number, number];
-    coverColor: string;
-    /** seconds after capture start when the loader's mark and word are at rest (the landing must come after) */
-    wordDoneSec: number;
+  loader: {
+    viewport: [1440, 900],
+    stage: [0, 0, 0, 0],
+    mark: [0, 0, 0, 0],
+    word: [0, 0, 0, 0],
+    wordFont: { size: 30, lineHeight: 45, weight: 600, trackingEm: 0.5, color: "#FFFFFF" },
+    /** hides the loader's mark and word inside the window until the sting has landed on them (the loader's background) */
+    cover: [0, 0, 0, 0],
+    coverColor: "#000000",
+    /** the loader's mark and word are at rest this long after the capture starts (the sting lands one frame later) */
+    wordDoneSec: 1.5,
   },
-  /** the intro sting's mark width in frame px (with a loader, the sting is the loader scaled by markWidth / loader.mark[2]) */
+  /** the intro sting's mark width in frame px (600 suits a wide mark; see references/house-recipe.md) */
   stingMarkWidth: 600,
   /** outro lines (first line large): only confirmed facts */
-  outroLines: ["www.example.com", "(000) 000-0000 · Street, City", "Mon – Fri 9 AM – 5 PM"],
-  /** capture ids in public/shots/ used by the preview compositions */
-  sampleShot: "sample-desktop",
-  samplePhoneShot: "sample-phone",
-};
+  outroLines: ["www.example.com", "(000) 000-0000 · Street, City", "Day – Day 0 AM – 0 PM"],
+  /** capture ids in public/shots/ used by the ShotPreview / PhonePreview compositions */
+  sampleShot: "1-hero",
+  samplePhoneShot: "5-phone",
+} as const;

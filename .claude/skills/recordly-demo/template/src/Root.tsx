@@ -16,20 +16,16 @@ import { Demo, demoTimeline } from "./Demo";
 const { fps, width, height } = theme;
 const L = project.loader;
 
-/** Intro on its own: the sting (in the loader's layout when project.loader is set; in the film it hands off to it). */
+/** Intro on its own: the sting in the loader's layout (in the film it hands off to the loader in the window). */
 export const Intro: React.FC = () => (
   <AbsoluteFill>
     <Backdrop />
-    {L ? (
-      <MatchSting
-        mark={project.mark}
-        word={project.word}
-        loader={{ stage: L.stage as Rect, mark: L.mark as Rect, word: L.word as Rect, wordFont: L.wordFont }}
-        scale={project.stingMarkWidth / L.mark[2]}
-      />
-    ) : (
-      <LogoSting mark={project.mark} markWidth={project.stingMarkWidth} word={project.word} />
-    )}
+    <MatchSting
+      mark={project.mark}
+      word={project.word}
+      loader={{ stage: L.stage as Rect, mark: L.mark as Rect, word: L.word as Rect, wordFont: L.wordFont }}
+      scale={project.stingMarkWidth / L.mark[2]}
+    />
     <Sfx cues={[{ frame: 1, file: theme.sfx.intro.file, db: theme.sfx.intro.db }]} />
     <Finish />
   </AbsoluteFill>
@@ -72,7 +68,7 @@ const phoneLength: CalculateMetadataFunction<PhoneSceneProps> = async ({ props }
 
 export const Root: React.FC = () => (
   <>
-    {/* The film (src/demo/timeline.ts; part B slots in at demoTimeline.cutPoint) */}
+    {/* The film (part A; part B slots in at demoTimeline.cutPoint, see src/demo/timeline.ts) */}
     <Composition id="Demo" component={Demo} durationInFrames={demoTimeline.total} fps={fps} width={width} height={height} />
     <Composition id="Intro" component={Intro} durationInFrames={toFrames(2, fps)} fps={fps} width={width} height={height} />
     <Composition id="Outro" component={Outro} durationInFrames={toFrames(3.8, fps)} fps={fps} width={width} height={height} />

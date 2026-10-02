@@ -1,9 +1,8 @@
-// The film: Intro sting (⇢ match cut onto the site's own loader when project.loader is set) → desktop captures in one
-// macOS window (hard, pixel-matched cuts) → CUT POINT (part B) → iPhone (the desktop recedes behind it, the phone drops
-// away) → Outro (logo, confirmed facts, slow push, fade to black).
+// The film: Intro sting ⇢ match cut onto the site's own loader in the macOS window → shots 1–4 in that one window
+// (hard, pixel-matched cuts) → CUT POINT (part B) → iPhone (shot 5; the desktop recedes behind it, the phone drops
+// away) → Outro (logo, the three facts, slow push, fade to black).
 // Layers, bottom to top: backdrop (wallpaper + grade + vignette + grain, once, continuous) → scenes → intro sting →
 // a whisper of grain over everything. The recordings themselves are never graded or vignetted.
-// The running order lives in src/demo/timeline.ts.
 import React from "react";
 import { AbsoluteFill, Freeze, Sequence, useCurrentFrame, useVideoConfig } from "remotion";
 import { theme, toFrames } from "./theme";
@@ -16,35 +15,44 @@ import { FadeOut, Finish } from "./components/Overlays";
 import { windowLayout } from "./components/MacWindow";
 import { DesktopScene, windowPoint, windowPose } from "./scenes/DesktopScene";
 import { phoneBehindStyle, PhoneScene } from "./scenes/PhoneScene";
-import { buildTimeline, partASegments, partBSegments, phoneShot } from "./demo/timeline";
+import { buildTimeline, partASegments, partBSegments } from "./demo/timeline";
 
 export const demoTimeline = buildTimeline(partBSegments);
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+const LOADER = project.loader;
+const [VW, VH] = LOADER.viewport;
+/** the sting is the loader drawn this many times larger */
+const STING_SCALE = project.stingMarkWidth / LOADER.mark[2];
 
-/** Match cut: from handoffAt the sting shrinks onto where the loader sits in the springing window, lands, dissolves. */
+/**
+ * The intro sting and its hand-off. From handoffAt the window springs in and the sting shrinks onto the exact spot
+ * where the loader's stage sits inside the (still moving) window; at landAt it covers the loader exactly and dissolves
+ * into it. (Frames here are film frames: the sequence starts at 0.)
+ */
 const IntroSting: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps, width, height } = useVideoConfig();
+  const { width, height } = useVideoConfig();
   const T = demoTimeline.intro;
-  const L = project.loader;
-  if (!L) {
-    return <LogoSting mark={project.mark} markWidth={project.stingMarkWidth} word={project.word} exitAt={T.handoffAt} exitSec={theme.sting.exitSec} />;
-  }
-  const [VW, VH] = L.viewport;
-  const k = project.stingMarkWidth / L.mark[2];
+  const { fps } = useVideoConfig();
   const w = theme.ease.inOut(clamp01((frame - T.handoffAt) / Math.max(1, T.landAt - T.handoffAt)));
   const win = windowPose(frame - T.handoffAt, fps, { enter: true });
-  const [tx, ty] = windowPoint([L.stage[0] + L.stage[2] / 2, L.stage[1] + L.stage[3] / 2], win, VW, VH, width, height);
-  const landScale = ((windowLayout(VW, VH, width, height).contentW / VW) * win.scale) / k;
-  const pose = { scale: Math.exp(Math.log(landScale) * w), dx: (tx - width / 2) * w, dy: (ty - height / 2) * w };
+  const centre: [number, number] = [LOADER.stage[0] + LOADER.stage[2] / 2, LOADER.stage[1] + LOADER.stage[3] / 2];
+  const [tx, ty] = windowPoint(centre, win, VW, VH, width, height);
+  const ds = windowLayout(VW, VH, width, height).contentW / VW;
+  const landScale = (ds * win.scale) / STING_SCALE;
+  const pose = {
+    scale: Math.exp(Math.log(landScale) * w), // log-space: the shrink reads as one even move
+    dx: (tx - width / 2) * w,
+    dy: (ty - height / 2) * w,
+  };
   const opacity = 1 - theme.ease.inOut(clamp01((frame - T.landAt) / Math.max(1, T.fadeFrames)));
   return (
     <MatchSting
       mark={project.mark}
       word={project.word}
-      loader={{ stage: L.stage as Rect, mark: L.mark as Rect, word: L.word as Rect, wordFont: L.wordFont }}
-      scale={k}
+      loader={{ stage: LOADER.stage as Rect, mark: LOADER.mark as Rect, word: LOADER.word as Rect, wordFont: LOADER.wordFont }}
+      scale={STING_SCALE}
       pose={pose}
       opacity={opacity}
       handoff={w}
@@ -55,7 +63,7 @@ const IntroSting: React.FC = () => {
 /**
  * The last desktop sequence runs on under the phone: from `holdAt` it is held on its last frame and recedes with the
  * phone's entrance. The same instance stays mounted across the cut, so no capture is reloaded on the phone's first
- * frame (a fresh copy mounted there rendered one black frame in a full render).
+ * frame (a fresh copy mounted there rendered one black frame).
  */
 const HoldUnderPhone: React.FC<{ holdAt: number; phoneFrames: number; children: React.ReactNode }> = ({ holdAt, phoneFrames, children }) => {
   const frame = useCurrentFrame();
@@ -70,6 +78,7 @@ const HoldUnderPhone: React.FC<{ holdAt: number; phoneFrames: number; children: 
   );
 };
 
+/** The film's last frames fade to black. */
 const FinalFade: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
@@ -81,47 +90,50 @@ export const Demo: React.FC = () => {
   const { fps } = useVideoConfig();
   const T = demoTimeline;
   const S = theme.sfx;
-  const hasA = partASegments.length > 0;
   const hasB = partBSegments.length > 0;
   const urlB = project.partBDomain ?? project.domain;
   // the last desktop sequence (B if there is one) runs on under the phone
-  const under = phoneShot ? T.phone.durationInFrames : 0;
-  const underA = hasB ? 0 : under;
-  const underB = hasB ? under : 0;
+  const underA = hasB ? 0 : T.phone.durationInFrames;
+  const underB = hasB ? T.phone.durationInFrames : 0;
   const lead = (s: number) => toFrames(s, fps);
-  const L = project.loader;
 
+  // storyboard.json → sfx.manual (film frames)
   const cues: Cue[] = [
     { frame: T.intro.from + 1, file: S.intro.file, db: S.intro.db }, // ios_note: the mark draws in
-    ...(hasA ? [{ frame: T.desktopA.from - lead(S.open.leadSec), file: S.open.file, db: S.open.db }] : []), // open_ui: window
-    ...(phoneShot ? [{ frame: T.phone.from - lead(S.open.leadSec), file: S.open.file, db: S.open.db - 2 }] : []), // phone
-    { frame: T.outro.from + lead(theme.outro.linesDelaySec) - lead(S.click.leadSec), file: S.outro.file, db: S.outro.db }, // outro lines
+    { frame: T.desktopA.from - lead(S.open.leadSec), file: S.open.file, db: S.open.db }, // open_ui: the window springs in
+    { frame: T.phone.from - lead(S.open.leadSec), file: S.open.file, db: S.open.db - 2 }, // open_ui −16 dB: the phone slides in
+    { frame: T.outro.from + lead(theme.outro.linesDelaySec) - lead(S.click.leadSec), file: S.outro.file, db: S.outro.db }, // ios_received: the URL line
   ];
 
   return (
     <AbsoluteFill style={{ background: theme.colors.bg }}>
       <Backdrop />
-      {hasA && (
-        <Sequence from={T.desktopA.from} durationInFrames={T.desktopA.durationInFrames + underA} name="Desktop">
-          <HoldUnderPhone holdAt={underA ? T.desktopA.durationInFrames : Infinity} phoneFrames={T.phone.durationInFrames}>
-            <DesktopScene
-              segments={partASegments}
-              url={project.domain}
-              enter
-              bare
-              cover={L ? { rect: L.cover as Rect, color: L.coverColor, untilFrame: T.intro.landAt - T.desktopA.from } : undefined}
-            />
-          </HoldUnderPhone>
-        </Sequence>
-      )}
+
+      {/* 1–4 · one macOS window: hero → scroll → we buy → menu (ends held on the Admin row). It springs in under the
+          intro sting; the loader's logo is covered until the sting has landed on it. */}
+      <Sequence from={T.desktopA.from} durationInFrames={T.desktopA.durationInFrames + underA} name="1-4 Desktop">
+        <HoldUnderPhone holdAt={underA ? T.desktopA.durationInFrames : Infinity} phoneFrames={T.phone.durationInFrames}>
+          <DesktopScene
+            segments={partASegments}
+            url={project.domain}
+            enter
+            bare
+            cover={{ rect: LOADER.cover as Rect, color: LOADER.coverColor, untilFrame: T.intro.landAt - T.desktopA.from }}
+          />
+        </HoldUnderPhone>
+      </Sequence>
+
+      {/* ‖ CUT POINT ‖ part B (sale desk) slots in here, in the same window */}
       {hasB && (
-        <Sequence from={T.desktopB.from} durationInFrames={T.desktopB.durationInFrames + underB} name="Part B">
-          <HoldUnderPhone holdAt={underB ? T.desktopB.durationInFrames : Infinity} phoneFrames={T.phone.durationInFrames}>
+        <Sequence from={T.desktopB.from} durationInFrames={T.desktopB.durationInFrames + underB} name="Part B Desk">
+          <HoldUnderPhone holdAt={T.desktopB.durationInFrames} phoneFrames={T.phone.durationInFrames}>
             <DesktopScene segments={partBSegments} url={urlB} bare />
           </HoldUnderPhone>
         </Sequence>
       )}
-      <Sequence from={T.outro.from} durationInFrames={T.outro.durationInFrames} name="Outro">
+
+      {/* 6 · Outro, drawn UNDER the phone: its logo comes up as the phone drops away */}
+      <Sequence from={T.outro.from} durationInFrames={T.outro.durationInFrames} name="6 Outro">
         <LogoSting
           logo={project.logoReverse}
           logoWidth={theme.outro.logoWidth}
@@ -134,14 +146,17 @@ export const Demo: React.FC = () => {
           exitSec={theme.outro.exitSec}
         />
       </Sequence>
-      {phoneShot && T.phone.durationInFrames > 0 && (
-        <Sequence from={T.phone.from} durationInFrames={T.phone.durationInFrames} name="Phone">
-          <PhoneScene shot={phoneShot} bare exit />
-        </Sequence>
-      )}
-      <Sequence from={T.intro.from} durationInFrames={T.intro.durationInFrames} name="Intro">
+
+      {/* 5 · iPhone: the desktop recedes and blurs while the phone slides in; it drops out of frame at the end */}
+      <Sequence from={T.phone.from} durationInFrames={T.phone.durationInFrames} name="5 Phone">
+        <PhoneScene shot="5-phone" bare exit />
+      </Sequence>
+
+      {/* 0 · Intro sting, above the window it hands off to */}
+      <Sequence from={T.intro.from} durationInFrames={T.intro.durationInFrames} name="0 Intro">
         <IntroSting />
       </Sequence>
+
       <Sfx cues={cues} />
       <Finish />
       <FinalFade />
