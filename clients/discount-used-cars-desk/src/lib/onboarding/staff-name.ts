@@ -155,26 +155,45 @@ export function onboardingSatisfied(member: OnboardingMember | null): boolean {
   return member.can_sign_contracts !== true || Boolean(member.signature_data_url);
 }
 
-export type OnboardingStep = "name" | "signature" | "done";
+export type OnboardingStep = "password" | "name" | "signature" | "done";
 
 /**
  * The screens this member walks, in order.
  *
- * The signature screen is shown only to a member cleared to sign
- * (`can_sign_contracts`); the SOP has everybody else skip it. "Done" is
- * always last. There is no password screen: whether onboarding should
- * replace a temporary password is the owner's decision, still open.
+ * "Choose A Password" comes first, and only for an account still on the
+ * temporary password an approval or a reset issued it
+ * (`requires_password_change`; owner's decision 10/01/2026). Nobody else ever
+ * sees it. The signature screen is shown only to a member cleared to sign
+ * (`can_sign_contracts`); the SOP has everybody else skip it. A member who
+ * already finished onboarding and has everything it asks for (`finished`)
+ * is asked only for the password. "Done" is always last.
  */
-export function onboardingSteps(input: { canSign: boolean }): OnboardingStep[] {
-  return input.canSign ? ["name", "signature", "done"] : ["name", "done"];
+export function onboardingSteps(input: {
+  canSign: boolean;
+  requiresPasswordChange?: boolean;
+  finished?: boolean;
+}): OnboardingStep[] {
+  const steps: OnboardingStep[] = [];
+  if (input.requiresPasswordChange) steps.push("password");
+  if (!input.finished) {
+    steps.push("name");
+    if (input.canSign) steps.push("signature");
+  }
+  steps.push("done");
+  return steps;
 }
 
-/** Where a returning member picks up: the first screen that still has work. */
+/**
+ * Where a returning member picks up: the first screen that still has work.
+ * The password always comes first while the account is on a temporary one.
+ */
 export function firstOpenStep(input: {
   canSign: boolean;
   hasName: boolean;
   hasSignature: boolean;
+  requiresPasswordChange?: boolean;
 }): OnboardingStep {
+  if (input.requiresPasswordChange) return "password";
   if (!input.hasName) return "name";
   if (input.canSign && !input.hasSignature) return "signature";
   return "done";

@@ -28,6 +28,10 @@
     "button": "No"
    },
    {
+    "fill": ".ed-money-adjust-field input",
+    "value": "1500"
+   },
+   {
     "button": "Next",
     "exact": true
    }

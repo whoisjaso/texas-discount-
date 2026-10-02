@@ -230,9 +230,26 @@ in 10 minutes, and never cache the pages that mint them.
 
 A new staff member's first sign-in lands on `/admin/account/onboarding`
 before anything else (the admin layout redirects there while
-`team_members.onboarding_completed_at` is null). One question per screen,
-the same corridor styling:
+`team_members.onboarding_completed_at` is null, or while the account is still
+flagged `requires_password_change`). One question per screen, the same
+corridor styling, the counter counting only the screens this member gets
+("Step 1 Of 4"), English and Spanish:
 
+0. **Choose A Password.** Shown first, and ONLY to an account still on the
+   temporary password an approval or a reset issued it
+   (`requires_password_change` on the auth account; owner's decision
+   10/01/2026). Nobody without the flag ever sees it. Account recovery's
+   rule (at least 10 characters, one shared constant), typed twice (new and
+   confirm), with a Show/Hide control for both boxes. Saving replaces the
+   password and clears the flag in one write, on the signed-in account only
+   (resolved from the session, never named by the form; every other
+   app_metadata key kept), logs the replacement (never the password) in
+   `team_activity_events`, and goes on to the name, the counter carrying on
+   from the screens the visit started with ("Step 2 Of 4"; a reload counts
+   from the name). There is no Back to it once saved. A member who had already finished onboarding (a reset) gets
+   this screen and Done only. Choosing a password through the emailed
+   recovery link clears the flag too, so the invite link is not followed by
+   a second password screen.
 1. **What Is Your Name?** First name and last name, two fields, required.
    Saved as `full_name` ("First Last") and `display_name` (first name). This
    is the name that prints in parentheses on the 130-U and under the dealer
@@ -249,7 +266,8 @@ the same corridor styling:
 3. **Done.** Sets `onboarding_completed_at` (never moved once set) and goes
    to Handle A Sale (a role that cannot open it goes to its signature page).
    Refused until the saved name is one step 1 would accept and, for a member
-   cleared to sign, a signature is saved.
+   cleared to sign, a signature is saved, and while the account is still on
+   a temporary password (step 0 comes first).
 
 The writes touch only the signed-in member's own row (the service client
 replaces the RLS check that needs `team:manage`), and every name write is
@@ -264,15 +282,18 @@ so the Spanish corridor never shows an English sentence.
 
 The page must exist before the redirect is deployed: a redirect to a missing
 route locks every new member out. Test it with a fresh member in the preview
-mock (no name, no signature, onboarding not completed).
+mock (no name, no signature, onboarding not completed), and with one still
+on a temporary password (`DESK_PREVIEW_MEMBER=fresh-temporary-password`).
+The page never sends an account on a temporary password away (that would
+loop with the layout); step 0 clears the flag, and once onboarding is done
+nothing sends the account back, so Handle A Sale opens.
 
-Open (owner's decision, not built): approving or resetting a member sets
-`requires_password_change`, the layout sends that account to onboarding from
-every page, and nothing clears the flag yet, so Done refuses it ("still on
-the temporary password"). Whether onboarding gains a "Choose A Password"
-screen is undecided; until it does, an approved member cannot finish
-onboarding or file. The page never redirects such an account away (that
-would loop with the layout).
+**Who is cleared to sign** (`can_sign_contracts`) is a per-person fact. Its
+starting value, written when an owner approves the member, is cleared for
+the Owner, Manager and Registration roles and not cleared for every other
+role (owner's decision 10/01/2026). An owner turns it on or off for one
+person afterwards; a reset never rewrites that choice (the auth account's
+mirror of it keeps the person's value, not the role's).
 
 ### The website on paper versus the desk's own address
 
@@ -560,8 +581,20 @@ secure VTR-271-A, signed in ink, recorded as used. Unknown year → ask.
 **Freeze.** Once any plan-derived document is finalized
 (`powerOfAttorney`, `form130U`, `vehicleResponsibility`,
 `insuranceAcknowledgment`, `rebuiltDisclosure`, or a tow-away sheet), every
-plan answer is locked and the screen names the document holding it. A
-signed document must never silently reattach to changed terms.
+plan answer is locked and the screen names the document holding it. **The
+down payment freezes the same way once the bill of sale is filed**
+(`billOfSale`, or `salvageBillOfSale` on a tow-away sale; owner's decision
+10/01/2026): any change to it, from the money step's "Down today"
+(`money.paidTodayAmount`) or from the financing contract's "How Much Are
+They Putting Down?" (which writes back to it, whoever answers it), is
+refused with "Void the bill of sale and file it again before changing the
+down payment", in the corridor's language. Only a change to the figure is
+refused: the same amount typed again ("1,500" for 1500), or $0.00 typed on a
+financed deal with nothing down, goes through. The check fails closed when
+the filed documents cannot be read. So the down payment belongs on the money
+step, before anything is filed: that is what makes the bill of sale's
+balance and the contract's amount financed one figure. A signed document
+must never silently reattach to changed terms.
 
 ## Salvage
 
@@ -679,6 +712,19 @@ Legal content each document must carry:
   dealer-authored sheet (bill of sale, contract, vehicle responsibility,
   insurance acknowledgment, rebuilt disclosure, tow-away sheets) whose
   filing recorded a name.
+- **VTR-61 (Rebuilt Vehicle Statement):** printed from title work and signed
+  in ink. Wherever the dealership is the owner or the rebuilder, that
+  party's "Printed Name (Same as Signature)" is the same pairing,
+  `Legal Name, LLC (First Last)`, naming the cleared, onboarded member who
+  prints it (owner's decision 10/01/2026): the same name source, the same fit
+  rules (9.5pt down to the 7.25pt floor) and the same two-line layout as the
+  130-U seller line, at baselines measured between each box's rule and the
+  text above it. The entity rows stay the entity alone. Printing is refused
+  (with the reason) for a member who is not cleared to sign or not named,
+  rather than handing over a form with the `[Not set: signer name]` marker;
+  `DESK_ALLOW_UNSET_FACTS=true` lifts it for a demo and the marker prints. A
+  party that is not the dealership (a repair shop, a private owner) prints
+  its own name as typed and needs no signer.
 - **Insurance acknowledgment:** no proof shown, the law requires it, they will
   get it before driving, the dealer is not their insurer, and registration
   waits on proof.
@@ -836,6 +882,17 @@ Sales** beneath it (and **Sale Times** and **Promises** if built).
 - Plan: the derived chain on both branches; `false` counts as answered;
   invalidation on switching registration; each document effect; the freeze
   list; POA instrument at 19, 20 and unknown years.
+- Down-payment freeze: a filed bill of sale (or salvage bill of sale) refuses
+  a changed down payment from the money step and from the contract, with no
+  write; the same figure typed differently, and $0.00 on a financed deal
+  with nothing down, go through.
+- Onboarding: "Choose A Password" only with `requires_password_change`; the
+  10-character floor and the confirmation; the write goes to the session's
+  own account and clears the flag; Done refuses until it is cleared; signing
+  clearance at approval is Owner, Manager and Registration only.
+- VTR-61: the dealer's printed name is the pairing in one line or two at the
+  floor, the marker when nobody is named, refused for a member not cleared
+  or not named.
 - Documents: `requiredDocumentTypes` for all 3 fundings × both registration
   branches × insurance yes/no × title clean/rebuilt, and the three salvage
   paths; lender never includes `financing`.

@@ -66,8 +66,10 @@ With no Supabase variables set, the desk runs on an in-memory preview mock
 facts exist.
 
 To walk a new member's first sign-in in preview, set
-`DESK_PREVIEW_MEMBER=fresh` (cleared to sign) or `fresh-cannot-sign`. The
-preview session then has a roster row with no name, no signature and
+`DESK_PREVIEW_MEMBER=fresh` (cleared to sign), `fresh-cannot-sign`, or
+`fresh-temporary-password` (cleared to sign, and still on the temporary
+password an approval issues, so onboarding starts with Choose A Password).
+The preview session then has a roster row with no name, no signature and
 onboarding not completed, and is sent to `/admin/account/onboarding` first.
 What onboarding saves lasts until the dev server restarts. Leave it empty for
 the ordinary preview. It is ignored in production.
@@ -141,7 +143,19 @@ a member who is not cleared to sign or has no usable name on record; with
 `DESK_ALLOW_UNSET_FACTS=true` it files and prints `[Not set: signer name]`
 instead. A name whose "(First Last)" would not fit the 130-U seller box at
 the form's smallest size (7.25pt) is refused at onboarding and at filing,
-never printed cut off.
+never printed cut off. The VTR-61 (Rebuilt Vehicle Statement, printed from
+title work) prints the same pairing in the owner's and the rebuilder's
+"Printed Name (Same as Signature)" wherever the dealership is that party,
+naming the member who prints it, by the same fit rules; a member who is not
+cleared to sign or not named is refused the form (owner's decision
+10/01/2026).
+
+**The down payment goes on the money step**, in "Down today", before any
+document is filed. Once the bill of sale is filed, the down payment is
+frozen: changing it on the money step or on the financing contract is
+refused until the bill of sale is voided and filed again (owner's decision
+10/01/2026). That keeps the bill of sale's balance and the contract's amount
+financed one figure.
 
 ## Owner's manual steps before going live
 
@@ -182,13 +196,22 @@ never printed cut off.
    (Tex. Fin. Code ch. 348, never below the 18% optional ceiling of §303.009)
    with counsel before selling buy here pay here.
 9. **Clear the signers and onboard every staff member.**
-   - *Who is cleared to sign:* approval turns signing on for the Manager and
-     Registration roles only. Any other member who will file sale documents
-     (an owner or a salesperson, say) needs `can_sign_contracts` turned on by
-     an owner. Only a cleared member can file: the dealer line carries the
-     filer's own name and signature.
+   - *Who is cleared to sign:* approval turns signing on for the Owner,
+     Manager and Registration roles by default (owner's decision
+     10/01/2026). Every other role (a salesperson, say) starts not cleared;
+     if that person will file sale documents or print the VTR-61, an owner
+     turns `can_sign_contracts` on for that one person on their
+     `team_members` row in Supabase (or off for someone cleared by default).
+     A reset keeps that per-person choice. Only a cleared member can file:
+     the dealer line carries the filer's own name and signature.
    - *Each staff member completes onboarding:* their first sign-in goes to
-     `/admin/account/onboarding`: **What Is Your Name?** (first and last
+     `/admin/account/onboarding`. An account still on the temporary password
+     an approval or a reset issued starts with **Choose A Password** (at
+     least 10 characters, typed twice, with Show/Hide; the same rule as
+     account recovery); saving it replaces the temporary password and clears
+     the flag for that account only. Nobody else sees that screen, and a
+     password chosen through the emailed invite link clears the flag too.
+     Then **What Is Your Name?** (first and last
      name, their legal name as on their ID, kept exactly as typed),
      **Draw Your Signature** (cleared members only; the same stored
      signature as `/admin/account/signature`), then **You Are All Set**, which
@@ -203,12 +226,6 @@ never printed cut off.
      is logged in `team_activity_events`.
    - *An owner who signs in through `ADMIN_EMAIL`* without a team row has no
      name to print and cannot file until a row is added for them.
-   - **Decision needed before go-live:** approving or resetting a member sets
-     `requires_password_change`, and nothing in the desk clears it yet, so
-     an approved member can save a name and signature but cannot finish
-     onboarding (Start Working is refused: "still on the temporary
-     password") and so cannot file. Whether onboarding should start with a
-     "Choose A Password" screen is the owner's call and is not built.
 10. **Upload the dealer's signature** at `/admin/account/signature`. It prints
     on the dealer line of every document that person files.
 11. **Approve the Spanish documents.** They carry "translation pending counsel

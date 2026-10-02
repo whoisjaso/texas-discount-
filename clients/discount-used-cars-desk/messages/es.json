@@ -797,7 +797,8 @@
       "notePaid": "Pagado por completo. No queda saldo.",
       "downToday": "Enganche de hoy",
       "handingToday": "Lo que entregan hoy",
-      "otherAmount": "Hoy van a pagar otra cantidad"
+      "otherAmount": "Hoy van a pagar otra cantidad",
+      "downPaymentFrozen": "La factura de venta ya está archivada con el enganche que indica. Anule la factura de venta y vuelva a archivarla antes de cambiar el enganche."
     },
     "paperwork": {
       "billOfSale": {
@@ -1741,6 +1742,13 @@
       "stepOf": "Paso {current} de {total}",
       "signOut": "Cerrar sesión",
       "nav": "Primeros pasos",
+      "passwordQuestion": "Elija Una Contraseña",
+      "passwordHelp": "Al menos {min} caracteres. Reemplaza la contraseña temporal que se le dio y es la que usará para entrar de ahora en adelante.",
+      "newPassword": "Contraseña nueva",
+      "confirmPassword": "Escríbala otra vez",
+      "showPassword": "Mostrar contraseña",
+      "hidePassword": "Ocultar contraseña",
+      "savePassword": "Guardar contraseña",
       "nameQuestion": "¿Cuál Es Su Nombre?",
       "firstName": "Nombre",
       "lastName": "Apellido",
@@ -1769,9 +1777,13 @@
         "notOnRoster": "Esta cuenta aún no está en la lista del equipo, así que no hay un perfil donde guardar un nombre. Pida a un dueño que lo agregue.",
         "notActive": "Esta cuenta aún no está activa. Pida a un dueño que la apruebe.",
         "saveFailed": "No se pudo guardar. Inténtelo de nuevo.",
-        "temporaryPassword": "Esta cuenta todavía usa la contraseña temporal que se le dio, y el sistema aún no puede reemplazarla. Consulte a un dueño.",
+        "temporaryPassword": "Primero elija su propia contraseña. Reemplaza la temporal que se le dio.",
         "nameFirst": "Primero agregue su nombre y su apellido.",
-        "signatureFirst": "Primero dibuje y guarde su firma. Es la que va en la línea del concesionario."
+        "signatureFirst": "Primero dibuje y guarde su firma. Es la que va en la línea del concesionario.",
+        "passwordTooShort": "Use al menos {min} caracteres.",
+        "passwordMismatch": "Las dos contraseñas no coinciden. Escriba la misma contraseña en los dos recuadros.",
+        "passwordNotNeeded": "Esta cuenta ya tiene su propia contraseña. Para cambiarla, use ¿Olvidó su contraseña? en la pantalla de inicio de sesión.",
+        "passwordSaveFailed": "No se pudo guardar esa contraseña. Inténtelo de nuevo o elija otra."
       }
     }
   }

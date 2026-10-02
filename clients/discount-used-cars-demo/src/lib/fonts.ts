@@ -1,5 +1,6 @@
-// Loads the brand face from public/fonts once per render tab, holding the render until it is ready.
-import { continueRender, delayRender, staticFile } from "remotion";
+// Loads the brand face from public/fonts once per render tab, holding the render until it is ready. A face that
+// fails to load cancels the render: a film silently set in the fallback font is worse than no film.
+import { cancelRender, continueRender, delayRender, staticFile } from "remotion";
 import { theme } from "../theme";
 
 let started = false;
@@ -19,10 +20,7 @@ export const ensureFonts = () => {
     ),
   )
     .then(() => continueRender(handle))
-    .catch((err) => {
-      console.error("Font load failed", err);
-      continueRender(handle);
-    });
+    .catch((err) => cancelRender(err));
 };
 
 ensureFonts();

@@ -5,7 +5,9 @@ import { cancelRender, continueRender, delayRender, staticFile } from "remotion"
 import { theme } from "../theme";
 
 export type Vec = [number, number];
-export type ShotFrame = { x: number; y: number; down: boolean; scrollY: number; vt: number };
+/** c: the pointer shape the OS shows there ('a' arrow, 'p' pointing hand over links, 't' I-beam in text fields) */
+export type ShotFrame = { x: number; y: number; down: boolean; scrollY: number; vt: number; c?: "a" | "p" | "t" };
+export type Rgb = [number, number, number];
 export type ShotEvent =
   | { frame: number; type: "click" | "tap"; x: number; y: number }
   | { frame: number; type: "type"; char: string }
@@ -32,7 +34,10 @@ export type ShotData = {
   mobile: boolean;
   pageHeight: number;
   maxScroll: number;
-  cursor: { kind: "pointer" | "touch" | "none" };
+  /** hiddenAtStart: the capture's preroll ended with typing, so the pointer is hidden until the mouse moves */
+  cursor: { kind: "pointer" | "touch" | "none"; hiddenAtStart?: boolean };
+  /** phone captures: the page's colour along the top and bottom edge, per frame */
+  screenEdges?: { top: Rgb[]; bottom: Rgb[] };
   frames: ShotFrame[];
   events: ShotEvent[];
   zooms: ShotZoom[];
@@ -81,6 +86,7 @@ export const useShotsData = (ids: string[]): ShotData[] | null => {
 };
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+const toF = (sec: number, fps: number) => Math.round(sec * fps);
 const mix = (a: number, b: number, t: number) => a + (b - a) * t;
 
 /** Critically damped spring follower, simulated frame by frame (4 substeps). */
@@ -111,35 +117,69 @@ const springFollow = (targets: Vec[], omega: number, fps: number, snap?: (i: num
   return out;
 };
 
-export type CursorTrack = { pos: Vec[]; opacity: number[]; down: boolean[] };
+export type CursorTrack = { pos: Vec[]; opacity: number[]; down: boolean[]; kind: ("a" | "p" | "t")[] };
+
+/**
+ * Frames where the pointer is hidden, as macOS / Screen Studio would: while the page scrolls by itself (two scrolls
+ * closer than scrollMergeSec stay one hidden stretch, so the pointer does not blink in between), and from a keystroke
+ * until the mouse next moves (also from frame 0 when the capture's preroll ended with typing).
+ */
+const hiddenFrames = (data: ShotData): boolean[] => {
+  const R = theme.recordly;
+  const n = data.frames.length;
+  const hidden = new Array(n).fill(false);
+  if (data.cursor.kind !== "pointer") return hidden;
+  const merge = toF(R.scrollMergeSec, data.fps);
+  const scrolls = data.events
+    .filter((e): e is Extract<ShotEvent, { type: "scroll" }> => e.type === "scroll" && e.cursor === "hide")
+    .map((e) => [e.frame, e.endFrame] as [number, number])
+    .sort((a, b) => a[0] - b[0]);
+  const runs: [number, number][] = [];
+  for (const r of scrolls) {
+    const last = runs[runs.length - 1];
+    if (last && r[0] - last[1] <= merge) last[1] = Math.max(last[1], r[1]);
+    else runs.push([...r]);
+  }
+  const movedAfter = (f: number) => {
+    const [x0, y0] = [data.frames[f].x, data.frames[f].y];
+    for (let g = f + 1; g < n; g++) if (data.frames[g].x !== x0 || data.frames[g].y !== y0) return g;
+    return n;
+  };
+  if (data.cursor.hiddenAtStart) runs.push([0, movedAfter(0)]);
+  for (const e of data.events) if (e.type === "type" || e.type === "key") runs.push([e.frame, movedAfter(e.frame)]);
+  for (const [a, b] of runs) for (let i = Math.max(0, a); i < Math.min(n, b); i++) hidden[i] = true;
+  return hidden;
+};
 
 /** Spring-smoothed cursor (Recordly smoothing), lag-compensated, pinned to the raw point around clicks. */
 export const computeCursorTrack = (data: ShotData): CursorTrack => {
   const R = theme.recordly;
   const n = data.frames.length;
   const raw: Vec[] = data.frames.map((f) => [f.x, f.y]);
-  const lead: Vec[] = raw.map((_, i) => raw[Math.min(n - 1, i + R.cursorLeadFrames)]);
+  const leadF = toF(R.cursorLeadSec, data.fps);
+  const lead: Vec[] = raw.map((_, i) => raw[Math.min(n - 1, i + leadF)]);
   const pos = springFollow(lead, R.cursorSpring.omega, data.fps);
+  const pin = Math.max(1, toF(R.clickPinSec, data.fps));
   for (const e of data.events) {
     if (e.type !== "click" && e.type !== "tap") continue;
-    for (let i = Math.max(0, e.frame - 6); i <= Math.min(n - 1, e.frame + 6); i++) {
-      const w = 1 - Math.abs(i - e.frame) / 7;
+    for (let i = Math.max(0, e.frame - pin); i <= Math.min(n - 1, e.frame + pin); i++) {
+      const w = 1 - Math.abs(i - e.frame) / (pin + 1);
       pos[i] = [mix(pos[i][0], raw[i][0], w), mix(pos[i][1], raw[i][1], w)];
     }
   }
+  // opacity eases toward the hidden/visible state; the Cursor pairs it with a slight scale (never a lone fade)
+  const hidden = hiddenFrames(data);
+  const F = Math.max(1, toF(R.cursorHideFadeSec, data.fps));
   const opacity = new Array(n).fill(data.cursor.kind === "pointer" ? 1 : 0);
   if (data.cursor.kind === "pointer") {
-    const F = R.cursorHideFadeFrames;
-    for (const e of data.events) {
-      if (e.type !== "scroll" || e.cursor !== "hide") continue;
-      for (let i = Math.max(0, e.frame); i < Math.min(n, e.endFrame + F); i++) {
-        const out = theme.ease.inOut(clamp01((i - e.frame) / F));
-        const back = theme.ease.inOut(clamp01((i - e.endFrame) / F));
-        opacity[i] = Math.min(opacity[i], 1 - out + back);
-      }
+    let level = hidden[0] ? 0 : 1;
+    for (let i = 0; i < n; i++) {
+      const target = hidden[i] ? 0 : 1;
+      level = target > level ? Math.min(1, level + 1 / F) : Math.max(0, level - 1 / F);
+      opacity[i] = theme.ease.inOut(level);
     }
   }
-  return { pos, opacity, down: data.frames.map((f) => f.down) };
+  return { pos, opacity, down: data.frames.map((f) => f.down), kind: data.frames.map((f) => f.c ?? "a") };
 };
 
 export const zoomScaleAt = (z: ShotZoom, f: number): number => {

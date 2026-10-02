@@ -61,6 +61,8 @@ type MockStore = {
   uploaded: Map<string, Set<string>>;
   inserted: Map<string, Array<Record<string, unknown>>>;
   minted: { count: number };
+  /** app_metadata written through auth.admin.updateUserById, by user id. */
+  authMetadata?: Map<string, Record<string, unknown>>;
 };
 const store: MockStore = ((globalThis as { __tjMockStore?: MockStore }).__tjMockStore ??= {
   written: new Map(),
@@ -68,6 +70,9 @@ const store: MockStore = ((globalThis as { __tjMockStore?: MockStore }).__tjMock
   inserted: new Map(),
   minted: { count: 0 },
 });
+// Added after the store's first shape; a dev server that already holds an
+// older store gains it here rather than on restart.
+const authMetadata = (store.authMetadata ??= new Map());
 const written = store.written;
 const uploaded = store.uploaded;
 
@@ -104,6 +109,23 @@ export function resetMockWrites(): void {
   written.clear();
   uploaded.clear();
   inserted.clear();
+  authMetadata.clear();
+}
+
+/**
+ * The preview account's app_metadata as the mock's auth holds it: the
+ * temporary-password flag when DESK_PREVIEW_MEMBER asks for an account still
+ * on one, then whatever auth.admin.updateUserById has written since (the
+ * onboarding password screen clears the flag). Empty otherwise, so preview
+ * is what it always was.
+ */
+function previewAppMetadata(userId: string): Record<string, unknown> {
+  const flag = process.env.DESK_PREVIEW_MEMBER?.trim();
+  const issued =
+    flag === "fresh-temporary-password" && userId === "local-admin-preview"
+      ? { requires_password_change: true }
+      : {};
+  return { ...issued, ...authMetadata.get(userId) };
 }
 
 /** The row as the fixtures have it, with anything written over the top. */
@@ -380,7 +402,10 @@ function getPreviewRows(table: string): Array<Record<string, unknown>> {
  * The SOP says to test onboarding "with a fresh member in the preview mock
  * (no name, no signature, onboarding not completed)". DESK_PREVIEW_MEMBER is
  * read here and nowhere else: "fresh" is cleared to sign, "fresh-cannot-sign"
- * is not. Unset, the table is empty and preview is what it always was.
+ * is not, and "fresh-temporary-password" is "fresh" on an account still on
+ * the temporary password an approval issues (so onboarding starts with
+ * "Choose A Password"). Unset, the table is empty and preview is what it
+ * always was.
  *
  * The name is empty, never invented: the person types it at onboarding. The
  * `onboarding_completed_at` key is present (null), because the layout and the
@@ -391,7 +416,7 @@ function getPreviewRows(table: string): Array<Record<string, unknown>> {
  */
 function previewTeamMembers(): Array<Record<string, unknown>> {
   const flag = process.env.DESK_PREVIEW_MEMBER?.trim();
-  if (flag !== "fresh" && flag !== "fresh-cannot-sign") return [];
+  if (flag !== "fresh" && flag !== "fresh-cannot-sign" && flag !== "fresh-temporary-password") return [];
   const at = "2026-10-01T15:00:00.000Z";
   return [
     {
@@ -407,7 +432,7 @@ function previewTeamMembers(): Array<Record<string, unknown>> {
       role: "owner",
       language_preference: "en",
       status: "active",
-      can_sign_contracts: flag === "fresh",
+      can_sign_contracts: flag !== "fresh-cannot-sign",
       signature_data_url: null,
       signature_updated_at: null,
       invited_at: null,
@@ -1230,6 +1255,22 @@ export function createMockSupabaseClient(user: User | null = null): SupabaseClie
     },
     async signInWithPassword() {
       return { data: { user, session: null }, error: null };
+    },
+    /**
+     * The two admin calls onboarding makes in preview: reading the account's
+     * app_metadata and replacing the temporary password. The password itself
+     * is never kept; only the metadata written beside it is, by user id.
+     */
+    admin: {
+      async getUserById(id: string) {
+        return { data: { user: { id, app_metadata: previewAppMetadata(id) } }, error: null };
+      },
+      async updateUserById(id: string, attributes: { app_metadata?: Record<string, unknown> } = {}) {
+        if (attributes.app_metadata) {
+          authMetadata.set(id, { ...authMetadata.get(id), ...attributes.app_metadata });
+        }
+        return { data: { user: { id, app_metadata: previewAppMetadata(id) } }, error: null };
+      },
     },
   };
 

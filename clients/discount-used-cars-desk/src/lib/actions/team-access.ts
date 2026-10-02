@@ -8,6 +8,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import {
   isTeamRole,
   ROLE_LABELS,
+  roleSignsByDefault,
   type TeamRole,
 } from "@/lib/operations/team";
 import type { TeamMember } from "@/lib/operations/types";
@@ -105,8 +106,15 @@ function existingRequestResult(status: unknown): TeamAccessRequestState | null {
   return null;
 }
 
+/**
+ * The signing clearance an approval starts a person with: Owner, Manager and
+ * Registration cleared, every other role not (owner's decision 10/01/2026;
+ * `roleSignsByDefault`). Only the default: an owner turns signing on or off
+ * for one person afterwards, and nothing here rewrites that choice except a
+ * fresh approval.
+ */
 function canRoleSignContracts(role: TeamRole): boolean {
-  return role === "manager" || role === "registration";
+  return roleSignsByDefault(role);
 }
 
 function siteBaseUrl(): string {
@@ -795,7 +803,9 @@ async function resetApprovedMemberAccess({
     access_status: "active",
     desk_role: member.role,
     requires_password_change: true,
-    can_sign_contracts: canRoleSignContracts(member.role),
+    // A reset is not an approval: the person's own clearance, as an owner
+    // left it on their row, never the role's starting value.
+    can_sign_contracts: member.can_sign_contracts === true,
   };
   const userMetadata = {
     ...(existingUser?.user_metadata ?? {}),

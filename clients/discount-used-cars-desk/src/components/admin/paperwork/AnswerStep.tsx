@@ -55,7 +55,13 @@ export default function AnswerStep({
     startTransition(async () => {
       const result = await savePaperworkAnswer(dealId, documentType, question.key, next);
       if (!result.ok) {
-        setError(result.error ?? t.chrome.couldNotSave);
+        // The down payment after the bill of sale is filed has words of its
+        // own in both languages (SOP Freeze); anything else is the action's.
+        setError(
+          result.code === "downPaymentFrozen"
+            ? t.money.downPaymentFrozen
+            : result.error ?? t.chrome.couldNotSave,
+        );
         setChoosing(null);
         return;
       }

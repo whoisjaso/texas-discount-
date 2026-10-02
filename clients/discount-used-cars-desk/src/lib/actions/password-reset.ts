@@ -14,6 +14,7 @@ import {
   createAdminDeviceSessionCookie,
 } from "@/lib/auth/admin-device-session";
 import { DEALERSHIP_HOME } from "@/lib/admin/workspace";
+import { PASSWORD_MIN_LENGTH } from "@/lib/auth/password-rules";
 
 /**
  * Forgot password, done the way the Track D review demanded.
@@ -154,13 +155,13 @@ export async function completeRecovery(
   const password = String(formData.get("password") ?? "");
 
   if (!tokenHash) return { ok: false, error: "expired" };
-  // The onboarding screen's own floor, kept identical so the two ways of
-  // choosing a password cannot disagree about what a password is.
-  if (password.length < 10) return { ok: false, error: "weak" };
+  // The onboarding screen's own floor (password-rules.ts), shared so the two
+  // ways of choosing a password cannot disagree about what a password is.
+  if (password.length < PASSWORD_MIN_LENGTH) return { ok: false, error: "weak" };
 
   try {
     const supabase = await createClient();
-    const { error: verifyError } = await supabase.auth.verifyOtp({
+    const { data: verified, error: verifyError } = await supabase.auth.verifyOtp({
       type: "recovery",
       token_hash: tokenHash,
     });
@@ -168,6 +169,8 @@ export async function completeRecovery(
 
     const { error: updateError } = await supabase.auth.updateUser({ password });
     if (updateError) return { ok: false, error: "failed" };
+
+    await clearTemporaryPasswordFlag(verified?.user ?? null);
 
     const cookieStore = await cookies();
     cookieStore.set(
@@ -180,4 +183,29 @@ export async function completeRecovery(
   }
 
   redirect(DEALERSHIP_HOME);
+}
+
+/**
+ * A password chosen through the emailed link is the person's own, so the
+ * temporary-password flag an approval or a reset set on the account no longer
+ * holds (owner's decision 10/01/2026: "once the password is set the flag is
+ * cleared"). Otherwise the invite link's new password would be followed by
+ * "Choose A Password" all over again at onboarding.
+ *
+ * Only the account the token just verified, and only that one key. Best
+ * effort: the password is already saved, and an account whose flag could not
+ * be cleared is asked for a password once more at onboarding, never locked
+ * out.
+ */
+async function clearTemporaryPasswordFlag(
+  user: { id: string; app_metadata?: Record<string, unknown> } | null,
+): Promise<void> {
+  if (!user || user.app_metadata?.requires_password_change !== true) return;
+  try {
+    await createServiceClient().auth.admin.updateUserById(user.id, {
+      app_metadata: { ...(user.app_metadata ?? {}), requires_password_change: false },
+    });
+  } catch {
+    // Onboarding asks again; nothing is lost.
+  }
 }

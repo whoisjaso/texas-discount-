@@ -15,6 +15,7 @@ import {
   onboardingSatisfied,
   onboardingSteps,
   nameSettled,
+  type OnboardingStep,
 } from "@/lib/onboarding/staff-name";
 
 export const metadata: Metadata = {
@@ -25,14 +26,14 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 /**
- * First sign-in (SOP "First sign-in: onboarding"; owner's instruction
+ * First sign-in (SOP "First sign-in: onboarding"; owner's instructions
  * 10/01/2026).
  *
  * The admin layout already sends every active member who has not finished
- * onboarding here, and so does `destinationAfterSignIn`. This page had never
- * been built, so that redirect landed every new member on a 404: the
- * lock-out the SOP warns about. One question to a screen, in the sale
- * corridor's clothes: the name, the signature (for a member cleared to sign),
+ * onboarding here, and every account still on a temporary password, and so
+ * does `destinationAfterSignIn`. One question to a screen, in the sale
+ * corridor's clothes: a password of their own (only while the account is on
+ * a temporary one), the name, the signature (for a member cleared to sign),
  * then done.
  *
  * Everything the screens need is decided here, on the server: which steps
@@ -50,12 +51,13 @@ export default async function AdminOnboardingPage() {
     to work rather than shown a screen that could rewrite the legal name on
     every document they file. The screen stays open to a finished member only
     when something it asks for is missing or no longer acceptable, which is
-    where the filing refusal points them. Never while the account is still on
-    a temporary password: the layout sends that account here from every
-    page, so leaving would loop.
+    where the filing refusal points them, or while the account is still on a
+    temporary password: the layout sends that account here from every page,
+    so leaving before the password is replaced would loop.
   */
   const onTemporaryPassword = access.user.app_metadata?.requires_password_change === true;
-  if (member?.onboarding_completed_at && !onTemporaryPassword && onboardingSatisfied(member)) {
+  const finished = Boolean(member?.onboarding_completed_at) && onboardingSatisfied(member);
+  if (finished && !onTemporaryPassword) {
     redirect(roleOpensAdminRoute(access.role, DEALERSHIP_HOME) ? DEALERSHIP_HOME : "/admin/account/signature");
   }
 
@@ -65,21 +67,43 @@ export default async function AdminOnboardingPage() {
   // The same reader every dealer line uses, so what the pad shows is what
   // the documents print.
   const signature = member ? (await getStaffSignature()).dataUrl : null;
-  const steps = onboardingSteps({ canSign });
-  const start = firstOpenStep({
+  const open = {
     canSign,
     // A saved name onboarding would now refuse (too long for the seller
     // line, say) reopens the name screen, with what was saved in the boxes.
     hasName: nameSettled(member),
     hasSignature: Boolean(signature),
-  });
+  };
+
+  /*
+    An account the desk lets in by its approved role but with no roster row
+    (approved before the roster table existed) has no name or signature to
+    keep. It still has a temporary password to replace, so it gets that one
+    screen and then goes to work; with no password to replace it gets the
+    not-on-the-team screen, as before.
+  */
+  const passwordOnly = !member && onTemporaryPassword && access.role !== null;
+
+  const steps = passwordOnly
+    ? (["password"] as OnboardingStep[])
+    : onboardingSteps({ canSign, requiresPasswordChange: onTemporaryPassword, finished });
+  const start = passwordOnly ? "password" : firstOpenStep({ ...open, requiresPasswordChange: onTemporaryPassword });
+  // Where the screen goes once the password is saved: the first screen that
+  // still has work, or straight to work for an account with nothing else to do.
+  const afterPassword = passwordOnly ? null : firstOpenStep(open);
+  // The name already on file when it is settled, for Done's sentence on a
+  // member who only has the password left (an owner may have set the name,
+  // so the two boxes cannot always be recovered from it).
+  const nameOnFile = open.hasName ? (member?.full_name ?? "").trim().replace(/\s+/g, " ") : "";
 
   return (
     <FunnelLocaleProvider bundles={getFunnelBundles()} initial={lang} userId={userId}>
       <OnboardingFlow
-        onRoster={Boolean(member)}
+        onRoster={Boolean(member) || passwordOnly}
         steps={steps}
         initialStep={start}
+        afterPassword={afterPassword}
+        nameOnFile={nameOnFile}
         initialFirst={parts.first}
         initialLast={parts.last}
         initialSignature={signature}

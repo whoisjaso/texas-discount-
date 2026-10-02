@@ -109,13 +109,34 @@ async function previewTeamMember(user: User): Promise<TeamMember | null> {
   }
 }
 
+/**
+ * The preview account's app_metadata as the preview mock's auth holds it,
+ * laid over the built-in preview user. Preview only, like the row above:
+ * empty unless DESK_PREVIEW_MEMBER asks for an account still on a temporary
+ * password, so the onboarding password screen can be walked and its write
+ * (which clears the flag) seen by the layout.
+ */
+async function previewAppMetadata(user: User): Promise<Record<string, unknown>> {
+  try {
+    const { data } = await createServiceClient().auth.admin.getUserById(user.id);
+    const held = data?.user?.app_metadata;
+    return held && typeof held === "object" ? (held as Record<string, unknown>) : {};
+  } catch {
+    return {};
+  }
+}
+
 export async function getCurrentAdminAccess(): Promise<CurrentAdminAccess> {
   if (isLocalAdminPreviewEnabled()) {
     const cookieStore = await cookies();
     const previewValue = cookieStore.get(LOCAL_ADMIN_SESSION_COOKIE)?.value;
     if (previewValue) {
       const preview = parseLocalAdminPreviewValue(previewValue);
-      const user = createLocalAdminUser(preview.email, preview.role);
+      const built = createLocalAdminUser(preview.email, preview.role);
+      const user: User = {
+        ...built,
+        app_metadata: { ...built.app_metadata, ...(await previewAppMetadata(built)) },
+      };
       return {
         user,
         member: await previewTeamMember(user),

@@ -19,6 +19,12 @@ import { spanishEsignBlocked } from "@/lib/legal/spanish-esign";
 import { businessDateToday } from "@/lib/documents/us-date";
 import { documentFilingBlockedReason, filingBlockedReason } from "@/lib/dealership-config";
 import { dealerSignerProblem, dealerStroke } from "@/lib/documents/dealer-signer";
+import {
+  DOWN_PAYMENT_FROZEN_CODE,
+  DOWN_PAYMENT_FROZEN_MESSAGE,
+  downPaymentChanges,
+} from "@/lib/sales/down-payment-freeze";
+import { filedBillOfSaleOn } from "@/lib/sales/filed-bill-of-sale";
 
 /**
  * The paperwork answers, and the document they end up as.
@@ -38,7 +44,7 @@ import { dealerSignerProblem, dealerStroke } from "@/lib/documents/dealer-signer
  * express a document signed at the desk in front of you.
  */
 
-export type PaperworkState = { ok: boolean; error?: string };
+export type PaperworkState = { ok: boolean; error?: string; code?: typeof DOWN_PAYMENT_FROZEN_CODE };
 
 /**
  * The deal id is never taken from the client for the document write.
@@ -73,20 +79,33 @@ export async function savePaperworkAnswer(
     can never be moved through a document that is not in its packet.
   */
   const movesMoney = hasTeamPermission(access.role, "sales:manage");
+  const isDownPayment = documentType === "financing" && key === "downPayment";
 
   try {
     const supabase = await createClient();
+    /*
+      The down payment is frozen once the bill of sale is filed (owner's
+      decision 10/01/2026; SOP Freeze): the contract's answer may not state a
+      down payment other than the one the filed bill of sale states, whoever
+      types it and whether or not it writes back to the money step.
+    */
+    const frozen = isDownPayment ? await filedBillOfSaleOn(dealId) : null;
+    let refused: boolean = false;
     // Version-checked merge: the patch is rebuilt from the blob as it
     // stands at each attempt, so an answer typed in a second tab a moment
     // earlier survives this one instead of being silently replayed over.
     const merged = await casMergeStepData(supabase, dealId, (current) => {
+      // Only a change to the figure is refused: the same down payment, or
+      // the prefilled one the money step already holds, goes through.
+      refused =
+        frozen !== null && downPaymentChanges({ advertised: frozen.advertised, stepData: current, to: value });
+      if (refused) return null;
       // The down payment is one fact with two homes: written to both in the
       // same transform, so the bill of sale's balance and the contract's
       // amount financed can never disagree (SOP "Money"; financing: "never
       // asked twice"), within the bounds above.
       if (
-        documentType === "financing" &&
-        key === "downPayment" &&
+        isDownPayment &&
         movesMoney &&
         readFunding(current).type === "inHouse"
       ) {
@@ -95,6 +114,7 @@ export async function savePaperworkAnswer(
       const answers = { ...readPaperwork(current, documentType), [key]: value };
       return writePaperwork(current, documentType, answers);
     });
+    if (refused) return { ok: false, error: DOWN_PAYMENT_FROZEN_MESSAGE, code: DOWN_PAYMENT_FROZEN_CODE };
     if (!merged.ok) throw new Error(merged.error);
   } catch {
     return { ok: false, error: "Could not save that. Try again." };

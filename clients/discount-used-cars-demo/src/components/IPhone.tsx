@@ -1,14 +1,27 @@
 // iPhone frame drawn in SVG + CSS: titanium edge, black bezel, 55 pt corner radius, Dynamic Island,
-// side buttons, iOS status bar. The page sits under the status bar (390 × 797 pt of a 390 × 844 pt screen).
+// side buttons, iOS status bar (tinted with the page's top colour, as Safari does; glyphs black or white by contrast)
+// and the home indicator. The page sits under the status bar (390 × 797 pt of a 390 × 844 pt screen).
 import React from "react";
 import { theme } from "../theme";
 
-const StatusBar: React.FC<{ k: number }> = ({ k }) => {
+/** Relative luminance (sRGB) of an [r, g, b] colour, 0–1. */
+export const luminance = ([r, g, b]: readonly number[]) => {
+  const l = (v: number) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * l(r) + 0.7152 * l(g) + 0.0722 * l(b);
+};
+/** Black or white, whichever reads on that colour. */
+export const glyphOn = (rgb: readonly number[] | undefined) => (rgb && luminance(rgb) > 0.4 ? theme.colors.statusDark : theme.colors.statusLight);
+const css = (rgb: readonly number[] | undefined, fallback: string) => (rgb ? `rgb(${rgb[0]},${rgb[1]},${rgb[2]})` : fallback);
+
+const StatusBar: React.FC<{ k: number; tint?: readonly number[] }> = ({ k, tint }) => {
   const P = theme.phone;
-  const c = theme.colors.statusText;
+  const c = glyphOn(tint ?? [0, 0, 0]);
   return (
-    <div style={{ position: "absolute", left: 0, top: 0, width: P.screen.width * k, height: P.statusBar * k, background: theme.colors.statusBar }}>
-      <div style={{ position: "absolute", left: 0, width: 130 * k, top: 15 * k, textAlign: "center", color: c, fontFamily: theme.fonts.display, fontWeight: 600, fontSize: 17 * k, letterSpacing: 0.2 * k }}>{P.time}</div>
+    <div style={{ position: "absolute", left: 0, top: 0, width: P.screen.width * k, height: P.statusBar * k, background: css(tint, theme.colors.statusBar) }}>
+      <div style={{ position: "absolute", left: 0, width: 130 * k, top: 15 * k, textAlign: "center", color: c, fontFamily: theme.fonts.stack, fontWeight: 600, fontSize: 17 * k, letterSpacing: 0.2 * k }}>{P.time}</div>
       <svg style={{ position: "absolute", right: 26 * k, top: 18 * k }} width={78 * k} height={13 * k} viewBox="0 0 78 13">
         {/* signal */}
         {[0, 1, 2, 3].map((i) => (
@@ -31,10 +44,13 @@ export const IPhone: React.FC<{
   /** display px per iOS point */
   k: number;
   statusBar?: boolean;
+  /** the page's colour at its top edge (tints the status bar) and bottom edge (picks the home indicator's colour) */
+  topColor?: readonly number[];
+  bottomColor?: readonly number[];
   style?: React.CSSProperties;
   /** the page, sized pageWidth × pageHeight (see iphoneLayout) */
   children: React.ReactNode;
-}> = ({ k, statusBar = true, style, children }) => {
+}> = ({ k, statusBar = true, topColor, bottomColor, style, children }) => {
   const P = theme.phone;
   const b = P.bezel;
   const W = (P.screen.width + 2 * b) * k;
@@ -60,7 +76,7 @@ export const IPhone: React.FC<{
         <rect x={2.4 * k} y={2.4 * k} width={W - 4.8 * k} height={H - 4.8 * k} rx={(P.radius - 2.4) * k} fill={theme.colors.phoneBezel} />
       </svg>
       <div style={{ position: "absolute", left: b * k, top: b * k, width: P.screen.width * k, height: P.screen.height * k, borderRadius: P.screenRadius * k, overflow: "hidden", background: theme.colors.statusBar }}>
-        {statusBar && <StatusBar k={k} />}
+        {statusBar && <StatusBar k={k} tint={topColor} />}
         <div style={{ position: "absolute", left: 0, top: top * k, width: P.screen.width * k, height: (P.screen.height - top) * k, overflow: "hidden" }}>{children}</div>
       </div>
       {/* Dynamic Island */}
@@ -76,7 +92,19 @@ export const IPhone: React.FC<{
         }}
       />
       {/* glass: a faint diagonal reflection */}
-      <div style={{ position: "absolute", left: b * k, top: b * k, width: P.screen.width * k, height: P.screen.height * k, borderRadius: P.screenRadius * k, background: "linear-gradient(125deg, rgba(255,255,255,0.07) 0%, transparent 30%)", pointerEvents: "none" }} />
+      <div style={{ position: "absolute", left: b * k, top: b * k, width: P.screen.width * k, height: P.screen.height * k, borderRadius: P.screenRadius * k, background: `linear-gradient(125deg, ${theme.colors.glass} 0%, transparent 30%)`, pointerEvents: "none" }} />
+      {/* home indicator */}
+      <div
+        style={{
+          position: "absolute",
+          left: W / 2 - (P.homeIndicator.width * k) / 2,
+          top: (b + P.screen.height - P.homeIndicator.bottom - P.homeIndicator.height) * k,
+          width: P.homeIndicator.width * k,
+          height: P.homeIndicator.height * k,
+          borderRadius: (P.homeIndicator.height * k) / 2,
+          background: glyphOn(bottomColor ?? [255, 255, 255]),
+        }}
+      />
     </div>
   );
 };

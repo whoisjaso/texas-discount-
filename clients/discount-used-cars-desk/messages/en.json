@@ -797,7 +797,8 @@
       "notePaid": "Paid in full. No balance owed.",
       "downToday": "Down payment today",
       "handingToday": "Handing over today",
-      "otherAmount": "They are paying some other amount today"
+      "otherAmount": "They are paying some other amount today",
+      "downPaymentFrozen": "The bill of sale is already filed with the down payment it states. Void the bill of sale and file it again before changing the down payment."
     },
     "paperwork": {
       "billOfSale": {
@@ -1741,6 +1742,13 @@
       "stepOf": "Step {current} Of {total}",
       "signOut": "Sign Out",
       "nav": "Onboarding",
+      "passwordQuestion": "Choose A Password",
+      "passwordHelp": "At least {min} characters. It replaces the temporary password you were given, and it is the one you sign in with from now on.",
+      "newPassword": "New password",
+      "confirmPassword": "Type it again",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "savePassword": "Save Password",
       "nameQuestion": "What Is Your Name?",
       "firstName": "First name",
       "lastName": "Last name",
@@ -1769,9 +1777,13 @@
         "notOnRoster": "This account is not on the team roster yet, so there is no profile to hold a name. Ask an owner to add you.",
         "notActive": "This account is not active yet. Ask an owner to approve it.",
         "saveFailed": "That could not be saved. Try again.",
-        "temporaryPassword": "This account is still on the temporary password it was issued, and the desk cannot replace it yet. Ask an owner.",
+        "temporaryPassword": "Choose your own password first. It replaces the temporary one you were given.",
         "nameFirst": "Add your first and last name first.",
-        "signatureFirst": "Draw and save your signature first. It is what goes on the dealer line."
+        "signatureFirst": "Draw and save your signature first. It is what goes on the dealer line.",
+        "passwordTooShort": "Use at least {min} characters.",
+        "passwordMismatch": "The two passwords do not match. Type the same password in both boxes.",
+        "passwordNotNeeded": "This account already has its own password. To change it, use Forgot Your Password on the sign-in screen.",
+        "passwordSaveFailed": "That password could not be saved. Try again, or choose a different one."
       }
     }
   }

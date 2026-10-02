@@ -15,6 +15,133 @@ passed on the command line and never written to a file:
 
 The desk this one was forked from has the same requirements.
 
+## 00. The owner's four decisions (10/01/2026), built 10/02/2026
+
+This section records the latest run. Where the sections below differ, this
+one supersedes them.
+
+**What changed.**
+
+1. **Temporary passwords.** Onboarding starts with **Choose A Password** only
+   for an account still flagged `requires_password_change` (approval or
+   reset). At least 10 characters (the constant recovery now shares,
+   `src/lib/auth/password-rules.ts`), typed twice, Show/Hide for both boxes,
+   English and Spanish. Saving replaces the password and clears the flag in
+   one `auth.admin.updateUserById` call on the session's own account (every
+   other app_metadata key kept), logs `team_member_password_chosen` (never
+   the password), and continues to the name; the counter reads Step 1 Of 4,
+   then Step 2 Of 4. Done still refuses while the flag is set. A password
+   chosen through the emailed recovery link clears the flag too.
+2. **Down payment after a filed bill of sale.** Refused, from the money
+   step's Down today and from the contract's down-payment question (whoever
+   answers it), with "Void the bill of sale and file it again before
+   changing the down payment" (Spanish on the Spanish corridor). Only a
+   change to the figure is refused. `scripts/desk-walk/scenarios/bhph-trade.json`
+   now types the $1,500 in Down today before anything is filed.
+3. **VTR-61.** Wherever the dealership is the owner or the rebuilder, its
+   "Printed Name (Same as Signature)" is
+   `Discount Used Cars And Trucks, LLC (First Last)` for the cleared,
+   onboarded member printing it, with the 130-U seller line's fit rules and
+   two-line layout (shared in `src/lib/forms/dealer-printed-name-field.ts`).
+   Anyone else is refused the form (403, with the reason).
+4. **Signing rights at approval.** Owner, Manager and Registration start
+   cleared to sign; every other role starts not cleared. A reset keeps the
+   person's own clearance.
+
+### Checks
+
+| Check | Result |
+|---|---|
+| `npx tsc --noEmit` | exit 0 |
+| `npx eslint` | 0 errors, the same 4 pre-existing warnings |
+| `npx vitest run` | 140 files, 1703 tests passed (was 134 and 1625) |
+| `npx next build` | exit 0; `next-env.d.ts` restored, `git diff` empty |
+
+### Walks (dev server on 5190, preview mock)
+
+Three dev servers, each started fresh and stopped by its process group;
+port 5190 is closed.
+
+- **A** (`DESK_PREVIEW_MEMBER=fresh-temporary-password`, no
+  `DESK_ALLOW_UNSET_FACTS`): the VTR-61 refusal before onboarding, then the
+  VTR-61 prints after onboarding (below).
+- **B** (`fresh-temporary-password`, `DESK_ALLOW_UNSET_FACTS=true`): the
+  onboarding walk at 1440×900 (`onboarding-password/1440x900`), then six
+  sales with `sale.cjs` and `ceremony.cjs` as the onboarded Maria Lopez, then
+  the down-payment freeze walk at both sizes.
+- **C** (as A): the onboarding walk again at 390×844
+  (`onboarding-password/390x844`) on the final code.
+
+Onboarding, both sizes: sent to onboarding from `/admin/sales`; **Choose A
+Password** is Step 1 Of 4 with Save disabled until both boxes are typed and
+no Back; 9 characters refused ("Use at least 10 characters."), a mismatch
+refused, Show turns both boxes to text (aria-pressed true) and Hide back;
+in Spanish "Elija Una Contraseña", "Paso 1 de 4" and the Spanish mismatch
+sentence. Saving goes to **What Is Your Name?** at Step 2 Of 4 with no Back
+to the password; a hard reload stays on the name (Step 1 Of 3, the password
+is done). Name, signature, You Are All Set, Start Working lands on
+`/admin/sales`; a hard load of `/admin/sales` stays there and
+`/admin/account/onboarding` sends the finished member back to it: no loop
+(3 document loads of the onboarding page in the whole walk). 0 page errors,
+0 contrast failures.
+
+| Sale | Size | Deal | Sale | Ceremony |
+|---|---|---|---|---|
+| bhph-trade | 1440×900 | preview-deals-4 | exit 0, THEME OK, 0 contrast failures | 3/3 signed, exit 0 |
+| bhph-trade | 390×844 | preview-deals-8 | exit 0, THEME OK, 0 contrast failures | 3/3 signed, exit 0 |
+| cash-otd | 1440×900 | preview-deals-13 | exit 0, THEME OK, 0 contrast failures | 2/2 signed, exit 0 |
+| cash-balance | 1440×900 | preview-deals-17 | exit 0, THEME OK, 0 contrast failures | 2/2 signed, exit 0 |
+| bank | 1440×900 | preview-deals-21 | exit 0, THEME OK, 0 contrast failures | 2/2 signed, exit 0 |
+| buyer-files | 1440×900 | preview-deals-25 | exit 0, THEME OK, 0 contrast failures | 3/3 signed, exit 0 |
+
+No page errors in any sale or ceremony log. The 390×844 folders of the four
+other sales are the previous round's and were not re-run.
+
+### The bhph-trade packet, read back (deal preview-deals-4, 1440×900)
+
+Read with PyMuPDF from `walks/bhph-trade-1440x900-packet/`:
+
+| Figure | Bill of sale | Financing contract |
+|---|---|---|
+| Sales tax | $437.50 (on $7,000 after the $2,000 trade) | $437.50 |
+| Total | $7,545.50 | Total cash price $9,545.50, less $3,500.00 down (trade $2,000.00 + cash $1,500.00) |
+| Balance | **$6,045.50** secured by seller lien | Amount financed **$6,045.50** |
+| Dealer line | Discount Used Cars And Trucks, LLC (Maria Lopez) | Discount Used Cars And Trucks, LLC (Maria Lopez) |
+
+The 130-U: Seller Name `Discount Used Cars And Trucks, LLC (Maria Lopez)`,
+box 36 `2012 Honda Civic LX`, trade-in amount 2000.00. The bill of sale's
+balance and the contract's amount financed now agree; the previous round's
+run (scenario unchanged) printed $7,545.50 against $6,045.50.
+
+Seen and not changed (pre-existing since the starting copy, 7121d43): the
+bill of sale's buyer acknowledgment copy labels the total due "Total Paid"
+($7,545.50) above "Seller lien balance acknowledged $6,045.50". On a deal
+with a balance that label reads wrong; it is legal copy for the owner or
+counsel.
+
+### Down-payment freeze, in the browser (deal preview-deals-4)
+
+`down-payment-freeze/1440x900` and `390x844`: Down today changed to 2000
+is refused with the sentence and the box and receipt go back to $1,500.00
+down, $6,045.50 balance; 1,500 again goes through to the next step; the
+contract's question changed to 2000 is refused in English and in Spanish
+("Anule la factura de venta y vuelva a archivarla antes de cambiar el
+enganche."). 0 page errors, 0 contrast failures.
+
+### VTR-61, live
+
+On a server without `DESK_ALLOW_UNSET_FACTS`, `GET /api/documents/vtr-61?vehicleId=mock-4`
+before onboarding: **403** "Add your first and last name before printing
+the VTR-61: it prints the dealer as Discount Used Cars And Trucks, LLC
+(First Last). Use Finish Onboarding on Handle A Sale."
+(`vtr-61/refused-before-onboarding.json`). After onboarding as Maria Lopez:
+200, both printed names `Discount Used Cars And Trucks, LLC (Maria Lopez)`
+at 9.5pt, entity rows the entity alone. With `&rebuilder=Bayou Auto Repair`:
+the rebuilder's printed name stays `Bayou Auto Repair`, the owner's is the
+pairing. Renders: `vtr-61/*-printed-names-200dpi.png`, including the
+two-line case (a 50-character name) between each box's rule and the text
+above.
+
 ## 0. This change: signer name, onboarding, website and hours (10/01/2026)
 
 This section records the latest run. Where sections 1 to 8 below (an earlier
@@ -142,15 +269,9 @@ refusal, the older wording with the raw path).
 
 ### Still open (owner's decisions)
 
-- **Temporary passwords:** approving or resetting a member sets
-  `requires_password_change` and nothing clears it, so an approved member
-  cannot finish onboarding or file until the owner decides whether
-  onboarding gains a "Choose A Password" screen.
-- **Down payment after the bill of sale is filed:** refuse or accept.
-  Separately, the skill's `bhph-trade.json` should enter the $1,500 on the
-  money step; it is not edited without permission.
-- **VTR-61 printed name:** whether it also becomes
-  `Discount Used Cars And Trucks, LLC (First Last)`.
+- Temporary passwords, the down payment after a filed bill of sale, the
+  VTR-61 printed name and the signing default were decided on 10/01/2026
+  and are built (section 00).
 - **Facts still to supply:** late-handling fee, documentary fee, dealer
   email, sender mailboxes, and `NEXT_PUBLIC_SITE_URL` (recommended
   `https://desk.discountusedcarsandtrucks.com`).

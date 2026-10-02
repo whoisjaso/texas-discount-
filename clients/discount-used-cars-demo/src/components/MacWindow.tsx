@@ -32,7 +32,8 @@ export const MacWindow: React.FC<{
         borderRadius: r,
         overflow: "hidden",
         background: theme.colors.chrome,
-        boxShadow: `0 0 0 1px ${theme.colors.chromeHairline}, 0 50px 120px -20px ${theme.colors.shadow}, 0 24px 48px -24px ${theme.colors.shadow}`,
+        // hairline, a large soft shadow offset downward (the window floats above the desk), a tighter contact shadow
+        boxShadow: `0 0 0 1px ${theme.colors.chromeHairline}, 0 70px 150px -20px ${theme.colors.shadowDeep}, 0 30px 60px -28px ${theme.colors.shadow}`,
         ...style,
       }}
     >
@@ -69,7 +70,7 @@ export const MacWindow: React.FC<{
             justifyContent: "center",
             gap: 8,
             color: theme.colors.urlText,
-            fontFamily: theme.fonts.display,
+            fontFamily: theme.fonts.stack,
             fontWeight: 500,
             fontSize: 14.5,
             letterSpacing: 0.2,
@@ -81,7 +82,7 @@ export const MacWindow: React.FC<{
       </div>
       {/* content */}
       <div style={{ position: "absolute", left: 0, top: T, width, height, overflow: "hidden", background: theme.colors.ink }}>{children}</div>
-      {/* hairline highlight on the top edge */}
+      {/* 1 px highlight along the top edge (light catching the chrome) */}
       <div style={{ position: "absolute", inset: 0, borderRadius: r, boxShadow: `inset 0 1px 0 ${theme.colors.chromeBorder}`, pointerEvents: "none" }} />
     </div>
   );

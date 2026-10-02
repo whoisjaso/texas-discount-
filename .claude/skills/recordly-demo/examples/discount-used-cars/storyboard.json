@@ -6,12 +6,13 @@
     "Selectors were read from clients/discount-used-cars-site/src (Home.tsx, Layout.tsx) and checked on the running preview at 1440x900 and 390x797.",
     "clock pins the page's wall clock to a Wednesday 2 PM in Houston, so the site shows 'Open Now' (it is computed from the time).",
     "The phone capture is 390x797: under iOS's 47 pt status bar that makes the iPhone 14 screen, 390x844 pt, exactly (capturing 844 tall would stretch the phone or put the header under the Dynamic Island).",
-    "Site content outside the on-screen fact list is hidden at capture time with the shot's injected css (the site source is untouched): shots 3 and 4 blur the Discover tiles' '$205/mo' and '4.8/5' figures and the '24 Google reviews' label (a Screen Studio style privacy blur; 'Hola. / Se habla español' and 'Easy financing' stay sharp); shot 2 hides the lineup fine print ('15% down, 12.9% APR, 48 months') with visibility:hidden, so the layout and every scroll target are unchanged. Delete the css lines and recapture to show them.",
     "Part B (the sale desk) is inserted between shots 4 and 5: shot 4 ends held at 1.8x on the 'Admin · Staff Sign-In To The Sale Desk' row with the cursor resting on it, so part B can open on the click (same window, same 1440x900 viewport at DSF 2).",
     "Shot 5 stops on the Trucks card: one more swipe reaches the lineup's fine print (finance terms), which is not in the on-screen fact list.",
-    "Shots 3 and 4 anchor their last/first scroll on the Discover tiles, not the review: the review carousel changes the quote's height every 6 s, which moved a quote-anchored scroll by ~100 px between the two captures.",
     "Shot 2 parks the real mouse in the left page gutter (x 64) while the cursor is hidden during the first scroll: otherwise the cursor carried over from shot 1 (342, 579) sits over the cards as they scroll past, and the Trucks card is already in its hover state (photo zoomed, white arrow) before the visible cursor reaches it.",
-    "Shot 3's set-up click on the finder waits for the section's 0.9 s reveal transition (translateY 28 px): clicking mid-reveal put the cursor 4.7 px below where shot 2 ended. The typing ends 0.73 s before frame 0, so the caret is in the same blink phase as shot 2's last frame."
+    "Site content outside the on-screen fact list: shot 2 hides the lineup fine print ('15% down, 12.9% APR, 48 months') with visibility:hidden (layout and scroll targets unchanged). Shots 3 and 4 now hand off on the 'We Buy Cars, Too.' band, so the Discover tiles ('$205/mo', '4.8/5', '24 Google reviews') and the review quote never enter the frame and need no blur.",
+    "captureCss is injected into every shot: video-only brand fixes (see captureCss.why).",
+    "Shot 3's set-up click on the finder waits for the section's 0.9 s reveal transition (translateY 28 px): clicking mid-reveal put the cursor 4.7 px below where shot 2 ended. The typing ends 0.73 s before frame 0, so the caret is in the same blink phase as shot 2's last frame (56 frames after its last key).",
+    "Shot 4 repeats shot 3's last scroll in its preroll, then jiggles the mouse and hovers the same tile point, so frame 0 matches shot 3's last frame (tile hovered, cursor on it)."
   ],
   "base": "http://localhost:5183",
   "serve": {
@@ -48,7 +49,7 @@
     "Tue – Sat 10 AM – 7 PM"
   ],
   "sfx": {
-    "auto": "From each capture's cursor.json (template shotCues): click → ios_tink −12 dB; every typed character → one keystroke (key_1..7, sliced from macbook_keyboard) −18 dB ±1.5 dB; every zoom-in → whoosh_short −20 dB, 2 frames early.",
+    "auto": "From each capture's cursor.json (template shotCues): click → ios_tink −12 dB, 2 frames early; every typed character → one keystroke (key_1..7, sliced from macbook_keyboard) −18 dB ±1.5 dB, 1 frame early; every zoom-in → whoosh_short (rotating _lo/_hi pitch variants) −20 dB, placed so its peak (0.3 s in) lands just before the camera's fastest frame (zoom start + 9). All cues + masterDb (+10 dB).",
     "manual": [
       {
         "shot": "0-intro",
@@ -63,7 +64,8 @@
         "cue": "open",
         "file": "sfx/open_ui.wav",
         "db": -14,
-        "why": "window springs in"
+        "why": "window springs in",
+        "note": "open_ui is trimmed to 0.6 s (the kit file ends in a stray tick at 0.97 s)"
       },
       {
         "shot": "4-menu",
@@ -74,7 +76,8 @@
         "cue": "open",
         "file": "sfx/open_ui.wav",
         "db": -14,
-        "why": "menu drawer opens"
+        "why": "menu drawer opens",
+        "note": "open_ui is trimmed to 0.6 s (the kit file ends in a stray tick at 0.97 s)"
       },
       {
         "shot": "5-phone",
@@ -82,7 +85,8 @@
         "cue": "open",
         "file": "sfx/open_ui.wav",
         "db": -16,
-        "why": "phone slides in"
+        "why": "phone slides in",
+        "note": "open_ui is trimmed to 0.6 s (the kit file ends in a stray tick at 0.97 s)"
       },
       {
         "shot": "6-outro",
@@ -99,12 +103,12 @@
       "id": "0-intro",
       "kind": "remotion",
       "composition": "Intro",
-      "durationSec": 3.0,
-      "describe": "Dark charcoal mesh wallpaper (slow drift, grain); the red car-swoosh mark wipes and slides in; DISCOUNT staggers in beneath it letter by letter in wide-tracked Barlow Semi Condensed; fast exit (9 frames from 2.55 s)."
+      "durationSec": 2.0,
+      "describe": "Dark neutral-charcoal mesh wallpaper (slow drift, grain, dither); the red car-swoosh mark wipes and slides in; DISCOUNT staggers in beneath it letter by letter in the loader's exact layout (×1.667); from 1.4 s the whole sting shrinks onto the site's own loader inside the springing window (a match cut), lands at 1.87 s and dissolves into it."
     },
     {
       "id": "1-hero",
-      "describe": "macOS window springs in over the wallpaper; first load with the site's intro loader, the curtain lifts, the fixed hero photo settles (1.08 → 1 over 6 s); the cursor drifts in from bottom-right; 1.5x zoom eases onto the headline 'Cars & Trucks. For Less.' and back out.",
+      "describe": "macOS window springs in as a MATCH CUT: the intro sting shrinks onto the site's own loader (same mark, same DISCOUNT, same spot), the loader's hairline finishes and the curtain lifts; the fixed hero photo settles; the cursor drifts in from bottom-right and rests just right of 'For Less.'; 1.5x zoom on the headline and back out.",
       "url": "/",
       "viewport": {
         "width": 1440,
@@ -113,7 +117,7 @@
       },
       "presetIntroSeen": false,
       "readySelector": ".loader",
-      "durationSec": 9.0,
+      "durationSec": 7.6,
       "cursor": {
         "kind": "pointer",
         "start": {
@@ -123,28 +127,29 @@
       },
       "actions": [
         {
-          "t": 3.0,
+          "t": 2.4,
           "type": "moveTo",
           "x": 980,
           "y": 700,
-          "durationSec": 1.5
+          "durationSec": 1.4
         },
         {
-          "t": 4.7,
+          "t": 3.9,
           "type": "hover",
           "selector": ".hero__title",
           "tight": true,
           "anchor": [
-            0.62,
-            0.8
+            0.75,
+            0.72
           ],
-          "durationSec": 0.9
+          "durationSec": 0.9,
+          "why": "rest in the empty space right of 'For Less.' (not on the full stop)"
         }
       ],
       "zooms": [
         {
-          "at": 4.6,
-          "until": 7.3,
+          "at": 3.8,
+          "until": 6.4,
           "depth": 1.5,
           "focus": ".hero__title",
           "tight": true,
@@ -152,14 +157,16 @@
         }
       ],
       "scene": {
-        "trimSec": 0.8,
-        "durationSec": 8.2,
-        "enter": true
-      }
+        "trimSec": 1.07,
+        "durationSec": 6.53,
+        "enter": "match-cut",
+        "why": "the loader's word has finished rising at 1.5 s; the sting lands on it 14 frames after the window starts (1.07 s + 0.47 s)"
+      },
+      "css": ".status--open .status__dot { background: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); } #finder-q::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; } .split-card__hours { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }"
     },
     {
       "id": "2-scroll",
-      "describe": "Eased scroll to 'Find Your Fit.'; the cursor hovers the Trucks card (its photo zooms ~4%) under a 1.8x camera zoom; scroll on to the visit card and zoom on 'Open Now · Tue – Sat, 10 AM – 7 PM'; scroll to the finder, click the search field, type 'F-150' one key at a time (no submit).",
+      "describe": "Eased scroll to 'Find Your Fit.'; on to the Trucks card, the cursor (a hand over the link) hovers it (photo zooms ~4%) under a 2.0x zoom framed between the cards; zoom out and SETTLE at 1x, scroll to the visit card, 1.8x on the card ('Open Now · Tue – Sat, 10 AM – 7 PM'); settle, scroll to the finder, click the field (I-beam), type 'F-150' (the pointer hides while typing); zoom out lands on the cut.",
       "url": "/",
       "viewport": {
         "width": 1440,
@@ -169,8 +176,8 @@
       "presetIntroSeen": true,
       "prerollSec": 6.6,
       "readySelector": ".hero__title",
-      "css": ".lineup + .band__fine { visibility: hidden; }",
-      "durationSec": 16.0,
+      "css": ".lineup + .band__fine { visibility: hidden; } .status--open .status__dot { background: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); } #finder-q::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; } .split-card__hours { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }",
+      "durationSec": 17.0,
       "cursor": {
         "kind": "pointer",
         "start": {
@@ -181,30 +188,30 @@
       },
       "actions": [
         {
-          "t": 0.4,
+          "t": 0.2,
           "type": "scrollTo",
           "selector": "section.band--black:not(.glass-band) .band__title",
           "align": "start",
           "offset": 150,
-          "durationSec": 1.8
+          "durationSec": 1.6
         },
         {
-          "t": 0.5,
+          "t": 0.3,
           "type": "moveTo",
           "x": 64,
           "y": 560,
           "durationSec": 1.0,
-          "why": "park in the gutter while hidden by scroll 1, so the Trucks hover starts when the cursor arrives"
+          "why": "park in the gutter while hidden by the scrolls, so the Trucks hover starts when the cursor arrives"
         },
         {
-          "t": 2.6,
+          "t": 2.0,
           "type": "scrollTo",
           "selector": "a.model[href=\"/inventory?body=Truck\"]",
           "align": "center",
           "durationSec": 1.3
         },
         {
-          "t": 3.9,
+          "t": 3.3,
           "type": "hover",
           "selector": "a.model[href=\"/inventory?body=Truck\"]",
           "anchor": [
@@ -214,7 +221,7 @@
           "durationSec": 0.9
         },
         {
-          "t": 7.2,
+          "t": 7.3,
           "type": "scrollTo",
           "selector": ".split-card",
           "align": "center",
@@ -227,12 +234,12 @@
           "tight": true,
           "anchor": [
             1.05,
-            0.75
+            0.6
           ],
           "durationSec": 0.7
         },
         {
-          "t": 11.2,
+          "t": 12.2,
           "type": "scrollTo",
           "selector": "#finder-q",
           "align": "center",
@@ -240,7 +247,7 @@
           "durationSec": 1.3
         },
         {
-          "t": 12.6,
+          "t": 13.6,
           "type": "click",
           "selector": "#finder-q",
           "anchor": [
@@ -250,7 +257,7 @@
           "durationSec": 0.7
         },
         {
-          "t": 13.6,
+          "t": 14.6,
           "type": "type",
           "text": "F-150",
           "perCharSec": 0.14
@@ -258,27 +265,30 @@
       ],
       "zooms": [
         {
-          "at": 4.2,
-          "until": 6.8,
-          "depth": 1.8,
-          "focus": "a.model[href=\"/inventory?body=Truck\"]",
-          "follow": true,
-          "anchor": [
-            0.5,
-            0.4
-          ]
+          "at": 3.6,
+          "until": 6.0,
+          "depth": 2.0,
+          "focus": {
+            "x": 375,
+            "y": 385
+          },
+          "follow": false,
+          "why": "Trucks card (x 132-705, y 136-708 after its reveal): a 720x450 view at x 15-735, y 160-610 shows 'Trucks', the truck and the floor; its right edge falls in the gutter before the red Coupe, its bottom above the 'Ask About Availability' pill"
         },
         {
-          "at": 8.6,
-          "until": 11.0,
+          "at": 8.7,
+          "until": 10.9,
           "depth": 1.8,
-          "focus": ".split-card__hours",
-          "tight": true,
-          "follow": false
+          "focus": {
+            "x": 400,
+            "y": 422
+          },
+          "follow": false,
+          "why": "the visit card (y 204-639) centred: 33 px of page above and below, the hours line in the lower third"
         },
         {
-          "at": 12.3,
-          "until": 15.0,
+          "at": 13.3,
+          "until": 16.0,
           "depth": 1.5,
           "focus": "#finder-q",
           "anchor": [
@@ -290,12 +300,13 @@
       ],
       "scene": {
         "trimSec": 0,
-        "durationSec": 16.0
+        "durationSec": 17.0,
+        "why": "the last key lands 56 frames before the end (as before), so shot 3's caret blink phase still matches"
       }
     },
     {
       "id": "3-buy",
-      "describe": "From the finder (F-150 still typed) scroll to the black 'We Buy Cars, Too.' band; hover 'We Buy Trucks' (photo zooms ~4.5%) under a gentle 1.5x zoom; continue to the Discover tiles and the review quote.",
+      "describe": "From the finder (F-150 still typed, pointer hidden) scroll to the black 'We Buy Cars, Too.' band; hover 'We Buy Trucks' (photo zooms ~4.5%) under a 2.0x zoom framed on the tile row; zoom out and hold. Ends on this band: the Discover tiles and the review are never in frame.",
       "url": "/",
       "viewport": {
         "width": 1440,
@@ -305,8 +316,7 @@
       "presetIntroSeen": true,
       "prerollSec": 2.4,
       "readySelector": ".hero__title",
-      "css": ".tile--type:not(.tile--type-cool) .tile__type, .tile--type-warm .tile__label { filter: blur(14px); }",
-      "durationSec": 7.6,
+      "durationSec": 5.7,
       "cursor": {
         "kind": "pointer",
         "start": {
@@ -358,34 +368,30 @@
             0.55
           ],
           "durationSec": 0.9
-        },
-        {
-          "t": 4.7,
-          "type": "scrollTo",
-          "selector": ".tile--type",
-          "align": "start",
-          "offset": 260,
-          "durationSec": 1.8
         }
       ],
       "zooms": [
         {
           "at": 2.3,
           "until": 4.5,
-          "depth": 1.5,
-          "focus": ".glass-band .teasers a.tile",
-          "contains": "We buy trucks",
-          "follow": true
+          "depth": 2.0,
+          "focus": {
+            "x": 740,
+            "y": 623
+          },
+          "follow": false,
+          "why": "tiles at y 492-723 between the photo (ends y 396) and the band's end (y 851): a 720x450 view at x 380-1100, y 398-848 is all black band and tiles; the 'We Buy Cars' label is fully out (x 270-370), 'We Buy SUVs' fully in"
         }
       ],
       "scene": {
         "trimSec": 0,
-        "durationSec": 7.6
-      }
+        "durationSec": 5.7
+      },
+      "css": ".status--open .status__dot { background: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); } #finder-q::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; } .split-card__hours { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }"
     },
     {
       "id": "4-menu",
-      "describe": "Click 'Menu' (top left); the drawer slides in; 1.8x zoom onto the 'Admin · Staff Sign-In To The Sale Desk' row; the cursor rests on it (no click in part A). CUT POINT for part B.",
+      "describe": "Same scroll as shot 3's end (the We Buy band, cursor on the We Buy Trucks tile); click 'Menu' (top left); the drawer slides in; 1.8x zoom onto the 'Admin · Staff Sign-In To The Sale Desk' row; the cursor (hand) rests on it (no click in part A). CUT POINT for part B.",
       "url": "/",
       "viewport": {
         "width": 1440,
@@ -395,7 +401,7 @@
       "presetIntroSeen": true,
       "prerollSec": 6.5,
       "readySelector": ".hero__title",
-      "css": ".tile--type:not(.tile--type-cool) .tile__type, .tile--type-warm .tile__label { filter: blur(14px); }",
+      "css": ".status--open .status__dot { background: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); } #finder-q::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; } .split-card__hours { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }",
       "durationSec": 6.0,
       "cursor": {
         "kind": "pointer",
@@ -407,12 +413,31 @@
       },
       "actions": [
         {
-          "t": -2.0,
+          "t": -5.0,
           "type": "scrollTo",
-          "selector": ".tile--type",
+          "selector": ".glass-band .band__title",
           "align": "start",
-          "offset": 260,
+          "offset": 150,
           "durationSec": 0.1
+        },
+        {
+          "t": -3.0,
+          "type": "moveTo",
+          "x": 726,
+          "y": 622,
+          "durationSec": 0.2,
+          "why": "jiggle after the set-up scroll so the tile under the cursor takes its hover state"
+        },
+        {
+          "t": -2.0,
+          "type": "hover",
+          "selector": ".glass-band .teasers a.tile",
+          "contains": "We buy trucks",
+          "anchor": [
+            0.5,
+            0.55
+          ],
+          "durationSec": 0.3
         },
         {
           "t": 0.4,
@@ -448,7 +473,7 @@
     },
     {
       "id": "5-phone",
-      "describe": "An iPhone slides in while the desktop window recedes and blurs (PhoneScene `behind`); the 390-wide capture: hero, then three smooth swipes down the lineup cards (SUVs, Sedans, Trucks) with touch ripples, resting on the Trucks card; the mobile dock (Call / Directions) stays in view.",
+      "describe": "An iPhone slides in (opaque at once, x + scale + tilt, motion blur) while the desktop window recedes and blurs; the 390-wide capture: hero, then three iOS swipes (the finger drags the page 1:1, lets go, the page coasts) down the lineup cards (SUVs, Sedans, Trucks), resting on the Trucks card; the status bar takes the page's top colour; the phone drops out of frame.",
       "url": "/",
       "viewport": {
         "width": 390,
@@ -470,17 +495,16 @@
           "selector": "section.band--black:not(.glass-band) .band__title",
           "align": "start",
           "offset": 90,
-          "durationSec": 1.2,
           "touch": {
             "x": 250,
-            "y": 600
-          }
+            "y": 690
+          },
+          "dragSec": 0.25
         },
         {
           "t": 3.9,
           "type": "scrollBy",
           "y": 430,
-          "durationSec": 1.1,
           "touch": {
             "x": 240,
             "y": 620
@@ -490,7 +514,6 @@
           "t": 5.8,
           "type": "scrollBy",
           "y": 450,
-          "durationSec": 1.1,
           "touch": {
             "x": 255,
             "y": 610
@@ -502,26 +525,31 @@
         "trimSec": 0,
         "durationSec": 9.0,
         "behind": "last frame of 4-menu (or of part B) in its window"
-      }
+      },
+      "css": ".status--open .status__dot { background: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); } #finder-q::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; } .split-card__hours { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }"
     },
     {
       "id": "6-outro",
       "kind": "remotion",
       "composition": "Outro",
-      "durationSec": 4.0,
-      "describe": "Full-colour logo on dark (discount-logo-reverse.png), then 'www.discountusedcarsandtrucks.com' and '(713) 900-5050 · 8108 Gulf Fwy, Houston' stagger in; ios_received."
+      "durationSec": 3.8,
+      "describe": "Drawn under the phone as it drops away: full-colour logo (discount-logo-reverse.png), then 'www.discountusedcarsandtrucks.com' (42 px), '(713) 900-5050 · 8108 Gulf Fwy, Houston' and 'Tue – Sat 10 AM – 7 PM' (30 px, 82% white) word by word; ios_received; slow push 1.00 → 1.03; the logo exits and the frame fades to black over the last 0.4 s."
     }
   ],
   "totalSec": {
-    "partA": 53.8,
+    "partA": 49.0,
     "breakdown": {
-      "0-intro": 3.0,
-      "1-hero": 8.2,
-      "2-scroll": 16.0,
-      "3-buy": 7.6,
+      "0-intro": 1.4,
+      "1-hero": 6.53,
+      "2-scroll": 17.0,
+      "3-buy": 5.7,
       "4-menu": 6.0,
       "5-phone": 9.0,
-      "6-outro": 4.0
+      "6-outro": 3.8
     }
+  },
+  "captureCss": {
+    "why": "Video-only fixes injected into every captured shot (the site source is untouched): the green 'Open Now' dot becomes the text colour (brand: black, white and the logo's red only), Chromium's blue search-clear × is hidden, and the hours line is centre-aligned (the status pill sat ~6 px low). The same rules would fix the live site.",
+    "css": ".status--open .status__dot { background: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); } #finder-q::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; } .split-card__hours { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }"
   }
 }

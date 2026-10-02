@@ -7,6 +7,12 @@ import { readMoney, writeMoney, type MoneyAnswers } from "@/lib/sales/money";
 import { casMergeStepData } from "@/lib/sales/step-data-write";
 import { hasFinancingDownPayment, withDownPayment } from "@/lib/sales/paperwork";
 import { readFunding } from "@/lib/sales/deal-type";
+import {
+  DOWN_PAYMENT_FROZEN_CODE,
+  DOWN_PAYMENT_FROZEN_MESSAGE,
+  downPaymentChanges,
+} from "@/lib/sales/down-payment-freeze";
+import { filedBillOfSaleOn } from "@/lib/sales/filed-bill-of-sale";
 
 /**
  * What the price meant, and whether the registration is paid.
@@ -20,7 +26,7 @@ import { readFunding } from "@/lib/sales/deal-type";
  * when they are filed.
  */
 
-export type MoneyState = { ok: boolean; error?: string };
+export type MoneyState = { ok: boolean; error?: string; code?: typeof DOWN_PAYMENT_FROZEN_CODE };
 
 export async function saveSaleMoney(
   dealId: string,
@@ -31,11 +37,34 @@ export async function saveSaleMoney(
 
   try {
     const supabase = await createClient();
+
+    /*
+      The down payment is frozen once the bill of sale is filed (owner's
+      decision 10/01/2026; SOP Freeze). Looked up only when this save carries
+      a down payment at all; the refusal itself is decided below, on the
+      blob as it stands at write time.
+    */
+    const frozen =
+      patch.paidTodayAmount !== undefined ? await filedBillOfSaleOn(dealId) : null;
+    let refused: boolean = false;
+
     // Version-checked: the second answer merges onto whatever is truly
     // there at write time, so it cannot erase the first — or anything
     // else that landed since this screen's read.
     const merged = await casMergeStepData(supabase, dealId, (current) => {
       const next: MoneyAnswers = { ...readMoney(current), ...patch };
+      // Only a change to the figure is refused: the same down payment saved
+      // again (every Next on this screen resends it) goes through.
+      refused =
+        frozen !== null &&
+        patch.paidTodayAmount !== undefined &&
+        downPaymentChanges({
+          advertised: frozen.advertised,
+          stepData: current,
+          money: next,
+          to: patch.paidTodayAmount,
+        });
+      if (refused) return null;
       const written = writeMoney(current, next);
       // A changed "down today" also changes the contract's down payment once
       // the contract holds one: the same dollars, one fact (SOP "Money").
@@ -49,6 +78,7 @@ export async function saveSaleMoney(
       }
       return written;
     });
+    if (refused) return { ok: false, error: DOWN_PAYMENT_FROZEN_MESSAGE, code: DOWN_PAYMENT_FROZEN_CODE };
     if (!merged.ok) throw new Error(merged.error);
   } catch {
     return { ok: false, error: "Could not save that. Try again." };

@@ -1,24 +1,30 @@
 // theme.ts — the single source of truth: brand, motion, Recordly tuning, sound map.
-// Components never inline a colour, easing or spring; they read it from here.
+// Components never inline a colour, easing, spring or timing; they read it from here. Timings are in SECONDS and
+// converted with Math.round(x * fps) where they are used, so the film keeps its pace at any frame rate.
 // Per project, change `colors`, `fonts`, `brand` and `site`; leave `recordly` alone unless the user asks.
 import { Easing } from "remotion";
 
 export const theme = {
   colors: {
     // Brand: black and white; the logo's red is the ONE colour (max one red element per frame).
-    bg: "#0A0A0B",
-    bgAlt: "#141417",
-    meshA: "#26262B", // charcoal mesh blobs
-    meshB: "#1B1B1F",
-    meshC: "#33333A",
+    // Wallpaper: neutral charcoal (no blue cast), lifted enough that the window's edge and shadow read.
+    bg: "#171717",
+    bgAlt: "#242424",
+    meshA: "#444444", // charcoal mesh blobs
+    meshB: "#333333",
+    meshC: "#5A5A5A",
+    sheen: "rgba(255,255,255,0.035)", // soft diagonal light across the wallpaper
     primary: "#9A1414",
     text: "#F5F5F4",
     textDim: "#A6A6AA",
+    textSoft: "rgba(245,245,244,0.82)", // secondary lines that must still read on a phone (≥ 75% white)
     ink: "#0A0A0B",
+    black: "#000000",
+    shadeRgb: "0,0,0", // for rgba() shades: grade, vignette, dither base
     // macOS window chrome (dark appearance)
     chrome: "#1F1F22",
     chromeTop: "#2A2A2E",
-    chromeBorder: "rgba(255,255,255,0.10)",
+    chromeBorder: "rgba(255,255,255,0.12)", // 1 px inner highlight along the top edge
     chromeHairline: "rgba(0,0,0,0.55)",
     urlPill: "rgba(255,255,255,0.075)",
     urlText: "#D4D4D8",
@@ -26,11 +32,16 @@ export const theme = {
     lightsMonoEdge: "rgba(0,0,0,0.35)",
     lightsColor: ["#FF5F57", "#FEBC2E", "#28C840"], // only when lights="color"
     shadow: "rgba(0,0,0,0.55)",
+    shadowDeep: "rgba(0,0,0,0.72)",
     // cursor + touch
     cursorFill: "#000000",
     cursorStroke: "#FFFFFF",
     cursorShadow: "rgba(0,0,0,0.35)",
-    clickRing: "rgba(255,255,255,0.85)",
+    handFill: "#FFFFFF", // macOS pointing hand: white with a black outline
+    handStroke: "#000000",
+    // click ring: white with a faint dark edge inside and out, so it reads on white pages and on black bands
+    clickRing: "rgba(255,255,255,0.9)",
+    clickRingEdge: "rgba(0,0,0,0.3)",
     // touch indicator: neutral grey disc, white inner ring, faint dark edge, so it reads on white and on black
     touch: "rgba(128,128,134,0.45)",
     touchRing: "rgba(255,255,255,0.85)",
@@ -40,12 +51,16 @@ export const theme = {
     phoneEdgeHi: "#8A8A90",
     phoneBezel: "#050505",
     phoneButton: "#2E2E33",
-    statusText: "#FFFFFF",
-    statusBar: "#000000",
+    glass: "rgba(255,255,255,0.07)",
+    statusLight: "#FFFFFF", // status-bar glyphs on a dark page top
+    statusDark: "#000000", // … on a light page top
+    statusBar: "#000000", // fallback when the capture has no edge colours
   },
   fonts: {
-    // Loaded from public/fonts by src/lib/fonts.ts (the site's own face).
+    // Loaded from public/fonts by src/lib/fonts.ts (the site's own face). `stack` is what components use: a missing
+    // face falls back to a condensed sans, never the browser's serif (and fonts.ts cancels the render anyway).
     display: "Barlow Semi Condensed",
+    stack: '"Barlow Semi Condensed", "Arial Narrow", sans-serif',
     files: [
       { weight: 400, file: "fonts/barlow-semi-condensed-latin-400-normal.woff2" },
       { weight: 500, file: "fonts/barlow-semi-condensed-latin-500-normal.woff2" },
@@ -77,34 +92,65 @@ export const theme = {
     followWeight: 0.35, // while zoomed, how far the focus leans toward the cursor
     cameraSpring: { omega: 6.5 }, // rad/s, critically damped: the camera trails the target softly
     cursorSpring: { omega: 19 }, // ≈ smoothing 0.67 at 30 fps
-    cursorLeadFrames: 2, // compensates the spring lag so clicks land on time
+    cursorLeadSec: 0.067, // compensates the spring lag so clicks land on time
     cursorHeight: 42, // px at 1080p ≈ 2.5× the OS arrow
     cursorZoomGrow: 0.35, // the cursor grows 35% as much as the page when zoomed
     clickScale: 0.82,
     clickMs: 350,
     ringMs: 450,
     ringRadius: [10, 34],
+    clickPinSec: 0.2, // around a click the smoothed cursor is pinned to the real point (± this long)
     motionBlur: 0.35, // light
     maxBlurPx: 2,
-    cursorHideFadeFrames: 5,
+    cursorHideFadeSec: 0.17, // the cursor fades (and shrinks a little) out/in around self-scrolls and typing
+    cursorHideScale: 0.85,
+    scrollMergeSec: 0.67, // two self-scrolls closer than this keep the cursor hidden between them (no blink)
   },
   window: {
     titleBar: 38,
     radius: 12,
     marginY: 56, // the window's content height = 1080 - 2 * marginY - titleBar
     lights: "mono" as "mono" | "color",
-    pushScale: 0.035, // the whole window leans in this much at full zoom (depth)
+    // the whole window leans in this much at full zoom depth, so a zoom reads as a camera move, not a page zoom
+    pushScale: 0.1,
     // idle breathing while the window holds the screen (sin-wave micro-motion, kept tiny: it is a recording)
     breathe: { px: 2, periodSec: 6.5, scale: 0.0015 },
   },
-  // Cut between two captures inside the same window: the window stays, the content crossfades under a short
-  // blur (spring-driven, frames derived from fps). The cursor is never blurred.
+  // A cut between two captures inside the same window. The captures are staged pixel-matched (same scroll, same
+  // cursor, same hover), so the cut is HARD: any dissolve or blur on identical content only reads as a hiccup.
+  // Set xfadeSec > 0 (and blurPx) only for captures that do not match (e.g. a different app or page).
   transition: {
-    xfadeSec: 0.2, // 6 frames at 30 fps
-    blurPx: 6,
+    xfadeSec: 0,
+    blurPx: 0,
   },
-  // Colour grade (layer 4 of 5): luminance only, so the site's own colours stay true.
+  // Intro sting → window: a match cut onto the site's own loader (same mark, same word, same spot).
+  sting: {
+    wipeSec: 0.73, // the mark's left-to-right wipe
+    wordDelaySec: 0.27,
+    letterStaggerSec: 0.1, // 3 frames at 30 fps
+    breathePeriodSec: 4.6,
+    breatheAmp: 0.006,
+    handoffAtSec: 1.4, // the window starts here and the sting begins to shrink onto the loader
+    handoffSec: 0.47, // ... and lands on it this much later
+    fadeSec: 0.13, // then the sting dissolves into the identical loader beneath it
+    exitSec: 0.3, // a plain (non-match) sting leaves this fast
+  },
+  outro: {
+    logoWidth: 760,
+    lineSizes: [42, 30, 30], // URL, then the contact and hours lines: readable on a phone
+    linesDelaySec: 0.6,
+    lineStaggerSec: 0.2,
+    wordStaggerSec: 0.1,
+    gap: 18,
+    pushTo: 1.03, // slow push across the whole outro
+    exitSec: 0.3, // the logo leaves (blur + fade) ...
+    fadeSec: 0.4, // ... while the frame fades to black
+  },
+  // Backdrop finish (behind the window and the phone only): a screen recording is never graded or vignetted.
   grade: { top: 0.06, bottom: 0.12 },
+  vignette: { strength: 0.32, start: 0.58 },
+  grain: { opacity: 0.07, overUi: 0.025 }, // overlay grain: heavier on the wallpaper, a whisper over the UI
+  dither: { opacity: 0.04 }, // static fine noise on the wallpaper gradient, so h264 does not band it
   phone: {
     screen: { width: 390, height: 844 }, // iPhone 14 points; the capture is 390 × (844 − statusBar)
     statusBar: 47,
@@ -112,21 +158,33 @@ export const theme = {
     radius: 55,
     screenRadius: 47,
     island: { width: 124, height: 36, top: 11 },
+    homeIndicator: { width: 134, height: 5, bottom: 8 },
     time: "9:41",
+    floatPx: 4,
+    floatPeriodSec: 6.3,
+    enterOpaqueSec: 0.067, // fully opaque within 2 frames: the desktop never shows through the phone
+    exitSec: 0.4, // the phone drops out of frame
+    maxMotionBlurPx: 5,
   },
-  grain: { opacity: 0.07 },
-  vignette: { strength: 0.32 },
-  // Sound map (recordly-demo SKILL.md). Files live in public/sfx/. Gains in dB.
+  touch: {
+    rippleSec: 0.53,
+    fingerFadeSec: 0.1,
+  },
+  // Sound map (recordly-demo SKILL.md). Files live in public/sfx/. Gains in dB, before masterDb.
   sfx: {
-    click: { file: "sfx/ios_tink.wav", db: -12 },
+    // Without music the kit's levels are very quiet (−27 LUFS); +10 dB keeps true peak around −4 dBTP.
+    masterDb: 10,
+    click: { file: "sfx/ios_tink.wav", db: -12, leadSec: 0.067 },
     // one real keystroke per character: single hits sliced from the kit's macbook_keyboard.wav (scripts/prepare-sfx.sh)
-    type: { files: ["sfx/key_1.wav", "sfx/key_2.wav", "sfx/key_3.wav", "sfx/key_4.wav", "sfx/key_5.wav", "sfx/key_6.wav", "sfx/key_7.wav"], db: -18, jitterDb: 1.5 },
-    open: { file: "sfx/open_ui.wav", db: -14 },
-    zoomIn: { file: "sfx/whoosh_short.wav", db: -20, maxSec: 0.45 }, // the kit's whoosh.wav, cut to 0.45 s with a fade
+    type: { files: ["sfx/key_1.wav", "sfx/key_2.wav", "sfx/key_3.wav", "sfx/key_4.wav", "sfx/key_5.wav", "sfx/key_6.wav", "sfx/key_7.wav"], db: -18, jitterDb: 1.5, leadSec: 0.033 },
+    open: { file: "sfx/open_ui.wav", db: -14, leadSec: 0.067 }, // trimmed to 0.6 s (the kit's file ends in a stray tick)
+    // the kit's whoosh.wav cut to 0.45 s, plus two pitch variants so six zooms do not repeat one sample;
+    // the cue is placed so the whoosh's peak (0.3 s in) lands just before the camera's fastest frame
+    zoomIn: { files: ["sfx/whoosh_short.wav", "sfx/whoosh_short_lo.wav", "sfx/whoosh_short_hi.wav"], db: -20, maxSec: 0.45, peakSec: 0.3, leadSec: 0.033 },
     success: { file: "sfx/ios_success.wav", db: -10 },
     intro: { file: "sfx/ios_note.wav", db: -8 },
     outro: { file: "sfx/ios_received.wav", db: -4 },
-    tap: { file: "sfx/ios_tink.wav", db: -16 },
+    tap: { file: "sfx/ios_tink.wav", db: -16, leadSec: 0.067 },
   },
   fps: 30,
   width: 1920,
@@ -135,3 +193,7 @@ export const theme = {
 
 export type Theme = typeof theme;
 export const dbToGain = (db: number) => Math.pow(10, db / 20);
+/** seconds → frames at the composition's fps */
+export const toFrames = (sec: number, fps: number) => Math.round(sec * fps);
+/** rgba() from theme.colors.shadeRgb (or another "r,g,b" triplet) */
+export const shade = (alpha: number, rgb: string = theme.colors.shadeRgb) => `rgba(${rgb},${alpha})`;

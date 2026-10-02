@@ -1,15 +1,17 @@
-// A desktop shot: wallpaper → macOS window (springs in) with the zooming capture inside → cursor → SFX →
-// grain + vignette. Put scene-specific titles in `children` (drawn above the window, below the grain).
+// A single desktop shot: backdrop (wallpaper, grade, vignette) → macOS window (springs in) with the zooming capture
+// inside → cursor → SFX → a whisper of grain. Put scene-specific titles in `children` (above the window).
+// For a film of several captures in one window use DesktopScene; this is the one-capture preview.
 import React from "react";
-import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
-import { theme } from "../theme";
+import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
+import { theme, toFrames } from "../theme";
 import { shotFile, useShotData, useTracks } from "../lib/shot";
-import { Wallpaper } from "../components/Wallpaper";
+import { Backdrop } from "../components/Wallpaper";
 import { MacWindow, windowLayout } from "../components/MacWindow";
 import { CameraView, cameraAt } from "../components/Camera";
 import { Cursor } from "../components/Cursor";
 import { Cue, Sfx, shotCues } from "../components/Sfx";
 import { Finish } from "../components/Overlays";
+import { windowPose } from "./DesktopScene";
 
 export type ShotSceneProps = {
   shot: string;
@@ -18,8 +20,9 @@ export type ShotSceneProps = {
   trimSec?: number;
   /** window springs in (first desktop scene) */
   enter?: boolean;
-  /** window leaves over the last 10 frames */
+  /** window leaves over the last exitSec */
   exit?: boolean;
+  exitSec?: number;
   /** derive click / typing / zoom sounds from the capture */
   autoSfx?: boolean;
   cues?: Cue[];
@@ -27,7 +30,7 @@ export type ShotSceneProps = {
   children?: React.ReactNode;
 };
 
-export const ShotScene: React.FC<ShotSceneProps> = ({ shot, url, trimSec = 0, enter = false, exit = false, autoSfx = true, cues = [], lights, children }) => {
+export const ShotScene: React.FC<ShotSceneProps> = ({ shot, url, trimSec = 0, enter = false, exit = false, exitSec = 0.33, autoSfx = true, cues = [], lights, children }) => {
   const frame = useCurrentFrame();
   const { fps, width, height, durationInFrames } = useVideoConfig();
   const data = useShotData(shot);
@@ -37,21 +40,20 @@ export const ShotScene: React.FC<ShotSceneProps> = ({ shot, url, trimSec = 0, en
   const trimFrames = Math.round(trimSec * fps);
   const L = windowLayout(data.viewport.width, data.viewport.height, width, height);
   const box = { left: L.contentLeft, top: L.contentTop, width: L.contentW, height: L.contentH };
-  const e = enter ? spring({ frame, fps, config: theme.spring.window }) : 1;
-  const x = exit ? interpolate(frame, [durationInFrames - 10, durationInFrames], [0, 1], { easing: theme.ease.in, extrapolateLeft: "clamp", extrapolateRight: "clamp" }) : 0;
+  const exitFrames = Math.max(1, toFrames(exitSec, fps));
+  const x = exit ? interpolate(frame, [durationInFrames - exitFrames, durationInFrames], [0, 1], { easing: theme.ease.in, extrapolateLeft: "clamp", extrapolateRight: "clamp" }) : 0;
   const cam = cameraAt(data, tracks, frame + trimFrames, L.contentW, L.contentH);
-  const push = 1 + Math.min(1, (cam.s - 1) / (theme.recordly.defaultDepth - 1)) * theme.window.pushScale;
-  const scale = interpolate(e, [0, 1], [0.94, 1]) * push * (1 - 0.04 * x);
+  const pose = windowPose(frame, fps, { enter, camScale: cam.s });
   const allCues = [...(autoSfx ? shotCues(data, { trimFrames, durationInFrames }) : []), ...cues];
 
   return (
     <AbsoluteFill>
-      <Wallpaper />
+      <Backdrop />
       <AbsoluteFill
         style={{
-          opacity: Math.min(1, e * 1.2) * (1 - x),
+          opacity: pose.opacity * (1 - x),
           transformOrigin: `${L.left + L.contentW / 2}px ${L.top + (L.contentH + L.T) / 2}px`,
-          transform: `translateY(${interpolate(e, [0, 1], [30, 0]) - x * 20}px) scale(${scale})`,
+          transform: `translateY(${pose.ty - x * 20}px) scale(${pose.scale * (1 - 0.04 * x)})`,
         }}
       >
         <MacWindow width={L.contentW} height={L.contentH} url={url} lights={lights} style={{ left: L.left, top: L.top }}>

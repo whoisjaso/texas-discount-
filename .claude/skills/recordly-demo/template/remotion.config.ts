@@ -5,7 +5,7 @@ Config.setVideoImageFormat("jpeg");
 Config.setJpegQuality(95);
 Config.setOverwriteOutput(true);
 Config.setCodec("h264");
-Config.setCrf(17);
+Config.setCrf(16); // masters: platforms re-compress, give headroom (and less banding in dark gradients)
 // Shots are 2880x1800 videos: keep parallel tabs modest so frame extraction does not starve.
 Config.setConcurrency(3);
 

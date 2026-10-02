@@ -51,7 +51,7 @@
  *                                      // or "start": { "fromShot": "1-hero", "x": 365, "y": 568 } (x/y = fallback)
  *     "actions": [
  *       { "t": 0.4, "type": "scrollTo", "selector": ".band__title", "align": "start", "offset": 140, "durationSec": 1.8 },
- *       { "t": 3.0, "type": "scrollBy", "y": 600, "durationSec": 1.2, "touch": { "x": 230, "y": 620 } },
+ *       { "t": 3.0, "type": "scrollBy", "y": 600, "touch": { "x": 230, "y": 620 }, "dragSec": 0.3, "tauSec": 0.32 },
  *       { "t": 3.6, "type": "hover", "selector": "a.model", "contains": "Trucks", "anchor": [0.55, 0.5], "durationSec": 0.8 },
  *       { "t": 4.0, "type": "moveTo", "x": 900, "y": 600 },
  *       { "t": 11.3, "type": "click", "selector": "#finder-q", "anchor": [0.25, 0.5] },
@@ -69,6 +69,16 @@
  *   run during the preroll (e.g. pre-type a field for continuity with the
  *   previous shot). Selectors are CSS; `contains` filters by text, `nth` picks
  *   the n-th match.
+ *
+ *   Touch scrolls (phone shots, or any scroll with `touch`) are iOS swipes: the finger drags the page 1:1 for
+ *   `dragSec`, lets go, and the page coasts to a stop (exponential decay, `tauSec`); the default length is
+ *   dragSec + 4.5 tauSec. The finger position in cursor.json rides with the content while it is down.
+ *
+ * WHAT cursor.json RECORDS besides the track: per frame `c`, the pointer shape the OS would show there ('a' arrow,
+ * 'p' pointing hand over links/buttons, 't' I-beam in text fields, from the element's computed `cursor`);
+ * `cursor.hiddenAtStart` when the preroll ended with typing (macOS hides the pointer until the mouse moves);
+ * for phone shots `screenEdges.top/bottom`, the page's colour along the top and bottom edge per frame (status-bar tint,
+ * home-indicator colour).
  */
 'use strict';
 
@@ -135,6 +145,31 @@ const ease = Object.fromEntries(Object.entries(EASE).map(([k, v]) => [k, bezier(
 // A hand moving a mouse follows the minimum-jerk profile (bell-shaped speed, peak 1.875× the mean).
 ease.pointer = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * t * (10 - 15 * t + 6 * t * t));
 
+// iOS-style swipe: the finger drags the page 1:1 (its speed ramps up over the first ~45% of the drag), lets go,
+// and the page coasts to a stop with exponential decay (τ ≈ 0.32 s, close to UIScrollView's normal rate).
+const SWIPE = { dragSec: 0.3, tauSec: 0.32, tailTau: 4.5 };
+/** Cumulative fraction of the scroll distance reached after each of n frames (last = 1). */
+function swipeProfile(n, dragFrames, tauFrames) {
+  const ramp = Math.max(1, Math.round(dragFrames * 0.45));
+  const v = [];
+  for (let i = 0; i < n; i++) v.push(i < dragFrames ? ease.pointer(Math.min(1, (i + 1) / ramp)) : Math.exp(-(i - dragFrames + 1) / tauFrames));
+  const sum = v.reduce((a, b) => a + b, 0);
+  let acc = 0;
+  return v.map((x) => (acc += x) / sum);
+}
+
+/** Runs in the page: the cursor the OS would show at a point ('p' hand over links/buttons, 't' I-beam in fields, 'a' arrow). */
+function cursorKind(pt) {
+  const el = document.elementFromPoint(pt.x, pt.y);
+  if (!el) return 'a';
+  const c = getComputedStyle(el).cursor;
+  if (c === 'pointer') return 'p';
+  if (c === 'text' || c === 'vertical-text') return 't';
+  if (c === 'auto' && (el.isContentEditable || el.tagName === 'TEXTAREA'
+    || (el.tagName === 'INPUT' && /^(text|search|email|tel|url|password|number)$/.test(el.type || 'text')))) return 't';
+  return 'a';
+}
+
 /** Small deterministic PRNG (mulberry32) so typing rhythm is identical every run. */
 function prng(seedStr) {
   let a = parseInt(crypto.createHash('md5').update(seedStr).digest('hex').slice(0, 8), 16) >>> 0;
@@ -172,6 +207,16 @@ function ffprobeFrames(file) {
     'stream=nb_read_frames,width,height,r_frame_rate,pix_fmt,codec_name', '-of', 'json', file]).toString();
   const s = JSON.parse(r).streams[0];
   return { frames: Number(s.nb_read_frames), width: s.width, height: s.height, rate: s.r_frame_rate, pixFmt: s.pix_fmt, codec: s.codec_name };
+}
+
+/** Mean sRGB colour of the top or bottom 2 CSS px of every frame: [[r, g, b], …]. */
+function edgeColours(mp4, edge, dsf = 1) {
+  const rows = Math.max(2, Math.round(2 * dsf));
+  const crop = edge === 'top' ? `crop=iw:${rows}:0:0` : `crop=iw:${rows}:0:ih-${rows}`;
+  const raw = execFileSync('ffmpeg', ['-v', 'error', '-i', mp4, '-vf', `${crop},scale=1:1:flags=area:in_color_matrix=bt709:in_range=tv,format=rgb24`, '-f', 'rawvideo', '-'], { maxBuffer: 64 * 1024 * 1024 });
+  const out = [];
+  for (let i = 0; i + 2 < raw.length; i += 3) out.push([raw[i], raw[i + 1], raw[i + 2]]);
+  return out;
 }
 
 function encode(framesDir, outFile, { preset = 'medium' } = {}) {
@@ -459,7 +504,10 @@ async function captureShot(rawShot, opts) {
     const t0 = Date.now();
     const inflight = [];
     let buttons = 0;
+    // Typing hides the macOS pointer until the mouse moves again; remember whether the preroll ended that way.
+    let typedSinceMove = false;
     const mouse = (type, pos) => {
+      if (type === 'mouseMoved') typedSinceMove = false;
       if (type === 'mousePressed') buttons = 1;
       const p = { type, x: pos.x, y: pos.y, button: type === 'mouseMoved' && !buttons ? 'none' : 'left', buttons, clickCount: type === 'mouseMoved' ? 0 : 1 };
       if (type === 'mouseReleased') buttons = 0;
@@ -483,6 +531,7 @@ async function captureShot(rawShot, opts) {
       await waitOrNudge(Promise.all(inflight.splice(0)), 'input', frame);
     };
     let lastPng = null;
+    let hiddenAtStart = false;
 
     const inViewport = (p) => p.x >= 0 && p.y >= 0 && p.x < vw && p.y < vh;
     const targetPoint = (a, rects) => {
@@ -527,15 +576,21 @@ async function captureShot(rawShot, opts) {
           } else to = Number(a.y || 0);
           to = clamp(Math.round(to), 0, m.maxScroll);
           const dist = Math.abs(to - m.scrollY);
-          const dur = a.durationSec !== undefined ? a.durationSec : clamp(0.8 + dist / 2600, 0.8, 2.4);
-          scroll = { from: m.scrollY, to, start: k, end: k + Math.max(1, Math.round(dur * FPS)) };
-          if (capturing) events.push({ frame: k, endFrame: scroll.end, type: 'scroll', fromY: Math.round(m.scrollY), toY: to, cursor: a.cursor || 'hide' });
-          if (shot.cursor.kind === 'touch' || a.touch) {
+          const swipe = shot.cursor.kind === 'touch' || !!a.touch;
+          if (swipe) {
+            // finger drags the page 1:1, releases, the page coasts (swipeProfile)
+            const dragFrames = Math.max(3, Math.round((a.dragSec || SWIPE.dragSec) * FPS));
+            const tauFrames = (a.tauSec || SWIPE.tauSec) * FPS;
+            const n = a.durationSec !== undefined ? Math.max(dragFrames + 2, Math.round(a.durationSec * FPS)) : dragFrames + Math.round(SWIPE.tailTau * tauFrames);
             const tp = a.touch || { x: vw * 0.6, y: vh * 0.72 };
-            const dir = Math.sign(to - m.scrollY) || 1;
-            const lift = Math.round(Math.min(Math.abs(to - m.scrollY) * 0.45, vh * 0.32));
-            touch = { from: { x: tp.x, y: tp.y }, to: { x: tp.x + 6, y: tp.y - dir * lift }, start: k, end: k + Math.max(4, Math.round((scroll.end - k) * 0.55)) };
+            scroll = { from: m.scrollY, to, start: k, end: k + n, profile: swipeProfile(n, dragFrames, tauFrames) };
+            touch = { from: { x: tp.x, y: tp.y }, scrollFrom: m.scrollY, start: k, end: k + dragFrames };
+            if (capturing) events.push({ frame: k, endFrame: scroll.end, type: 'scroll', fromY: Math.round(m.scrollY), toY: to, cursor: a.cursor || 'hide' });
             if (capturing) events.push({ frame: k, endFrame: touch.end, type: 'touch', x: tp.x, y: tp.y });
+          } else {
+            const dur = a.durationSec !== undefined ? a.durationSec : clamp(0.8 + dist / 2600, 0.8, 2.4);
+            scroll = { from: m.scrollY, to, start: k, end: k + Math.max(1, Math.round(dur * FPS)) };
+            if (capturing) events.push({ frame: k, endFrame: scroll.end, type: 'scroll', fromY: Math.round(m.scrollY), toY: to, cursor: a.cursor || 'hide' });
           }
         } else if (pointerTypes.has(a.type)) {
           const T = targetPoint(a, m.rects);
@@ -563,7 +618,8 @@ async function captureShot(rawShot, opts) {
       let wantScroll = null;
       if (scroll) {
         const p = clamp((k - scroll.start) / (scroll.end - scroll.start), 0, 1);
-        wantScroll = scroll.from + (scroll.to - scroll.from) * ease.scroll(p);
+        const frac = scroll.profile ? (k <= scroll.start ? 0 : scroll.profile[Math.min(scroll.profile.length - 1, k - scroll.start - 1)]) : ease.scroll(p);
+        wantScroll = scroll.from + (scroll.to - scroll.from) * frac;
         if (p >= 1) scroll = null;
       }
       if (wantScroll !== null || (move && move.a.selector)) {
@@ -596,12 +652,16 @@ async function captureShot(rawShot, opts) {
       }
       let down = false;
       if (touch) {
+        // the finger stays on the content it grabbed: it moves exactly as far as the page has scrolled
         const p = clamp((k - touch.start) / Math.max(1, touch.end - touch.start), 0, 1);
-        const u = ease.touch(p);
-        cur = { x: touch.from.x + (touch.to.x - touch.from.x) * u, y: touch.from.y + (touch.to.y - touch.from.y) * u };
+        cur = { x: touch.from.x + 6 * ease.touch(p), y: touch.from.y - (lastScrollY - touch.scrollFrom) };
         down = p < 1;
         if (p >= 1) touch = null;
       }
+
+      // The pointer's shape (hand over links, I-beam in fields), as the OS would draw it at this position. Measured
+      // before this frame's input is queued (an evaluate never waits on a frame, input acks do).
+      const kind = capturing && shot.cursor.kind === 'pointer' && inViewport(cur) ? await evalSafe(cursorKind, { x: cur.x, y: cur.y }, k) : 'a';
 
       // 4. Real input: move the mouse, press, type. Mouse moves are rAF-aligned in Chromium (delivered in the next
       //    rendered frame), so input is queued now and its acks collected after this frame is rendered; CDP keeps
@@ -632,6 +692,7 @@ async function captureShot(rawShot, opts) {
       if (k === pressUntil && shot.cursor.kind === 'pointer') mouse('mouseReleased', lastMouse || { x: round1(cur.x), y: round1(cur.y) });
       if (k < pressUntil || (k === pressUntil && shot.cursor.kind === 'touch')) down = true;
       for (const kq of keyQueue.filter((q) => q.frame === k)) {
+        typedSinceMove = true;
         if (kq.char !== undefined) {
           key(kq.char, true);
           if (capturing) events.push({ frame: k, type: 'type', char: kq.char });
@@ -642,6 +703,7 @@ async function captureShot(rawShot, opts) {
       }
 
       // 5. Advance virtual time to this frame's slot on the 1/30 s grid, render it, then collect input acks.
+      if (k === 0) hiddenAtStart = typedSinceMove;
       const budget = frameBudget(k);
       const vtFrame = m.vt + budget; // performance.now() at the moment this frame renders
       await advance(budget);
@@ -662,7 +724,7 @@ async function captureShot(rawShot, opts) {
       w.finally(() => pendingWrites.delete(w));
       if (pendingWrites.size > 6) await Promise.race(pendingWrites);
 
-      frames.push({ x: round1(cur.x), y: round1(cur.y), down, scrollY: round1(lastScrollY), vt: Math.round(vtFrame * 1000) / 1000 });
+      frames.push({ x: round1(cur.x), y: round1(cur.y), down, scrollY: round1(lastScrollY), vt: Math.round(vtFrame * 1000) / 1000, c: kind });
       for (const name of Object.keys(tracks)) {
         const r = lastRects[name];
         trackRects[name].push(r ? r.map(round1) : null);
@@ -697,7 +759,8 @@ async function captureShot(rawShot, opts) {
       stalls,
       prerollSec: shot.prerollSec,
       clock: shot.clock,
-      cursor: { kind: shot.cursor.kind },
+      // hiddenAtStart: the preroll ended with typing, so the OS pointer is hidden until the mouse next moves
+      cursor: { kind: shot.cursor.kind, hiddenAtStart },
       frames,
       events,
       zooms: zoomsOut,
@@ -722,6 +785,9 @@ async function runShot(shot, opts) {
   const probe = ffprobeFrames(mp4);
   if (probe.frames !== data.frameCount) throw new Error(`encoded ${probe.frames} frames, expected ${data.frameCount}`);
   data.video = { file: 'shot.mp4', width: probe.width, height: probe.height };
+  // Phone shots: the page's colour along the top and bottom edge per frame, so the composition can tint the iOS status
+  // bar like Safari does and pick black or white for the home indicator.
+  if (data.mobile) data.screenEdges = { top: edgeColours(mp4, 'top', data.viewport.deviceScaleFactor), bottom: edgeColours(mp4, 'bottom', data.viewport.deviceScaleFactor) };
   fs.writeFileSync(path.join(outDir, 'cursor.json'), JSON.stringify(data));
   console.log(`[${data.id}] shot.mp4 ${probe.width}x${probe.height} ${probe.frames} frames @ ${probe.rate} ${probe.pixFmt}`);
   if (opts.clean) fs.rmSync(path.join(outDir, 'frames'), { recursive: true, force: true });

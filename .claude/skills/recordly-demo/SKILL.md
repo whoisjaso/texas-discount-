@@ -43,18 +43,42 @@ storyboard.json  →  capture (deterministic frames)  →  shots/*.mp4 + cursor 
    (x, y and click events per frame, in page pixels) from the same action
    list, and Remotion draws the cursor.
 3. **Compose in Remotion** (follow remotion-motion-graphics' rules: theme
-   object, springs, no linear easing, grain and vignette on top):
-   - *Wallpaper*: the brand's dark gradient mesh with slow drift and grain.
-   - *macOS window*: 12 px radius, hairline border, large soft shadow, title
-     bar with the three traffic lights and a centred URL pill showing the
-     real domain. Window enters with a spring (scale 0.94→1, y 30→0, opacity).
-   - *Camera*: the shot video inside the window; zoom regions scale around the
-     focus point with the Recordly timings above; the camera eases to follow
-     the cursor while zoomed, clamped so the frame never shows past the page.
-   - *Cursor*: macOS arrow (drawn as SVG), position from the track through a
-     spring, click bounce and ring; hide it while the page scrolls by itself.
-   - *Phone cut*: an iPhone frame (rounded 55 px, dynamic island, side buttons
-     drawn in SVG) holding the 390-wide capture; tap ripples instead of a cursor.
+   object, springs, no linear easing, timings in seconds from `fps`):
+   - *Backdrop*: the brand's dark gradient mesh (neutral grey, mean ≈ 40/255 so
+     the window's edge and shadow read) with slow drift, plus grade, vignette,
+     grain and a static dither. **The recording is never graded**: grade and
+     vignette sit under the window and phone; only grain ≤ 0.03 goes on top
+     (overlay leaves pure white white). Check a white page reads 255 at the
+     window's edges.
+   - *macOS window*: 12 px radius, hairline border, 1 px top highlight, large
+     offset shadow, title bar with traffic lights and a URL pill showing the
+     real domain. ONE window holds every desktop capture (`DesktopScene`); it
+     springs in once, breathes ±2 px, and leans in 10% at full zoom depth so a
+     zoom reads as a camera move, not a page zoom.
+   - *Cuts inside the window are HARD*: stage captures pixel-matched (same scroll,
+     same cursor point, same hover state, caret in the same blink phase) and
+     check PSNR ≥ 45 dB between the last and first frames. A blur or dissolve on
+     identical content reads as a dropped frame.
+   - *Camera*: zoom regions scale around the focus with the Recordly timings;
+     clamped to the page. Frame every zoom by hand: no frame edge through text,
+     a neighbour's label fully in or fully out, no second red element at the
+     edge; go to depth 2.0 when 1.8 cannot frame it cleanly.
+   - *Cursor*: the macOS arrow, pointing hand over links and I-beam in fields
+     (the shape the capture recorded), spring-smoothed, click bounce, a ring with
+     a dark edge (reads on white). It fades *and shrinks* away while the page
+     scrolls by itself (scrolls < 0.67 s apart stay one hidden stretch) and from
+     a keystroke until the mouse moves.
+   - *Intro*: if the first shot shows the site's own loader, make the sting a
+     MATCH CUT onto it (`MatchSting`): lay the sting out exactly like the loader
+     (measured rects × k), shrink it onto the loader's spot in the springing
+     window, cover the loader's logo until it lands, then dissolve. Never show
+     the logo twice. Keep it short (hand-off at 1.4 s).
+   - *Phone cut*: iPhone frame (55 px corners, Dynamic Island, side buttons,
+     home indicator; status bar tinted with the page's top colour), opaque within
+     2 frames, spring slide + tilt + motion blur in, drops out of frame at the
+     end. Swipes are iOS swipes (finger drags 1:1, page coasts).
+   - *Outro*: drawn UNDER the phone; logo, the confirmed facts at ≥ 30 px
+     (URL 42 px), slow push 1.00 → 1.03, logo exit, fade to black.
    - *Titles*: few and short, the site's own font, Title Case, one line each.
 4. **Sound** (no music unless asked; the user adds a track): the
    jason-video-editor kit, `assets/sfx/ios/*` and `assets/sfx/ui/*`, copied
@@ -62,22 +86,30 @@ storyboard.json  →  capture (deterministic frames)  →  shots/*.mp4 + cursor 
    `macbook_keyboard` hit per character (-18 dB, randomised ±1.5 dB);
    window/menu open → `open_ui`; zoom in → `whoosh` (-20 dB, very short);
    success (N / N signed, form filed) → `ios_success`; intro logo → `ios_note`;
-   outro → `ios_received`. Apple's system sounds are Apple's: fine for demos,
-   swap to the kit's non-Apple clicks for paid ads.
-5. **Render** `npx remotion render ... --codec h264 --crf 17` with
+   outro → `ios_received`. Clicks lead by 2 frames, keys by 1. A zoom's whoosh
+   is placed so its peak (0.3 s in) meets the camera's fastest frame (zoom start
+   + 9 at 1.5 s in), rotating three pitch variants. `open_ui` is trimmed to
+   0.6 s (the kit's file ends in a stray tick). Master gain +10 dB (the kit is
+   ~−27 LUFS bare); check true peak < −1 dB and run a per-frame onset map: every
+   onset must sit on an on-screen event. Apple's system sounds are Apple's: fine
+   for demos, swap to the kit's non-Apple clicks for paid ads.
+5. **Render** `npx remotion render ... --codec h264 --crf 16` with
    `--browser-executable=/opt/pw-browsers/chromium_headless_shell-*/chrome-linux/headless_shell`.
    Delete `/tmp/remotion-webpack-bundle-*` after still runs.
 6. **Verify** (mandatory): stills at every shot change and mid-zoom; check
    the cursor lands on the thing clicked, zooms never reveal past the page
    edge, text is crisp at 100% (capture at deviceScaleFactor 2 if not), no
    frame shows a loader or blank page by accident, audio peaks under -1 dBFS.
-   Then send the MP4.
+   Extract film frame f with `ffmpeg -ss (f-0.5)/30` (plain f/30 returns the
+   next frame). Then send the MP4.
 
 ## Files
 
 - `scripts/capture.cjs` — storyboard shot → frames + cursor track.
-- `template/` — the Remotion project (Wallpaper, MacWindow, IPhone, Camera,
-  Cursor, Sfx, theme).
+- `template/` — the Remotion project: `Demo` + `demo/timeline.ts` (the film),
+  `DesktopScene` (one window, many captures), `PhoneScene`, `MatchSting`,
+  `LogoSting`, Wallpaper/Backdrop, MacWindow, IPhone, Camera, Cursor, TapRipple,
+  Sfx, Overlays, theme (all timings in seconds).
 - `examples/discount-used-cars/storyboard.json` — the first production use.
 
 ## Capture: how to run it, and what we learned
@@ -108,16 +140,28 @@ page's wall clock (anything time-based, like "Open now", renders the same).
 - **DSF 2 for desktop shots**: the window shows the page ~1490 px wide and
   zooms to 1.8x; DSF 1 text goes soft there. ~0.2 s/frame, ~2.5 GB of PNGs
   per 15 s shot before `--clean`.
+- **Content the client has not confirmed**: re-stage so it never enters the
+  frame (end a shot on a clean section) rather than blurring it; a privacy blur
+  reads as a rendering fault. Video-only brand fixes (a green status dot, the
+  blue search-clear ×) go in the storyboard's per-shot `css`, and tell the owner
+  the same rule fixes the live site.
+- **Recorded per frame**: the pointer shape (`c`), `cursor.hiddenAtStart` after a
+  typing preroll, and for phones the page's top/bottom edge colour.
 
 ## Template: how to use it
+
+The template is what shipped for Discount Used Cars (clients/discount-used-cars-demo,
+whose README shows a full storyboard → capture → render run).
 
 `cp -r template/. clients/<name>-demo/ && cd clients/<name>-demo &&
 scripts/prepare-sfx.sh && npm install`; copy the brand logos to
 `public/brand/` and the site font's woff2 files to `public/fonts/`; fill in
-`src/project.ts` (domain, logo paths, the confirmed facts). Compositions:
-`Intro`, `Outro`, `ShotPreview` / `PhonePreview` (any capture, via
-`--props='{"shot":"<id>","url":"<domain>"}'`). Build the film from
-`ShotScene` (window + camera + cursor + auto SFX, `trimSec`, `enter`, `exit`)
-and `PhoneScene` (`behind` = the receding desktop) in `<Series>`. Check stills
-with `node scripts/stills.cjs out/stills Comp:frame,frame …` (bundles once,
-deletes its webpack bundle).
+`src/project.ts` (domain, logo paths, the confirmed facts, and `loader` if the
+site has an intro loader to match-cut onto). Fill `src/demo/timeline.ts` with the
+desktop segments (`{shot, trimSec, durationInFrames, url?, eventCues?}`), part B,
+the phone shot; the `Demo` composition builds the whole film from it (`DesktopScene`
+for the one window, `PhoneScene` with the held desktop `behind`, `LogoSting` outro).
+`ShotPreview` / `PhonePreview` show any single capture
+(`--props='{"shot":"<id>","url":"<domain>"}'`). Check stills with
+`node scripts/stills.cjs out/stills Demo:frame,frame …` (bundles once, deletes its
+webpack bundle).

@@ -14,15 +14,22 @@ import {
   type NamePartProblem,
 } from "@/lib/onboarding/staff-name";
 import { signerFitsSellerLine } from "@/lib/fill-130u/seller-line-fit";
+import {
+  newPasswordProblem,
+  newPasswordProblemSentence,
+  type NewPasswordProblem,
+} from "@/lib/auth/password-rules";
 import type { TeamMember } from "@/lib/operations/types";
 
 /**
- * First sign-in: the member's own name, then done (SOP "First sign-in:
- * onboarding"; owner's instruction 10/01/2026).
+ * First sign-in: a password of their own when the account is still on a
+ * temporary one, the member's own name, then done (SOP "First sign-in:
+ * onboarding"; owner's instructions 10/01/2026).
  *
  * The admin layout already sends every active member whose
- * `onboarding_completed_at` is empty to /admin/account/onboarding. These are
- * the writes that screen makes. The signature screen in between has no action
+ * `onboarding_completed_at` is empty, and every account still flagged
+ * `requires_password_change`, to /admin/account/onboarding. These are the
+ * writes that screen makes. The signature screen in between has no action
  * of its own: it saves through `saveStaffSignatureAction`, the same one
  * /admin/account/signature uses, so one stored signature serves both.
  *
@@ -45,6 +52,9 @@ const ONBOARDING_PAGE = "/admin/account/onboarding";
  */
 export type OnboardingErrorCode =
   | NamePartProblem["code"]
+  | NewPasswordProblem["code"]
+  | "passwordNotNeeded"
+  | "passwordSaveFailed"
   | "signInAgain"
   | "notOnRoster"
   | "notActive"
@@ -66,6 +76,8 @@ export type OnboardingNameResult = { ok: true; first: string; last: string } | O
 
 export type OnboardingCompleteResult = OnboardingRefusal;
 
+export type OnboardingPasswordResult = { ok: true } | OnboardingRefusal;
+
 function refuse(code: OnboardingErrorCode, error: string, params?: Record<string, string | number>): OnboardingRefusal {
   return params ? { ok: false, error, code, params } : { ok: false, error, code };
 }
@@ -73,6 +85,11 @@ function refuse(code: OnboardingErrorCode, error: string, params?: Record<string
 function refusePart(problem: NamePartProblem): OnboardingRefusal {
   const { code, ...params } = problem;
   return refuse(code, namePartProblemSentence(problem), params);
+}
+
+function refusePassword(problem: NewPasswordProblem): OnboardingRefusal {
+  const { code, ...params } = problem;
+  return refuse(code, newPasswordProblemSentence(problem), Object.keys(params).length ? params : undefined);
 }
 
 type Onboardee =
@@ -98,6 +115,77 @@ async function currentOnboardee(): Promise<Onboardee> {
     role: access.role,
     requiresPasswordChange: access.user.app_metadata?.requires_password_change === true,
   };
+}
+
+/**
+ * "Choose A Password." The first screen, and only for an account still on the
+ * temporary password an approval or a reset issued it (owner's decision
+ * 10/01/2026). The rule is account recovery's (password-rules.ts: at least
+ * 10 characters), typed twice.
+ *
+ * One write, to the signed-in account only, resolved from the session and
+ * never named by the form: the new password and the cleared
+ * `requires_password_change` flag go together, so there is no moment where
+ * the password is new and the flag still sends the account back here (or
+ * the other way round). Every other app_metadata key is kept as it was.
+ * Once it is cleared the layout stops sending the account to onboarding for
+ * the password, and onboarding carries on to the name.
+ *
+ * Refused for an account without the flag (nobody else ever sees this
+ * screen) and for a roster row that is not active: a new password never lets
+ * in someone an owner has not approved.
+ */
+export async function chooseOnboardingPasswordAction(formData: FormData): Promise<OnboardingPasswordResult> {
+  const access = await getCurrentAdminAccess();
+  if (!access.user) return refuse("signInAgain", "Sign in again first.");
+  if (access.user.app_metadata?.requires_password_change !== true) {
+    return refuse(
+      "passwordNotNeeded",
+      "This account already has its own password. To change it, use Forgot Your Password on the sign-in screen.",
+    );
+  }
+  // An active roster member, or an account the desk already lets in by its
+  // approved role (one approved before the roster table existed).
+  if (access.member ? access.member.status !== "active" : !access.role) {
+    return refuse("notActive", "This account is not active yet. Ask an owner to approve it.");
+  }
+
+  const password = formData.get("password");
+  const problem = newPasswordProblem(password, formData.get("confirmPassword"));
+  if (problem) return refusePassword(problem);
+
+  try {
+    const { error } = await createServiceClient().auth.admin.updateUserById(access.user.id, {
+      password: password as string,
+      app_metadata: { ...(access.user.app_metadata ?? {}), requires_password_change: false },
+    });
+    if (error) throw error;
+  } catch {
+    return refuse("passwordSaveFailed", "That password could not be saved. Try again, or choose a different one.");
+  }
+
+  if (access.member) await logPasswordChosen(access.member.id, access.member.full_name ?? null);
+  revalidatePath("/admin", "layout");
+  return { ok: true };
+}
+
+/**
+ * The record that the temporary password was replaced (team_activity_events,
+ * as approvals and resets are recorded). Never the password. Best effort.
+ */
+async function logPasswordChosen(memberId: string, name: string | null) {
+  try {
+    await createServiceClient().from("team_activity_events").insert({
+      actor_id: memberId,
+      event_type: "team_member_password_chosen",
+      entity_type: "team_member",
+      entity_id: memberId,
+      body: `${name && name.trim() ? name.trim() : "A team member"} replaced their temporary password at onboarding.`,
+      metadata: { member_id: memberId },
+    });
+  } catch {
+    // The password is saved; the log is the extra.
+  }
 }
 
 /**
@@ -186,9 +274,9 @@ async function logNameWrite(memberId: string, previous: string | null, next: str
  *
  * Refused, with the reason, while anything onboarding asks for is missing:
  * the name, and the signature for a member cleared to sign. Also refused
- * while the account is still on a temporary password, because the layout
- * would send it straight back here: a redirect chained onto this one leaves
- * the browser on a blank page.
+ * while the account is still on a temporary password (the first screen
+ * replaces it), because the layout would send it straight back here: a
+ * redirect chained onto this one leaves the browser on a blank page.
  */
 export async function completeOnboardingAction(): Promise<OnboardingCompleteResult> {
   const who = await currentOnboardee();
@@ -198,7 +286,7 @@ export async function completeOnboardingAction(): Promise<OnboardingCompleteResu
   if (who.requiresPasswordChange) {
     return refuse(
       "temporaryPassword",
-      "This account is still on the temporary password it was issued, and the desk cannot replace it yet. Ask an owner.",
+      "Choose your own password first. It replaces the temporary one you were given.",
     );
   }
   // The name the name screen saves, not merely a non-empty one: a signup

@@ -112,6 +112,38 @@ export function dealerSignerProblem(held: HeldSigner | null | undefined): string
 }
 
 /**
+ * Why this member may not print a state form that carries the dealer's
+ * printed name beside a dealer signature (the VTR-61's "Printed Name (Same
+ * as Signature)"), or null when they may.
+ *
+ * The same rule as filing (owner's decision 10/01/2026): the parentheses name
+ * the cleared, onboarded member who prints it, so a member who is not cleared
+ * or not named is refused rather than handed a form with the
+ * "[Not set: signer name]" marker in it. `DESK_ALLOW_UNSET_FACTS=true` lifts
+ * it for a demo, and the marker then prints.
+ */
+export function dealerPrintedNameProblem(held: HeldSigner | null | undefined, form: string): string | null {
+  if (held?.signerName) return null;
+  if (process.env.DESK_ALLOW_UNSET_FACTS?.trim() === "true") return null;
+
+  if (!held || !held.hasMember) {
+    return `This account has no team profile, so no name can print beside the dealer's signature on the ${form}. Ask an owner to add you to the team.`;
+  }
+  if (held.canSign !== true) {
+    return `Only a member cleared to sign can print the ${form}: it names the member who prints it beside the dealer's signature. Ask an owner to turn signing on, or have a cleared member print it.`;
+  }
+  const unprintable = firstUnprintableOnStateForm(held.fullName ?? "");
+  if (unprintable) {
+    return `The state form cannot print "${unprintable}" in your name. Enter it again under Finish Onboarding the way it is printed on your ID before printing the ${form}.`;
+  }
+  const stored = collapse(held.fullName ?? "");
+  if (stored.split(" ").length >= 2 && !signerFitsSellerLine(stored)) {
+    return `Your name is too long to print in full on a state form's printed name line. Enter it again under Finish Onboarding the way it is printed on your ID before printing the ${form}.`;
+  }
+  return `Add your first and last name before printing the ${form}: it prints the dealer as ${dealerSignerPrintedName("First Last")}. Use Finish Onboarding on Handle A Sale.`;
+}
+
+/**
  * The stroke that may go on a dealer line: the member's saved signature, and
  * none at all once signing has been turned off for them. The signature page
  * still shows a revoked member their own stroke so they can remove it; it is

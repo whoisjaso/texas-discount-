@@ -1,7 +1,9 @@
-// Dark brand wallpaper: deep charcoal gradient mesh with a slow drift (grain goes on top, in Overlays).
+// Dark brand wallpaper: neutral charcoal gradient mesh with a slow drift. `Backdrop` adds the backdrop finish
+// (dither, grade, grain, vignette) so that everything drawn after it (the window, the phone) stays ungraded.
 import React from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import { theme } from "../theme";
+import { BackdropFinish } from "./Overlays";
 
 const Blob: React.FC<{ size: number; x: number; y: number; color: string; blur: number; opacity?: number }> = ({ size, x, y, color, blur, opacity = 1 }) => (
   <div
@@ -36,10 +38,18 @@ export const Wallpaper: React.FC<{ glow?: number }> = ({ glow = 0 }) => {
       {/* a soft diagonal sheen, like light across a desk */}
       <AbsoluteFill
         style={{
-          background: "linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.035) 48%, transparent 62%)",
+          background: `linear-gradient(115deg, transparent 30%, ${theme.colors.sheen} 48%, transparent 62%)`,
           transform: `translateX(${Math.sin(t / 4) * 80}px)`,
         }}
       />
     </AbsoluteFill>
   );
 };
+
+/** Wallpaper + backdrop finish: the bottom two layers of every scene. */
+export const Backdrop: React.FC<{ glow?: number }> = ({ glow }) => (
+  <AbsoluteFill>
+    <Wallpaper glow={glow} />
+    <BackdropFinish />
+  </AbsoluteFill>
+);

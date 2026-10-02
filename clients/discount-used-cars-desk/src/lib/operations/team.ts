@@ -194,6 +194,23 @@ export function isTeamRole(value: string | null | undefined): value is TeamRole 
   return TEAM_ROLES.includes(value as TeamRole);
 }
 
+/**
+ * The roles cleared to sign (`team_members.can_sign_contracts`) the moment an
+ * owner approves them (owner's decision 10/01/2026): Owner, Manager and
+ * Registration. Every other role starts not cleared and stays that way until
+ * an owner turns signing on for that one person.
+ *
+ * Only the starting value. Signing authority is a per-person fact: it is
+ * written once, at approval, and an owner's later choice for a person is
+ * theirs to keep (a reset never rewrites it).
+ */
+export const ROLES_CLEARED_TO_SIGN_BY_DEFAULT: readonly TeamRole[] = ["owner", "manager", "registration"];
+
+/** Whether approving someone in this role clears them to sign by default. */
+export function roleSignsByDefault(role: TeamRole): boolean {
+  return ROLES_CLEARED_TO_SIGN_BY_DEFAULT.includes(role);
+}
+
 export function hasTeamPermission(
   role: TeamRole | null | undefined,
   permission: TeamPermission,

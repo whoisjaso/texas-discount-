@@ -8288,6 +8288,14 @@ input.ed-money-input {
   margin-bottom: 6px;
 }
 
+/* Show or hide the two password boxes at onboarding: the same quiet
+   outlined control, sized to its words rather than stretched across the
+   column of fields it sits in. */
+.ed-onboard-reveal {
+  justify-self: start;
+  margin: 0;
+}
+
 /* The typed-lender escape on the search screen: quiet but a real control,
    because it is the only way forward when the list has no answer. */
 .ed-lender-use-typed {

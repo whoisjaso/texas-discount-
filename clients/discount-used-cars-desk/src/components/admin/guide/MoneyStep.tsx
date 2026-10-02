@@ -107,6 +107,23 @@ export default function MoneyStep({
   const [adjustTyped, setAdjustTyped] = useState(initial.paidTodayAmount);
 
   /**
+   * Why a save was refused, in the screen's language. The one refusal with
+   * words of its own is the down payment after the bill of sale is filed
+   * (SOP Freeze): it says to void and re-file the bill of sale first.
+   */
+  function moneyRefusal(result: { error?: string; code?: string }): string {
+    if (result.code === "downPaymentFrozen") {
+      // Nothing was saved, so the box and the receipt go back to the down
+      // payment the filed bill of sale states rather than drawing a balance
+      // the deal does not have.
+      setAdjustTyped(initial.paidTodayAmount);
+      setAnswers((current) => ({ ...current, paidTodayAmount: initial.paidTodayAmount }));
+      return t.money.downPaymentFrozen;
+    }
+    return result.error ?? t.chrome.couldNotSave;
+  }
+
+  /**
    * Save, then move.
    *
    * Awaited and pushed here rather than inside a `useTransition`, and that is
@@ -125,7 +142,7 @@ export default function MoneyStep({
     const result = await saveSaleMoney(dealId, patch);
     setPending(false);
     if (!result.ok) {
-      setError(result.error ?? t.chrome.couldNotSave);
+      setError(moneyRefusal(result));
       return;
     }
     if (goingTo) onNavigate();
@@ -375,7 +392,7 @@ export default function MoneyStep({
                         void saveSaleMoney(dealId, { paidTodayAmount: adjustTyped }).then(
                           (result) => {
                             if (!result.ok) {
-                              setError(result.error ?? t.chrome.couldNotSave);
+                              setError(moneyRefusal(result));
                             }
                           },
                         );
