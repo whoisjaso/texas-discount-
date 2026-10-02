@@ -15,6 +15,143 @@ passed on the command line and never written to a file:
 
 The desk this one was forked from has the same requirements.
 
+## 000. Review fixes to the four decisions (10/02/2026)
+
+This section records the latest run and supersedes sections 00 and below
+where they differ.
+
+**What the review found, and what changed.**
+
+1. **A negative down payment slipped past the freeze** and changed the
+   contract's amount financed after the bill of sale was filed ("-500" on a
+   nothing-down deal: the bill of sale lien stayed $6,775.00, the contract
+   financed $7,275.00). **Fixed:** both actions (`saveSaleMoney`,
+   `savePaperworkAnswer` for financing/downPayment) now store the down
+   payment as one plain figure (`canonicalPaidToday` in
+   `src/lib/sales/down-payment-freeze.ts`: "$1,500.00" is stored as "1500",
+   an empty box stays empty) and refuse a figure below zero or one that is
+   not a dollar amount, filed or not, with code `paidTodayInvalid` ("Type a
+   dollar amount, like 1500. It cannot be less than zero.", Spanish too).
+   The freeze compares figures unclamped, so a different figure above the
+   total is a change too.
+2. **"1,500" for 1500 went through the freeze but solved the note on $0
+   down** (the solver read `Number("1,500")` as nothing; principal $6,775.00
+   and payment $244.93 against a printed amount financed of $5,275.00).
+   **Fixed:** the stored figure is plain, and `financingTerms` and the review
+   screen now strip "$", "," and spaces the way the contract's itemisation
+   always did, so a deal saved earlier with "1,500" reads the same. The
+   arithmetic is unchanged.
+3. **The VTR-61 read another spelling of the dealership as a stranger**
+   ("Discount Used Cars & Trucks LLC", "…, L.L.C.", no "LLC"): it printed the
+   entity alone beside the dealer's signature and asked for no signer.
+   **Fixed:** `vtr61DealerParties` recognises the legal or trading name
+   however typed (case, spacing, "&", punctuation, a closing LLC), and the
+   dealership's entity rows then print the legal name.
+4. **The freeze's "filed" missed a bill of sale completed through the older
+   e-sign path** (`completed_at`, status completed, no `finalized_at`).
+   **Fixed:** `filedBillOfSaleOn` uses the packet's own rule
+   (`isFiledAgreement`, the same test `getSaleDetail` draws the packet with).
+   Not widened: the price, its basis, the funding and the bill of sale's
+   trade-in are still not frozen (an owner's decision; README and SOP say
+   so).
+5. **The password write spread a stale copy of app_metadata.** **Fixed:**
+   onboarding and the recovery link send only `requires_password_change:
+   false`; the auth server merges keys, so an owner's change made in between
+   is never overwritten. The tests now pin the exact single-key payload.
+   Not changed (documented in README step 9 and the SOP): a reset does not
+   sign out a device already signed in, which can then choose the new
+   password without the old one.
+6. **README step 9** now says the signing default applies at approval only:
+   members approved earlier keep their value, so existing Owner, Manager and
+   Registration rows must be checked.
+7. **The VTR-61 refusal only showed as raw JSON in a new tab.** **Fixed:**
+   title work shows a "Before You Print" notice above the checklist with the
+   same reason, and Finish Onboarding when the fix is the member's own.
+8. **Walk script race** (`scripts/desk-walk/sale.cjs` read an
+   `after:<key>` page mid-redirect and stopped with NO ANSWER): it now waits
+   for such a page to move on. It did not recur in this run.
+
+### Checks
+
+| Check | Result |
+|---|---|
+| `npx tsc --noEmit` | exit 0 |
+| `npx eslint` | 0 errors, the same 4 pre-existing warnings |
+| `npx vitest run` | 140 files, 1736 tests passed (was 1703); `test-output.txt` |
+| `npx next build` | exit 0 on the final code; `next-env.d.ts` restored, `git diff` empty |
+
+New tests (no existing test skipped or deleted): the plain figure and the
+invalid refusal on both actions and both screens, the note unchanged after
+a "same figure" save, the unclamped compare, the legacy "1,500" read, the
+filed rule (in `the-down-payment-holds-once-the-bill-of-sale-is-filed` and
+`the-filed-bill-of-sale-is-looked-up-on-the-deal`); six spellings of the
+dealership on both VTR-61 routes, a different entity kept apart, and the
+title-work notice (in `the-vtr-61-names-who-prints-it`). Two expectations in
+`a-temporary-password-is-replaced-at-onboarding` changed from the spread
+payload to the exact single-key payload, with an added check that merging
+it keeps every other key.
+
+### Live (dev server on 5190, preview mock)
+
+Three servers, each started fresh and stopped by its process group; port
+5190 is closed. 5181 and 5183 were not touched.
+
+- **F1** (`fresh-temporary-password`, `DESK_ALLOW_UNSET_FACTS=true`):
+  onboarding at 1440×900 (22/22, `onboarding-password/fix-1440x900`), then
+  all ten sales, then the freeze walk at both sizes.
+- **F2** (`fresh-cannot-sign`, no override): onboarding (11/11), then the
+  title-work notice at both sizes (8/8).
+- **F3** (`fresh-temporary-password`, no override): the VTR-61 routes before
+  onboarding, onboarding at 390×844 (22/22,
+  `onboarding-password/fix-390x844`), the routes again, and title work with
+  no notice (6/6).
+
+| Sale | 1440×900 | 390×844 |
+|---|---|---|
+| bhph-trade | preview-deals-4, 3/3 signed | preview-deals-8, 3/3 signed |
+| cash-otd | preview-deals-13, 2/2 | preview-deals-16, 2/2 |
+| cash-balance | preview-deals-20, 2/2 | preview-deals-23, 2/2 |
+| bank | preview-deals-27, 2/2 | preview-deals-30, 2/2 |
+| buyer-files | preview-deals-34, 3/3 | preview-deals-38, 3/3 |
+
+Every sale: THEME OK, sale exit 0, ceremony exit 0, 0 contrast failures, no
+page errors (`walks/walks-summary-1002.log`).
+
+**bhph-trade packets, read back at both sizes** (`walks/bhph-trade-*-packet`,
+`walks/bhph-trade-packets-read.log`): bill of sale sales tax $437.50, total
+amount due $7,545.50, balance secured by seller lien **$6,045.50**; contract
+sales tax $437.50, down payment $3,500.00 (cash $1,500.00 + trade), amount
+financed **$6,045.50**; 130-U Seller Name `Discount Used Cars And Trucks, LLC
+(Maria Lopez)`, box 36 `2012 Honda Civic LX`, trade-in amount 2000.00.
+
+**Freeze walk, 17/17 at each size** (`down-payment-freeze/fix-*`): Down today
+2000 refused with the sentence (box and receipt back to $1,500.00 down,
+$6,045.50 owed), in Spanish too; "-500" refused as no dollar amount and
+"abc" refused in Spanish, nothing saved; "$1,500.00" goes through and reads
+back as `1500`; the contract's 2000 refused (English and Spanish), its
+"-500" refused (English and Spanish), its answer unchanged after reload, and
+the money step still at 1500.
+
+**VTR-61** (`vtr-61/fix-routes`, `vtr-61/fix-notice`): before onboarding,
+POST with the owner typed "Discount Used Cars & Trucks LLC", "Discount Used
+Cars And Trucks, L.L.C." and "discount used cars and trucks", and GET with
+that rebuilder: all 403 ("Add your first and last name before printing the
+VTR-61…"). After onboarding as Maria Lopez: all 200; both entity rows
+`Discount Used Cars And Trucks, LLC`, both printed names `Discount Used Cars
+And Trucks, LLC (Maria Lopez)` at 9.5pt; with `rebuilder=Bayou Auto Repair`
+the shop keeps its own name. Title work, for a member not cleared to sign:
+the notice "Before You Print / Your Name Beside The Dealer's Signature /
+Only a member cleared to sign can print the VTR-61…" above the checklist,
+no Finish Onboarding button (the fix is an owner's), and the link answers
+403; for the onboarded, cleared member no notice and the link answers 200.
+
+**Still open:** the money screen's receipt is drawn from what is in the
+box, so while "-500" sits there refused it shows $0.00 down until the box is
+corrected (nothing is saved); the step counter reads Step 2 Of 4 after the
+password and Step 1 Of 3 after a reload on the name screen; the Spanish
+strings need review; the "Total Paid" label on the bill of sale's buyer
+acknowledgment is legal copy for the owner or counsel.
+
 ## 00. The owner's four decisions (10/01/2026), built 10/02/2026
 
 This section records the latest run. Where the sections below differ, this
