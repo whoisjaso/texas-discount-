@@ -14,6 +14,28 @@ import { Finish } from "../components/Overlays";
 
 const CLAMP = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 
+/** Entrance (e, spring 0 → 1) and exit (x, 0 → 1 over the last exitSec) progress of the phone at a scene frame. */
+export const phoneProgress = (frame: number, fps: number, durationInFrames: number, exit: boolean) => {
+  const e = spring({ frame, fps, config: theme.spring.window });
+  const exitFrames = Math.max(1, toFrames(theme.phone.exitSec, fps));
+  const x = exit ? interpolate(frame, [durationInFrames - exitFrames, durationInFrames - 1], [0, 1], { easing: theme.ease.in, ...CLAMP }) : 0;
+  return { e, x };
+};
+
+/**
+ * How whatever is behind the phone recedes: it scales down, blurs and dims as the phone arrives, and fades as the phone
+ * leaves. Exported so a film can keep its own desktop instance running under the phone (no remount at the cut)
+ * instead of passing `behind`.
+ */
+export const phoneBehindStyle = (frame: number, fps: number, durationInFrames: number, exit: boolean): React.CSSProperties => {
+  const { e, x } = phoneProgress(frame, fps, durationInFrames, exit);
+  return {
+    transform: `scale(${(1 - 0.1 * e) * (1 - 0.03 * x)})`,
+    filter: `blur(${Math.max(0, e * 10 + x * 6).toFixed(2)}px)`,
+    opacity: Math.max(0, (1 - 0.5 * Math.min(1, e)) * (1 - x)),
+  };
+};
+
 export type PhoneSceneProps = {
   shot: string;
   trimSec?: number;
@@ -43,9 +65,7 @@ export const PhoneScene: React.FC<PhoneSceneProps> = ({ shot, trimSec = 0, phone
 
   // entrance: spring slide from the right + scale + tilt; exit: an accelerating drop with a little counter-tilt
   const pose = (f: number) => {
-    const e = spring({ frame: f, fps, config: theme.spring.window });
-    const exitFrames = Math.max(1, toFrames(P.exitSec, fps));
-    const x = exit ? interpolate(f, [durationInFrames - exitFrames, durationInFrames - 1], [0, 1], { easing: theme.ease.in, ...CLAMP }) : 0;
+    const { e, x } = phoneProgress(f, fps, durationInFrames, exit);
     return {
       e,
       x,
@@ -67,11 +87,7 @@ export const PhoneScene: React.FC<PhoneSceneProps> = ({ shot, trimSec = 0, phone
   return (
     <AbsoluteFill>
       {!bare && <Backdrop />}
-      {behind && (
-        <AbsoluteFill style={{ transform: `scale(${(1 - 0.1 * now.e) * (1 - 0.03 * now.x)})`, filter: `blur(${Math.max(0, now.e * 10 + now.x * 6).toFixed(2)}px)`, opacity: Math.max(0, (1 - 0.5 * Math.min(1, now.e)) * (1 - now.x)) }}>
-          {behind}
-        </AbsoluteFill>
-      )}
+      {behind && <AbsoluteFill style={phoneBehindStyle(frame, fps, durationInFrames, exit)}>{behind}</AbsoluteFill>}
       <IPhone
         k={L.k}
         topColor={edges?.top[fi]}

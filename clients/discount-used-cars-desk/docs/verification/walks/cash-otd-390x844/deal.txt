@@ -1,1 +1,1 @@
-/admin/sales/preview-deals-24
+/admin/sales/preview-deals-14

@@ -14,8 +14,8 @@ import { MatchSting, Rect } from "./components/MatchSting";
 import { Cue, Sfx } from "./components/Sfx";
 import { FadeOut, Finish } from "./components/Overlays";
 import { windowLayout } from "./components/MacWindow";
-import { DesktopScene, DesktopSegment, windowPoint, windowPose } from "./scenes/DesktopScene";
-import { PhoneScene } from "./scenes/PhoneScene";
+import { DesktopScene, windowPoint, windowPose } from "./scenes/DesktopScene";
+import { phoneBehindStyle, PhoneScene } from "./scenes/PhoneScene";
 import { buildTimeline, partASegments, partBSegments, phoneShot } from "./demo/timeline";
 
 export const demoTimeline = buildTimeline(partBSegments);
@@ -52,12 +52,23 @@ const IntroSting: React.FC = () => {
   );
 };
 
-/** The desktop as it stands on its last frame, for the phone scene to push back and blur. */
-const DesktopHeld: React.FC<{ segments: DesktopSegment[]; frame: number; url: string }> = ({ segments, frame, url }) => (
-  <Freeze frame={frame}>
-    <DesktopScene segments={segments} url={url} bare autoSfx={false} />
-  </Freeze>
-);
+/**
+ * The last desktop sequence runs on under the phone: from `holdAt` it is held on its last frame and recedes with the
+ * phone's entrance. The same instance stays mounted across the cut, so no capture is reloaded on the phone's first
+ * frame (a fresh copy mounted there rendered one black frame in a full render).
+ */
+const HoldUnderPhone: React.FC<{ holdAt: number; phoneFrames: number; children: React.ReactNode }> = ({ holdAt, phoneFrames, children }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const held = frame >= holdAt;
+  return (
+    <AbsoluteFill style={held ? phoneBehindStyle(frame - holdAt, fps, phoneFrames, true) : undefined}>
+      <Freeze frame={holdAt - 1} active={held}>
+        {children}
+      </Freeze>
+    </AbsoluteFill>
+  );
+};
 
 const FinalFade: React.FC = () => {
   const frame = useCurrentFrame();
@@ -73,9 +84,10 @@ export const Demo: React.FC = () => {
   const hasA = partASegments.length > 0;
   const hasB = partBSegments.length > 0;
   const urlB = project.partBDomain ?? project.domain;
-  const lastDesktop = hasB
-    ? { segments: partBSegments, frame: T.desktopB.durationInFrames - 1, url: urlB }
-    : { segments: partASegments, frame: T.desktopA.durationInFrames - 1, url: project.domain };
+  // the last desktop sequence (B if there is one) runs on under the phone
+  const under = phoneShot ? T.phone.durationInFrames : 0;
+  const underA = hasB ? 0 : under;
+  const underB = hasB ? under : 0;
   const lead = (s: number) => toFrames(s, fps);
   const L = project.loader;
 
@@ -90,19 +102,23 @@ export const Demo: React.FC = () => {
     <AbsoluteFill style={{ background: theme.colors.bg }}>
       <Backdrop />
       {hasA && (
-        <Sequence from={T.desktopA.from} durationInFrames={T.desktopA.durationInFrames} name="Desktop">
-          <DesktopScene
-            segments={partASegments}
-            url={project.domain}
-            enter
-            bare
-            cover={L ? { rect: L.cover as Rect, color: L.coverColor, untilFrame: T.intro.landAt - T.desktopA.from } : undefined}
-          />
+        <Sequence from={T.desktopA.from} durationInFrames={T.desktopA.durationInFrames + underA} name="Desktop">
+          <HoldUnderPhone holdAt={underA ? T.desktopA.durationInFrames : Infinity} phoneFrames={T.phone.durationInFrames}>
+            <DesktopScene
+              segments={partASegments}
+              url={project.domain}
+              enter
+              bare
+              cover={L ? { rect: L.cover as Rect, color: L.coverColor, untilFrame: T.intro.landAt - T.desktopA.from } : undefined}
+            />
+          </HoldUnderPhone>
         </Sequence>
       )}
       {hasB && (
-        <Sequence from={T.desktopB.from} durationInFrames={T.desktopB.durationInFrames} name="Part B">
-          <DesktopScene segments={partBSegments} url={urlB} bare />
+        <Sequence from={T.desktopB.from} durationInFrames={T.desktopB.durationInFrames + underB} name="Part B">
+          <HoldUnderPhone holdAt={underB ? T.desktopB.durationInFrames : Infinity} phoneFrames={T.phone.durationInFrames}>
+            <DesktopScene segments={partBSegments} url={urlB} bare />
+          </HoldUnderPhone>
         </Sequence>
       )}
       <Sequence from={T.outro.from} durationInFrames={T.outro.durationInFrames} name="Outro">
@@ -120,7 +136,7 @@ export const Demo: React.FC = () => {
       </Sequence>
       {phoneShot && T.phone.durationInFrames > 0 && (
         <Sequence from={T.phone.from} durationInFrames={T.phone.durationInFrames} name="Phone">
-          <PhoneScene shot={phoneShot} bare exit behind={hasA || hasB ? <DesktopHeld {...lastDesktop} /> : undefined} />
+          <PhoneScene shot={phoneShot} bare exit />
         </Sequence>
       )}
       <Sequence from={T.intro.from} durationInFrames={T.intro.durationInFrames} name="Intro">

@@ -76,7 +76,10 @@ storyboard.json  →  capture (deterministic frames)  →  shots/*.mp4 + cursor 
    - *Phone cut*: iPhone frame (55 px corners, Dynamic Island, side buttons,
      home indicator; status bar tinted with the page's top colour), opaque within
      2 frames, spring slide + tilt + motion blur in, drops out of frame at the
-     end. Swipes are iOS swipes (finger drags 1:1, page coasts).
+     end. Swipes are iOS swipes (finger drags 1:1, page coasts). The last
+     desktop sequence runs on UNDER the phone, held on its last frame
+     (`HoldUnderPhone`): a fresh desktop copy mounted on the cut frame rendered
+     one black frame in a full render (stills were fine).
    - *Outro*: drawn UNDER the phone; logo, the confirmed facts at ≥ 30 px
      (URL 42 px), slow push 1.00 → 1.03, logo exit, fade to black.
    - *Titles*: few and short, the site's own font, Title Case, one line each.
@@ -101,7 +104,9 @@ storyboard.json  →  capture (deterministic frames)  →  shots/*.mp4 + cursor 
    edge, text is crisp at 100% (capture at deviceScaleFactor 2 if not), no
    frame shows a loader or blank page by accident, audio peaks under -1 dBFS.
    Extract film frame f with `ffmpeg -ss (f-0.5)/30` (plain f/30 returns the
-   next frame). Then send the MP4.
+   next frame), and scan the whole MP4's per-frame mean luma (`signalstats`
+   YAVG) for one-frame spikes: a full render can glitch where a still does not.
+   Then send the MP4.
 
 ## Files
 
