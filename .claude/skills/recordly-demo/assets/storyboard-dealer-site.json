@@ -1,24 +1,25 @@
 {
   "project": "{{SLUG}}",
   "title": "{{CLIENT}}: site demo, part A",
-  "template": "recordly-demo assets/storyboard-dealer-site.json: the house cut for any premium-dealer-build site. scripts/new-project.sh fills the {{PLACEHOLDERS}} from client-inputs.json (top-level fields and its `storyboard` map) and drops the `adapt` notes. Each `adapt` note says what is Discount-specific and how to re-measure it. Timings, depths and viewports are the house recipe: change one only with a reason, then re-verify.",
+  "template": "recordly-demo assets/storyboard-dealer-site.json: the house cut for any premium-dealer-build site. scripts/new-project.sh fills the double-brace placeholders from client-inputs.json (top-level fields and its `storyboard` map) and drops the `adapt` notes. Each `adapt` note says what is Discount-specific and how to re-measure it. Timings, depths and viewports are the house recipe: change one only with a reason, then re-verify.",
   "notes": [
     "Times in each capture are seconds from that capture's frame 0. A scene plays capture seconds [scene.trimSec, scene.trimSec + scene.durationSec].",
     "Every selector is a premium-dealer-build hook (Home.tsx, Layout.tsx). Check them on the served build with scripts/measure-site.cjs --storyboard before capturing.",
     "clock pins the page's wall clock to an open weekday mid-afternoon in the dealer's time zone, so the site shows 'Open Now' (it is computed from the time).",
     "The phone capture is 390x797: under iOS's 47 pt status bar that makes the iPhone 14 screen, 390x844 pt, exactly.",
     "Part B (the app / desk segment) is inserted between shots 4 and 5: shot 4 ends held at 1.8x on the 'Admin · Staff Sign-In To The Sale Desk' row with the cursor resting on it, so part B can open on the click (same window, same 1440x900 viewport at DSF 2).",
-    "Shot 5 stops on the featured lineup card: one more swipe would reach the lineup's finance fine print, which is never a confirmed fact.",
+    "Shot 5 stops on the Trucks card (third of four): one more swipe would reach the lineup's finance fine print, which is never a confirmed fact.",
     "Shot 2 parks the real mouse in the left page gutter (x 64) while the cursor is hidden during the first scroll, so no card is hovered before the visible cursor reaches it.",
-    "Content outside the confirmed fact list never enters the frame: shot 2 hides the lineup fine print with visibility:hidden (layout unchanged); shots 3 and 4 hand off on the service band, so the Discover tiles (payments, rating, review count) and the review quote stay out. Re-stage, never blur.",
+    "Content outside the confirmed fact list never enters the frame: shot 2 hides the lineup fine print, and shots 2 and 5 hide any lineup price chips, with visibility:hidden (layout unchanged); shots 3 and 4 hand off on the service band, so the Discover tiles (payments, rating, review count) and the review quote stay out. Re-stage, never blur.",
     "captureCss is injected into every shot by capture.cjs: video-only brand fixes (see captureCss.why).",
     "Shot 3's set-up click on the finder waits for the section's 0.9 s reveal; its re-typing ends so the caret is in the same blink half as at the end of shot 2.",
-    "Shot 4 repeats shot 3's last scroll in its preroll, then jiggles the mouse and hovers the same tile point, so frame 0 matches shot 3's last frame."
+    "Shot 4 repeats shot 3's last scroll in its preroll, then jiggles the mouse (fromShot: 3-buy's last cursor point + 6, + 2) and hovers the same tile point, so frame 0 matches shot 3's last frame.",
+    "`frame` on a zoom (documentation for measure-site.cjs --rects, ignored by capture.cjs): `target` is what the zoom is about, `in` must be fully inside the view, `out` fully outside it."
   ],
   "base": "http://localhost:5183",
   "serve": {
-    "build": "cd {{SITE_DIR}} && VITE_DESK_URL={{DESK_URL}} npx vite build --outDir $SCRATCH/dist-demo --emptyOutDir",
-    "preview": "cd {{SITE_DIR}} && npx vite preview --outDir $SCRATCH/dist-demo --port 5183 --strictPort"
+    "build": "cd {{SITE_DIR}} && VITE_DESK_URL={{DESK_URL}} npm run build -- --outDir $SCRATCH/dist-demo --emptyOutDir",
+    "preview": "cd {{SITE_DIR}} && ./node_modules/.bin/vite preview --outDir $SCRATCH/dist-demo --port 5183 --strictPort (vite's own binary, so the PID you keep is vite's; SCRATCH absolute)"
   },
   "capture": {
     "command": "node .claude/skills/recordly-demo/scripts/capture.cjs --storyboard clients/{{SLUG}}-demo/storyboard.json --shot <id> --out $SCRATCH/captures/<id> --publish clients/{{SLUG}}-demo/public/shots --clean",
@@ -41,7 +42,7 @@
     "manual": [
       { "shot": "0-intro", "at": 0.03, "cue": "intro", "file": "sfx/ios_note.wav", "db": -8 },
       { "shot": "1-hero", "at": 0.0, "cue": "open", "file": "sfx/open_ui.wav", "db": -14, "why": "window springs in (2 frames early)" },
-      { "shot": "4-menu", "onEvent": { "type": "click", "index": 0 }, "cue": "open", "file": "sfx/open_ui.wav", "db": -14, "why": "menu drawer opens: 1 frame after the click's tink (timeline.ts eventCues)" },
+      { "shot": "4-menu", "onEvent": { "type": "click", "index": 0 }, "cue": "open", "file": "sfx/open_ui.wav", "db": -14, "why": "menu drawer opens: 1 frame after the click (click + 1 = f965; the click's tink is 2 frames before the click, f962) (timeline.ts eventCues)" },
       { "shot": "5-phone", "at": 0.0, "cue": "open", "file": "sfx/open_ui.wav", "db": -16, "why": "phone slides in (2 frames early)" },
       { "shot": "6-outro", "at": 0.6, "cue": "outro", "file": "sfx/ios_received.wav", "db": -4, "why": "2 frames before the URL line" }
     ],
@@ -65,7 +66,7 @@
       "durationSec": 7.6,
       "cursor": { "kind": "pointer", "start": { "x": 1560, "y": 1010 } },
       "actions": [
-        { "t": 2.4, "type": "moveTo", "x": 980, "y": 700, "durationSec": 1.4 },
+        { "t": 2.4, "type": "moveTo", "x": 980, "y": 700, "durationSec": 1.4, "adapt": "A waypoint on the hero photo, right of the buttons. It must land on empty page (arrow cursor, no hover): measure-site.cjs --storyboard reports the element and cursor under it." },
         {
           "t": 3.9,
           "type": "hover",
@@ -74,7 +75,7 @@
           "anchor": "{{HERO_ANCHOR}}",
           "durationSec": 0.9,
           "why": "rest in the empty space right of the headline's second line (never on a glyph)",
-          "adapt": "HERO_ANCHOR is a fraction of the headline's tight glyph box. Discount ('Cars & Trucks. / For Less.') uses [0.75, 0.72]. For another headline, pick the point just right of line 2's last letter and check a 1:1 crop of the 1.5x zoom."
+          "adapt": "HERO_ANCHOR is a fraction of the headline's tight glyph box. Discount ('Cars & Trucks. / For Less.') uses [0.75, 0.72]. For another headline, pick the point just right of line 2's last letter: measure-site.cjs --storyboard --rects prints line 2's glyph box and the element and cursor under the point (must be the headline itself, arrow cursor). Then check the 1-hero-zoom0 still (SKILL.md step 7b) at 100%."
         }
       ],
       "zooms": [
@@ -95,7 +96,8 @@
       "presetIntroSeen": true,
       "prerollSec": 6.6,
       "readySelector": ".hero__title",
-      "css": ".lineup + .band__fine { visibility: hidden; }",
+      "css": ".lineup + .band__fine { visibility: hidden; } .model__price, .model .chips .chip + .chip { visibility: hidden; }",
+      "cssWhy": "Content-rule class (a) never enters the frame: the lineup's finance fine print, and on a site with priced stock each card's 'From $X/mo' chip and 'From $X*' line. visibility keeps the layout and the scroll targets. On a site with no priced stock (Discount) the price rules match nothing.",
       "durationSec": 17.0,
       "cursor": { "kind": "pointer", "start": { "fromShot": "1-hero", "x": 365, "y": 568 } },
       "actions": [
@@ -108,7 +110,7 @@
           "selector": "a.model[href=\"/inventory?body={{BODY}}\"]",
           "anchor": [0.42, 0.55],
           "durationSec": 0.9,
-          "adapt": "BODY is the featured body type (Truck by default). The lineup is SUV | Sedan / Truck | Coupe: Truck and SUV sit in the left column, where BODY_FOCUS {x 375, y 385} frames the card. A right-column card needs a new BODY_FOCUS."
+          "adapt": "BODY: Truck if the dealer has trucks in stock, else SUV if it has SUVs, else Truck. Every premium-dealer-build lineup is the same four square cards in two columns, SUV | Sedan / Truck | Coupe, whatever is in stock (a type with no stock keeps its card with 'Ask about availability'), so Truck and SUV both sit in the left column and BODY_FOCUS {x 375, y 385} frames either one. Never feature a right-column card unless the user asks; then re-measure BODY_FOCUS with --rects."
         },
         { "t": 7.3, "type": "scrollTo", "selector": ".split-card", "align": "center", "durationSec": 1.5 },
         { "t": 8.8, "type": "hover", "selector": ".split-card__hours", "tight": true, "anchor": [1.05, 0.6], "durationSec": 0.7 },
@@ -129,8 +131,13 @@
           "depth": 2.0,
           "focus": "{{BODY_FOCUS}}",
           "follow": false,
-          "why": "a 720x450 view on the featured card: its name, the vehicle and the floor; the right edge in the gutter before the next card, the bottom above the card's chip",
-          "adapt": "Discount (Truck): {x 375, y 385} frames x 15-735, y 160-610 of the viewport. Re-measure for a right-column card or a card whose chip shows a price ('From $X'): a price chip must be fully out of frame."
+          "why": "a 720x450 view on the featured card: its name, the vehicle and the floor; the right edge in the gutter before the next card, the bottom above the card's chips",
+          "frame": {
+            "target": "a.model[href=\"/inventory?body={{BODY}}\"]",
+            "in": ["a.model[href=\"/inventory?body={{BODY}}\"] .model__sig"],
+            "out": ["a.model:not([href=\"/inventory?body={{BODY}}\"])", "a.model[href=\"/inventory?body={{BODY}}\"] .model__body"]
+          },
+          "adapt": "Discount (Truck): {x 375, y 385} frames x 15-735, y 160-610 of the viewport: the card's name in, its chips row and every other card out. The same for SUV (left column, same size, scrolled to the same place). measure-site.cjs --rects checks it against `frame` and suggests a focus when it fails."
         },
         {
           "at": 8.7,
@@ -138,8 +145,9 @@
           "depth": 1.8,
           "focus": "{{HOURS_FOCUS}}",
           "follow": false,
-          "why": "the visit card centred: page above and below it, the hours line in the lower third",
-          "adapt": "Discount: {x 400, y 422}, the card's centre after its scroll (y 204-639). Card copy of another length changes its height: re-measure the centre."
+          "why": "the visit card's text half centred (clamped to the page's left edge): page above and below it, the hours line in the lower third",
+          "frame": { "target": ".split-card__text", "in": [".split-card__text"] },
+          "adapt": "Discount: {x 400, y 422}: the text half's centre after its scroll (x 132-655 → 393, clamped to 400 so the view starts at the page edge; y 204-639 → 422). Card copy of another length changes its height: take --rects' suggestion."
         },
         { "at": 13.3, "until": 16.0, "depth": 1.5, "focus": "#finder-q", "anchor": [0.35, 0.5], "follow": true }
       ],
@@ -167,7 +175,7 @@
           "contains": "{{SERVICE_TILE}}",
           "anchor": [0.5, 0.55],
           "durationSec": 0.9,
-          "adapt": "SERVICE_TILE is the middle tile's label (Discount: 'We buy trucks'; an auto-glass dealer: 'Door & quarter glass'). Confirm it has no price or claim."
+          "adapt": "SERVICE_TILE is the middle tile's label, copied exactly (Discount: 'We buy trucks'; an auto-glass dealer: 'Door & quarter glass'). The service band is the dealer's second line of business (premium-dealer-build design system, section 7). Content rules (house-recipe §14): no class (a) text (money or credit numbers) in the zoom; class (b) site copy is listed in the README. If every tile carries class (a) text, stop and ask the user before capturing: the house cut has no recipe for it."
         }
       ],
       "zooms": [
@@ -177,8 +185,13 @@
           "depth": 2.0,
           "focus": "{{SERVICE_FOCUS}}",
           "follow": false,
-          "why": "a 720x450 view that is all band and tiles: the outer neighbour's label fully out, the other fully in",
-          "adapt": "Discount-specific: {x 740, y 623} was measured on Discount's band (photo above the tiles ends y 396, tiles y 492-723, band ends y 851). Another band (a photo, a compare widget, other copy) moves the row: re-measure the tile row in the viewport after the scroll and centre a 720x450 view on it."
+          "why": "a 720x450 view that is all band and tiles: the band's photo or widget and the next section out, the hovered tile's label in, every other label fully in or fully out",
+          "frame": {
+            "target": { "selector": ".glass-band .teasers a.tile", "contains": "{{SERVICE_TILE}}" },
+            "in": [{ "selector": ".glass-band .teasers a.tile .tile__label", "contains": "{{SERVICE_TILE}}" }],
+            "out": [".glass-band__demo", ".glass-band + *"]
+          },
+          "adapt": "Always re-measure: the band's photo, compare widget and copy move the tile row. Run measure-site.cjs --storyboard … --rects and use its suggested focus (nearest point to the hovered tile's centre where the `frame` rules hold and no zoom edge cuts a text line). Discount: tiles y 492-723, photo ends y 396, band ends y 851; the tool suggests {x 738, y 622}, the hand-set {x 740, y 623} is kept for Discount (both pass)."
         }
       ],
       "scene": { "trimSec": 0, "durationSec": 5.7 }
@@ -198,11 +211,11 @@
         {
           "t": -3.0,
           "type": "moveTo",
-          "x": "{{SERVICE_JIGGLE_X}}",
-          "y": "{{SERVICE_JIGGLE_Y}}",
+          "fromShot": "3-buy",
+          "dx": 6,
+          "dy": 2,
           "durationSec": 0.2,
-          "why": "jiggle after the set-up scroll so the tile under the cursor takes its hover state",
-          "adapt": "A few px from shot 3's last cursor point (its cursor.json last frame). Discount: shot 3 ended at (720, 619.7); the jiggle goes to (726, 622)."
+          "why": "jiggle after the set-up scroll so the tile under the cursor takes its hover state: capture.cjs puts it at 3-buy's last cursor point + (6, 2), rounded. Discount: 3-buy ended at (720, 619.7), so (726, 622)."
         },
         { "t": -2.0, "type": "hover", "selector": ".glass-band .teasers a.tile", "contains": "{{SERVICE_TILE}}", "anchor": [0.5, 0.55], "durationSec": 0.3 },
         { "t": 0.4, "type": "click", "selector": ".header__menu", "durationSec": 1.1 },
@@ -216,13 +229,15 @@
     },
     {
       "id": "5-phone",
-      "describe": "An iPhone slides in while the desktop window recedes and blurs; the 390-wide capture: hero, then three iOS swipes down the lineup, resting on the featured card; the status bar takes the page's top colour; the phone drops out of frame.",
+      "describe": "An iPhone slides in while the desktop window recedes and blurs; the 390-wide capture: hero, then three iOS swipes down the lineup, resting on the Trucks card; the status bar takes the page's top colour; the phone drops out of frame.",
       "url": "/",
       "viewport": { "width": 390, "height": 797, "deviceScaleFactor": 2 },
       "mobile": true,
       "presetIntroSeen": true,
       "prerollSec": 0.6,
       "readySelector": ".hero__title",
+      "css": ".model__price, .model .chips .chip + .chip { visibility: hidden; }",
+      "cssWhy": "As shot 2: on a site with priced stock the resting card's 'From $X/mo' chip and 'From $X*' line are class (a). Matches nothing on Discount.",
       "durationSec": 9.0,
       "cursor": { "kind": "touch" },
       "actions": [
@@ -233,7 +248,7 @@
           "type": "scrollBy",
           "y": "{{PHONE_SWIPE_3}}",
           "touch": { "x": 255, "y": 610 },
-          "adapt": "Discount: 430 then 450 px rest on the Truck card (third in the one-column phone lineup). For another BODY, set the two swipes so the card rests fully in frame and the fine print below stays out."
+          "adapt": "The phone always rests on the Trucks card (third in the one-column lineup), whatever BODY is: the lineup is the same four cards on every premium-dealer-build site, so 430 then 450 px is the house value. measure-site.cjs --rects prints where the card rests: its top must sit 55-70 px below the header (Discount: 124.8, header bottom 64, so 60.8) and the fine print below the screen. If it does not, change PHONE_SWIPE_3 by the difference (its suggestion); keep three swipes."
         }
       ],
       "zooms": [],

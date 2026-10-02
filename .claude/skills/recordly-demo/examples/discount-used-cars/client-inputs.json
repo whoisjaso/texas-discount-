@@ -36,8 +36,6 @@
     "FINDER_QUERY": "F-150",
     "SERVICE_TILE": "We buy trucks",
     "SERVICE_FOCUS": { "x": 740, "y": 623 },
-    "SERVICE_JIGGLE_X": 726,
-    "SERVICE_JIGGLE_Y": 622,
     "PHONE_SWIPE_2": 430,
     "PHONE_SWIPE_3": 450
   }

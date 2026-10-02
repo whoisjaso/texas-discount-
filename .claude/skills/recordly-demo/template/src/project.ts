@@ -31,7 +31,7 @@ export const project = {
     /** the loader's mark and word are at rest this long after the capture starts (the sting lands one frame later) */
     wordDoneSec: 1.5,
   },
-  /** the intro sting's mark width in frame px (600 suits a wide mark; see references/house-recipe.md) */
+  /** the intro sting's mark width in frame px: the loader drawn 600/360 = 1.667 times larger (house-recipe.md §2) */
   stingMarkWidth: 600,
   /** outro lines (first line large): only confirmed facts */
   outroLines: ["www.example.com", "(000) 000-0000 · Street, City", "Day – Day 0 AM – 0 PM"],

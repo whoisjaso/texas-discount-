@@ -56,6 +56,7 @@
  *       { "t": 3.0, "type": "scrollBy", "y": 600, "touch": { "x": 230, "y": 620 }, "dragSec": 0.3, "tauSec": 0.32 },
  *       { "t": 3.6, "type": "hover", "selector": "a.model", "contains": "Trucks", "anchor": [0.55, 0.5], "durationSec": 0.8 },
  *       { "t": 4.0, "type": "moveTo", "x": 900, "y": 600 },
+ *       { "t": -3.0, "type": "moveTo", "fromShot": "3-buy", "dx": 6, "dy": 2 },  // a few px from where 3-buy ended
  *       { "t": 11.3, "type": "click", "selector": "#finder-q", "anchor": [0.25, 0.5] },
  *       { "t": 12.4, "type": "type", "text": "F-150", "perCharSec": 0.13 },
  *       { "t": 13.0, "type": "press", "key": "Escape" },
@@ -323,6 +324,54 @@ function normalizeShot(shot, sb = {}) {
   return s;
 }
 
+/** The cursor.json an earlier capture wrote: the sibling folder of --out first, then the --publish folder. */
+function previousCapture(id, opts) {
+  const candidates = [path.resolve(opts.out, '..', id, 'cursor.json')];
+  if (opts.publish) candidates.push(path.resolve(opts.publish, id, 'cursor.json'));
+  const found = candidates.find((c) => fs.existsSync(c));
+  return found ? JSON.parse(fs.readFileSync(found, 'utf8')) : null;
+}
+
+/**
+ * Values that come from where an earlier capture's cursor ended (continuity across a cut):
+ *   cursor.start.fromShot           start there (x/y = fallback when that capture does not exist yet)
+ *   moveTo { fromShot, dx, dy }      go a few px from there, rounded (shot 4's set-up jiggle: { fromShot: "3-buy", dx: 6, dy: 2 })
+ * The moveTo has no fallback: capture the shots in order. Mutates the normalized shot.
+ */
+function resolveFromShot(shot, opts) {
+  const vw = shot.viewport.width, vh = shot.viewport.height;
+  if (shot.cursor.start && shot.cursor.start.fromShot) {
+    const id = shot.cursor.start.fromShot;
+    const prev = previousCapture(id, opts);
+    if (prev) {
+      const last = prev.frames[prev.frames.length - 1];
+      shot.cursor.start = { x: last.x, y: last.y };
+    } else {
+      console.warn(`[${shot.id}] cursor.start.fromShot: no capture of "${id}" found yet; using the fallback x/y`);
+      shot.cursor.start = { x: shot.cursor.start.x ?? vw / 2, y: shot.cursor.start.y ?? vh / 2 };
+    }
+  }
+  for (const a of shot.actions) {
+    if (!a.fromShot || a.selector) continue;
+    const prev = previousCapture(a.fromShot, opts);
+    if (!prev) throw new Error(`[${shot.id}] the ${a.type} at t=${a.t} starts from where "${a.fromShot}" ended: capture "${a.fromShot}" first (shots go in order)`);
+    const last = prev.frames[prev.frames.length - 1];
+    a.x = Math.round(last.x + Number(a.dx || 0));
+    a.y = Math.round(last.y + Number(a.dy || 0));
+  }
+  return shot;
+}
+
+/** Paths in a normalized shot that still hold a {{PLACEHOLDER}} or a non-number where a number belongs. */
+function unfilled(node, at = '', out = []) {
+  const DOC = new Set(['why', 'adapt', 'describe', 'notes', 'scene', 'frame']);
+  if (typeof node === 'string') { if (/\{\{[^{}]*\}\}/.test(node)) out.push(`${at || '(shot)'} "${node.slice(0, 60)}"`); }
+  else if (typeof node === 'number') { if (!Number.isFinite(node)) out.push(`${at} ${node}`); }
+  else if (Array.isArray(node)) node.forEach((x, i) => unfilled(x, `${at}[${i}]`, out));
+  else if (node && typeof node === 'object') for (const [k, v] of Object.entries(node)) if (!DOC.has(k)) unfilled(v, at ? `${at}.${k}` : k, out);
+  return out;
+}
+
 function queryOf(a) {
   return { selector: a.selector, contains: a.contains, nth: a.nth, tight: !!a.tight };
 }
@@ -342,20 +391,10 @@ async function captureShot(rawShot, opts) {
   fs.mkdirSync(framesDir, { recursive: true });
 
   const vw = shot.viewport.width, vh = shot.viewport.height;
-  // cursor.start.fromShot: begin where an earlier capture's cursor ended (continuity across a cut).
-  if (shot.cursor.start && shot.cursor.start.fromShot) {
-    const id = shot.cursor.start.fromShot;
-    const candidates = [path.resolve(opts.out, '..', id, 'cursor.json')];
-    if (opts.publish) candidates.push(path.resolve(opts.publish, id, 'cursor.json'));
-    const found = candidates.find((c) => fs.existsSync(c));
-    if (found) {
-      const prev = JSON.parse(fs.readFileSync(found, 'utf8'));
-      const last = prev.frames[prev.frames.length - 1];
-      shot.cursor.start = { x: last.x, y: last.y };
-    } else {
-      console.warn(`[${shot.id}] cursor.start.fromShot: no capture of "${id}" found yet; using the fallback x/y`);
-      shot.cursor.start = { x: shot.cursor.start.x ?? vw / 2, y: shot.cursor.start.y ?? vh / 2 };
-    }
+  resolveFromShot(shot, opts);
+  const holes = unfilled(shot);
+  if (holes.length) {
+    throw new Error(`[${shot.id}] the storyboard still has unfilled placeholders: ${holes.join('; ')}. Fill them in client-inputs.json and refill the storyboard (fill-client.cjs storyboard), or measure them (measure-site.cjs --storyboard … --rects).`);
   }
   const total = Math.round(shot.durationSec * FPS);
   const preroll = Math.round(shot.prerollSec * FPS);
@@ -987,4 +1026,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { captureShot, runShot, normalizeShot, bezier };
+module.exports = { captureShot, runShot, normalizeShot, resolveFromShot, unfilled, bezier };
