@@ -13,7 +13,11 @@ export type ShotEvent =
   | { frame: number; type: "type"; char: string }
   | { frame: number; type: "key"; key: string }
   | { frame: number; endFrame: number; type: "scroll"; fromY: number; toY: number; cursor: "hide" | "keep" }
-  | { frame: number; endFrame: number; type: "touch"; x: number; y: number };
+  | { frame: number; endFrame: number; type: "touch"; x: number; y: number }
+  /** a press-and-hold button: pressed at `frame`, released at `endFrame` */
+  | { frame: number; endFrame: number; type: "hold"; x: number; y: number }
+  /** a pen on a pad: travel from `frame`, then each stroke [downFrame, upFrame]; the pointer IS the pen (unsmoothed) */
+  | { frame: number; endFrame: number; type: "draw"; strokes: [number, number][] };
 export type ShotZoom = {
   startFrame: number;
   inFrames: number;
@@ -117,7 +121,8 @@ const springFollow = (targets: Vec[], omega: number, fps: number, snap?: (i: num
   return out;
 };
 
-export type CursorTrack = { pos: Vec[]; opacity: number[]; down: boolean[]; kind: ("a" | "p" | "t")[] };
+/** press: 0–1, how far the pointer is pressed for a hold or a pen stroke (clicks keep their own bounce) */
+export type CursorTrack = { pos: Vec[]; opacity: number[]; down: boolean[]; press: number[]; kind: ("a" | "p" | "t")[] };
 
 /**
  * Frames where the pointer is hidden, as macOS / Screen Studio would: while the page scrolls by itself (two scrolls
@@ -160,12 +165,48 @@ export const computeCursorTrack = (data: ShotData): CursorTrack => {
   const lead: Vec[] = raw.map((_, i) => raw[Math.min(n - 1, i + leadF)]);
   const pos = springFollow(lead, R.cursorSpring.omega, data.fps);
   const pin = Math.max(1, toF(R.clickPinSec, data.fps));
-  for (const e of data.events) {
-    if (e.type !== "click" && e.type !== "tap") continue;
-    for (let i = Math.max(0, e.frame - pin); i <= Math.min(n - 1, e.frame + pin); i++) {
-      const w = 1 - Math.abs(i - e.frame) / (pin + 1);
+  // pinned to the raw point over [a, b], blended in and out over `pin` frames on either side
+  const pinSpan = (a: number, b: number) => {
+    for (let i = Math.max(0, a - pin); i <= Math.min(n - 1, b + pin); i++) {
+      const w = i < a ? 1 - (a - i) / (pin + 1) : i > b ? 1 - (i - b) / (pin + 1) : 1;
       pos[i] = [mix(pos[i][0], raw[i][0], w), mix(pos[i][1], raw[i][1], w)];
     }
+  };
+  for (const e of data.events) {
+    if (e.type === "click" || e.type === "tap") pinSpan(e.frame, e.frame);
+    // a hold: pinned at the press and at the release; a pen: the ink is in the capture, so the pointer stays on its tip
+    if (e.type === "hold") {
+      pinSpan(e.frame, e.frame);
+      pinSpan(e.endFrame, e.endFrame);
+    }
+    if (e.type === "draw") pinSpan(e.frame, e.endFrame);
+  }
+  // While the pen is down the pad draws its ink a little behind the pointer (signature_pad smooths its last points):
+  // sit the tip on the ink, penLagFrames back along the path.
+  for (const e of data.events) {
+    if (e.type !== "draw") continue;
+    for (const [a, b] of e.strokes) {
+      for (let i = Math.max(1, a + 1); i <= Math.min(n - 1, b); i++) {
+        pos[i] = [mix(raw[i][0], raw[i - 1][0], R.penLagFrames), mix(raw[i][1], raw[i - 1][1], R.penLagFrames)];
+      }
+    }
+  }
+  // A capture cut on its click's navigation (part B) ends on the raw point, where the next capture's cursor starts.
+  const endsOnClick = data.events.some((e) => (e.type === "click" || e.type === "tap" || e.type === "hold") && n - 1 - ("endFrame" in e ? e.endFrame : e.frame) <= pin);
+  if (endsOnClick) pinSpan(n - 1, n - 1);
+  // press level for holds and pen strokes: eased in over clickPressSplit of a click, out over the rest (the click bounce's shape)
+  const clickF = (R.clickMs / 1000) * data.fps;
+  const split = R.clickPressSplit;
+  const pressedAt = new Array(n).fill(false);
+  for (const e of data.events) {
+    if (e.type === "hold") for (let i = e.frame; i < Math.min(n, e.endFrame); i++) pressedAt[i] = true;
+    if (e.type === "draw") for (const [a, b] of e.strokes) for (let i = a; i < Math.min(n, b); i++) pressedAt[i] = true;
+  }
+  const press = new Array(n).fill(0);
+  let lvl = 0;
+  for (let i = 0; i < n; i++) {
+    lvl = pressedAt[i] ? Math.min(1, lvl + 1 / Math.max(1, split * clickF)) : Math.max(0, lvl - 1 / Math.max(1, (1 - split) * clickF));
+    press[i] = theme.ease.inOut(lvl);
   }
   // opacity eases toward the hidden/visible state; the Cursor pairs it with a slight scale (never a lone fade)
   const hidden = hiddenFrames(data);
@@ -179,7 +220,7 @@ export const computeCursorTrack = (data: ShotData): CursorTrack => {
       opacity[i] = theme.ease.inOut(level);
     }
   }
-  return { pos, opacity, down: data.frames.map((f) => f.down), kind: data.frames.map((f) => f.c ?? "a") };
+  return { pos, opacity, down: data.frames.map((f) => f.down), press, kind: data.frames.map((f) => f.c ?? "a") };
 };
 
 export const zoomScaleAt = (z: ShotZoom, f: number): number => {

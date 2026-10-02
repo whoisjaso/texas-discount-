@@ -24,4 +24,10 @@ ffmpeg -v error -y -t 0.45 -i "$OUT/whoosh.wav" -af "afade=t=out:st=0.33:d=0.12"
 ffmpeg -v error -y -i "$OUT/whoosh_short.wav" -af "asetrate=44100*0.917,aresample=44100" "$OUT/whoosh_short_lo.wav"
 ffmpeg -v error -y -i "$OUT/whoosh_short.wav" -af "asetrate=44100*1.0905,aresample=44100" "$OUT/whoosh_short_hi.wav"
 ffmpeg -v error -y -i "$KIT/ui/open_ui.wav" -af "atrim=0:0.6,afade=t=out:st=0.55:d=0.05" "$OUT/open_ui.wav"
+# Part B: hold_rise.wav, the kit's pack3/riser.wav from 1.2 s to 2.5 s (its rise from -32 to -12 dB RMS), 60 ms fade in,
+# 50 ms fade out: a soft rising tone under Hold To Confirm's fill. pen_scratch.wav: 3 s of band-passed pink noise
+# with an irregular tremolo (a felt-tip on a pad), synthesised here (the kit has no pen sound); cues cut it per stroke.
+ffmpeg -v error -y -ss 1.2 -t 1.3 -i "$KIT/pack3/riser.wav" -af "afade=t=in:d=0.06,afade=t=out:st=1.25:d=0.05" "$OUT/hold_rise.wav"
+ffmpeg -v error -y -f lavfi -i "anoisesrc=d=3:c=pink:r=44100:a=0.6:seed=7" \
+  -af "highpass=f=1800,lowpass=f=6500,tremolo=f=11:d=0.55,tremolo=f=4.3:d=0.35,volume=0.9,afade=t=in:d=0.02" -ac 2 "$OUT/pen_scratch.wav"
 echo "sfx ready in $OUT:"; ls "$OUT"

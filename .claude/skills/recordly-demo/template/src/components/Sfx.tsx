@@ -6,7 +6,17 @@ import { Audio, random, Sequence, staticFile, useVideoConfig } from "remotion";
 import { dbToGain, theme, toFrames } from "../theme";
 import { ShotData } from "../lib/shot";
 
-export type Cue = { frame: number; file: string; db: number; maxSec?: number };
+/** fadeSec: a short fade-out at the end of a cue cut by maxSec (a loop gated to a pen stroke), so the cut never clicks */
+export type Cue = { frame: number; file: string; db: number; maxSec?: number; fadeSec?: number };
+
+const cueVolume = (c: Cue, fps: number) => {
+  const g = dbToGain(c.db + theme.sfx.masterDb);
+  if (!c.fadeSec || !c.maxSec) return g;
+  const end = Math.ceil(c.maxSec * fps);
+  const fade = Math.max(1, toFrames(c.fadeSec, fps));
+  // f: frames since the cue started; ramps in over 1 frame and out over the last `fade` frames
+  return (f: number) => g * Math.min(1, (f + 1) / 2, Math.max(0, (end - f) / fade));
+};
 
 export const Sfx: React.FC<{ cues: Cue[] }> = ({ cues }) => {
   const { fps } = useVideoConfig();
@@ -14,7 +24,7 @@ export const Sfx: React.FC<{ cues: Cue[] }> = ({ cues }) => {
     <>
       {cues.map((c, i) => (
         <Sequence key={`${c.file}-${c.frame}-${i}`} from={Math.round(c.frame)} durationInFrames={c.maxSec ? Math.ceil(c.maxSec * fps) : undefined} layout="none">
-          <Audio src={staticFile(c.file)} volume={dbToGain(c.db + theme.sfx.masterDb)} />
+          <Audio src={staticFile(c.file)} volume={cueVolume(c, fps)} />
         </Sequence>
       ))}
     </>
@@ -22,7 +32,7 @@ export const Sfx: React.FC<{ cues: Cue[] }> = ({ cues }) => {
 };
 
 /** Frame (from the zoom's start) at which the zoom-in ease moves fastest. */
-const peakVelocityFrame = (inFrames: number) => {
+export const peakVelocityFrame = (inFrames: number) => {
   const e = theme.recordly.zoomInEase;
   let best = 0;
   let bestV = -1;
@@ -48,7 +58,7 @@ export const shotCues = (
     durationInFrames = Infinity,
     zoomWhoosh = true,
     zoomIndexOffset = 0,
-  }: { trimFrames?: number; durationInFrames?: number; zoomWhoosh?: boolean; /** zooms before this capture in the film (rotates the whoosh variants across captures) */ zoomIndexOffset?: number } = {},
+  }: { trimFrames?: number; durationInFrames?: number; zoomWhoosh?: boolean; /** whooshes heard before this capture in the film (rotates the variants across captures) */ zoomIndexOffset?: number } = {},
 ): Cue[] => {
   const S = theme.sfx;
   const fps = data.fps;
@@ -68,11 +78,16 @@ export const shotCues = (
     }
   }
   if (zoomWhoosh) {
-    data.zooms.forEach((z, i) => {
+    // the variants rotate over the whooshes actually heard (a zoom that opens a capture already at depth, at a cut,
+    // has none and does not count), so consecutive zooms never repeat one sample
+    let heard = 0;
+    data.zooms.forEach((z) => {
       if (z.sfx === false) return;
       const f = z.startFrame - trimFrames + peakVelocityFrame(z.inFrames) - toFrames(S.zoomIn.peakSec, fps) - toFrames(S.zoomIn.leadSec, fps);
-      const file = S.zoomIn.files[(i + zoomIndexOffset) % S.zoomIn.files.length];
-      if (inScene(f)) cues.push({ frame: f, file, db: S.zoomIn.db, maxSec: S.zoomIn.maxSec });
+      if (!inScene(f)) return;
+      const file = S.zoomIn.files[(heard + zoomIndexOffset) % S.zoomIn.files.length];
+      cues.push({ frame: f, file, db: S.zoomIn.db, maxSec: S.zoomIn.maxSec });
+      heard++;
     });
   }
   return cues.sort((a, b) => a.frame - b.frame);

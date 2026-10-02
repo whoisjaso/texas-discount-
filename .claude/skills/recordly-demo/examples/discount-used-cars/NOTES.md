@@ -1,10 +1,10 @@
-# Discount Used Cars and Trucks: the approved film (part A)
+# Discount Used Cars and Trucks: the approved film (part A) and the desk film (part B)
 
 | | |
 |---|---|
 | Project | `clients/discount-used-cars-demo` |
-| Master | `out/demo-v1.mp4`: 1920×1080, 30 fps, 1477 frames, 49.237 s, 41.9 MB |
-| Share copy | `out/discount-demo-part-a-preview.mp4`: CRF 23, 10.6 MB |
+| Master | `out/demo-v1.mp4`: 1920×1080, 30 fps, 1477 frames, 49.237 s, 41.9 MB (deleted after part B shipped: part A is frames 0–1092 of `out/discount-demo.mp4`, and `render.sh` re-renders it) |
+| Share copy | `out/discount-demo-part-a-preview.mp4`: CRF 23, 10.6 MB (deleted likewise) |
 | Status | Approved by the user: "I love it, let's make this a skill … exactly this way" |
 
 - `storyboard.json` is the capture storyboard as shipped, kept byte for byte. It predates the automatic `captureCss`,
@@ -100,3 +100,17 @@ Shot 4 ends with the hand at (344.8, 542.1). Part B's first capture starts there
 - Video-only CSS: the status dot in the text colour, the search × hidden, the hours line aligned.
 - The lineup fine print is hidden in shot 2.
 - The desk host (`desk.discountusedcarsandtrucks.com`) is not shown in the URL pill until confirmed.
+
+## Part B: the desk film (shipped 2026-10-02)
+
+| | |
+|---|---|
+| Master | `out/discount-demo.mp4`: 1920×1080, 30 fps, 2474 frames, 82.47 s, h264 CRF 17 + AAC 192k, +faststart |
+| Share copy | `out/discount-demo-share.mp4`: two-pass x264, same size, ≤ 24 MB, +faststart |
+| Inputs | `client-inputs.json` → `partBDomain`, `partB` (cuts 12 / [42, 55] / [108, 134], `130-U_Carter_812345.pdf`, clock 2026-10-02 14:00 CDT) |
+| Storyboard | `storyboard.json` shots 6-12 (= `assets/storyboard-desk.json` filled with these inputs, checked shot by shot) |
+
+Timeline (film frames): A 0–1099 (the Admin click drawn at 1093) · 6 1099–1212 · 7 1212–1457 · 8a 1457–1487 · 8b
+1487–1542 · 9 1542–1633 · 10a 1633–1734 · 10b 1734–1774 · 11 1774–1874 · 12 1874–1967 · B6 1967–2096 · phone
+2096–2366 · outro 2360–2474. The finish pass's critic findings and their fixes are lessons B1–B13.
+

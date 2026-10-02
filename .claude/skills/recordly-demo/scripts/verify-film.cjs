@@ -53,10 +53,12 @@ function loadProjectModule() {
   const req = Module.createRequire(path.join(PROJECT, 'package.json'));
   const esbuild = req('esbuild');
   const entry = [
+    "export * as TL from './src/demo/timeline';",
     "export { buildTimeline, partASegments, partBSegments } from './src/demo/timeline';",
     "export { shotCues } from './src/components/Sfx';",
     "export { theme, toFrames } from './src/theme';",
     "export { project } from './src/project';",
+    "export * as DS from './src/scenes/DesktopScene';",
     "export { windowPose, windowPoint } from './src/scenes/DesktopScene';",
     "export { windowLayout } from './src/components/MacWindow';",
     "export { computeTracks } from './src/lib/shot';",
@@ -101,32 +103,46 @@ function buildPlan() {
   const loadShot = (id) => (shots[id] = shots[id] || JSON.parse(fs.readFileSync(path.join(PROJECT, 'public', 'shots', id, 'cursor.json'), 'utf8')));
   const phoneId = phoneShotId();
 
-  // desktop segments laid out in film frames
+  // desktop segments laid out in film frames: parts A and B play in ONE DesktopScene (Demo.tsx joins them, adding the
+  // Admin click on shot 4 with a part B); each segment's shot data carries its edits and camera overrides, as rendered
+  const TL = M.TL || {};
+  const DS = M.DS || {};
+  const hasB = M.partBSegments.length > 0;
+  const winSegs = hasB && TL.withCutClick ? [...TL.withCutClick(M.partASegments), ...M.partBSegments] : [...M.partASegments, ...M.partBSegments];
+  const nA = M.partASegments.length;
   const segs = [];
-  const lay = (list, from, part) => {
-    let at = from;
-    list.forEach((s) => {
-      segs.push({ part, shot: s.shot, from: at, durationInFrames: s.durationInFrames, trim: Math.round((s.trimSec || 0) * fps), eventCues: s.eventCues || [], cues: s.cues || [], sceneFrom: from, url: s.url });
-      at += s.durationInFrames;
-    });
-  };
-  lay(M.partASegments, T.desktopA.from, 'A');
-  lay(M.partBSegments, T.desktopB.from, 'B');
+  let at = T.desktopA.from;
+  winSegs.forEach((s, i) => {
+    segs.push({ part: i < nA ? 'A' : 'B', shot: s.shot, from: at, durationInFrames: s.durationInFrames, trim: Math.round((s.trimSec || 0) * fps), eventCues: s.eventCues || [], cues: s.cues || [], sceneFrom: T.desktopA.from, url: s.url, seg: s });
+    at += s.durationInFrames;
+  });
   for (const s of segs) loadShot(s.shot);
   if (phoneId) loadShot(phoneId);
+  // per-segment data (edited) for stills, part-B cut checks and cues
+  const segData = DS.prepareData ? DS.prepareData(segs.map((s) => shots[s.shot]), winSegs) : segs.map((s) => shots[s.shot]);
+  segs.forEach((s, i) => { s.data = segData[i]; });
 
-  // expected sound cues: the same calls DesktopScene, PhoneScene and Demo make
+  // expected sound cues: the same pure function DesktopScene plays (desktopCues), plus PhoneScene's and Demo's own
   const cues = [];
-  for (const part of ['A', 'B']) {
-    let zoomsSoFar = 0;
-    for (const s of segs.filter((x) => x.part === part)) {
-      const d = shots[s.shot];
-      for (const c of M.shotCues(d, { trimFrames: s.trim, durationInFrames: s.durationInFrames, zoomIndexOffset: zoomsSoFar })) cues.push({ frame: c.frame + s.from, file: c.file, why: `${s.shot} auto` });
-      zoomsSoFar += d.zooms.length;
-      for (const c of s.cues) cues.push({ frame: c.frame + s.from, file: c.file, why: `${s.shot} cue` });
-      for (const ec of s.eventCues) {
-        const ev = d.events.filter((e) => e.type === ec.type)[ec.index];
-        if (ev) cues.push({ frame: ev.frame - s.trim + s.from + Math.round((ec.offsetSec || 0) * fps), file: ec.file, why: `${s.shot} ${ec.type} #${ec.index}` });
+  const whooshAfter = TL.docWhooshAfter ? TL.docWhooshAfter(T) : [];
+  if (DS.desktopCues) {
+    for (const c of DS.desktopCues(winSegs, segData, fps, { whooshAfter })) {
+      const seg = segs.filter((x) => x.from - T.desktopA.from <= c.frame).pop();
+      cues.push({ frame: c.frame + T.desktopA.from, file: c.file, why: `${seg ? seg.shot : 'window'} (desktopCues)` });
+    }
+  } else {
+    // a project from before desktopCues: the old per-part plan
+    for (const part of ['A', 'B']) {
+      let zoomsSoFar = 0;
+      for (const s of segs.filter((x) => x.part === part)) {
+        const d = shots[s.shot];
+        for (const c of M.shotCues(d, { trimFrames: s.trim, durationInFrames: s.durationInFrames, zoomIndexOffset: zoomsSoFar })) cues.push({ frame: c.frame + s.from, file: c.file, why: `${s.shot} auto` });
+        zoomsSoFar += d.zooms.length;
+        for (const c of s.cues) cues.push({ frame: c.frame + s.from, file: c.file, why: `${s.shot} cue` });
+        for (const ec of s.eventCues) {
+          const ev = d.events.filter((e) => e.type === ec.type)[ec.index];
+          if (ev) cues.push({ frame: ev.frame - s.trim + s.from + Math.round((ec.offsetSec || 0) * fps), file: ec.file, why: `${s.shot} ${ec.type} #${ec.index}` });
+        }
       }
     }
   }
@@ -136,6 +152,7 @@ function buildPlan() {
   cues.push({ frame: T.desktopA.from - sec(S.open.leadSec), file: S.open.file, why: 'window opens (Demo.tsx)' });
   if (phoneId) cues.push({ frame: T.phone.from - sec(S.open.leadSec), file: S.open.file, why: 'phone slides in (Demo.tsx)' });
   cues.push({ frame: T.outro.from + sec(theme.outro.linesDelaySec) - sec(S.click.leadSec), file: S.outro.file, why: 'outro lines (Demo.tsx)' });
+  if (T.doc && T.doc.durationInFrames) cues.push({ frame: T.doc.from - sec(S.open.leadSec), file: S.open.file, why: 'B6 Preview window opens (Demo.tsx)' });
   cues.sort((a, b) => a.frame - b.frame);
 
   // stills: the moments every defect so far sat on
@@ -150,7 +167,7 @@ function buildPlan() {
   const first = segs[0];
   if (first) add(first.from + sec(3.0) - first.trim, 'hero-curtain');
   segs.forEach((s, i) => {
-    const d = shots[s.shot];
+    const d = s.data;
     const toFilm = (cf) => s.from + cf - s.trim;
     const inSeg = (f) => f >= s.from && f < s.from + s.durationInFrames;
     d.zooms.forEach((z, k) => { const f = toFilm(z.startFrame + z.inFrames + 6); if (inSeg(f)) add(f, `${s.shot}-zoom${k}-${z.depth}x`); });
@@ -173,6 +190,14 @@ function buildPlan() {
   add(T.cutPoint - sec(0.3), 'cutpoint-minus0.3');
   add(T.cutPoint - 1, 'cutpoint-last-desktop');
   if (T.desktopB.durationInFrames) { add(T.desktopB.from, 'partB-first'); add(T.phone.from - 1, 'partB-last'); }
+  if (T.doc && T.doc.durationInFrames) {
+    const D = theme.doc;
+    add(T.doc.from, 'B6-first');
+    add(T.doc.from + sec(D.push.atSec) + sec(theme.recordly.zoomInSec / 2), 'B6-push-mid');
+    add(T.doc.from + sec(D.push.atSec) + sec(theme.recordly.zoomInSec) + 3, 'B6-push-end');
+    add(T.doc.from + sec(D.caption.atSec) + sec(0.6), 'B6-caption');
+    add(T.doc.from + T.doc.durationInFrames - 1, 'B6-last');
+  }
   if (phoneId && T.phone.durationInFrames) {
     const P = T.phone;
     add(P.from, 'phone-first');
@@ -198,12 +223,15 @@ function buildPlan() {
 
   // in-window cuts: last capture frame of one segment vs first of the next
   const cuts = [];
+  const jumpCuts = [];
   for (let i = 1; i < segs.length; i++) {
     const a = segs[i - 1], b = segs[i];
-    if (a.part !== b.part) continue; // the A→B boundary is checked separately (it is part B's own recipe)
-    cuts.push({ film: b.from, a: a.shot, aFrame: a.trim + a.durationInFrames - 1, b: b.shot, bFrame: b.trim });
+    // part A: pixel-matched cuts; from the A→B cut on: jump-cuts on a click's navigation (the page changes), checked
+    // for the pointer point and the camera on both sides, and for a painted first frame
+    if (b.part === 'B') jumpCuts.push({ film: b.from, a: a.shot, aFrame: a.trim + a.durationInFrames - 1, b: b.shot, bFrame: b.trim, ai: i - 1, bi: i });
+    else cuts.push({ film: b.from, a: a.shot, aFrame: a.trim + a.durationInFrames - 1, b: b.shot, bFrame: b.trim });
   }
-  return { M, T, fps, segs, shots, phoneId, cues, stills: stillsU, cuts, holes: placeholderHoles() };
+  return { M, T, fps, segs, shots, phoneId, cues, stills: stillsU, cuts, jumpCuts, holes: placeholderHoles() };
 }
 
 // ------------------------------------------------------------------ media helpers
@@ -297,18 +325,54 @@ function checkCuts({ cuts, shots, fps }) {
   }
 }
 
+/**
+ * Part B's jump-cuts: the page changes, so pixels are not compared; the pointer (edited data, CSS px) and the camera
+ * (scale and focus, from the same tracks the scene draws) must be the same on both sides, and the first frame shown must
+ * be painted (edge density of the capture frame: a blank page, a skeleton loader or a dialog's close reads 0).
+ */
+function checkJumpCuts({ jumpCuts, segs, M, fps }) {
+  if (!jumpCuts.length) return;
+  const vp = segs[0].data.viewport;
+  const L = M.windowLayout(vp.width, vp.height, M.theme.width, M.theme.height);
+  const tracksOf = new Map();
+  const tr = (i) => tracksOf.get(i) || (tracksOf.set(i, M.computeTracks(segs[i].data)), tracksOf.get(i));
+  for (const c of jumpCuts) {
+    const A = segs[c.ai], B = segs[c.bi];
+    const ta = tr(c.ai), tb = tr(c.bi);
+    const pa = ta.cursor.pos[c.aFrame], pb = tb.cursor.pos[c.bFrame];
+    const ca = M.cameraAt(A.data, ta, c.aFrame, L.contentW, L.contentH), cb = M.cameraAt(B.data, tb, c.bFrame, L.contentW, L.contentH);
+    const dP = Math.hypot(pa[0] - pb[0], pa[1] - pb[1]);
+    const dS = Math.abs(ca.s - cb.s), dT = Math.hypot(ca.tx - cb.tx, ca.ty - cb.ty);
+    gate(dP <= 1.5 && dS <= 0.01 && dT <= 3, `jump-cut f${c.film} ${c.a}→${c.b} pointer + camera`, `pointer (${pa.map((v) => v.toFixed(1)).join(', ')}) → (${pb.map((v) => v.toFixed(1)).join(', ')}) Δ${dP.toFixed(2)} px; camera ${ca.s.toFixed(3)}x → ${cb.s.toFixed(3)}x, Δpan ${dT.toFixed(1)} px`);
+    const r = ff(['-v', 'error', '-ss', Math.max(0, (c.bFrame - 0.5) / fps).toFixed(4), '-i', path.join(PROJECT, 'public', 'shots', B.shot, 'shot.mp4'), '-frames:v', '1', '-vf', 'scale=720:-1,format=gray', '-f', 'rawvideo', '-']);
+    const px = r.stdout || Buffer.alloc(0);
+    // edge density: neighbour steps > 40 levels per 1000 px (painted desk pages 11-23; blank page, skeleton loader or
+    // a dialog's close 0; a page still fading in about 10)
+    const w = 720, h = Math.floor(px.length / w);
+    let edges = 0;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const v = px[y * w + x];
+      if (x + 1 < w && Math.abs(v - px[y * w + x + 1]) > 40) edges++;
+      if (y + 1 < h && Math.abs(v - px[(y + 1) * w + x]) > 40) edges++;
+    }
+    const sd = (edges / Math.max(1, w * h)) * 1000;
+    gate(sd >= 11, `jump-cut f${c.film} ${c.b} first frame painted`, `capture frame ${c.bFrame}: edge density ${sd.toFixed(1)} (≥ 11; a blank page or skeleton loader reads 0, a page still fading in about 10)`);
+  }
+}
+
 function run() {
   const plan = buildPlan();
   const { T, fps, segs, shots, cues, stills, cuts, M } = plan;
   if (args.plan) {
     const phone = plan.phoneId ? { shot: plan.phoneId, from: T.phone.from, durationInFrames: T.phone.durationInFrames } : null;
-    console.log(JSON.stringify({ timeline: T, segments: segs.map(({ eventCues, cues: c, ...s }) => s), phone, cuts, stills, cues, holes: plan.holes }, null, 1));
+    console.log(JSON.stringify({ timeline: T, segments: segs.map(({ eventCues, cues: c, seg, data, ...s }) => s), phone, cuts, jumpCuts: plan.jumpCuts, stills, cues, holes: plan.holes }, null, 1));
     return 0;
   }
   fs.mkdirSync(path.join(OUT, 'cuts'), { recursive: true });
   gate(plan.holes.length === 0, 'no placeholders left', plan.holes.length ? plan.holes.join(' | ') : 'src/project.ts and storyboard.json hold no double-brace values');
   if (args['cuts-only']) {
     checkCuts(plan);
+    checkJumpCuts(plan);
     const failedCuts = results.filter((r) => r.ok === false);
     console.log(failedCuts.length ? `CUTS FAIL (${failedCuts.length})` : 'CUTS PASS');
     return failedCuts.length ? 1 : 0;
@@ -339,8 +403,9 @@ function run() {
   gate(last !== undefined && last < 20, 'last frame is black', `YAVG ${last && last.toFixed(1)}`);
   fs.writeFileSync(path.join(OUT, 'yavg.txt'), yavg.map((y, i) => `${i} ${y}`).join('\n'));
 
-  // 3. cut continuity: pixels (PSNR ≥ 45 dB) and cursor / scroll from both cursor.json files
+  // 3. cut continuity: pixels (PSNR ≥ 45 dB) and cursor / scroll from both cursor.json files; part B's jump-cuts
   checkCuts(plan);
+  checkJumpCuts(plan);
 
   // 4. white level: the recording is never graded, so a white page reads white right to the window's edges
   const vp = shots[segs[0].shot].viewport;

@@ -1,12 +1,13 @@
 ---
 name: recordly-demo
-description: Make the house demo video for a car dealer's website (and later its staff sale desk), exactly as the approved Discount Used Cars film, a Recordly / Screen Studio style macOS screen recording of a premium-dealer-build site. The intro match-cuts onto the site's own loader; one macOS window holds every shot with pixel-matched hard cuts, auto-zooms and a smoothed cursor; then an iPhone cut with iOS swipes, iOS sounds and a facts-only outro. Ships the capture, measure, fill, render and verify scripts and the Remotion template. Use it whenever the user wants a demo video for a dealer or dealership, a screen recording of the site or the desk, a site walkthrough, product reel, promo or screen-recording ad, a video for the dealer's social, says "do the video for this client" or "like the Discount video", wants a Mac screen recording look, or mentions Recordly or Screen Studio, even without the word demo. Use it instead of building a dealer video from scratch with remotion-motion-graphics.
+description: Make the house demo video for a car dealer's website and its staff sale desk, exactly as the approved Discount Used Cars film, a Recordly / Screen Studio style macOS screen recording of a premium-dealer-build site. The intro match-cuts onto the site's own loader; one macOS window holds every shot with pixel-matched hard cuts, auto-zooms and a smoothed cursor; then an iPhone cut with iOS swipes, iOS sounds and a facts-only outro. Ships the capture, measure, fill, render and verify scripts and the Remotion template. Use it whenever the user wants a demo video for a dealer or dealership, a screen recording of the site or the desk, a site walkthrough, product reel, promo or screen-recording ad, a video for the dealer's social, says "do the video for this client" or "like the Discount video", wants a Mac screen recording look, or mentions Recordly or Screen Studio, even without the word demo. Use it instead of building a dealer video from scratch with remotion-motion-graphics.
 ---
 
 # The house demo video (Recordly style)
 
-This skill makes one film, the way the user approved it: Discount Used Cars, part A
-(`clients/discount-used-cars-demo/out/demo-v1.mp4`). The film was approved with "exactly this way". So the job for a
+This skill makes one film, the way the user approved it: Discount Used Cars, part A (approved as `demo-v1.mp4`; it is
+now frames 0–1092 of `clients/discount-used-cars-demo/out/discount-demo.mp4`, the site + desk film, unchanged). The
+film was approved with "exactly this way". So the job for a
 new dealer is to reproduce that film on their site. It is not a new edit:
 
 - The code, timings, sounds and look are fixed. They live in `template/` and are documented with their reasons in
@@ -27,7 +28,7 @@ bounce and motion blur. Our own capture (`scripts/capture.cjs`) and Remotion com
 | 7.9–24.9 s | 2-scroll | The lineup band; a 2.0× zoom on the featured card (hovered). The visit card at 1.8× ("Open Now"). The finder: click, type a model. |
 | 24.9–30.6 s | 3-buy | The service band; a 2.0× zoom on the middle tile (hovered). |
 | 30.6–36.6 s | 4-menu | Menu, the drawer opens, and the camera holds 1.8× on "Admin · Staff Sign-In To The Sale Desk" with the hand resting on it. |
-| 36.6 s | **CUT POINT** | Part B (the app / desk segment) goes here. See "Part B slot". |
+| 36.6 s | **CUT POINT** | Part B (the sale desk) goes here. See "Part B: the desk". |
 | 36.6–45.6 s | 5-phone | An iPhone slides in while the desktop recedes. Three iOS swipes down the lineup, then the phone drops away. |
 | 45.4–49.2 s | outro | Drawn under the phone: the logo, the URL, phone · address, and hours; a slow push; a fade to black. |
 
@@ -106,6 +107,8 @@ Run from the repo root.
    node $S/scripts/measure-site.cjs --into $I && node $S/scripts/fill-client.cjs check $I
    node $S/scripts/capture.cjs --selftest --dsf 1,2 --out $SCRATCH/selftest --clock <clock>
    ```
+   Run the self-test on an idle machine; on a determinism FAIL under load, re-run once before investigating (lesson
+   B12).
 
 5. **Create the project.** This copies the template, sounds, fonts and logos, sets `theme.outro.logoWidth` from the
    logo's shape (written back into `$I`), writes `src/project.ts`, `storyboard.json` and `README.md`, and runs
@@ -198,25 +201,43 @@ The last row is by eye. Details and what each catches are in `references/verific
 | Onset map | Every onset sits on a cue the composition plays; no isolated blips |
 | Stills (by eye) | About 46 labelled stills looked at: one logo through the hand-off, zooms framed with no edge through text, rings visible, the phone opaque by frame 2, the outro under the phone, only facts on screen, a black last frame |
 
-## Part B slot
+## Part B: the desk (when the client has the premium-dealer-build sale desk)
 
-**Part B: recipe added after its first production use.** The film is built so an app or desk segment can be inserted
-at the cut point without touching part A:
+Shipped once in the Discount film (`out/discount-demo.mp4`, 82.5 s): part A unchanged to the cut point, then the desk in
+the SAME window, then B6 (the signed 130-U), then the phone and outro. It is house recipe too: shots in
+`assets/storyboard-desk.json`, segments in `template/src/demo/timeline.ts` (`partBSegments`, built from
+`project.partB.cuts`), `DocScene` + `theme.doc`. Numbers: house-recipe §15; problems and fixes: lessons B1–B13; gates:
+verification §7.
 
-- **Slot:** `partBSegments` in `src/demo/timeline.ts`, empty in part A. When filled, `Demo.tsx` mounts a second
-  `DesktopScene` at `demoTimeline.cutPoint`, in the same window style. Everything after it moves back automatically,
-  and the phone's held background becomes part B's last frame.
-- **Hand-off contract:**
-  - Same 1440×900 viewport at DSF 2.
-  - The first B capture opens on the Admin click.
-  - Its cursor starts with `cursor.start.fromShot: "4-menu"`.
-  - The URL pill stays the public domain until the owner confirms the desk host (`project.partBDomain`).
-  - Desk data that is not a confirmed fact uses demo data or stays out of frame. Never blur it.
-  - `ios_success` is reserved for this segment.
-- **Hazards no render has exercised yet** (house-recipe §15): a fresh scene mounting on the cut frame (the black-frame
-  pattern), the window pose and zoom restarting at the A→B cut, and the whoosh rotation restarting. Run the full gates.
+| Film (Discount) | Segment | What |
+|---|---|---|
+| 36.4 s | (4-menu) | The Admin click drawn on the menu (ring + tink), 6 frames before the cut |
+| 36.6–40.4 s | 6-desk-signin | The painted sign-in card at shot 4's 1.8x, pulling back to the card from the cut; email under a privacy blur; Sign In |
+| 40.4–48.6 s | 7-desk-onboard | Name; the pen signs at 1.8x (felt-tip sound); Save → "You Are All Set" (ios_success); the camera pulls out; Start Working |
+| 48.6–51.4 s | 8a / 8b | Handle A Sale (wide) → Start A Sale (the skeleton cut out) → the car |
+| 51.4–54.4 s | 9-desk-buyer | The buyer's name |
+| 54.4–59.1 s | 10a / 10b | The address read-back at 2.0x, Hold To Confirm (a rise under the fill, the hand off the label) → (dialog close cut out) "How Are They Paying?" → Cash |
+| 59.1–62.5 s | 11-desk-guide | The guided sale |
+| 62.5–65.6 s | 12-desk-signed | The packet: push onto "2 / 2 signed" (ios_success), held; Open / Print on the 130-U |
+| 65.6–69.9 s | B6 | The 130-U in a Preview window; push onto the centred certification block, spotlight; the member's printed name and drawn signature; identity and money blurred; "Signed Once. On Every Title Application." |
+| 69.9 s → | phone, outro | The desk and document dissolve to the wallpaper under the phone |
 
-Do not invent the part B storyboard here. When it has shipped once, add its recipe to this skill.
+**Desk runbook** (after part A's steps 1–7 pass):
+
+1. **Facts and data.** The owner confirms the desk host (`partBDomain`). Desk people and the deal are demo data
+   (Maria Lopez, James Carter, the mock lot's car); check the demo address does not exist (lesson B13).
+2. **Desk server** on :5190 only: `next dev` with `DESK_PREVIEW_MEMBER=fresh` (the preview mock is off in production;
+   the css hides the dev indicator). Restart it to reset the mock before re-capturing 6 or 7. Kill it by PID.
+3. **Storyboard.** `fill-client.cjs storyboard $I $S/assets/storyboard-desk.json` and merge the shots after 4-menu.
+4. **Capture in the storyboard's order** (`partB.notes`): 6, 7, 8, 9, the B4 set-up walk + 11 `--var deal=`, 10, the
+   off-camera complete sale (premium-dealer-build desk-walk `sale.cjs` + `ceremony.cjs`, scenario copies in scratch) +
+   12 `--var deal=`. `pdftoppm -r 300 -f 1 -l 1` the deal's 130-U into `public/docs/130u-p1.png`.
+5. **Measure `partB.cuts`** on the captures (verification §7), fill `client-inputs.json` → `partB` (cuts, docFileName,
+   clock), refill `src/project.ts` (`fill-client.cjs project`).
+6. **Cuts and stills.** `verify-film.cjs --cuts-only` must print CUTS PASS (part A's pixel cuts and part B's
+   jump-cut gates); render the plan's stills (step 7b) and look at every part-B one.
+7. **Render** `CRF=17 AUDIO_BITRATE=192k render.sh $P discount-demo` (about 30 min, background), then
+   `verify.sh` and the by-eye list in verification §7.
 
 ## What may change per client, and what may not
 
@@ -253,14 +274,16 @@ scripts/fill-client.cjs    client-inputs.json → project.ts / storyboard.json /
 scripts/new-project.sh     template + assets + filled files → clients/<slug>-demo, logoWidth, npm ci
 scripts/render.sh          preflight, typecheck, master (CRF 16) + share copy (≤ 24 MB); --check stops before rendering
 scripts/verify.sh          the gates (wraps verify-film.cjs; --plan and --cuts-only modes; --allow-* flags)
-template/                  the approved film's Remotion project: src identical to the shipped one except
-                           project.ts (placeholders) and theme.ts comments; lockfile pins Remotion 4.0.532
+template/                  the shipped film's Remotion project (parts A and B, DocScene): src identical to the shipped
+                           one except project.ts (placeholders, partB null) and theme.ts comments; lockfile pins
+                           Remotion 4.0.532
 template/scripts/stills.cjs     bundle once, render many stills (step 7b); deletes its own webpack bundle
 template/scripts/prepare-sfx.sh rebuilds the sound kit from its source pack; only needed to swap a sound
 assets/storyboard-dealer-site.json   the house storyboard with placeholders, `adapt` notes and `frame` / `rest` rules
+assets/storyboard-desk.json          part B: the seven desk shots (house values; fills DESK_CLOCK and TIMEZONE)
 assets/client-inputs.template.json   the one file filled per client
 assets/project-README.md   the per-project README
-assets/sfx/, assets/fonts/ the 15 sounds the film plays (SOURCES.md) and Barlow Semi Condensed (OFL.txt)
+assets/sfx/, assets/fonts/ the 17 sounds the film plays (SOURCES.md) and Barlow Semi Condensed (OFL.txt)
 ```
 
 **Housekeeping:**

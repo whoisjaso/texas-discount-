@@ -1,9 +1,10 @@
 // The film: Intro sting ⇢ match cut onto the site's own loader in the macOS window → shots 1–4 in that one window
-// (hard, pixel-matched cuts) → CUT POINT (part B) → iPhone (shot 5; the desktop recedes behind it, the phone drops
-// away) → Outro (logo, the three facts, slow push, fade to black).
+// (hard, pixel-matched cuts) → CUT POINT → part B, the sale desk, in the SAME window instance (B1–B5: hard jump-cuts on
+// each click's navigation) → B6, the 130-U in a Preview window over the held desk → iPhone (shot 5; the desk and the
+// document recede behind it, the phone drops away) → Outro (logo, the three facts, slow push, fade to black).
 // Layers, bottom to top: backdrop (wallpaper + grade + vignette + grain, once, continuous) → scenes → intro sting →
 // a whisper of grain over everything. The recordings themselves are never graded or vignetted.
-import React from "react";
+import React, { useMemo } from "react";
 import { AbsoluteFill, Freeze, Sequence, useCurrentFrame, useVideoConfig } from "remotion";
 import { theme, toFrames } from "./theme";
 import { project } from "./project";
@@ -15,7 +16,8 @@ import { FadeOut, Finish } from "./components/Overlays";
 import { windowLayout } from "./components/MacWindow";
 import { DesktopScene, windowPoint, windowPose } from "./scenes/DesktopScene";
 import { phoneBehindStyle, PhoneScene } from "./scenes/PhoneScene";
-import { buildTimeline, partASegments, partBSegments } from "./demo/timeline";
+import { docBehind, DocScene } from "./scenes/DocScene";
+import { buildTimeline, docWhooshAfter, partASegments, partBSegments, withCutClick } from "./demo/timeline";
 
 export const demoTimeline = buildTimeline(partBSegments);
 
@@ -65,15 +67,36 @@ const IntroSting: React.FC = () => {
  * phone's entrance. The same instance stays mounted across the cut, so no capture is reloaded on the phone's first
  * frame (a fresh copy mounted there rendered one black frame).
  */
-const HoldUnderPhone: React.FC<{ holdAt: number; phoneFrames: number; children: React.ReactNode }> = ({ holdAt, phoneFrames, children }) => {
+const HoldUnderPhone: React.FC<{ holdAt: number; phoneFrames: number; dissolveSec?: number; children: React.ReactNode }> = ({ holdAt, phoneFrames, dissolveSec = 0, children }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const held = frame >= holdAt;
+  const style = held ? phoneBehindStyle(frame - holdAt, fps, phoneFrames, true) : undefined;
+  // with a part B the held desk and document dissolve to the wallpaper under the phone's entrance (the phone shows the
+  // public site again, so a tax form behind it would read as a leftover)
+  if (style && dissolveSec > 0) {
+    const d = theme.ease.inOut(clamp01((frame - holdAt) / Math.max(1, toFrames(dissolveSec, fps))));
+    style.opacity = (Number(style.opacity ?? 1) || 0) * (1 - d);
+  }
   return (
-    <AbsoluteFill style={held ? phoneBehindStyle(frame - holdAt, fps, phoneFrames, true) : undefined}>
+    <AbsoluteFill style={style}>
       <Freeze frame={holdAt - 1} active={held}>
         {children}
       </Freeze>
+    </AbsoluteFill>
+  );
+};
+
+/** From `from` (while the 130-U is up) the desk behind it settles back, softens and dims. */
+const BehindDoc: React.FC<{ from: number; active: boolean; children: React.ReactNode }> = ({ from, active, children }) => {
+  const frame = useCurrentFrame();
+  const { fps, width, height } = useVideoConfig();
+  if (!active || frame < from) return <AbsoluteFill>{children}</AbsoluteFill>;
+  const b = docBehind(frame - from, fps, width, height);
+  return (
+    <AbsoluteFill>
+      <AbsoluteFill style={b.style}>{children}</AbsoluteFill>
+      <AbsoluteFill style={{ background: theme.colors.black, opacity: b.dim, pointerEvents: "none" }} />
     </AbsoluteFill>
   );
 };
@@ -91,10 +114,12 @@ export const Demo: React.FC = () => {
   const T = demoTimeline;
   const S = theme.sfx;
   const hasB = partBSegments.length > 0;
-  const urlB = project.partBDomain ?? project.domain;
-  // the last desktop sequence (B if there is one) runs on under the phone
-  const underA = hasB ? 0 : T.phone.durationInFrames;
-  const underB = hasB ? T.phone.durationInFrames : 0;
+  // Part B plays in the same DesktopScene as part A (its segments carry the desk URL): no fresh scene mounts on the cut
+  // frame, the window's pose and breathing run on, and the whoosh rotation continues.
+  const segments = useMemo(() => (hasB ? [...withCutClick(partASegments), ...partBSegments] : partASegments), [hasB]);
+  const deskFrames = T.desktopA.durationInFrames + T.desktopB.durationInFrames;
+  // the desk (and the 130-U over it) run on under the phone, held on their last frame
+  const holdAt = T.phone.from - T.desktopA.from;
   const lead = (s: number) => toFrames(s, fps);
 
   // storyboard.json → sfx.manual (film frames)
@@ -104,33 +129,40 @@ export const Demo: React.FC = () => {
     { frame: T.phone.from - lead(S.open.leadSec), file: S.open.file, db: S.open.db - 2 }, // open_ui −16 dB: the phone slides in
     { frame: T.outro.from + lead(theme.outro.linesDelaySec) - lead(S.click.leadSec), file: S.outro.file, db: S.outro.db }, // ios_received: the URL line
   ];
+  if (T.doc.durationInFrames) {
+    // B6: open_ui as the Preview window opens; a whoosh whose peak lands just before the push's fastest frame
+    cues.push({ frame: T.doc.from - lead(S.open.leadSec), file: S.open.file, db: S.open.db });
+  }
+  // B6's push whoosh is played by the DesktopScene, so its variant continues the rotation over the whooshes heard
+  const whooshAfter = useMemo(() => docWhooshAfter(T), [T]);
 
   return (
     <AbsoluteFill style={{ background: theme.colors.bg }}>
       <Backdrop />
 
       {/* 1–4 · one macOS window: hero → scroll → we buy → menu (ends held on the Admin row). It springs in under the
-          intro sting; the loader's logo is covered until the sting has landed on it. */}
-      <Sequence from={T.desktopA.from} durationInFrames={T.desktopA.durationInFrames + underA} name="1-4 Desktop">
-        <HoldUnderPhone holdAt={underA ? T.desktopA.durationInFrames : Infinity} phoneFrames={T.phone.durationInFrames}>
-          <DesktopScene
-            segments={partASegments}
-            url={project.domain}
-            enter
-            bare
-            cover={{ rect: LOADER.cover as Rect, color: LOADER.coverColor, untilFrame: T.intro.landAt - T.desktopA.from }}
-          />
+          intro sting; the loader's logo is covered until the sting has landed on it.
+          ‖ CUT POINT ‖ B1–B5 · the sale desk in the same window: sign-in → onboarding → Handle A Sale → the packet.
+          B6 · the 130-U opens over the desk, which stays held on its last frame. */}
+      <Sequence from={T.desktopA.from} durationInFrames={holdAt + T.phone.durationInFrames} name={hasB ? "1-4 + B1-B6 Desktop" : "1-4 Desktop"}>
+        <HoldUnderPhone holdAt={holdAt} phoneFrames={T.phone.durationInFrames} dissolveSec={hasB ? theme.doc.phoneDissolveSec : 0}>
+          <BehindDoc from={deskFrames} active={T.doc.durationInFrames > 0}>
+            <DesktopScene
+              segments={segments}
+              url={project.domain}
+              enter
+              bare
+              cover={{ rect: LOADER.cover as Rect, color: LOADER.coverColor, untilFrame: T.intro.landAt - T.desktopA.from }}
+              whooshAfter={whooshAfter}
+            />
+          </BehindDoc>
+          {T.doc.durationInFrames > 0 && (
+            <Sequence from={deskFrames} durationInFrames={T.doc.durationInFrames} name="B6 130-U">
+              <DocScene />
+            </Sequence>
+          )}
         </HoldUnderPhone>
       </Sequence>
-
-      {/* ‖ CUT POINT ‖ part B (sale desk) slots in here, in the same window */}
-      {hasB && (
-        <Sequence from={T.desktopB.from} durationInFrames={T.desktopB.durationInFrames + underB} name="Part B Desk">
-          <HoldUnderPhone holdAt={T.desktopB.durationInFrames} phoneFrames={T.phone.durationInFrames}>
-            <DesktopScene segments={partBSegments} url={urlB} bare />
-          </HoldUnderPhone>
-        </Sequence>
-      )}
 
       {/* 6 · Outro, drawn UNDER the phone: its logo comes up as the phone drops away */}
       <Sequence from={T.outro.from} durationInFrames={T.outro.durationInFrames} name="6 Outro">

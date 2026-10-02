@@ -6,6 +6,8 @@
   "domain": "{{public host without www, from business.siteUrl, owner-confirmed}}",
   "partBDomain": null,
   "_partBDomain": "Stays null until the owner confirms the desk host may be shown in the URL pill.",
+  "partB": null,
+  "_partB": "Leave null for the site film (part A). For the desk film (part B, assets/storyboard-desk.json): { \"cuts\": { \"signinPainted\": n, \"saleSkeleton\": [a, b], \"readbackRelease\": [a, b] }, \"docFileName\": \"130-U_<Buyer last name>_<last 6 of VIN>.pdf\", \"clock\": \"<the day the off-camera deal is signed>T14:00:00<offset>\" }, the cuts measured on the desk captures (references/verification.md, part B).",
   "deskUrl": "https://desk.{{domain}}",
   "_deskUrl": "Only used as VITE_DESK_URL for the capture build, so the drawer's Admin row renders. It is never navigated in part A. If the client has no sale desk, stop and ask the user: the house cut ends on that row.",
   "facts": ["www.{{domain}}", "{{(000) 000-0000}}", "{{street, city as the site prints it}}", "{{short hours exactly as the visit card prints them, no closed days}}"],

@@ -1,494 +1,22 @@
 {
- "project": "discount-used-cars",
- "title": "Discount Used Cars and Trucks: site demo, part A",
+ "project": "{{SLUG}}-demo",
+ "title": "{{CLIENT}}: desk demo, part B (the premium-dealer-build sale desk)",
+ "template": "recordly-demo assets/storyboard-desk.json: the house part B, as shipped in the Discount film (examples/discount-used-cars/storyboard.json, shots 6-12). Merge these shots into the project's storyboard.json after 4-menu (fill-client.cjs storyboard fills the double-brace values).",
  "notes": [
-  "Times in each capture are seconds from that capture's frame 0. A scene plays capture seconds [scene.trimSec, scene.trimSec + scene.durationSec].",
-  "Selectors were read from clients/discount-used-cars-site/src (Home.tsx, Layout.tsx) and checked on the running preview at 1440x900 and 390x797.",
-  "clock pins the page's wall clock to a Wednesday 2 PM in Houston, so the site shows 'Open Now' (it is computed from the time).",
-  "The phone capture is 390x797: under iOS's 47 pt status bar that makes the iPhone 14 screen, 390x844 pt, exactly (capturing 844 tall would stretch the phone or put the header under the Dynamic Island).",
-  "Part B (the sale desk) is inserted between shots 4 and 5: shot 4 ends held at 1.8x on the 'Admin · Staff Sign-In To The Sale Desk' row with the cursor resting on it, so part B can open on the click (same window, same 1440x900 viewport at DSF 2).",
-  "Shot 5 stops on the Trucks card: one more swipe reaches the lineup's fine print (finance terms), which is not in the on-screen fact list.",
-  "Shot 2 parks the real mouse in the left page gutter (x 64) while the cursor is hidden during the first scroll: otherwise the cursor carried over from shot 1 (342, 579) sits over the cards as they scroll past, and the Trucks card is already in its hover state (photo zoomed, white arrow) before the visible cursor reaches it.",
-  "Site content outside the on-screen fact list: shot 2 hides the lineup fine print ('15% down, 12.9% APR, 48 months') with visibility:hidden (layout and scroll targets unchanged). Shots 3 and 4 now hand off on the 'We Buy Cars, Too.' band, so the Discover tiles ('$205/mo', '4.8/5', '24 Google reviews') and the review quote never enter the frame and need no blur.",
-  "captureCss is injected into every shot: video-only brand fixes (see captureCss.why).",
-  "Shot 3's set-up click on the finder waits for the section's 0.9 s reveal transition (translateY 28 px): clicking mid-reveal put the cursor 4.7 px below where shot 2 ended. The typing ends 0.73 s before frame 0, so the caret is in the same blink phase as shot 2's last frame (56 frames after its last key).",
-  "Shot 4 repeats shot 3's last scroll in its preroll, then jiggles the mouse and hovers the same tile point, so frame 0 matches shot 3's last frame (tile hovered, cursor on it)."
+  "The desk is the same premium-dealer-build app for every dealer, so the shots, actions, demo data and css are house values: change none of them per client. Only the clock (DESK_CLOCK: the day the off-camera deal's documents are signed, 14:00 local, = partB.clock in client-inputs.json, else clock) and the timezone are filled.",
+  "Running order and why: SKILL.md 'Part B: the desk'. Every constant: references/house-recipe.md §16. Problems and fixes: references/lessons.md, part B. Gates and stills: references/verification.md, part B.",
+  "Capture order on ONE fresh desk server (next dev on :5190, DESK_PREVIEW_MEMBER=fresh, nextjs-portal hidden by css): 6-desk-signin, 7-desk-onboard (onboards Maria Lopez on camera: her strokes are the saved signature on every later document), 8-desk-sale-start, 9-desk-buyer, then the B4 set-up deal (desk-walk sale.cjs with scenarios/james-carter-to-registration.json copy) and 11-desk-guide --var deal=<it>, then 10-desk-readback (makes its own deal), then the off-camera complete sale (sale.cjs james-carter.json + ceremony.cjs) and 12-desk-signed --var deal=<it>. Restart the server before re-capturing 6 or 7.",
+  "After capture, measure partB.cuts on the captures (verification.md, part B) and fill client-inputs.json → partB; pdftoppm -r 300 the deal's 130-U page 1 into public/docs/130u-p1.png."
  ],
- "base": "http://localhost:5183",
- "serve": {
-  "build": "cd clients/discount-used-cars-site && VITE_DESK_URL=https://desk.discountusedcarsandtrucks.com npx vite build --outDir $SCRATCH/dist-demo --emptyOutDir",
-  "preview": "cd clients/discount-used-cars-site && npx vite preview --outDir $SCRATCH/dist-demo --port 5183 --strictPort"
- },
- "capture": {
-  "command": "node .claude/skills/recordly-demo/scripts/capture.cjs --storyboard .claude/skills/recordly-demo/examples/discount-used-cars/storyboard.json --shot <id> --out $SCRATCH/captures/<id> --publish clients/discount-used-cars-demo/public/shots --clean",
-  "order": [
-   "1-hero",
-   "2-scroll",
-   "3-buy",
-   "4-menu",
-   "5-phone"
-  ],
-  "dsf": 2,
-  "dsfReason": "The window shows the 1440 px page ~1490 px wide and zooms up to 1.8x (≈2680 px): DSF 1 is visibly soft there, DSF 2 stays sharp (self-test dsf-compare-at-1.8x.png).",
-  "partBOrder": [
-   "6-desk-signin",
-   "7-desk-onboard",
-   "8-desk-sale-start",
-   "9-desk-buyer",
-   "10-desk-readback",
-   "11-desk-guide",
-   "12-desk-signed"
-  ],
-  "partBCommand": "Start the desk (scratch start-desk.sh: next dev on :5190, DESK_PREVIEW_MEMBER=fresh), then node .claude/skills/recordly-demo/scripts/capture.cjs --storyboard .claude/skills/recordly-demo/examples/discount-used-cars/storyboard.json --shot <id> --out $SCRATCH/captures/<id> --publish clients/discount-used-cars-demo/public/shots --clean [--var deal=<id from the set-up walk>]; part B shots carry their own base (http://localhost:5190), clock and css."
- },
- "fps": 30,
- "size": [
-  1920,
-  1080
- ],
- "introKey": "discount.intro.seen",
- "clock": "2026-09-30T14:00:00-05:00",
- "window": {
-  "url": "discountusedcarsandtrucks.com",
-  "lights": "mono"
- },
- "facts": [
-  "www.discountusedcarsandtrucks.com",
-  "(713) 900-5050",
-  "8108 Gulf Fwy, Houston",
-  "Tue – Sat 10 AM – 7 PM"
- ],
- "sfx": {
-  "auto": "From each capture's cursor.json (template shotCues): click → ios_tink −12 dB, 2 frames early; every typed character → one keystroke (key_1..7, sliced from macbook_keyboard) −18 dB ±1.5 dB, 1 frame early; every zoom-in → whoosh_short (rotating _lo/_hi pitch variants) −20 dB, placed so its peak (0.3 s in) lands just before the camera's fastest frame (zoom start + 9). All cues + masterDb (+10 dB).",
-  "manual": [
-   {
-    "shot": "0-intro",
-    "at": 0.03,
-    "cue": "intro",
-    "file": "sfx/ios_note.wav",
-    "db": -8
-   },
-   {
-    "shot": "1-hero",
-    "at": 0.0,
-    "cue": "open",
-    "file": "sfx/open_ui.wav",
-    "db": -14,
-    "why": "window springs in",
-    "note": "open_ui is trimmed to 0.6 s (the kit file ends in a stray tick at 0.97 s)"
-   },
-   {
-    "shot": "4-menu",
-    "onEvent": {
-     "type": "click",
-     "index": 0
-    },
-    "cue": "open",
-    "file": "sfx/open_ui.wav",
-    "db": -14,
-    "why": "menu drawer opens",
-    "note": "open_ui is trimmed to 0.6 s (the kit file ends in a stray tick at 0.97 s)"
-   },
-   {
-    "shot": "5-phone",
-    "at": 0.0,
-    "cue": "open",
-    "file": "sfx/open_ui.wav",
-    "db": -16,
-    "why": "phone slides in",
-    "note": "open_ui is trimmed to 0.6 s (the kit file ends in a stray tick at 0.97 s)"
-   },
-   {
-    "shot": "6-outro",
-    "at": 0.6,
-    "cue": "outro",
-    "file": "sfx/ios_received.wav",
-    "db": -4
-   }
-  ],
-  "music": "none"
- },
  "shots": [
-  {
-   "id": "0-intro",
-   "kind": "remotion",
-   "composition": "Intro",
-   "durationSec": 2.0,
-   "describe": "Dark neutral-charcoal mesh wallpaper (slow drift, grain, dither); the red car-swoosh mark wipes and slides in; DISCOUNT staggers in beneath it letter by letter in the loader's exact layout (×1.667); from 1.4 s the whole sting shrinks onto the site's own loader inside the springing window (a match cut), lands at 1.87 s and dissolves into it."
-  },
-  {
-   "id": "1-hero",
-   "describe": "macOS window springs in as a MATCH CUT: the intro sting shrinks onto the site's own loader (same mark, same DISCOUNT, same spot), the loader's hairline finishes and the curtain lifts; the fixed hero photo settles; the cursor drifts in from bottom-right and rests just right of 'For Less.'; 1.5x zoom on the headline and back out.",
-   "url": "/",
-   "viewport": {
-    "width": 1440,
-    "height": 900,
-    "deviceScaleFactor": 2
-   },
-   "presetIntroSeen": false,
-   "readySelector": ".loader",
-   "durationSec": 7.6,
-   "cursor": {
-    "kind": "pointer",
-    "start": {
-     "x": 1560,
-     "y": 1010
-    }
-   },
-   "actions": [
-    {
-     "t": 2.4,
-     "type": "moveTo",
-     "x": 980,
-     "y": 700,
-     "durationSec": 1.4
-    },
-    {
-     "t": 3.9,
-     "type": "hover",
-     "selector": ".hero__title",
-     "tight": true,
-     "anchor": [
-      0.75,
-      0.72
-     ],
-     "durationSec": 0.9,
-     "why": "rest in the empty space right of 'For Less.' (not on the full stop)"
-    }
-   ],
-   "zooms": [
-    {
-     "at": 3.8,
-     "until": 6.4,
-     "depth": 1.5,
-     "focus": ".hero__title",
-     "tight": true,
-     "follow": false
-    }
-   ],
-   "scene": {
-    "trimSec": 1.07,
-    "durationSec": 6.53,
-    "enter": "match-cut",
-    "why": "the loader's word has finished rising at 1.5 s; the sting lands on it 14 frames after the window starts (1.07 s + 0.47 s)"
-   },
-   "css": ".status--open .status__dot { background: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); } #finder-q::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; } .split-card__hours { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }"
-  },
-  {
-   "id": "2-scroll",
-   "describe": "Eased scroll to 'Find Your Fit.'; on to the Trucks card, the cursor (a hand over the link) hovers it (photo zooms ~4%) under a 2.0x zoom framed between the cards; zoom out and SETTLE at 1x, scroll to the visit card, 1.8x on the card ('Open Now · Tue – Sat, 10 AM – 7 PM'); settle, scroll to the finder, click the field (I-beam), type 'F-150' (the pointer hides while typing); zoom out lands on the cut.",
-   "url": "/",
-   "viewport": {
-    "width": 1440,
-    "height": 900,
-    "deviceScaleFactor": 2
-   },
-   "presetIntroSeen": true,
-   "prerollSec": 6.6,
-   "readySelector": ".hero__title",
-   "css": ".lineup + .band__fine { visibility: hidden; } .status--open .status__dot { background: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); } #finder-q::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; } .split-card__hours { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }",
-   "durationSec": 17.0,
-   "cursor": {
-    "kind": "pointer",
-    "start": {
-     "fromShot": "1-hero",
-     "x": 365,
-     "y": 568
-    }
-   },
-   "actions": [
-    {
-     "t": 0.2,
-     "type": "scrollTo",
-     "selector": "section.band--black:not(.glass-band) .band__title",
-     "align": "start",
-     "offset": 150,
-     "durationSec": 1.6
-    },
-    {
-     "t": 0.3,
-     "type": "moveTo",
-     "x": 64,
-     "y": 560,
-     "durationSec": 1.0,
-     "why": "park in the gutter while hidden by the scrolls, so the Trucks hover starts when the cursor arrives"
-    },
-    {
-     "t": 2.0,
-     "type": "scrollTo",
-     "selector": "a.model[href=\"/inventory?body=Truck\"]",
-     "align": "center",
-     "durationSec": 1.3
-    },
-    {
-     "t": 3.3,
-     "type": "hover",
-     "selector": "a.model[href=\"/inventory?body=Truck\"]",
-     "anchor": [
-      0.42,
-      0.55
-     ],
-     "durationSec": 0.9
-    },
-    {
-     "t": 7.3,
-     "type": "scrollTo",
-     "selector": ".split-card",
-     "align": "center",
-     "durationSec": 1.5
-    },
-    {
-     "t": 8.8,
-     "type": "hover",
-     "selector": ".split-card__hours",
-     "tight": true,
-     "anchor": [
-      1.05,
-      0.6
-     ],
-     "durationSec": 0.7
-    },
-    {
-     "t": 12.2,
-     "type": "scrollTo",
-     "selector": "#finder-q",
-     "align": "center",
-     "offset": 60,
-     "durationSec": 1.3
-    },
-    {
-     "t": 13.6,
-     "type": "click",
-     "selector": "#finder-q",
-     "anchor": [
-      0.22,
-      0.5
-     ],
-     "durationSec": 0.7
-    },
-    {
-     "t": 14.6,
-     "type": "type",
-     "text": "F-150",
-     "perCharSec": 0.14
-    }
-   ],
-   "zooms": [
-    {
-     "at": 3.6,
-     "until": 6.0,
-     "depth": 2.0,
-     "focus": {
-      "x": 375,
-      "y": 385
-     },
-     "follow": false,
-     "why": "Trucks card (x 132-705, y 136-708 after its reveal): a 720x450 view at x 15-735, y 160-610 shows 'Trucks', the truck and the floor; its right edge falls in the gutter before the red Coupe, its bottom above the 'Ask About Availability' pill"
-    },
-    {
-     "at": 8.7,
-     "until": 10.9,
-     "depth": 1.8,
-     "focus": {
-      "x": 400,
-      "y": 422
-     },
-     "follow": false,
-     "why": "the visit card (y 204-639) centred: 33 px of page above and below, the hours line in the lower third"
-    },
-    {
-     "at": 13.3,
-     "until": 16.0,
-     "depth": 1.5,
-     "focus": "#finder-q",
-     "anchor": [
-      0.35,
-      0.5
-     ],
-     "follow": true
-    }
-   ],
-   "scene": {
-    "trimSec": 0,
-    "durationSec": 17.0,
-    "why": "the last key lands 56 frames before the end (as before), so shot 3's caret blink phase still matches"
-   }
-  },
-  {
-   "id": "3-buy",
-   "describe": "From the finder (F-150 still typed, pointer hidden) scroll to the black 'We Buy Cars, Too.' band; hover 'We Buy Trucks' (photo zooms ~4.5%) under a 2.0x zoom framed on the tile row; zoom out and hold. Ends on this band: the Discover tiles and the review are never in frame.",
-   "url": "/",
-   "viewport": {
-    "width": 1440,
-    "height": 900,
-    "deviceScaleFactor": 2
-   },
-   "presetIntroSeen": true,
-   "prerollSec": 2.4,
-   "readySelector": ".hero__title",
-   "durationSec": 5.7,
-   "cursor": {
-    "kind": "pointer",
-    "start": {
-     "fromShot": "2-scroll",
-     "x": 254,
-     "y": 489
-    }
-   },
-   "actions": [
-    {
-     "t": -2.3,
-     "type": "scrollTo",
-     "selector": "#finder-q",
-     "align": "center",
-     "offset": 60,
-     "durationSec": 0.1
-    },
-    {
-     "t": -1.2,
-     "type": "click",
-     "selector": "#finder-q",
-     "anchor": [
-      0.22,
-      0.5
-     ],
-     "durationSec": 0.1
-    },
-    {
-     "t": -1.0,
-     "type": "type",
-     "text": "F-150",
-     "durationSec": 0.25
-    },
-    {
-     "t": 0.3,
-     "type": "scrollTo",
-     "selector": ".glass-band .band__title",
-     "align": "start",
-     "offset": 150,
-     "durationSec": 1.6
-    },
-    {
-     "t": 2.0,
-     "type": "hover",
-     "selector": ".glass-band .teasers a.tile",
-     "contains": "We buy trucks",
-     "anchor": [
-      0.5,
-      0.55
-     ],
-     "durationSec": 0.9
-    }
-   ],
-   "zooms": [
-    {
-     "at": 2.3,
-     "until": 4.5,
-     "depth": 2.0,
-     "focus": {
-      "x": 740,
-      "y": 623
-     },
-     "follow": false,
-     "why": "tiles at y 492-723 between the photo (ends y 396) and the band's end (y 851): a 720x450 view at x 380-1100, y 398-848 is all black band and tiles; the 'We Buy Cars' label is fully out (x 270-370), 'We Buy SUVs' fully in"
-    }
-   ],
-   "scene": {
-    "trimSec": 0,
-    "durationSec": 5.7
-   },
-   "css": ".status--open .status__dot { background: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); } #finder-q::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; } .split-card__hours { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }"
-  },
-  {
-   "id": "4-menu",
-   "describe": "Same scroll as shot 3's end (the We Buy band, cursor on the We Buy Trucks tile); click 'Menu' (top left); the drawer slides in; 1.8x zoom onto the 'Admin · Staff Sign-In To The Sale Desk' row; the cursor (hand) rests on it (no click in part A). CUT POINT for part B.",
-   "url": "/",
-   "viewport": {
-    "width": 1440,
-    "height": 900,
-    "deviceScaleFactor": 2
-   },
-   "presetIntroSeen": true,
-   "prerollSec": 6.5,
-   "readySelector": ".hero__title",
-   "css": ".status--open .status__dot { background: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); } #finder-q::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; } .split-card__hours { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }",
-   "durationSec": 6.0,
-   "cursor": {
-    "kind": "pointer",
-    "start": {
-     "fromShot": "3-buy",
-     "x": 720,
-     "y": 635
-    }
-   },
-   "actions": [
-    {
-     "t": -5.0,
-     "type": "scrollTo",
-     "selector": ".glass-band .band__title",
-     "align": "start",
-     "offset": 150,
-     "durationSec": 0.1
-    },
-    {
-     "t": -3.0,
-     "type": "moveTo",
-     "x": 726,
-     "y": 622,
-     "durationSec": 0.2,
-     "why": "jiggle after the set-up scroll so the tile under the cursor takes its hover state"
-    },
-    {
-     "t": -2.0,
-     "type": "hover",
-     "selector": ".glass-band .teasers a.tile",
-     "contains": "We buy trucks",
-     "anchor": [
-      0.5,
-      0.55
-     ],
-     "durationSec": 0.3
-    },
-    {
-     "t": 0.4,
-     "type": "click",
-     "selector": ".header__menu",
-     "durationSec": 1.1
-    },
-    {
-     "t": 2.3,
-     "type": "hover",
-     "selector": ".drawer__link--admin",
-     "anchor": [
-      0.7,
-      0.42
-     ],
-     "durationSec": 0.9
-    }
-   ],
-   "zooms": [
-    {
-     "at": 2.2,
-     "until": null,
-     "depth": 1.8,
-     "focus": ".drawer__link--admin",
-     "follow": true
-    }
-   ],
-   "scene": {
-    "trimSec": 0,
-    "durationSec": 6.0
-   },
-   "cutAfter": "part-b"
-  },
   {
    "id": "6-desk-signin",
    "part": "B1",
    "describe": "",
    "url": "/admin/login",
    "base": "http://localhost:5190",
-   "clock": "2026-10-02T14:00:00-05:00",
-   "timezone": "America/Chicago",
+   "clock": "{{DESK_CLOCK}}",
+   "timezone": "{{TIMEZONE}}",
    "viewport": {
     "width": 1440,
     "height": 900,
@@ -602,8 +130,8 @@
    "describe": "",
    "url": "/admin/account/onboarding",
    "base": "http://localhost:5190",
-   "clock": "2026-10-02T14:00:00-05:00",
-   "timezone": "America/Chicago",
+   "clock": "{{DESK_CLOCK}}",
+   "timezone": "{{TIMEZONE}}",
    "viewport": {
     "width": 1440,
     "height": 900,
@@ -1165,8 +693,8 @@
    "describe": "",
    "url": "/admin/sales",
    "base": "http://localhost:5190",
-   "clock": "2026-10-02T14:00:00-05:00",
-   "timezone": "America/Chicago",
+   "clock": "{{DESK_CLOCK}}",
+   "timezone": "{{TIMEZONE}}",
    "viewport": {
     "width": 1440,
     "height": 900,
@@ -1264,8 +792,8 @@
    "describe": "",
    "url": "/admin/sales/new",
    "base": "http://localhost:5190",
-   "clock": "2026-10-02T14:00:00-05:00",
-   "timezone": "America/Chicago",
+   "clock": "{{DESK_CLOCK}}",
+   "timezone": "{{TIMEZONE}}",
    "viewport": {
     "width": 1440,
     "height": 900,
@@ -1384,8 +912,8 @@
    "describe": "",
    "url": "/admin/sales/new",
    "base": "http://localhost:5190",
-   "clock": "2026-10-02T14:00:00-05:00",
-   "timezone": "America/Chicago",
+   "clock": "{{DESK_CLOCK}}",
+   "timezone": "{{TIMEZONE}}",
    "viewport": {
     "width": 1440,
     "height": 900,
@@ -1582,8 +1110,8 @@
    "describe": "",
    "url": "/admin/sales/{deal}/guide/plan:registration",
    "base": "http://localhost:5190",
-   "clock": "2026-10-02T14:00:00-05:00",
-   "timezone": "America/Chicago",
+   "clock": "{{DESK_CLOCK}}",
+   "timezone": "{{TIMEZONE}}",
    "vars": {},
    "setup": "sale.cjs with james-carter-to-registration.json (answers funding Cash, paid 4000, price Yes, then stops at plan:registration): its deal.txt is --var deal",
    "viewport": {
@@ -1656,8 +1184,8 @@
    "describe": "",
    "url": "/admin/sales/{deal}/packet",
    "base": "http://localhost:5190",
-   "clock": "2026-10-02T14:00:00-05:00",
-   "timezone": "America/Chicago",
+   "clock": "{{DESK_CLOCK}}",
+   "timezone": "{{TIMEZONE}}",
    "vars": {},
    "setup": "sale.cjs with james-carter.json, then ceremony-carter.cjs on its deal (every document signed by the buyer), as the same member right after B2: its deal.txt is --var deal",
    "viewport": {
@@ -1741,90 +1269,8 @@
    "cutWhy": "ends on frame 100 (Open / Print on the 130-U pressed at 97, released at 100): the cut to B6, the 130-U opening",
    "css": "nextjs-portal{display:none!important} .text-\\[\\#3F5A43\\]{color:var(--tj-ink,#111)!important} .bg-\\[\\#3F5A43\\]{background-color:var(--tj-ink,#111)!important} .ed-nav-identity-handle{filter:blur(4px)} .ed-admin > .ed-sale-head ~ div{display:none!important} #email{color:transparent!important;text-shadow:0 0 10px rgba(17,17,17,.9)!important;caret-color:#111} #email::placeholder{color:transparent!important;text-shadow:none!important} [data-onboarding-step=\"signature\"] .ed-start-fields > .space-y-2{min-height:181.5px}",
    "cssWhy": "partB.captureCss, pasted (see partB.captureCss.why)"
-  },
-  {
-   "id": "5-phone",
-   "describe": "An iPhone slides in (opaque at once, x + scale + tilt, motion blur) while the desktop window recedes and blurs; the 390-wide capture: hero, then three iOS swipes (the finger drags the page 1:1, lets go, the page coasts) down the lineup cards (SUVs, Sedans, Trucks), resting on the Trucks card; the status bar takes the page's top colour; the phone drops out of frame.",
-   "url": "/",
-   "viewport": {
-    "width": 390,
-    "height": 797,
-    "deviceScaleFactor": 2
-   },
-   "mobile": true,
-   "presetIntroSeen": true,
-   "prerollSec": 0.6,
-   "readySelector": ".hero__title",
-   "durationSec": 9.0,
-   "cursor": {
-    "kind": "touch"
-   },
-   "actions": [
-    {
-     "t": 2.0,
-     "type": "scrollTo",
-     "selector": "section.band--black:not(.glass-band) .band__title",
-     "align": "start",
-     "offset": 90,
-     "touch": {
-      "x": 250,
-      "y": 690
-     },
-     "dragSec": 0.25
-    },
-    {
-     "t": 3.9,
-     "type": "scrollBy",
-     "y": 430,
-     "touch": {
-      "x": 240,
-      "y": 620
-     }
-    },
-    {
-     "t": 5.8,
-     "type": "scrollBy",
-     "y": 450,
-     "touch": {
-      "x": 255,
-      "y": 610
-     }
-    }
-   ],
-   "zooms": [],
-   "scene": {
-    "trimSec": 0,
-    "durationSec": 9.0,
-    "behind": "last frame of 4-menu (or of part B) in its window"
-   },
-   "css": ".status--open .status__dot { background: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); } #finder-q::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; } .split-card__hours { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }"
-  },
-  {
-   "id": "6-outro",
-   "kind": "remotion",
-   "composition": "Outro",
-   "durationSec": 3.8,
-   "describe": "Drawn under the phone as it drops away: full-colour logo (discount-logo-reverse.png), then 'www.discountusedcarsandtrucks.com' (42 px), '(713) 900-5050 · 8108 Gulf Fwy, Houston' and 'Tue – Sat 10 AM – 7 PM' (30 px, 82% white) word by word; ios_received; slow push 1.00 → 1.03; the logo exits and the frame fades to black over the last 0.4 s."
   }
  ],
- "totalSec": {
-  "partA": 49.0,
-  "breakdown": {
-   "0-intro": 1.4,
-   "1-hero": 6.53,
-   "2-scroll": 17.0,
-   "3-buy": 5.7,
-   "4-menu": 6.0,
-   "5-phone": 9.0,
-   "6-outro": 3.8
-  },
-  "partB": 34.37,
-  "film": 83.6
- },
- "captureCss": {
-  "why": "Video-only fixes injected into every captured shot (the site source is untouched): the green 'Open Now' dot becomes the text colour (brand: black, white and the logo's red only), Chromium's blue search-clear × is hidden, and the hours line is centre-aligned (the status pill sat ~6 px low). The same rules would fix the live site.",
-  "css": ".status--open .status__dot { background: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); } #finder-q::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; } .split-card__hours { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }"
- },
  "partB": {
   "title": "Discount Used Cars and Trucks: desk demo, part B (the sale desk)",
   "notes": [
@@ -1836,7 +1282,7 @@
    "B6 (Remotion, not a capture): the off-camera deal's 130-U page 1 at 300 dpi is clients/discount-used-cars-demo/public/docs/130u-p1.png (2550x3300, from 130-U_Carter_812345.pdf); the bill of sale page 1 is public/docs/bill-of-sale-p1.png. Boxes (px in those PNGs, x0,y0,x1,y1): 130-U seller signature image 402,2871,890,2962 (ink 429,2873,~780,2962); printed name 'Discount Used Cars And Trucks, LLC (Maria Lopez)' 1227,2889,2139,2943; seller date 2163,2884,2382,2944; seller band (signature + printed name + date + labels) 392,2860,2392,2992. Money on the 130-U: box 38(a) '$ 3663.06' 1046,2243,1194,2299 (blur it if the page is shown legibly). Bill of sale money column 1800,2590,2390,3020 ($3,663.06 / $0.00 / $336.94 / $4,000.00).",
    "Merged into the part A storyboard on 2026-10-02 (Compose v2). Each part B shot carries base http://localhost:5190 (capture.cjs: a shot's base wins over storyboard.base), its own clock and timezone, and partB.captureCss pasted into its css. storyboard.captureCss (part A's site fixes) is still prepended by capture.cjs; none of its selectors exist on the desk, so it changes no pixel.",
    "Clock: 2026-10-02T14:00:00-05:00 (a Friday; the dealer is open Tue-Sat), the date the off-camera deal's documents were signed (the server's real date). Only 7-desk-onboard shows a client-side date (the pad's 'Signed: 10/02/2026'); it was re-captured with this clock. 6 and 8-12 were captured with 2026-10-01 and show no client-side date (12's 'Signed Oct 2, 2026' comes from the server).",
-   "Composition (clients/discount-used-cars-demo/src/demo/timeline.ts, Finish): parts A and B in one DesktopScene; the Admin click drawn on shot 4 6 frames before the cut; every B cut opens on the first fully painted frame (project.partB.cuts: 6 from 12; 8 split 12-41 | 55-109 around its skeleton; 10 split 7-107 | 134-173 around the dialog close); cameras re-aimed with zoomFocus / zoomShift: 6 opens at shot 4's 1.8x and pulls back to SIGN_IN 1.45x on 720,482 from the cut; 7's zooms leave at 182 (Start Working at 1.0); 8 wide, then WIZARD 1.32x on 720,490; READ_BACK 2.0x on 720,472; PACKET 1.62x on 720,356 held to the click. B6 is DocScene (theme.doc, project.doc), 4.3 s. Part B = 868 desk frames + 129 doc frames = 33.2 s; the film is 2474 frames (82.47 s)."
+   "Composition (clients/discount-used-cars-demo/src/demo/timeline.ts, Compose v2): heads trimmed 8 0.367 s, 9 0.167, 10 0.233, 11 0.233, 12 0.267 (zoomShift moves 8's pull-back and 12's push by the trim); cameras re-aimed with zoomFocus so no edge cuts text: 6/7/8-head 1.45x on 720,482; the sale steps 8-12 1.32x on 720,490; the read-back 2.0x on 720,472; the packet 1.62x on 720,356. B6 is DocScene (theme.doc, project.doc). Part B = 920 desk frames + 111 doc frames = 34.4 s; the film is 2508 frames (83.6 s)."
   ],
   "captureCss": {
    "why": "Video-only CSS for every part-B shot (the desk source is never edited): the Next.js dev indicator (nextjs-portal) is hidden; the two green #3F5A43 accents are drawn in ink (black and white brand); the nav's identity handle (the preview account's email) is blurred; the stray block after the sale head is hidden; the sign-in email field is a privacy blur (typed text transparent with a soft dark shadow) and its placeholder 'you@example.com or your handle' is hidden (no 'example' on screen); the onboarding signature step keeps its height so the pad does not jump.",

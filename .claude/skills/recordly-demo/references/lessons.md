@@ -17,6 +17,7 @@ IDs in "Source": F1–F20 are critic LOOK round 2, F21–F34 critic RULES round 
 - [Code](#code) (D1–D5)
 - [Review](#review) (R1–R7)
 - [Operations](#operations) (O1–O2)
+- [Part B: the desk](#part-b-the-desk) (B1–B13)
 - [Decisions kept: do not "fix" these](#decisions-kept-do-not-fix-these)
 - [Open items](#open-items)
 
@@ -408,6 +409,89 @@ pages and on black bands (F22).
 - *Rule:* Pass Remotion's browser as `--browser-executable=$(ls -d /opt/pw-browsers/chromium_headless_shell-*/chrome-linux)/headless_shell`.
 - *Why:* Bash does not expand a glob glued to `--flag=`, so Remotion would receive a literal `*` path.
 
+## Part B: the desk
+
+Part B (the sale desk) went through a desk build/verify pass, captures 6-12, two compose passes, a critic round
+(LOOK + RULES) and a finish pass. Source IDs: B-F1…B-F16 are that critic round's findings, by film second.
+
+**B1. Cut onto the first fully painted frame, never a blank page.**
+- *Rule:* A part-B segment opens on the new page's first frame whose content is painted (`partB.cuts`, the
+  `first frame painted` gate: edge density ≥ 11). The click that caused the navigation is drawn before the cut and its
+  ring runs on across it (`withCutClick`, `edit.moveEvents`).
+- *Why:* The desk's pages paint in a few frames (6's card fades in over frames 4–12). A camera still on the previous
+  page's aim over an empty grey page flashes white (mean luma 130 → 198) and the click lands on nothing.
+- *Symptom (B-F 36.6 s):* frames 1099–1101 a blank grey page, then the card slid in half off-frame while the camera
+  hunted for it.
+
+**B2. A loading state is cut out by splitting the capture.**
+- *Rule:* Where a capture shows a skeleton loader, a dialog's close or a blank page between two painted states, play the
+  capture as two segments of the same shot (8a/8b, 10a/10b) with the gap cut out; start the next camera move on the cut
+  (`zoomShift`).
+- *Why:* Screen Studio never shows a loading state; a jump-cut on the click reads as the app being instant.
+- *Symptom (B-F 50.0 s, 59.2 s):* half a second of skeleton with a whoosh over it after Start A Sale; after the hold's
+  release, two frames of un-dimmed form (a flicker) and six of blank page, with the release tink on the blank.
+
+**B3. The camera is matched across a cut, or it moves before the click, never after on empty ground.**
+- *Rule:* At every B cut the camera is identical on both sides (gate: scale Δ ≤ 0.01, pan ≤ 3 px). When the next page
+  needs a different framing, the camera moves on the outgoing page before the click (7's zooms leave at 182 so Start
+  Working is clicked at 1.0) or from the cut frame on.
+- *Symptom (B-F 49.0 s):* Handle A Sale opened at the onboarding's 1.45x: the Marcus Reed row floated top-left over
+  empty grey and the sidebar "popped in" as the camera pulled back. It was the camera, not the page (the capture has
+  the sidebar from frame 0).
+
+**B4. Never zoom away from the click target.**
+- *Rule:* Before a click, hold the framing (if the target is in it) or reframe toward it. 12 holds PACKET to the end
+  (`outAtSec: null`): it already frames the Form 130-U row and its button.
+- *Symptom (B-F 66.4 s):* a pull-out from 1.62x to 1.0x just before Open / Print: a soft, small frame at the click.
+
+**B5. The pointer never covers the word the beat is about.**
+- *Rule:* For a press-and-hold, press off the label (`edit.nudge` dx 45 on 10, eased in on the approach and out on the
+  way to Cash). The pointer is drawn by the composition, so this changes no captured pixel.
+- *Symptom (B-F 58.4 s):* "Release To Confir" with the hand over the m at 2.0x.
+
+**B6. The document's payoff is centred, lit and held.**
+- *Rule:* Push to the deepest scale that keeps the line's ends in frame (0.8), centre the certification block, put the
+  top edge in a text-free gap, dim the rest with a spotlight, sit the caption over the dimmed lower rows, and hold the
+  caption readable ≥ 1.5 s (B6 is 4.3 s).
+- *Symptom (B-F 69.5 s):* the tax table cropped mid-line at the top, the seller line at 38% of the frame, a dead dark
+  band under the page and the pill readable 1.1 s.
+
+**B7. Identity on a document is blurred like money.**
+- *Rule:* `project.doc.privacy` covers box 14 (licence number), box 1 (VIN) and box 38(a) (money), with `padPx` 4 so no
+  blur runs into a header. Demo data that looks real (an 8-digit licence, a check-digit-valid VIN) is treated as real.
+- *Symptom (B-F 67.7 s, 68.3 s):* a paused frame read "41927365" and the VIN; the 10 px pad frosted "SALES AND USE TAX
+  COMPUTATION".
+
+**B8. The hand-made gestures have a sound.**
+- *Rule:* A felt-tip under each pen stroke (`pen_scratch`, cut per stroke with a 0.06 s fade) and a soft rise under the
+  hold's fill (`hold_rise`), ending into the release tink.
+- *Symptom (B-F 43.6 s):* 3.7 s of silent signature and 2.2 s of silent hold, the film's two hand-made moments.
+
+**B9. The phone does not open over a tax form.**
+- *Rule:* With a part B, the held desk and document dissolve to the wallpaper over the phone's first 0.4 s
+  (`theme.doc.phoneDissolveSec`).
+- *Symptom (B-F 71 s):* the public site on the phone over a blurred 130-U read as a leftover.
+
+**B10. One cue function for the scene and the verifier.**
+- *Rule:* `desktopCues` (DesktopScene) is the only place the window's sounds are derived; `verify-film.cjs` calls it
+  with the same edited data (`prepareData`), and B6's push whoosh goes through it (`docWhooshAfter`) so its variant
+  continues the rotation.
+- *Symptom (B-F RULES):* the verifier missed the zoom-end ios_success and the hold-end tink, labelled whoosh variants
+  differently, and Demo.tsx hard-coded the doc push to `files[1]`.
+
+**B11. Render with a capped video cache.**
+- *Rule:* `--concurrency 3 --offthreadvideo-cache-size-in-bytes 1500000000` for the 2474-frame film.
+- *Symptom:* the compositor was OOM-killed at frame 2129 (7.9 GB RSS) while other workflows ran.
+
+**B12. The self-test determinism check needs an idle machine.**
+- *Rule:* Run `capture.cjs --selftest` when the load average is low; on a determinism FAIL under load, re-run once
+  before investigating.
+- *Symptom:* DSF 1 repeat min PSNR 39.1 dB at load ≈ 10; 69.4 dB on a re-run at low load, same file.
+
+**B13. Check a demo address does not exist.**
+- *Rule:* A fictional buyer address on screen must not be a real household: search it before capture.
+- *Note:* 1418 Belrose Dr, Houston 77034 was checked (the real Belrose Dr is in 77035 and numbered 55xx–59xx).
+
 ## Decisions kept: do not "fix" these
 
 Reviewers proposed each of these, and each was rejected with a reason. They are part of "exactly this way".
@@ -421,7 +505,14 @@ Reviewers proposed each of these, and each was rejected with a reason. They are 
 - **Clamping:** only opacity, scale and blur are clamped; spring translates may overshoot (F29).
 - **Cursor shape over static text:** the arrow; the I-beam appears only over editable fields. Shapes come from the
   recorded CSS cursor (F12).
-- **Desk host:** not shown in the URL pill until the owner confirms it (F34).
+- **Desk host:** not shown in the URL pill until the owner confirms it (F34). Discount's was confirmed
+  (desk.discountusedcarsandtrucks.com).
+- **Part B cuts are jump-cuts, not pixel-matched:** the page changes on a click, so the gate is pointer + camera + a
+  painted first frame, not PSNR.
+- **10b opens at READ_BACK's 2.0x:** the camera is matched at the cut and pulls back from it; cutting the camera too
+  would move the pointer on screen at the cut.
+- **The 6→7 cut keeps the onboarding page's own entrance** (capture frame 0, edge density 11.4): it is the page's
+  designed fade, not a loading state.
 - **Phone travel:** the 0.45×W spring slide stays, carried by speed blur and 2-frame opacity, rather than a shorter
   slide (R1-1 alternative).
 - **Intro sting:** the match cut onto the loader replaced the "full-colour logo sting" and "shorter sting" options. The

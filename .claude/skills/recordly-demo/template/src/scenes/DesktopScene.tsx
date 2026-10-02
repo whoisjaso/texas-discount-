@@ -6,7 +6,7 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, Freeze, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { theme } from "../theme";
-import { computeTracks, ShotData, shotFile, toContent, useShotsData, Vec } from "../lib/shot";
+import { computeTracks, ShotData, ShotEvent, shotFile, toContent, useShotsData, Vec } from "../lib/shot";
 import { Backdrop } from "../components/Wallpaper";
 import { MacWindow, windowLayout } from "../components/MacWindow";
 import { CameraView, cameraAt } from "../components/Camera";
@@ -16,8 +16,34 @@ import { Finish } from "../components/Overlays";
 
 const CLAMP = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 
-/** A sound tied to a capture event (e.g. the drawer's open_ui on the first click of the menu shot). */
-export type EventCue = { type: "click" | "type" | "scroll" | "touch" | "tap"; index: number; file: string; db: number; offsetSec?: number };
+/**
+ * A sound tied to a capture event (e.g. the drawer's open_ui on the first click of the menu shot). `at: "end"` places it
+ * on the event's endFrame (a hold's release, a pen's last stroke) or, for a zoom, where the zoom lands (start + in).
+ */
+export type EventCue = {
+  type: "click" | "type" | "scroll" | "touch" | "tap" | "hold" | "draw" | "zoom";
+  index: number;
+  file: string;
+  db: number;
+  offsetSec?: number;
+  at?: "start" | "end";
+  /** a draw event: one cue per pen stroke, cut (with a short fade) to the stroke's length */
+  perStroke?: boolean;
+  /** cut the cue after this long (with fadeSec) */
+  maxSec?: number;
+  fadeSec?: number;
+};
+
+/** The capture frame an EventCue refers to (null when the shot has no such event). */
+export const eventCueFrame = (d: ShotData, ec: EventCue): number | null => {
+  if (ec.type === "zoom") {
+    const z = d.zooms[ec.index];
+    return z ? (ec.at === "end" ? z.startFrame + z.inFrames : z.startFrame) : null;
+  }
+  const ev = d.events.filter((e) => e.type === ec.type)[ec.index];
+  if (!ev) return null;
+  return ec.at === "end" && "endFrame" in ev ? ev.endFrame : ev.frame;
+};
 
 export type DesktopSegment = {
   shot: string;
@@ -34,19 +60,85 @@ export type DesktopSegment = {
    * pixels do not depend on it), used when the captured focus puts a frame edge through a line of text.
    */
   zoomFocus?: Record<number, { point: Vec; follow?: boolean; depth?: number }>;
+  /**
+   * Move a capture's zoom (by index) later or earlier, in capture seconds: `startSec` shifts where it starts, `outSec`
+   * where it starts to leave. Composition data only, like zoomFocus: used when a segment's head is trimmed, so the
+   * camera still holds still on the first frame shown (the cut stays matched) and moves as late after the cut as it did.
+   */
+  zoomShift?: Record<number, { startSec?: number; outSec?: number; /** absolute capture seconds the zoom starts to leave; null holds it to the end */ outAtSec?: number | null }>;
+  /** Composition-only edits of the capture's events and pointer (see SegmentEdit). */
+  edit?: SegmentEdit;
+};
+
+/**
+ * Composition-only edits of a capture's events and pointer path (capture frames). The recording's pixels do not depend
+ * on any of them: the pointer and its click rings are drawn by Remotion.
+ * - addClicks: a click drawn (ring, bounce, tink) where the capture has none, e.g. the press on the menu's Admin row
+ *   a few frames before the cut to the desk, so the click reads on the page it was made on.
+ * - moveEvents: re-time an event (by type and index), e.g. the desk capture's own copy of that click moved so its ring
+ *   and bounce continue across the cut, or a hold's release moved earlier when the segment ends inside the hold.
+ * - nudge: offset the pointer by (dx, dy) CSS px, eased in over `in` and out over `out` (frames), e.g. so the hand
+ *   does not cover a button's label during a press-and-hold. Events between the two ramps move with it.
+ */
+export type SegmentEdit = {
+  addClicks?: { frame: number }[];
+  moveEvents?: { type: ShotEvent["type"]; index: number; frame?: number; endFrame?: number }[];
+  nudge?: { dx: number; dy: number; in: [number, number]; out?: [number, number] };
+};
+
+/** A copy of the shot data with a segment's edits applied. */
+export const withEdits = (d: ShotData, edit?: SegmentEdit): ShotData => {
+  if (!edit) return d;
+  let frames = d.frames;
+  let events: ShotEvent[] = d.events.map((e) => ({ ...e }) as ShotEvent);
+  if (edit.nudge) {
+    const { dx, dy, in: [a, b], out } = edit.nudge;
+    const w = (i: number) => {
+      if (i <= a) return 0;
+      if (i < b) return theme.ease.inOut((i - a) / Math.max(1, b - a));
+      if (!out || i <= out[0]) return 1;
+      if (i < out[1]) return 1 - theme.ease.inOut((i - out[0]) / Math.max(1, out[1] - out[0]));
+      return 0;
+    };
+    frames = frames.map((f, i) => (w(i) ? { ...f, x: f.x + dx * w(i), y: f.y + dy * w(i) } : f));
+    events = events.map((e) => ("x" in e && w(e.frame) === 1 ? ({ ...e, x: e.x + dx, y: e.y + dy } as ShotEvent) : e));
+  }
+  for (const m of edit.moveEvents ?? []) {
+    const hits = events.filter((e) => e.type === m.type);
+    const e = hits[m.index] as ShotEvent & { endFrame?: number };
+    if (!e) continue;
+    if (m.frame !== undefined) e.frame = m.frame;
+    if (m.endFrame !== undefined && "endFrame" in e) e.endFrame = m.endFrame;
+  }
+  for (const c of edit.addClicks ?? []) {
+    const f = frames[Math.max(0, Math.min(frames.length - 1, c.frame))];
+    events.push({ frame: c.frame, type: "click", x: f.x, y: f.y });
+  }
+  events.sort((p, q) => p.frame - q.frame);
+  return { ...d, frames, events };
 };
 
 /** A solid patch over part of the page (viewport CSS px), drawn until `untilFrame` (scene frames). */
 export type Cover = { rect: readonly [number, number, number, number]; color: string; untilFrame: number };
 
-/** A copy of the shot data with the segment's zoom-focus overrides applied. */
-const withZoomFocus = (d: ShotData, over?: DesktopSegment["zoomFocus"]): ShotData =>
-  over
-    ? {
-        ...d,
-        zooms: d.zooms.map((z, i) => (over[i] ? { ...z, follow: over[i].follow ?? false, depth: over[i].depth ?? z.depth, focus: { point: over[i].point } } : z)),
+/** A copy of the shot data with the segment's zoom-focus and zoom-timing overrides applied. */
+export const withZoomFocus = (d: ShotData, over?: DesktopSegment["zoomFocus"], shift?: DesktopSegment["zoomShift"]): ShotData => {
+  if (!over && !shift) return d;
+  const f = (sec?: number) => Math.round((sec ?? 0) * d.fps);
+  return {
+    ...d,
+    zooms: d.zooms.map((z, i) => {
+      let out = z;
+      if (over && over[i]) out = { ...out, follow: over[i].follow ?? false, depth: over[i].depth ?? out.depth, focus: { point: over[i].point } };
+      if (shift && shift[i]) {
+        const sh = shift[i];
+        const outFrame = sh.outAtSec !== undefined ? (sh.outAtSec === null ? null : f(sh.outAtSec)) : out.outFrame === null ? null : out.outFrame + f(sh.outSec);
+        out = { ...out, startFrame: out.startFrame + f(sh.startSec), outFrame };
       }
-    : d;
+      return out;
+    }),
+  };
+};
 
 export type DesktopSceneProps = {
   segments: DesktopSegment[];
@@ -58,6 +150,8 @@ export type DesktopSceneProps = {
   autoSfx?: boolean;
   lights?: "mono" | "color";
   cover?: Cover;
+  /** zoom whooshes after the captures (scene frames), e.g. the 130-U push; their variants continue the rotation */
+  whooshAfter?: { frame: number }[];
 };
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
@@ -91,11 +185,53 @@ export const windowPoint = (p: Vec, pose: ReturnType<typeof windowPose>, vw: num
   return [o[0] + pose.scale * (q[0] - o[0]), o[1] + pose.scale * (q[1] - o[1]) + pose.ty];
 };
 
-export const DesktopScene: React.FC<DesktopSceneProps> = ({ segments, url, enter = false, bare = false, autoSfx = true, lights, cover }) => {
+/**
+ * Every sound a DesktopScene plays, in scene frames: each capture's own cues (clicks, keys, zoom whooshes, from its
+ * edited data), the segments' cues and event cues, and whooshAfter. Pure, so verify-film.cjs plans the same list.
+ * `data` is each segment's shot data with its edits and camera overrides applied (prepareData).
+ */
+export const desktopCues = (segments: DesktopSegment[], data: ShotData[], fps: number, { autoSfx = true, whooshAfter }: { autoSfx?: boolean; whooshAfter?: { frame: number }[] } = {}): Cue[] => {
+  const out: Cue[] = [];
+  let zoomsSoFar = 0;
+  let start = 0;
+  segments.forEach((seg, i) => {
+    const d = data[i];
+    const trim = Math.round((seg.trimSec ?? 0) * fps);
+    const auto = shotCues(d, { trimFrames: trim, durationInFrames: seg.durationInFrames, zoomIndexOffset: zoomsSoFar });
+    if (autoSfx) out.push(...auto.map((c) => ({ ...c, frame: c.frame + start })));
+    zoomsSoFar += auto.filter((c) => (theme.sfx.zoomIn.files as readonly string[]).includes(c.file)).length;
+    for (const c of seg.cues ?? []) out.push({ ...c, frame: c.frame + start });
+    for (const ec of seg.eventCues ?? []) {
+      const off = Math.round((ec.offsetSec ?? 0) * fps);
+      if (ec.perStroke) {
+        const ev = d.events.filter((e) => e.type === ec.type)[ec.index];
+        if (!ev || ev.type !== "draw") continue;
+        for (const [a, b] of ev.strokes) out.push({ frame: a - trim + start + off, file: ec.file, db: ec.db, maxSec: (b - a) / fps, fadeSec: ec.fadeSec });
+        continue;
+      }
+      const at = eventCueFrame(d, ec);
+      if (at === null) continue;
+      out.push({ frame: at - trim + start + off, file: ec.file, db: ec.db, maxSec: ec.maxSec, fadeSec: ec.fadeSec });
+    }
+    start += seg.durationInFrames;
+  });
+  // whooshes placed after the captures (the 130-U push) continue the rotation over the whooshes heard so far
+  (whooshAfter ?? []).forEach((w, k) => {
+    const files = theme.sfx.zoomIn.files;
+    out.push({ frame: w.frame, file: files[(zoomsSoFar + k) % files.length], db: theme.sfx.zoomIn.db, maxSec: theme.sfx.zoomIn.maxSec });
+  });
+  return out.sort((a, b) => a.frame - b.frame);
+};
+
+/** Each segment's shot data with its edits, zoom re-aims and zoom re-timings applied. */
+export const prepareData = (raw: ShotData[], segments: DesktopSegment[]): ShotData[] =>
+  raw.map((d, i) => withZoomFocus(withEdits(d, segments[i].edit), segments[i].zoomFocus, segments[i].zoomShift));
+
+export const DesktopScene: React.FC<DesktopSceneProps> = ({ segments, url, enter = false, bare = false, autoSfx = true, lights, cover, whooshAfter }) => {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
   const raw = useShotsData(segments.map((s) => s.shot));
-  const data = useMemo(() => (raw ? raw.map((d, i) => withZoomFocus(d, segments[i].zoomFocus)) : null), [raw, segments]);
+  const data = useMemo(() => (raw ? prepareData(raw, segments) : null), [raw, segments]);
   const tracks = useMemo(() => (data ? data.map(computeTracks) : null), [data]);
 
   const plan = useMemo(() => {
@@ -107,23 +243,7 @@ export const DesktopScene: React.FC<DesktopSceneProps> = ({ segments, url, enter
     });
   }, [segments, fps]);
 
-  const cues = useMemo(() => {
-    if (!data) return [];
-    const out: Cue[] = [];
-    let zoomsSoFar = 0;
-    plan.forEach((p, i) => {
-      const d: ShotData = data[i];
-      if (autoSfx) out.push(...shotCues(d, { trimFrames: p.trim, durationInFrames: p.durationInFrames, zoomIndexOffset: zoomsSoFar }).map((c) => ({ ...c, frame: c.frame + p.start })));
-      zoomsSoFar += d.zooms.length;
-      for (const c of p.cues ?? []) out.push({ ...c, frame: c.frame + p.start });
-      for (const ec of p.eventCues ?? []) {
-        const ev = d.events.filter((e) => e.type === ec.type)[ec.index];
-        if (!ev) continue;
-        out.push({ frame: ev.frame - p.trim + p.start + Math.round((ec.offsetSec ?? 0) * fps), file: ec.file, db: ec.db });
-      }
-    });
-    return out.sort((a, b) => a.frame - b.frame);
-  }, [data, plan, autoSfx, fps]);
+  const cues = useMemo(() => (data ? desktopCues(segments, data, fps, { autoSfx, whooshAfter }) : []), [data, segments, autoSfx, fps, whooshAfter]);
 
   if (!data || !tracks) return bare ? null : <AbsoluteFill style={{ background: theme.colors.bg }} />;
 
@@ -190,7 +310,7 @@ export const DesktopScene: React.FC<DesktopSceneProps> = ({ segments, url, enter
         <MacWindow width={L.contentW} height={L.contentH} url={plan[active].url ?? url} lights={lights} style={{ left: L.left, top: L.top }}>
           {layers.map((l) => (
             <div
-              key={plan[l.i].shot}
+              key={`${plan[l.i].shot}-${l.i}`}
               style={{ position: "absolute", inset: 0, opacity: l.opacity, filter: l.blur > 0.05 ? `blur(${l.blur.toFixed(2)}px)` : undefined }}
             >
               <Freeze frame={shotFrameOf(l.i)}>

@@ -10,10 +10,18 @@ export const project = {
    */
   partBDomain: "desk.discountusedcarsandtrucks.com" as string | null,
   /**
-   * B6: the off-camera deal's filled Form 130-U, page 1 at 300 dpi (pdftoppm -r 300 of 130-U_Carter_812345.pdf from
+   * Part B (the sale desk, captures 6-12 of the desk storyboard), or null for a part-A-only film. `cuts` are frame
+   * numbers measured on THIS run's desk captures (the desk's paint timing varies with the machine), read from each
+   * capture's frames (recordly-demo references/verification.md, part B): the sign-in card's first fully painted frame;
+   * 8's skeleton loader [last frame kept + 1, first painted "Which Car Is It?" frame]; 10's [frame after the 100% dwell
+   * kept, first painted "How Are They Paying?" frame].
+   */
+  partB: { cuts: { signinPainted: 12, saleSkeleton: [42, 55], readbackRelease: [108, 134] } } as PartB | null,
+  /**
+   * B6 (with a part B): the off-camera deal's filled Form 130-U, page 1 at 300 dpi (pdftoppm -r 300 of 130-U_Carter_812345.pdf from
    * the packet). Boxes are [x, y, w, h] in px of the PNG. The seller band holds Maria Lopez's drawn signature (the same
    * strokes as B2), the printed name "Discount Used Cars And Trucks, LLC (Maria Lopez)", the date and the labels.
-   * `privacy`: money on the page (box 38(a), "$ 3663.06"), always under a privacy blur.
+   * `privacy`: identity and money on the page, always under a privacy blur.
    */
   doc: {
     src: "docs/130u-p1.png",
@@ -22,7 +30,15 @@ export const project = {
     page: 1,
     pages: 2,
     sellerBand: [392, 2860, 2000, 132],
-    privacy: [[1046, 2243, 148, 56]],
+    // identity and money under a privacy blur at every frame: box 14 (the buyer's licence number), box 1 (the VIN) and
+    // box 38(a) ("$ 3663.06", from y 2253, below the SALES AND USE TAX COMPUTATION header, which ends at y 2247)
+    privacy: [
+      [1722, 620, 210, 40],
+      [78, 397, 452, 40],
+      [1004, 2253, 258, 40],
+    ],
+    /** the CERTIFICATION block, heading to the applicant's line: lit while the rest of the page dims */
+    spotlight: [81, 2700, 2394, 410],
     caption: "Signed Once. On Every Title Application.",
   },
   /** public/ paths (copied from clients/discount-used-cars-site/public/brand) */
@@ -55,3 +71,5 @@ export const project = {
   sampleShot: "1-hero",
   samplePhoneShot: "5-phone",
 } as const;
+
+export type PartB = { cuts: { signinPainted: number; saleSkeleton: readonly [number, number]; readbackRelease: readonly [number, number] } };

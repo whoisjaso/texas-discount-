@@ -102,6 +102,12 @@ function problems(inp) {
     need(Array.isArray(inp.overrides) && inp.overrides.every((o) => o && typeof o.shot === 'string' && typeof o.path === 'string' && 'value' in o && typeof o.why === 'string' && o.why.trim()),
       'overrides: a list of { shot, path, value, why } (every override needs its reason)');
   }
+  if (inp.partB) {
+    const C = inp.partB.cuts || {};
+    need(Number.isInteger(C.signinPainted) && Array.isArray(C.saleSkeleton) && C.saleSkeleton.length === 2 && Array.isArray(C.readbackRelease) && C.readbackRelease.length === 2,
+      'partB.cuts: { signinPainted, saleSkeleton: [a, b], readbackRelease: [a, b] }, frames measured on the desk captures (references/verification.md, part B)');
+    need(typeof inp.partB.docFileName === 'string' && /^130-U_.+\.pdf$/.test(inp.partB.docFileName), 'partB.docFileName: the packet file name of the off-camera deal 130-U, e.g. 130-U_Carter_812345.pdf');
+  }
   need(typeof inp.word === 'string' && inp.word.length > 0, 'word: the text of .loader__word (scripts/measure-site.cjs fills it)');
   const L = inp.loader;
   need(L && typeof L === 'object', 'loader: run scripts/measure-site.cjs --into <client-inputs.json> on the served site');
@@ -123,6 +129,7 @@ const q = (s) => JSON.stringify(s);
 
 function projectTs(inp, placeholder) {
   const L = inp.loader;
+  const PB = inp.partB || null;
   const mark = placeholder ? inp.brand.mark : `brand/${path.basename(inp.brand.mark)}`;
   const logo = placeholder ? inp.brand.logoReverse : `brand/${path.basename(inp.brand.logoReverse)}`;
   const head = placeholder
@@ -145,6 +152,34 @@ function projectTs(inp, placeholder) {
     '   * pill then keeps the public domain) until the owner confirms the host may be shown.',
     '   */',
     `  partBDomain: ${inp.partBDomain ? q(inp.partBDomain) : 'null'} as string | null,`,
+    '  /**',
+    '   * Part B (the sale desk, captures 6-12 of assets/storyboard-desk.json), or null for a part-A-only film. `cuts` are',
+    '   * frame numbers measured on THIS run\'s desk captures (references/verification.md, part B): the sign-in card\'s first',
+    '   * fully painted frame; 8\'s skeleton loader [last frame kept + 1, first painted "Which Car Is It?" frame]; 10\'s',
+    '   * [frame after the 100% dwell kept, first painted "How Are They Paying?" frame].',
+    '   */',
+    `  partB: ${PB ? `{ cuts: { signinPainted: ${num(PB.cuts.signinPainted)}, saleSkeleton: ${tuple(PB.cuts.saleSkeleton)}, readbackRelease: ${tuple(PB.cuts.readbackRelease)} } }` : 'null'} as PartB | null,`,
+    '  /**',
+    '   * B6 (with a part B): the off-camera deal\'s filled Form 130-U page 1 at 300 dpi (pdftoppm -r 300), boxes [x, y, w, h]',
+    '   * in px of the PNG. The boxes are the TxDMV form\'s layout (house values, the same for every dealer): the seller band',
+    '   * (signature, printed name, date), the privacy blurs (box 14 licence number, box 1 VIN, box 38(a) money) and the',
+    '   * CERTIFICATION block the spotlight keeps lit. Re-measure only if TxDMV revises the form (Rev 01/25).',
+    '   */',
+    '  doc: {',
+    '    src: "docs/130u-p1.png",',
+    '    size: [2550, 3300],',
+    `    fileName: ${q(PB ? PB.docFileName : '130-U.pdf')},`,
+    '    page: 1,',
+    '    pages: 2,',
+    '    sellerBand: [392, 2860, 2000, 132],',
+    '    privacy: [',
+    '      [1722, 620, 210, 40],',
+    '      [78, 397, 452, 40],',
+    '      [1004, 2253, 258, 40],',
+    '    ],',
+    '    spotlight: [81, 2700, 2394, 410],',
+    '    caption: "Signed Once. On Every Title Application.",',
+    '  },',
     '  /** public/ paths (copied from the site\'s public/brand) */',
     `  mark: ${q(mark)}, // the image the site's loader shows (.loader__emblem img)`,
     `  logoReverse: ${q(logo)}, // full-colour logo that reads on the dark outro`,
@@ -176,6 +211,8 @@ function projectTs(inp, placeholder) {
     '  samplePhoneShot: "5-phone",',
     '} as const;',
     '',
+    'export type PartB = { cuts: { signinPainted: number; saleSkeleton: readonly [number, number]; readbackRelease: readonly [number, number] } };',
+    '',
   ].join('\n');
 }
 
@@ -192,6 +229,8 @@ function values(inp) {
     FACTS: inp.facts,
     WWW: `www.${inp.domain}`,
     LOGO_WIDTH: inp.logoWidth || 760,
+    // part B (assets/storyboard-desk.json): the day the off-camera deal's documents are signed, 14:00 local
+    DESK_CLOCK: (inp.partB && inp.partB.clock) || inp.clock,
   }, inp.storyboard || {});
   return v;
 }

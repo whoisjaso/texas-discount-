@@ -194,8 +194,9 @@ export const computeCursorTrack = (data: ShotData): CursorTrack => {
   // A capture cut on its click's navigation (part B) ends on the raw point, where the next capture's cursor starts.
   const endsOnClick = data.events.some((e) => (e.type === "click" || e.type === "tap" || e.type === "hold") && n - 1 - ("endFrame" in e ? e.endFrame : e.frame) <= pin);
   if (endsOnClick) pinSpan(n - 1, n - 1);
-  // press level for holds and pen strokes: eased in over 30% of a click, out over 70% (the click bounce's shape)
+  // press level for holds and pen strokes: eased in over clickPressSplit of a click, out over the rest (the click bounce's shape)
   const clickF = (R.clickMs / 1000) * data.fps;
+  const split = R.clickPressSplit;
   const pressedAt = new Array(n).fill(false);
   for (const e of data.events) {
     if (e.type === "hold") for (let i = e.frame; i < Math.min(n, e.endFrame); i++) pressedAt[i] = true;
@@ -204,7 +205,7 @@ export const computeCursorTrack = (data: ShotData): CursorTrack => {
   const press = new Array(n).fill(0);
   let lvl = 0;
   for (let i = 0; i < n; i++) {
-    lvl = pressedAt[i] ? Math.min(1, lvl + 1 / Math.max(1, 0.3 * clickF)) : Math.max(0, lvl - 1 / Math.max(1, 0.7 * clickF));
+    lvl = pressedAt[i] ? Math.min(1, lvl + 1 / Math.max(1, split * clickF)) : Math.max(0, lvl - 1 / Math.max(1, (1 - split) * clickF));
     press[i] = theme.ease.inOut(lvl);
   }
   // opacity eases toward the hidden/visible state; the Cursor pairs it with a slight scale (never a lone fade)

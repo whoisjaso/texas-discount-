@@ -54,7 +54,10 @@ HS="$(ls -d /opt/pw-browsers/chromium_headless_shell-*/chrome-linux 2>/dev/null 
 before="$(ls -d /tmp/remotion-webpack-bundle-* 2>/dev/null | sort || true)"
 mkdir -p out
 echo "== render out/$NAME.mp4 (nice -n 15)"
-nice -n 15 npx remotion render src/index.ts Demo "out/$NAME.mp4" --codec h264 --crf 16 --browser-executable="$HS"
+# CRF: 16 for the site film (part A, as approved); the desk film (part A + B) shipped at CRF=17 with AUDIO_BITRATE=192k.
+# The offthread video cache is capped: uncapped, the 2474-frame desk film was OOM-killed on a 16 GB box (lessons B11).
+nice -n 15 npx remotion render src/index.ts Demo "out/$NAME.mp4" --codec h264 --crf "${CRF:-16}" \
+  ${AUDIO_BITRATE:+--audio-bitrate "$AUDIO_BITRATE"} --offthreadvideo-cache-size-in-bytes 1500000000 --browser-executable="$HS"
 after="$(ls -d /tmp/remotion-webpack-bundle-* 2>/dev/null | sort || true)"
 comm -13 <(echo "$before") <(echo "$after") | while read -r d; do [ -n "$d" ] && rm -rf "$d"; done
 

@@ -1,6 +1,8 @@
 # The house recipe
 
-The approved film, Discount Used Cars part A (`clients/discount-used-cars-demo/out/demo-v1.mp4`), measures as follows:
+The approved film, Discount Used Cars part A (rendered as `demo-v1.mp4`, since deleted: it is frames 0–1092 of
+`clients/discount-used-cars-demo/out/discount-demo.mp4`, unchanged, and `render.sh` re-renders it from the template),
+measured as follows:
 
 | Property | Value |
 |---|---|
@@ -39,7 +41,7 @@ are at 30 fps with part B empty.
 12. [Capture settings](#12-capture-settings)
 13. [Render settings](#13-render-settings)
 14. [Content rules](#14-content-rules)
-15. [Part B slot](#15-part-b-slot)
+15. [Part B: the desk](#15-part-b-the-desk)
 16. [Known open items](#16-known-open-items)
 
 ## 1. Running order
@@ -54,7 +56,7 @@ project.
 | 238–748 | 7.93–24.93 | **2-scroll.** 510 frames. |
 | 748–919 | 24.93–30.63 | **3-buy.** 171 frames. |
 | 919–1099 | 30.63–36.63 | **4-menu.** 180 frames. It ends held at 1.8× on the Admin row. |
-| 1099 | 36.63 | **CUT POINT** (`demoTimeline.cutPoint`). Part B goes here (0 frames in part A). |
+| 1099 | 36.63 | **CUT POINT** (`demoTimeline.cutPoint`). Part B goes here (0 frames in part A; the desk film's part B is §15). |
 | 1099–1369 | 36.63–45.63 | **5-phone.** 270 frames. The desktop's last frame is held behind the phone. |
 | 1363–1477 | 45.43–49.23 | **Outro.** 114 frames. It starts 0.2 s (6 frames) before the phone ends and is drawn UNDER the phone. |
 
@@ -82,8 +84,9 @@ Segment lengths come from the storyboard `durationSec`:
 **Layer order** (`Demo.tsx`, bottom to top):
 
 1. `Backdrop`, drawn once at the root.
-2. Desktop A `Sequence`, inside `HoldUnderPhone`.
-3. Part B `Sequence`, only when it has segments.
+2. Desktop `Sequence` (parts A and B in one `DesktopScene`), inside `HoldUnderPhone` and `BehindDoc`; B6's `DocScene`
+   above it, in the same held Sequence.
+3. (no separate part B Sequence: part B joins part A's scene, §15.1)
 4. Outro `Sequence`.
 5. Phone `Sequence`.
 6. Intro sting `Sequence`.
@@ -572,38 +575,107 @@ The share copy is `ffmpeg -i <master> -c:v libx264 -preset slow -crf 23 -pix_fmt
 - **Hiding content:** re-stage so unconfirmed content never enters the frame; never blur it.
 - **Video-only fixes:** go in `captureCss` and are listed for the owner.
 
-## 15. Part B slot
+## 15. Part B: the desk
 
-Part B is the app / desk segment.
+Part B is the premium-dealer-build sale desk, shipped once in the Discount film
+(`clients/discount-used-cars-demo/out/discount-demo.mp4`, 2474 frames, 82.47 s: part A 0–1099, part B 1099–2096, the
+phone and outro after it). The desk is the same app for every dealer, so this section is house recipe like part A:
+the shots (`assets/storyboard-desk.json`), the segment list (`src/demo/timeline.ts`, `partBSegments`), `DocScene` and
+`theme.doc` are fixed. Per client: `client-inputs.json` → `partBDomain` (owner-confirmed desk host), `partB.cuts`
+(frames measured on the captures), `partB.docFileName`, `partB.clock`.
 
-**What exists:**
+### 15.1 Running order (Discount, film frames)
 
-- **Segments:** `partBSegments: DesktopSegment[] = []` in `src/demo/timeline.ts`. When the list is non-empty, `Demo`
-  inserts a second `DesktopScene` (bare, no `enter`) at `demoTimeline.cutPoint`, in the same window style.
-- **Timeline:** everything after the slot moves back automatically, and B's last frame becomes the phone's held
-  background.
-- **URL pill:** `project.partBDomain ?? project.domain`. `partBDomain` stays null until the owner confirms the desk host
-  may be shown. A per-segment `url` also exists.
-- **Hand-off contract:**
-  - Same 1440×900 DSF 2 viewport.
-  - The first B capture opens on the Admin click.
-  - Its cursor starts at `cursor.start.fromShot: "4-menu"`. Discount's was (344.8, 542.1), the hand on the Admin row,
-    held at 1.8×.
-  - Unconfirmed desk data (names, prices, VINs) uses demo data or never enters the frame. Never blur it.
-  - `ios_success` is reserved for this segment.
+| Film frames | Seconds | Segment | Capture frames shown | What |
+|---|---|---|---|---|
+| 1093 | 36.43 | (4-menu) | 174 | The Admin click drawn on the menu (`withCutClick`: ring, bounce, tink), 6 frames before the cut |
+| 1099–1212 | 36.63–40.40 | 6-desk-signin | 12–124 | Opens on the painted sign-in card at shot 4's 1.8x; the pull back to SIGN_IN starts on the cut; email (blurred), password, Sign In |
+| 1212–1457 | 40.40–48.57 | 7-desk-onboard | 0–244 | Name, the pen at 1.8x on the pad, Save → "You Are All Set" (ios_success); both zooms leave at capture 182 so Start Working is clicked at 1.0 |
+| 1457–1487 | 48.57–49.57 | 8a | 12–41 | Handle A Sale (wide, sidebar in frame) → Start A Sale |
+| 1487–1542 | 49.57–51.40 | 8b | 55–109 | The skeleton (42–54) cut out; "Which Car Is It?" painted, WIZARD zoom from the cut → the Camry |
+| 1542–1633 | 51.40–54.43 | 9-desk-buyer | 5–95 | James / Carter → Next |
+| 1633–1734 | 54.43–57.80 | 10a | 7–107 | Start Sale, read-back at 2.0x, Hold To Confirm (press 50 → 100% → 0.4 s dwell, release on 106) |
+| 1734–1774 | 57.80–59.13 | 10b | 134–173 | Dialog close and blank page (108–133) cut out; "How Are They Paying?" painted, pull back to WIZARD from the cut → Cash |
+| 1774–1874 | 59.13–62.47 | 11-desk-guide | 7–106 | We Do, No plate yet, The Buyer, Here Today |
+| 1874–1967 | 62.47–65.57 | 12-desk-signed | 8–100 | The packet of the off-camera deal; push to PACKET (ios_success on landing), held; Open / Print on the 130-U |
+| 1967–2096 | 65.57–69.87 | B6 DocScene | — | The 130-U in a Preview window; 1.5 s push onto the certification block; spotlight; caption |
+| 2096 | 69.87 | phone | — | The held desk and document dissolve to the wallpaper in 0.4 s under the phone's entrance |
 
-**Hazards nobody has rendered yet.** Check each with `verify.sh` (luma scan, the stills at `cutpoint-*` and
-`partB-*`):
+`buildTimeline`: `desktopB` = Σ `partBSegments`; `doc` = `sec(theme.doc.durationSec 4.3)`; the phone starts after B6.
+Parts A and B play in ONE `DesktopScene` (`Demo.tsx` joins `withCutClick(partASegments)` and `partBSegments`): nothing
+mounts on the cut frame, the window's breathing and lean run on, and the whoosh rotation continues (this closed the
+hazards (a), (b), (d) of the old slot; (c) no crossfade stays: every B cut is hard).
 
-- (a) **Black-frame risk.** Part A's Sequence ends exactly at `cutPoint`, and a fresh B `DesktopScene` mounts on that
-  frame. That is the same fresh-mount pattern that once rendered one black frame at the phone cut.
-- (b) **Pop at the cut.** B's `windowPose` restarts from its own frame 0: the breathing phase resets, and the push
-  follows B's camera. A ends at 1.8× (window ×1.10). Unless B's first frame has the same zoom active, the window and the
-  content pop.
-- (c) **No crossfade.** The A→B boundary is always a hard cut, because xfade works only inside one `DesktopScene`.
-- (d) **Whoosh repeats.** The whoosh variant rotation restarts in B.
+### 15.2 Cuts: jump-cuts on a click's navigation
 
-The recipe for part B is added after its first production use. Do not invent one.
+| Rule | Value | Why |
+|---|---|---|
+| A capture ends | on the frame before its click's navigation (`cutFrames`) | the page change is the cut |
+| The next segment opens | on the new page's **first fully painted frame** (`partB.cuts`, edge-density gate) | a blank page, skeleton loader or dialog close reads as a glitch (finish findings 36.6 s, 50.0 s, 59.2 s) |
+| A loading state inside a capture | split the capture into two segments of the same shot and cut it out (8a/8b, 10a/10b) | Screen Studio never shows a loading state |
+| Camera on both sides | identical (`zoomShift` moves a move that fell in a cut gap to start on the cut; `outAtSec` sets or holds a zoom's leaving) | the cursor must not move at the cut |
+| Pointer on both sides | identical (gate ≤ 1.5 CSS px) | as part A |
+| A click's ring across a cut | the next segment's copy of the click is moved (`edit.moveEvents`) so the ring and bounce run on | a ring that vanishes at the cut reads as a dropped frame |
+| The Admin click | drawn on the menu `CUT_CLICK_LEAD` 6 frames before the cut (`withCutClick`) | the click reads on the page it was made on |
+
+### 15.3 Cameras (CSS px of the 1440×900 page; composition `zoomFocus`)
+
+| Name | Point | Depth | Used |
+|---|---|---|---|
+| SIGN_IN | 720, 482 | 1.45 | 6 (after the 1.8x opening pulls back from the cut), 7 until capture 182 |
+| (pad) | 720, 490 | 1.8 | 7's capture zoom on the signature pad, leaves at 182 with SIGN_IN |
+| wide | — | 1.0 | 7's end, 8a, 8b's head (8's capture zoom 0 is set to depth 1) |
+| WIZARD | 720, 490 | 1.32 | 8b from capture 56 (zoom 1 + 12 frames), 9, 10's head, 11, 12's head |
+| READ_BACK | 720, 472 | 2.0 | 10a; 10b leaves it from the cut (outAtSec 134/30) |
+| PACKET | 720, 356 | 1.62 | 12, HELD to the end (`outAtSec: null`): it already frames the Form 130-U row and its Open / Print button |
+
+Zooming away from a click target is never done (finish finding 66.4 s): hold or reframe toward the action.
+
+### 15.4 Cursor (composition `edit`)
+
+| Value | Where | Why |
+|---|---|---|
+| `nudge` dx 45, dy 0, in capture 44–56, out 154–168 | 10a, 10b | the hand presses Hold To Confirm off its label, so "Release To Confirm" stays readable |
+| Hold release `endFrame` | 10a: `readbackRelease[0] − 2`; 10b: `readbackRelease[1] − 1` | the release is drawn before the cut and the press level matches across it |
+| `recordly.penLagFrames` 0.25 | 7 | the pen tip sits on the ink |
+| `recordly.clickPressSplit` 0.3 | clicks, holds, pen | the bounce's press / release split (one constant for Cursor.tsx and shot.ts) |
+
+### 15.5 B6: the 130-U (`theme.doc`, `project.doc`)
+
+| Value | Number | Why |
+|---|---|---|
+| `durationSec` | 4.3 | push 0.4 + 1.5 s, the caption readable about 2 s, gone 0.07 s before the phone |
+| `window` | height 920, toolbar 52, pageMargin 18, sideMargin 70, offsetX 24 | a Preview window (dark) over the held desk |
+| `behind` | dim 0.5, scale 0.975, blur 2.5 px, parallax 0.06 | the desk settles back as the window opens |
+| `push` | atSec 0.4, displayScale 0.8, focusX 1278, landY 573 | 0.8 is the deepest push that keeps the seller label and the date column in frame; the certification block (page y 2700–3110) lands at frame y 392–720 (centred); the top edge falls in the text-free gap above box 38 (page y 2205–2214) |
+| `spotlight` | dim 0.42, radius 18 page px, box `project.doc.spotlight` [81, 2700, 2394, 410] | Screen Studio spotlight: the tax table and lower rows dim as the push lands |
+| `privacy` | blur 26, pad 4, radius 14 page px; boxes: box 14 [1722, 620, 210, 40], box 1 VIN [78, 397, 452, 40], box 38(a) [1004, 2253, 258, 40] | identity and money are blurred at every frame; pad 4 keeps the blur off the SALES AND USE TAX COMPUTATION header (ends y 2247) |
+| `caption` | at 1.75 s, exit 3.98 s (0.25 s), size 38, centre y 800, word delay 0.067 s, stagger 0.1 s, rise 18, scale 0.96 → 1, word rise 14, word scale 0.94, exit drop 10, exit scale 0.03, exit blur 4 | "Signed Once. On Every Title Application." over the page's dimmed lower rows |
+| `entrance` | rise 40, scaleFrom 0.94, fade ×1.6 | the Preview window's spring entrance |
+| `motionBlur` | minSpeed 1.5 px/frame, gain 0.1 × recordly.motionBlur | a still page moving: light blur only while fast |
+| `phoneDissolveSec` | 0.4 | the desk and document dissolve to the wallpaper under the phone (the phone shows the site again) |
+
+The page is the off-camera deal's 130-U page 1, `pdftoppm -r 300` (2550×3300). The boxes are the TxDMV form's layout
+(Rev 01/25), so they are the same for every dealer.
+
+### 15.6 Sound (part B)
+
+| Cue | File, dB | Where |
+|---|---|---|
+| Admin click | tink −12 | on the menu click (auto, from `withCutClick`) |
+| Desk opens | open_ui −14 | segment 6, frame 1 |
+| "You Are All Set" | ios_success −10 | Save Signature click + 0.13 s |
+| Pen | pen_scratch −15, cut per stroke, 0.06 s fade | each stroke of 7's draw (`perStroke`) |
+| Hold press | tink −12 | the press, −click lead |
+| Hold fill | hold_rise −26 (1.3 s rise) | from the press, ending into the release |
+| Hold release | tink −16 | the moved release, −tap lead |
+| "2 / 2 signed" | ios_success −10 | PACKET zoom lands − 0.2 s |
+| B6 | open_ui −14; one whoosh (`docWhooshAfter`, played by the DesktopScene so its variant continues the rotation) | the window opens; the push |
+
+### 15.7 Render
+
+`--concurrency 3 --offthreadvideo-cache-size-in-bytes 1500000000` (without the cache cap a 16 GB box ran out of memory
+near the phone when other work ran), h264 CRF 17, AAC 192k, then `+faststart` (remux). About 30 minutes under nice.
 
 ## 16. Known open items
 

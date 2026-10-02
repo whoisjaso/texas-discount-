@@ -6,7 +6,17 @@ import { Audio, random, Sequence, staticFile, useVideoConfig } from "remotion";
 import { dbToGain, theme, toFrames } from "../theme";
 import { ShotData } from "../lib/shot";
 
-export type Cue = { frame: number; file: string; db: number; maxSec?: number };
+/** fadeSec: a short fade-out at the end of a cue cut by maxSec (a loop gated to a pen stroke), so the cut never clicks */
+export type Cue = { frame: number; file: string; db: number; maxSec?: number; fadeSec?: number };
+
+const cueVolume = (c: Cue, fps: number) => {
+  const g = dbToGain(c.db + theme.sfx.masterDb);
+  if (!c.fadeSec || !c.maxSec) return g;
+  const end = Math.ceil(c.maxSec * fps);
+  const fade = Math.max(1, toFrames(c.fadeSec, fps));
+  // f: frames since the cue started; ramps in over 1 frame and out over the last `fade` frames
+  return (f: number) => g * Math.min(1, (f + 1) / 2, Math.max(0, (end - f) / fade));
+};
 
 export const Sfx: React.FC<{ cues: Cue[] }> = ({ cues }) => {
   const { fps } = useVideoConfig();
@@ -14,7 +24,7 @@ export const Sfx: React.FC<{ cues: Cue[] }> = ({ cues }) => {
     <>
       {cues.map((c, i) => (
         <Sequence key={`${c.file}-${c.frame}-${i}`} from={Math.round(c.frame)} durationInFrames={c.maxSec ? Math.ceil(c.maxSec * fps) : undefined} layout="none">
-          <Audio src={staticFile(c.file)} volume={dbToGain(c.db + theme.sfx.masterDb)} />
+          <Audio src={staticFile(c.file)} volume={cueVolume(c, fps)} />
         </Sequence>
       ))}
     </>

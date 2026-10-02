@@ -86,7 +86,8 @@ export const Cursor: React.FC<{
     const d = f - e.frame;
     if (e.type === "click" && d >= 0 && d < clickFrames) {
       const p = d / clickFrames;
-      bounce = p < 0.3 ? theme.ease.out(p / 0.3) : 1 - theme.ease.inOut((p - 0.3) / 0.7);
+      const k = R.clickPressSplit;
+      bounce = p < k ? theme.ease.out(p / k) : 1 - theme.ease.inOut((p - k) / (1 - k));
     }
     if (d >= 0 && d < ringFrames) {
       const p = clamp01(d / ringFrames);

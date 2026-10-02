@@ -57,6 +57,16 @@ export const theme = {
     statusLight: "#FFFFFF", // status-bar glyphs on a dark page top
     statusDark: "#000000", // … on a light page top
     statusBar: "#000000", // fallback when the capture has no edge colours
+    // B6 · the 130-U in a macOS Preview window (dark appearance)
+    docCanvas: "#2A2A2D", // Preview's canvas around the page
+    docPage: "#FFFFFF",
+    docPageShadow: "rgba(0,0,0,0.45)",
+    docIcon: "#B9B9BE", // toolbar glyphs
+    docTitleSub: "#8E8E93", // "Page 1 of 2"
+    privacyTint: "rgba(255,255,255,0.32)", // the frosted wash over a privacy blur
+    privacyEdge: "rgba(0,0,0,0.10)",
+    captionPill: "rgba(10,10,11,0.86)",
+    captionEdge: "rgba(255,255,255,0.12)",
   },
   fonts: {
     // Loaded from public/fonts by src/lib/fonts.ts (the site's own face). `stack` is what components use: a missing
@@ -99,6 +109,7 @@ export const theme = {
     cursorZoomGrow: 0.35, // the cursor grows 35% as much as the page when zoomed
     clickScale: 0.82,
     clickMs: 350,
+    clickPressSplit: 0.3, // a click's bounce presses over the first 30% of clickMs and releases over the rest
     ringMs: 450,
     ringRadius: [10, 34],
     clickPinSec: 0.2, // around a click the smoothed cursor is pinned to the real point (± this long)
@@ -107,6 +118,9 @@ export const theme = {
     cursorHideFadeSec: 0.17, // the cursor fades (and shrinks a little) out/in around self-scrolls and typing
     cursorHideScale: 0.85,
     scrollMergeSec: 0.67, // two self-scrolls closer than this keep the cursor hidden between them (no blink)
+    // a pen on a pad (capture 'draw'): the pointer is drawn unsmoothed, this many frames back along its path, where the
+    // pad's ink ends (measured on B2: the ink trails the pointer by 0.2–0.3 of a frame's travel)
+    penLagFrames: 0.25,
   },
   window: {
     titleBar: 38,
@@ -153,6 +167,40 @@ export const theme = {
   vignette: { strength: 0.32, start: 0.58 },
   grain: { opacity: 0.07, overUi: 0.025 }, // overlay grain: heavier on the wallpaper, a whisper over the UI
   dither: { opacity: 0.04 }, // static fine noise on the wallpaper gradient, so h264 does not band it
+  // B6 · the deal's real 130-U (page 1, 300 dpi) in a Preview window over the held desk; the camera pushes in on the
+  // seller band (the printed name and the member's drawn signature). Seconds from the scene's first frame.
+  doc: {
+    durationSec: 4.3,
+    // the Preview window at rest: height in frame px, toolbar, canvas margin around the page, a small cascade offset
+    window: { height: 920, toolbar: 52, pageMargin: 18, sideMargin: 70, offsetX: 24 },
+    // the desk behind: dims, settles back and softens as the Preview window opens
+    behind: { dim: 0.5, scale: 0.975, blurPx: 2.5, pushParallax: 0.06 },
+    // the push: Recordly's zoom-in time and ease (recordly.zoomInSec / zoomInEase), log-space so it reads as one move.
+    // displayScale = frame px per page px at full push (the 2000 px band → 1530 px). The band's centre row lands at
+    // landY on the form's centre column (focusX, page px): the form (x 81–2475) fills the width (0.8 is the deepest
+    // push that keeps the seller's label and the date column in frame), the CERTIFICATION block (heading to the
+    // applicant line, project.doc.spotlight, page y 2700–3110) is centred on the frame (y 392–720), and the frame's top
+    // edge falls in the text-free gap above box 38 (page y 2205–2214); the page ends at y 872
+    push: { atSec: 0.4, displayScale: 0.8, focusX: 1278, landY: 573 },
+    // Screen Studio spotlight: the page outside the certification block dims as the push lands
+    spotlight: { dim: 0.42, radiusPx: 18 },
+    // a privacy blur over identity and money on the page (Screen Studio style): blur radius and padding in page px
+    privacy: { blurPx: 26, padPx: 4, radiusPx: 14 },
+    // the Title Case caption on a dark pill over the page's dimmed lower rows (the additional applicant's line), under
+    // the certification block; it rises in
+    // (rise px, scaleFrom), its words stagger in (wordDelaySec after the pill, then wordStaggerSec apart, each rising
+    // wordRise px from wordScaleFrom), and it leaves (exitDrop px, exitScale, exitBlur px) before the phone
+    caption: {
+      atSec: 1.75, wordDelaySec: 0.067, wordStaggerSec: 0.1, exitAtSec: 3.98, exitSec: 0.25, size: 38, centerY: 800,
+      rise: 18, scaleFrom: 0.96, fadeInRate: 1.4, wordRise: 14, wordScaleFrom: 0.94, exitDrop: 10, exitScale: 0.03, exitBlur: 4,
+    },
+    // the Preview window's entrance (rise px, scaleFrom, fadeInRate) and the push's motion blur threshold (frame px
+    // per frame) and gain (a fraction of recordly.motionBlur, the window being a still page)
+    entrance: { rise: 40, scaleFrom: 0.94, fadeInRate: 1.6 },
+    motionBlur: { minSpeed: 1.5, gain: 0.1 },
+    // the held desk and the document dissolve away under the phone's entrance (the phone shows the site again)
+    phoneDissolveSec: 0.4,
+  },
   phone: {
     screen: { width: 390, height: 844 }, // iPhone 14 points; the capture is 390 × (844 − statusBar)
     statusBar: 47,
@@ -187,6 +235,10 @@ export const theme = {
     intro: { file: "sfx/ios_note.wav", db: -8 },
     outro: { file: "sfx/ios_received.wav", db: -4 },
     tap: { file: "sfx/ios_tink.wav", db: -16, leadSec: 0.067 },
+    // part B: a felt-tip on the pad under each pen stroke (cut per stroke, 60 ms fade) and a soft rising tone under
+    // Hold To Confirm's fill, from the press, ending into the release tink (scripts/prepare-sfx.sh)
+    pen: { file: "sfx/pen_scratch.wav", db: -15, fadeSec: 0.06 },
+    holdRise: { file: "sfx/hold_rise.wav", db: -26 },
   },
   fps: 30,
   width: 1920,

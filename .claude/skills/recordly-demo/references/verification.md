@@ -35,6 +35,7 @@ Calibration: the approved Discount film passes every gate with the numbers quote
 - [4. After rendering: numeric gates](#4-after-rendering-numeric-gates)
 - [5. After rendering: the stills to look at](#5-after-rendering-the-stills-to-look-at)
 - [6. What to do with a failure](#6-what-to-do-with-a-failure)
+- [7. Part B: the desk](#7-part-b-the-desk)
 
 ## 1. Before capture
 
@@ -103,6 +104,7 @@ uses (f − 0.5)/30 and grabs the last frame with `-sseof`.
 | `<shot>-typed-no-pointer` | 692 | last typed key | The query typed, the pointer hidden, no blue × |
 | `cutpoint-minus0.3` / `cutpoint-last-desktop` | 1090 / 1098 | `cutPoint` | Held at 1.8× on the Admin row, the hand cursor on it |
 | `partB-first` / `partB-last` | (when part B exists) | `desktopB` | No black frame; no window or zoom pop at the A→B cut |
+| `B6-first` / `B6-push-mid` / `B6-push-end` / `B6-caption` / `B6-last` | (with a part B) | `doc.from` + 0, push mid, push end + 3, caption + 0.6 s, last | Section 7 |
 | `phone-first` / `-enter-2` / `-enter-5` / `-plus0.3` | 1099 / 1101 / 1104 / 1108 | `phone.from` | The phone is opaque by frame 2; motion blur; the desktop recedes behind, never black |
 | `phone-swipe1-drag` | 1164 | first touch + 5 | The finger disc reads on the page; the finger rides with the content |
 | `phone-mid` | 1302 | 75% in | The status bar is tinted like the page top; the home indicator is visible |
@@ -133,3 +135,44 @@ Also look at these, by eye:
 
 After a fix, re-render and run the gates again. Diff the new stills against the previous run's, and confirm that only
 the intended frames changed.
+
+## 7. Part B: the desk
+
+The same gates run on a film with a part B (`verify.sh` and `--cuts-only` handle it); these are added.
+
+**Measuring `partB.cuts` (after capture, before filling `client-inputs.json` → `partB`).** On the captures, not the
+film. `python3` + `ffmpeg -vf select=eq(n\,N)`: contact-sheet the frames and read them, then confirm with the gate.
+
+| Value | Capture | Discount | Read |
+|---|---|---|---|
+| `signinPainted` | 6-desk-signin | 12 | the first frame the sign-in card is fully drawn (frames 0–3 blank, the card fades in over 4–12) |
+| `saleSkeleton` [a, b] | 8-desk-sale-start | [42, 55] | a = the first skeleton frame after the Start A Sale click (8a keeps frames up to a − 1, the click's ring 3 frames in); b = the first fully painted "Which Car Is It?" frame |
+| `readbackRelease` [a, b] | 10-desk-readback | [108, 134] | a = 0.4 s after the button first reads "Release To Confirm 100%" (about 95 in Discount); b = the first fully painted "How Are They Paying?" frame (the dialog closes and the page blanks between) |
+
+**Gates (`--cuts-only` and `verify.sh`).**
+
+| Gate | Pass | Catches |
+|---|---|---|
+| `jump-cut … pointer + camera` | At every cut from the A→B cut on: the drawn pointer (edited data) ≤ 1.5 CSS px apart; camera scale Δ ≤ 0.01 and pan ≤ 3 px | A cursor or camera jump at a jump-cut (B-F 49.0 s). Discount: all Δ 0–1.2 px, scale equal |
+| `jump-cut … first frame painted` | Edge density of the first capture frame shown ≥ 11 per 1000 px (neighbour steps > 40 levels, at 720 px wide) | A blank page, skeleton loader or dialog close on screen (B-F 36.6, 50.0, 59.2 s): those read 0, a page still fading in about 10. Discount: 11.4–20.7 |
+| Onset map | As section 4, with the cues from `desktopCues` (pen per stroke, hold rise, release, doc whoosh) | A sound off its event |
+| Audio peak | As section 4 | |
+
+**Stills (by eye, from the plan's labels and these).**
+
+| Moment | Look for |
+|---|---|
+| The A→B cut −0.2 s, last, first, +0.3 s | The Admin row pressed (ring) on the menu; the first desk frame is the painted card; the ring runs on; the camera moves from the cut, never rests on empty page |
+| `desk.` URL pill | From the first desk frame (`partBDomain`) |
+| Sign-in | The email under the privacy blur; no "example" text on screen |
+| The pad at 1.8× | The pen tip on the ink; smooth cursive; "Signed: <date>" matches the documents' date |
+| 7's end / 8a | The pull-out happens before Start Working; Handle A Sale opens wide with its sidebar |
+| 8a last / 8b first | No skeleton; the Start A Sale ring runs on |
+| The hold at 100% | "Release To Confirm" readable (the hand off the label); 10a last / 10b first: no flicker or blank |
+| 12 | "2 / 2 signed" at PACKET; the Form 130-U row and Open / Print in frame at the click |
+| B6 push end and caption | The certification block centred; no edge through a line; the seller line reads "<LLC> (<member>) <date>" beside the same drawn signature; box 14, the VIN and box 38(a) blurred (and no blur over a header); the caption over the dimmed lower rows, readable ≥ 1.5 s |
+| The phone +0.1 / +0.3 s | The desk and document dissolving to the wallpaper; never black |
+
+Privacy, every frame: the sign-in email and the identity handle blurred; on documents, identity numbers and money
+blurred; the bill of sale never shown. Desk data is demo data only.
+
