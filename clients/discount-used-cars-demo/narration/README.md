@@ -5,10 +5,11 @@ A guided tour of the site and one whole sale on the desk, laid against the appro
 is untouched. Recipe: `.claude/skills/recordly-demo/references/narration.md`.
 
 - **Master:** `out/discount-demo-narrated.mp4`: 1920×1080, 30 fps, 6916 frames (3:50.5), h264 CRF 17 + AAC 192k,
-  +faststart, SIZE_MASTER.
-- **Share copy:** `out/discount-demo-narrated-share.mp4`: same picture size and sound, +faststart, SIZE_SHARE (under
-  40 MB).
-- **Levels:** LEVELS_LINE The film's own sounds play 6 dB lower while a line speaks. No music.
+  +faststart, 105.4 MB.
+- **Share copy:** `out/discount-demo-narrated-share.mp4`: same picture size, +faststart, 38.3 MB (two-pass
+  1200 kb/s video, AAC 128k).
+- **Levels:** the voice set reads −15.9 LUFS integrated (true peak −1.8 dBTP); the full mix −15.8 LUFS integrated,
+  true peak −3.3 dBTP. The film's own sounds play 6 dB lower while a line speaks. No music.
 
 ## Running order
 
@@ -181,7 +182,10 @@ nice -n 15 npx remotion render src/index.ts Narrated out/discount-demo-narrated-
   --audio-codec aac --audio-bitrate 192k --concurrency 3 --offthreadvideo-cache-size-in-bytes 1500000000 \
   --browser-executable=<chromium_headless_shell>/headless_shell
 ffmpeg -i out/discount-demo-narrated-raw.mp4 -c copy -movflags +faststart out/discount-demo-narrated.mp4
-SHARE_CMD
+# share copy (< 40 MB): two-pass x264 at 1200 kb/s, AAC 128k, same picture size
+ffmpeg -i out/discount-demo-narrated.mp4 -c:v libx264 -preset slow -b:v 1200k -pass 1 -pix_fmt yuv420p -an -f null /dev/null
+ffmpeg -i out/discount-demo-narrated.mp4 -c:v libx264 -preset slow -b:v 1200k -pass 2 -pix_fmt yuv420p \
+  -c:a aac -b:a 128k -movflags +faststart out/discount-demo-narrated-share.mp4
 node scripts/narrated-verify.cjs --mp4 out/discount-demo-narrated.mp4 --out out/verify-narrated
 ```
 
@@ -189,4 +193,21 @@ The render took about 80 minutes at concurrency 3 on a 4-core box shared with ot
 
 ## Verification
 
-VERIFY_BLOCK
+`node scripts/narrated-verify.cjs --mp4 out/discount-demo-narrated.mp4` (2026-10-03), all gates PASS:
+
+| Gate | Result |
+|---|---|
+| Plan (`narrated-check.cjs`) | PLAN OK: 24 lines, gaps 0.53–2.87 s, no overlap; 22 cuts between captures (3 more sit under overlays), pointer ≤ 2.1 px, camera scale Δ 0, pan ≤ 1.1 px |
+| Stream | h264 1920×1080 30 fps, AAC 48 kHz stereo, +faststart |
+| Frame count | 6916 = the plan's total (230.53 s) |
+| Luma | no one-frame spike in 6916 frames; last frame black (YAVG 16.8) |
+| Loudness | voice set −15.9 LUFS (true peak −1.8 dBTP); mix −15.8 LUFS, true peak −3.3 dBTP |
+| Onsets | 223 onsets: every one on a played cue (172 cues: desk, documents, phone, intro, outro) or inside a voice line |
+| Blips | none |
+| Stills | 68 frames (every segment's first frame, every zoom at full depth, every document key landed, the phone, the outro, the last frame) looked at in the final film, plus targeted stills during the edit |
+
+The ending was re-made after the full render: doc C's push (the signed bill of sale) was still moving when the outro
+dissolved it, so its push was shortened to 1.1 s and its hold lengthened 0.5 s. Frames 6469-6915 were re-rendered and
+joined to the master's frames 0-6468 at the keyframe 6469 by stream copy (the seam frame matches the old render at
+51 dB, an encoder-level difference); the whole sound track was rendered again in one piece (identical to the old one
+before the change, within AAC noise) and muxed with it. A full re-render of the current code gives the same film.
