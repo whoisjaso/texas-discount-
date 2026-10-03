@@ -1,37 +1,47 @@
 // Sign every document through the ceremony. Usage: node ceremony.cjs <out> <dealPath> <w> <h>
+// DESK_BASE picks the server (default http://localhost:5190). The link used is
+// written to <out>/signing-url.txt, so a later walk can try it again.
 const { chromium } = require(process.env.PWPATH);
-const BASE = 'http://localhost:5190';
+const fs = require('fs');
+const { guard, at, follow, previewCookies } = require('./desk-base.cjs');
 const { AUDIT } = require('./audit-fn.cjs');
 const failures = [];
 (async () => {
   const [out, deal, W, H] = process.argv.slice(2);
   const b = await chromium.launch({ executablePath: process.env.CHROME_PATH || undefined });
   const ctx = await b.newContext({ viewport: { width: +W, height: +H }, hasTouch: +W < 800 });
-  await ctx.addCookies([{ name: 'tj-local-admin-preview', value: process.env.PREVIEW_ADMIN || 'owner:owner@example.dev', domain: 'localhost', path: '/' }]);
+  await ctx.addCookies(previewCookies(process.env.PREVIEW_ADMIN || 'owner:owner@example.dev'));
+  await guard(ctx);
+  fs.mkdirSync(out, { recursive: true });
   const desk = await ctx.newPage();
   desk.on('pageerror', e => console.log('PAGEERR', e.message.slice(0, 200)));
-  await desk.goto(BASE + deal + '/packet', { waitUntil: 'networkidle', timeout: 180000 });
+  await desk.goto(at(deal + '/packet'), { waitUntil: 'networkidle', timeout: 180000 });
   const href = await desk.getByRole('link', { name: /Open here/i }).first().getAttribute('href');
   console.log('SIGN LINK', href && href.replace(/[A-Za-z0-9_-]{20,}/, '<token>'));
+  // The link carries the desk's configured origin; a walk against DESK_BASE follows it to the same path there.
+  const signUrl = follow(href);
+  fs.writeFileSync(`${out}/signing-url.txt`, signUrl);
   const p = await ctx.newPage();
   p.on('pageerror', e => console.log('PAGEERR', e.message.slice(0, 200)));
-  await p.goto(href.startsWith('http') ? href : BASE + href, { waitUntil: 'networkidle' });
+  await p.goto(signUrl, { waitUntil: 'networkidle' });
   let n = 0;
   const shot = async (l) => { await p.waitForTimeout(700); await p.screenshot({ path: `${out}/sign-${String(n++).padStart(2, '0')}-${l}.png`, fullPage: true }); for (const f of await p.evaluate(AUDIT)) failures.push(l + ': ' + f); };
   await shot('cover');
   const begin = p.getByRole('button', { name: /Begin|Empezar|Comenzar/i }); if (await begin.count()) { await begin.first().click(); await p.waitForTimeout(1200); }
   for (let i = 0; i < 12; i++) {
     const heading = (await p.locator('h1,h2').first().innerText().catch(() => '')).replace(/\s+/g, ' ');
-    if (/receipt|signed|all done|thank/i.test(heading) && !(await p.locator('canvas').count())) { await shot('receipt'); console.log('RECEIPT', heading); break; }
+    if (/receipt|signed|all done|thank|todo firmado|gracias/i.test(heading) && !(await p.locator('canvas').count())) { await shot('receipt'); console.log('RECEIPT', heading); break; }
     // Read to the end: keep scrolling until the page stops asking for it.
-    for (let tries = 0; tries < 12; tries++) {
+    // Up to 40 passes: the 130-U is the state's PDF and can be slow to arrive.
+    for (let tries = 0; tries < 40; tries++) {
     await p.evaluate(async () => {
       const els = [document.scrollingElement, ...document.querySelectorAll('*')].filter(e => e && e.scrollHeight > e.clientHeight + 20 && getComputedStyle(e).overflowY !== 'visible');
       for (const e of els) { for (let y = 0; y <= e.scrollHeight; y += 400) { e.scrollTop = y; await new Promise(r => setTimeout(r, 40)); } }
       window.scrollTo(0, document.body.scrollHeight);
     });
     await p.waitForTimeout(900);
-    if (!(await p.getByText(/Scroll to the end/i).count())) break;
+    // The prompt in either language (a Spanish deal's ceremony is in Spanish).
+    if (!(await p.getByText(/Scroll to the end|Baje hasta el final|Desplácese/i).count())) break;
     }
     await shot(`doc${i}-read`);
     const consent = p.locator('[data-sign-consent] input[type=checkbox]');

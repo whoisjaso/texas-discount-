@@ -175,7 +175,8 @@ export async function completeRecovery(
     const cookieStore = await cookies();
     cookieStore.set(
       ADMIN_DEVICE_SESSION_COOKIE,
-      await createAdminDeviceSessionCookie(),
+      // Bound to the account that signed in (admin-device-session.ts).
+      await createAdminDeviceSessionCookie(verified?.user?.id ?? null),
       adminDeviceSessionCookieOptions,
     );
   } catch {

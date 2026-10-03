@@ -34,12 +34,20 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const { data: exchanged, error } = await supabase.auth.exchangeCodeForSession(code);
   if (error) {
     return NextResponse.redirect(new URL("/admin/login?error=oauth", request.url));
   }
 
-  const access = await getCurrentAdminAccess();
+  /*
+    The device cookie is minted before the team check and handed to it, not
+    after: this sign-in is what makes the device's session new, and an
+    account whose password was reset would otherwise be judged by the old
+    (or missing) cookie the browser arrived with and be signed straight back
+    out as "not on the team", on every OAuth attempt, for good.
+  */
+  const deviceCookie = await createAdminDeviceSessionCookie(exchanged?.user?.id ?? exchanged?.session?.user?.id ?? null);
+  const access = await getCurrentAdminAccess({ deviceCookie });
   if (!access.user || !access.role) {
     const email = access.user?.email?.trim().toLowerCase() ?? "";
     await supabase.auth.signOut();
@@ -49,11 +57,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(to);
   }
 
-  const response = NextResponse.redirect(new URL(await destinationAfterSignIn(), request.url));
-  response.cookies.set(
-    ADMIN_DEVICE_SESSION_COOKIE,
-    await createAdminDeviceSessionCookie(),
-    adminDeviceSessionCookieOptions,
-  );
+  const response = NextResponse.redirect(new URL(await destinationAfterSignIn({ deviceCookie }), request.url));
+  response.cookies.set(ADMIN_DEVICE_SESSION_COOKIE, deviceCookie, adminDeviceSessionCookieOptions);
   return response;
 }

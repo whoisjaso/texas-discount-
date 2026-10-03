@@ -105,7 +105,7 @@ async function getSalesInProgress(): Promise<{
     if (rows.length > 0) {
       const { data: agreements, error: agreementError } = await supabase
         .from("document_agreements")
-        .select("deal_id, document_type, status, completed_at, finalized_at")
+        .select("deal_id, document_type, status, completed_at, finalized_at, voided_at")
         .in(
           "deal_id",
           rows.map((row) => row.id),
@@ -127,8 +127,11 @@ async function getSalesInProgress(): Promise<{
           status: string | null;
           completed_at: string | null;
           finalized_at: string | null;
+          voided_at?: string | null;
         };
         if (!agreement.deal_id || !agreement.document_type) continue;
+        // A voided copy counts toward nothing (owner's decision 10/02/2026).
+        if (agreement.voided_at) continue;
 
         const finalized =
           Boolean(agreement.finalized_at) ||

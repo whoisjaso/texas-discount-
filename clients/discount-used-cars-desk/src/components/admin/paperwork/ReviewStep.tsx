@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { finalizePaperwork } from "@/lib/actions/paperwork";
@@ -12,6 +13,7 @@ import { fillTemplate, funnelDollars, type FunnelStrings } from "@/lib/sales/i18
 import { localizeDocumentTitle } from "@/lib/sales/question-i18n";
 import { DOC_FEE_SET } from "@/lib/documents/billOfSale";
 import { notSet } from "@/lib/dealership-config";
+import { sourceLineFromAnswers } from "@/lib/vehicles/empty-weight/copy";
 
 /**
  * The last screen: what was answered, and the signature that files it.
@@ -69,6 +71,8 @@ export default function ReviewStep({
   const { t, lang } = useFunnel();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  /** A filing refused by the void rules: the packet is where it is fixed. */
+  const [openPaperwork, setOpenPaperwork] = useState(false);
 
   const dollars = (amount: number) => funnelDollars(amount, lang);
 
@@ -152,7 +156,21 @@ export default function ReviewStep({
         signature: buyerSignature || null,
       });
       if (!result.ok) {
-        setError(result.error ?? t.review.couldNotFile);
+        /*
+          Filing again goes through three more gates (owner's decision
+          10/02/2026): one current bill of sale, the bill of sale first, and
+          the figures this screen shows still being the sale's. Said in the
+          screen's language; a screen opened before a change reloads.
+        */
+        const gate =
+          result.code === "billOfSaleAlreadyFiled" ||
+          result.code === "billOfSaleFirst" ||
+          result.code === "figuresChanged"
+            ? result.code
+            : null;
+        setOpenPaperwork(gate === "billOfSaleAlreadyFiled" || gate === "billOfSaleFirst");
+        setError(gate ? t.review[gate] : result.error ?? t.review.couldNotFile);
+        if (gate === "figuresChanged") router.refresh();
         return;
       }
       router.push(doneHref);
@@ -245,16 +263,54 @@ export default function ReviewStep({
   const acknowledgmentNote =
     (t.review.acknowledgmentNotes as Record<string, string>)[documentType] ?? null;
 
+  /*
+    Box 11 with where it came from, and the way to change it. Without a
+    settled figure the 130-U does not file, so the row says so here rather
+    than leaving the refusal to be a surprise on the File button.
+  */
+  const weightHref = `/admin/sales/${encodeURIComponent(dealId)}/paperwork/form130U/emptyWeight?change=emptyWeight`;
+  const weightSettled = documentType === "form130U" && /^\d+$/.test(answers.emptyWeight ?? "");
+  const weightSourceLine = weightSettled ? sourceLineFromAnswers(t, answers) : null;
+
   return (
     <div className="ed-paper-review">
       {acknowledgmentNote ? <p className="ed-paper-note">{acknowledgmentNote}</p> : null}
       <dl className="ed-paper-summary">
-        {entries.map(([key, value]) => (
-          <div key={key} className="ed-paper-line">
-            <dt className="ed-fine">{label(t, key)}</dt>
-            <dd>{display(t, lang, key, value)}</dd>
+        {entries.map(([key, value]) =>
+          key === "emptyWeight" && documentType === "form130U" ? (
+            <div key={key} className="ed-paper-line">
+              <dt className="ed-fine">{label(t, key)}</dt>
+              <dd>
+                {weightSettled ? `${Number(value).toLocaleString("en-US")} lb` : value}{" "}
+                <Link className="ed-weight-change" href={weightHref}>
+                  {t.weight.review.change}
+                </Link>
+              </dd>
+              {weightSourceLine ? <dd className="ed-fine ed-weight-source">{weightSourceLine}</dd> : null}
+              {weightSettled && answers._emptyWeightReason ? (
+                <dd className="ed-fine ed-weight-source">
+                  {fillTemplate(t.weight.reasonLine, { reason: answers._emptyWeightReason })}
+                </dd>
+              ) : null}
+            </div>
+          ) : (
+            <div key={key} className="ed-paper-line">
+              <dt className="ed-fine">{label(t, key)}</dt>
+              <dd>{display(t, lang, key, value)}</dd>
+            </div>
+          ),
+        )}
+        {documentType === "form130U" && !weightSettled ? (
+          <div className="ed-paper-line" data-weight-unsettled="true">
+            <dt className="ed-fine">{label(t, "emptyWeight")}</dt>
+            <dd>
+              {t.weight.review.notSettled}{" "}
+              <Link className="ed-weight-change" href={weightHref}>
+                {t.weight.review.settle}
+              </Link>
+            </dd>
           </div>
-        ))}
+        ) : null}
         {entries.length === 0 && !money && quotedRegistrationAmount === null && !acknowledgmentNote ? (
           <p className="ed-paper-note">{t.review.nothingAsked}</p>
         ) : null}
@@ -380,6 +436,13 @@ export default function ReviewStep({
       {error ? (
         <p className="ed-paper-error" role="alert">
           {error}
+        </p>
+      ) : null}
+      {error && openPaperwork ? (
+        <p className="ed-freeze-way">
+          <Link href={`/admin/sales/${encodeURIComponent(dealId)}/packet`} className="ed-freeze-link">
+            {t.review.openPaperwork}
+          </Link>
         </p>
       ) : null}
     </div>

@@ -913,11 +913,11 @@
         },
         "emptyWeight": {
           "question": "What Is The Empty Weight?",
-          "note": "In pounds. Box 11 on the form; on the door jamb or the old title."
+          "note": "In pounds. Box 11; it is on the Texas title (WEIGHT) or the out-of-state title. The door jamb shows GVWR, not the empty weight."
         },
         "carryingCapacity": {
           "question": "What Is The Carrying Capacity?",
-          "note": "Trucks and vans only. It is on the door jamb."
+          "note": "Trucks and vans only. The GVWR on the door jamb less the empty weight, or the buyer's own figure."
         }
       },
       "financing": {
@@ -1065,7 +1065,11 @@
         "rebuiltDisclosure": "This car carries a rebuilt salvage title. Texas requires this written disclosure, signed, before anything else is signed.",
         "towAwayAcknowledgment": "The car leaves on a tow. The buyer signs that no plates, tag or registration come with it and that none was promised.",
         "buyerResponsibilityStatement": "From here the salvage title, any rebuild, the inspection and any application to the state are the buyer's, in their own name."
-      }
+      },
+      "billOfSaleAlreadyFiled": "This sale already has a filed bill of sale. Void it from the paperwork before filing it again.",
+      "billOfSaleFirst": "File the bill of sale first. This document prints its figures.",
+      "figuresChanged": "The figures changed since this screen opened. Look at the document again before filing.",
+      "openPaperwork": "Open The Paperwork"
     },
     "packet": {
       "title": "The Paperwork.",
@@ -1605,7 +1609,8 @@
         "none": "Not started",
         "draft": "Started",
         "filed": "Filed",
-        "signed": "Signed"
+        "signed": "Signed",
+        "voided": "Voided"
       }
     },
     "plate": {
@@ -1653,7 +1658,9 @@
         "spanishEsignBlocked": "Spanish documents are signed on paper for now.",
         "writeFailed": "The signature did not save. Try again.",
         "generic": "Something went wrong. Try again.",
-        "reuseConsent": "Tick the box to use the earlier signature on this document, or sign fresh."
+        "reuseConsent": "Tick the box to use the earlier signature on this document, or sign fresh.",
+        "voided": "That document was voided at the desk. Ask the desk for the new one.",
+        "replaced": "This signing link was replaced. Ask the desk for the new link."
       },
       "meanings": {
         "rebuiltDisclosure": "This says the car has a rebuilt title, in writing, before anything else is signed.",
@@ -1669,7 +1676,9 @@
       "buyerFallbackName": "Buyer",
       "reuseConsent": "Put the signature I drew on the earlier page on this document too. I have read this one to the end.",
       "savePdf": "Save PDF",
-      "downloadNote": "Save your signed copies now. The dealer can also text you a private link for later."
+      "downloadNote": "Save your signed copies now. The dealer can also text you a private link for later.",
+      "replacedTitle": "This link was replaced.",
+      "replacedNote": "The paperwork changed at the desk. Ask for the new signing link."
     },
     "badges": {
       "readyNormal": "Ready For Normal Sale",
@@ -1784,7 +1793,188 @@
         "passwordTooShort": "Use at least {min} characters.",
         "passwordMismatch": "The two passwords do not match. Type the same password in both boxes.",
         "passwordNotNeeded": "This account already has its own password. To change it, use Forgot Your Password on the sign-in screen.",
-        "passwordSaveFailed": "That password could not be saved. Try again, or choose a different one."
+        "passwordSaveFailed": "That password could not be saved. Try again, or choose a different one.",
+        "signedInBeforeReset": "This device signed in before the password was reset. Sign in again first."
+      },
+      "signedOutReset": "Your password was reset, so this device was signed out. Sign in again."
+    },
+    "freeze": {
+      "price": "The bill of sale is already filed with the price it states. Void the bill of sale and file it again before changing the price.",
+      "priceBasis": "The bill of sale is already filed with what its price includes. Void the bill of sale and file it again before changing whether tax and fees are included.",
+      "funding": "The bill of sale is already filed with how the buyer is paying. Void the bill of sale and file it again before changing how they pay.",
+      "lender": "The bill of sale is already filed with the lender it names. Void the bill of sale and file it again before changing the lender.",
+      "tradeIn": "The bill of sale is already filed with the trade-in it states. Void the bill of sale and file it again before changing the trade-in.",
+      "paymentMethod": "The bill of sale is already filed with how the money was paid. Void the bill of sale and file it again before changing the payment method.",
+      "odometer": "The bill of sale is already filed with its mileage statement. Void the bill of sale and file it again before changing the mileage statement.",
+      "warranty": "The bill of sale is already filed with the warranty it states. Void the bill of sale and file it again before changing the warranty.",
+      "howLeaving": "The bill of sale is already filed with how the car leaves the lot. Void the bill of sale and file it again before changing how it leaves.",
+      "buyerName": "The bill of sale is already filed with the buyer's name. Void the bill of sale and file it again before changing the buyer's name.",
+      "buyerId": "The bill of sale is already filed with the buyer's ID. Void the bill of sale and file it again before changing the buyer's ID.",
+      "buyerAddress": "The bill of sale is already filed with the buyer's address. Void the bill of sale and file it again before changing the buyer's address.",
+      "plate": "The bill of sale is already filed with the plate it states. Void the bill of sale and file it again before changing the plate.",
+      "registration": "The bill of sale is already filed with who files the title and registration. Void the bill of sale and file it again before changing who files them.",
+      "inspection": "The bill of sale is already filed with where the inspection stands. Void the bill of sale and file it again before changing it.",
+      "insurance": "The bill of sale is already filed with whether proof of insurance was shown. Void the bill of sale and file it again before changing it.",
+      "generic": "The bill of sale is already filed with what this would change. Void the bill of sale and file it again before changing it.",
+      "language": "The bill of sale is already filed in the language of the sale. Void the bill of sale and file it again before changing the language.",
+      "heldByPowerOfAttorney": "The power of attorney is filed with the buyer's name and address and is signed in ink. A new one is needed before changing them; ask the owner.",
+      "planHeld": "This answer is on the filed paperwork ({documents}). Void the bill of sale and file it again before changing it.",
+      "planHeldByPowerOfAttorney": "The power of attorney is filed with this answer and is signed in ink. A new one is needed before changing it; ask the owner.",
+      "heldNote": "On the filed bill of sale.",
+      "voidLink": "Void The Bill Of Sale",
+      "whoCan": "Only an owner or a manager can void it."
+    },
+    "void": {
+      "action": "Void",
+      "title": "Void The Bill Of Sale?",
+      "titleSalvage": "Void The Salvage Bill Of Sale?",
+      "voidedWith": "These are voided with it:",
+      "stays": "These stay on file:",
+      "staysNote": "While it is filed, the plan answers and the buyer's name and address stay as they are.",
+      "kept": "Nothing is deleted. Every voided copy stays in the packet, marked void, with who, when and why.",
+      "signaturesStop": "The buyer signed {count} of these. Those signatures stop counting and the old signing link stops working. The new copies are signed again.",
+      "reasonLabel": "Why Is It Being Voided?",
+      "reasonHelp": "At least {min} characters. Anyone who opens the record reads this.",
+      "titleQuestion": "Has The Title Application Gone To The County?",
+      "titleNotYet": "Not Yet",
+      "titleSent": "Yes, It Was Submitted",
+      "keep": "Keep It",
+      "hold": "Hold To Void",
+      "holding": "Keep Holding",
+      "release": "Release To Void",
+      "preparing": "Preparing",
+      "ready": "Ready to void.",
+      "hint": "Hold for 1.2 seconds, then release to void. Release early to cancel. With assistive technology, activate once to prepare, then activate again when ready.",
+      "done": "Voided. File the documents again.",
+      "noticeTitle": "Bill Of Sale Voided",
+      "noticeBy": "Voided {date} by {name}.",
+      "noticeRefile": "File again: {list}.",
+      "noticeSign": "The buyer signs the new copies. The old signing link no longer works.",
+      "fileAgain": "File Them Again",
+      "changeSale": "Change The Sale",
+      "seeVoided": "See the voided copies",
+      "progressWaiting": "Waiting For The New Copies",
+      "toFileAgain": "{count} to file again",
+      "voidedHeading": "Voided Copies",
+      "voidedLine": "Voided {date} by {name}: {reason}",
+      "wasSigned": "Was signed by the buyer {date}",
+      "wasFiled": "Was filed, not signed",
+      "voidedWithBillOfSale": "Voided with the bill of sale",
+      "replaces": "Replaces the copy voided {date}.",
+      "summaryBanner": "The bill of sale was voided. Change what needs changing, then file it again.",
+      "deskState": "Voided. File it again",
+      "errors": {
+        "voidNotAllowed": "Only an owner or a manager can void a filed bill of sale.",
+        "voidNeedsTeamRow": "Your account has no row on the team, so the record could not name who voided it. Add your team row first.",
+        "voidReasonRequired": "Say why it is being voided, in at least {min} characters.",
+        "voidReasonTooLong": "Keep the reason under {max} characters.",
+        "voidTitleQuestion": "Answer whether the title application has gone to the county.",
+        "voidTitleSubmitted": "The title application already went to the county with these figures, so the bill of sale is not voided at the desk. Correct it with the county first; ask the owner.",
+        "voidTitleFiled": "A plate was recorded on this sale after the bill of sale was filed, so the title application has gone to the county. The bill of sale is not voided at the desk; ask the owner.",
+        "voidSaleClosed": "This sale is closed: the car is marked sold and the sale is in Past Sales. Its paperwork is not voided at the desk; ask the owner.",
+        "voidNothingFiled": "There is no filed bill of sale on this sale to void.",
+        "voidNotCurrent": "That copy is no longer the filed one. Reload the paperwork.",
+        "voidCouldNotCheck": "The paperwork could not be checked, so nothing was voided. Try again.",
+        "voidFailed": "It could not be voided. Nothing changed. Try again."
+      }
+    },
+    "weight": {
+      "sources": {
+        "texas_title": "Texas title",
+        "out_of_state_title": "Out-of-state title",
+        "mco": "MCO",
+        "weight_certificate": "Weight certificate",
+        "kbb_jdpower": "KBB or JD Power",
+        "estimate_epa": "Estimate (EPA test data)",
+        "estimate_canada": "Estimate (Transport Canada)",
+        "estimate_vpic": "Estimate (VIN decode)",
+        "typed_unrecorded": "Typed on this sale, source not recorded"
+      },
+      "sourceButtons": {
+        "texas_title": "Texas Title",
+        "out_of_state_title": "Out-Of-State Title",
+        "mco": "MCO",
+        "weight_certificate": "Weight Certificate",
+        "kbb_jdpower": "KBB Or JD Power"
+      },
+      "estimateLabel": "Estimate",
+      "box11": "{lbs} lb",
+      "box11Reads": "Box 11 will read {lbs} lb ({rule}).",
+      "rules": {
+        "roundUp": "rounded up to the next 100",
+        "plus100RoundUp": "plus 100 lb for a passenger vehicle, rounded up to the next 100"
+      },
+      "methodEpa": "Estimate from EPA test data for the {vehicle}: EPA tested the {epaModels} ({yearUsed}) at {etw} lb, which is the car plus 300 lb, so about {curb} lb ({low} to {high} lb).",
+      "methodEpaOtherYear": "EPA did not list {year}; this is its {yearUsed} figure.",
+      "listAnd": "and",
+      "methodCanada": "Estimate from Transport Canada's specifications: about {curb} lb ({low} to {high} lb across the trims).",
+      "methodVpic": "Estimate from the VIN decode: {curb} lb. It often reads the heaviest version, so it may be up to 700 lb high.",
+      "ruleLine": "Box 11: {rule}.",
+      "crossCanada": "Transport Canada lists {lbs} lb.",
+      "crossVpic": "The VIN decode lists {lbs} lb.",
+      "lowConfidence": "The sources disagree by {spread} lb. Read it off the title if you can.",
+      "confirm": "Confirm This Weight",
+      "confirming": "Confirming",
+      "orType": "Or type it from a document",
+      "typeIt": "Type it from a document",
+      "typeLabel": "Weight as printed, in pounds",
+      "whichDocument": "Which document is it from?",
+      "reason": "Why Is It Different?",
+      "reasonHint": "The document on file says {lbs} lb.",
+      "farFromEstimate": "That is more than 300 lb from the estimate of {lbs} lb. Check the document.",
+      "gateLead": "This one needs the weight from a document: the title, the MCO or a weight certificate.",
+      "gate": {
+        "pickup": "A pickup or work truck is never filed on an estimate.",
+        "cargoVan": "A cargo or work van is never filed on an estimate.",
+        "incomplete": "A cab-chassis has no empty weight until it is built up.",
+        "heavyDuty": "EPA has no test data for heavy-duty vehicles.",
+        "bus": "A bus is weighed, not estimated.",
+        "classUnknown": "The record does not say what kind of vehicle this is, so it could be a truck.",
+        "lowConfidence": "The sources do not agree closely enough to file on an estimate.",
+        "nearSixThousand": "The estimate is within 300 lb of the 6,000 lb registration line."
+      },
+      "hint": "For reference only: estimated at about {lbs} lb.",
+      "legacy": "On the vehicle record: {lbs} lb. Where it came from was not recorded.",
+      "none": "Not on any record. Read it off the title; without one, a weight certificate is needed.",
+      "onFile": "On file: {lbs} lb ({source}).",
+      "answered": "On this sale: {lbs} lb. {line}",
+      "entered": "{source}, entered by {by} on {date}",
+      "confirmed": "{source}, confirmed by {by} on {date}",
+      "noDate": "{source}",
+      "reasonLine": "Why it differs: {reason}",
+      "review": {
+        "notSettled": "Not settled yet",
+        "settle": "Settle It",
+        "change": "Change"
+      },
+      "handoff": {
+        "notRecorded": "Source not recorded; confirm it on the 130-U",
+        "source": "Source: {line}"
+      },
+      "sale": {
+        "label": "Empty weight",
+        "onFile": "{lbs} lb · {line}",
+        "estimate": "About {lbs} lb · Estimate, not confirmed ({source})",
+        "legacy": "{lbs} lb · source not recorded",
+        "unknown": "Not known yet"
+      },
+      "start": "Empty weight: about {lbs} lb (estimate from {source}, confirmed on the 130-U)",
+      "startSources": {
+        "epa": "EPA test data",
+        "canada": "Transport Canada",
+        "vpic": "the VIN decode"
+      },
+      "capacityMinimum": "TxDMV minimum for this empty weight (Registration Manual Table 2-1)",
+      "notSettledRefusal": "Settle the empty weight (box 11) first: confirm it, or type it from the title.",
+      "errors": {
+        "estimateMissing": "There is no estimate for this vehicle. Type the figure from the title.",
+        "estimateNeedsDocument": "This vehicle needs the weight from a document: the title, the MCO or a weight certificate.",
+        "estimateChanged": "The estimate changed; look again.",
+        "documentOnFile": "A document figure is already on file. Type the new figure from a document to change it.",
+        "weightInvalid": "Type the weight in pounds, as it is printed.",
+        "weightSourceMissing": "Say which document the figure is from.",
+        "reasonRequired": "Say why it is different from the document on file.",
+        "saveFailed": "Could not save that. Try again."
       }
     }
   }

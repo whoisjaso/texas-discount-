@@ -44,6 +44,21 @@ export type PacketDocument = {
   signed: boolean;
   /** A printable payload exists, so the ceremony can show a sheet. */
   hasCompletedLink: boolean;
+  /**
+   * Voided with the bill of sale (owner's decision 10/02/2026). A voided copy
+   * stays listed, readable and printable (stamped VOID), under Voided Copies;
+   * it is never current, never counted and never signed.
+   */
+  voided: boolean;
+  voidedAt: string | null;
+  voidedByName: string | null;
+  voidReason: string | null;
+  /** One id per void: the copies voided together. */
+  voidGroupId: string | null;
+  /** On a re-filed copy, the voided copy it replaces. */
+  replacesId: string | null;
+  /** When it was filed, as opposed to signed: orders a re-filing against the bill of sale. */
+  finalizedAt: string | null;
 };
 
 /** A title for a `document_type` the packet registry does not name. */
@@ -68,8 +83,8 @@ export async function getSalePacket(dealId: string, options: { statusOnly?: bool
   const { data, error } = await supabase
     .from("document_agreements")
     .select(options.statusOnly
-      ? "id, document_type, status, finalized_at, completed_at, created_at, has_buyer_signature, signed_at, instrument:form_data->>instrument, legacy_signature:form_data->>signature"
-      : "id, document_type, status, finalized_at, completed_at, created_at, form_data, has_buyer_signature, signed_at, completed_link")
+      ? "id, document_type, status, finalized_at, completed_at, created_at, has_buyer_signature, signed_at, instrument:form_data->>instrument, legacy_signature:form_data->>signature, voided_at, voided_by_name, void_reason, void_group_id, parent_agreement_id"
+      : "id, document_type, status, finalized_at, completed_at, created_at, form_data, has_buyer_signature, signed_at, completed_link, voided_at, voided_by_name, void_reason, void_group_id, parent_agreement_id")
     .eq("deal_id", dealId)
     .order("created_at", { ascending: false });
 
@@ -88,6 +103,11 @@ export async function getSalePacket(dealId: string, options: { statusOnly?: bool
     completed_link: string | null;
     instrument?: string | null;
     legacy_signature?: string | null;
+    voided_at?: string | null;
+    voided_by_name?: string | null;
+    void_reason?: string | null;
+    void_group_id?: string | null;
+    parent_agreement_id?: string | null;
   }>;
 
   const documents = rows
@@ -113,6 +133,13 @@ export async function getSalePacket(dealId: string, options: { statusOnly?: bool
         printable: !(documentType === "powerOfAttorney" && (row.instrument ?? form.instrument) === "VTR-271-A"),
         signed: Boolean(row.has_buyer_signature) || Boolean(row.signed_at) || Boolean(row.legacy_signature ?? form.signature),
         hasCompletedLink: Boolean(row.completed_link),
+        voided: Boolean(row.voided_at),
+        voidedAt: row.voided_at ?? null,
+        voidedByName: row.voided_by_name ?? null,
+        voidReason: row.void_reason ?? null,
+        voidGroupId: row.void_group_id ?? null,
+        replacesId: row.parent_agreement_id ?? null,
+        finalizedAt: row.finalized_at ?? row.completed_at ?? null,
       };
     });
 
@@ -127,7 +154,9 @@ export async function getSalePacket(dealId: string, options: { statusOnly?: bool
     document the buyer has signed. The filed row is the record; a draft of
     the same type is its scaffolding.
   */
-  const filedTypes = new Set(documents.filter((d) => d.finalized).map((d) => d.documentType));
+  // Hidden only under a CURRENT filed copy: once every copy of a type was
+  // voided, a draft of it is again the most useful thing this screen can say.
+  const filedTypes = new Set(documents.filter((d) => d.finalized && !d.voided).map((d) => d.documentType));
   return documents.filter((d) => d.finalized || !filedTypes.has(d.documentType));
 }
 

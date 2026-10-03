@@ -8,6 +8,7 @@ import { getFunnelStrings } from "@/lib/sales/i18n";
 import { dealership, brand, factOr } from "@/lib/dealership-config";
 import { fieldCase } from "@/lib/documents/presentation-case";
 import { readSalePlan } from "@/lib/sales/sale-plan";
+import { signingSessionRevoked } from "@/lib/sales/void-bill-of-sale";
 import Wordmark from "@/components/site/shared/Wordmark";
 import CeremonyClient, { type CeremonyPage } from "./CeremonyClient";
 import OfficialFormSheet from "./OfficialFormSheet";
@@ -89,7 +90,7 @@ export default async function SignPacketPage({ params }: { params: Promise<{ tok
 
   const { data: agreements } = await supabase
     .from("document_agreements")
-    .select("id, document_type, status, finalized_at, completed_at, created_at, completed_link, has_buyer_signature, signed_at, form_data")
+    .select("id, document_type, status, finalized_at, completed_at, created_at, completed_link, has_buyer_signature, signed_at, form_data, voided_at")
     .eq("deal_id", dealRow.id)
     .order("created_at", { ascending: false });
 
@@ -103,7 +104,20 @@ export default async function SignPacketPage({ params }: { params: Promise<{ tok
     has_buyer_signature: boolean | null;
     signed_at: string | null;
     form_data: unknown;
+    voided_at?: string | null;
   }>);
+
+  /*
+    A link minted before the deal's paperwork was voided signs nothing: the
+    documents it was opened for are records now, and the new copies are
+    signed through a new link (owner's decision 10/02/2026). Said in both
+    languages, like an expired link, because the fix is the desk's.
+  */
+  if (signingSessionRevoked(verified.issuedAt, rows)) {
+    const en = getFunnelStrings("en").ceremony;
+    const es = getFunnelStrings("es").ceremony;
+    return <Plain title={`${en.replacedTitle} · ${es.replacedTitle}`} note={`${en.replacedNote} · ${es.replacedNote}`} />;
+  }
 
   const ceremonyRows: CeremonyRow[] = rows.map((row) => ({
     id: row.id,
@@ -111,6 +125,7 @@ export default async function SignPacketPage({ params }: { params: Promise<{ tok
     finalized:
       Boolean(row.finalized_at) || Boolean(row.completed_at) || row.status === "finalized" || row.status === "completed",
     hasCompletedLink: Boolean(row.completed_link),
+    voided: Boolean(row.voided_at),
     signed:
       Boolean(row.has_buyer_signature) ||
       Boolean(row.signed_at) ||

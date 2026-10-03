@@ -21,6 +21,7 @@ import {
 } from "@/lib/sales/buyer-id";
 import { tapHaptic } from "@/lib/haptics";
 import { useFunnel } from "@/components/admin/funnel/FunnelLocaleProvider";
+import { FreezeWayOut, useFreezeRefusal } from "@/components/admin/guide/HeldByBillOfSale";
 import { fillTemplate } from "@/lib/sales/i18n";
 
 /**
@@ -96,6 +97,9 @@ export default function BuyerIdStep({
   const [buyerId, setBuyerId] = useState<BuyerId>(initial);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  // A refusal from the filed bill of sale (or a filed power of attorney) names
+  // what it holds and the way out.
+  const freezeRefusal = useFreezeRefusal();
   const [stage, setStage] = useState<BuyerIdStage>("licence");
   const [direction, setDirection] = useState<StageDirection>("forward");
   const stageIndex = BUYER_ID_STAGES.indexOf(stage);
@@ -276,7 +280,7 @@ export default function BuyerIdStep({
     startTransition(async () => {
       const result = await saveConfirmedId(dealId, data);
       if (!result.ok) {
-        setError(result.error ?? t.chrome.couldNotSave);
+        setError(freezeRefusal.text(result) ?? result.error ?? t.chrome.couldNotSave);
         return;
       }
       if (mailingConfirmed) {
@@ -675,6 +679,7 @@ export default function BuyerIdStep({
               {error}
             </p>
           ) : null}
+          {error ? <FreezeWayOut heldBy={freezeRefusal.heldBy} /> : null}
         </div>
       </form>
 

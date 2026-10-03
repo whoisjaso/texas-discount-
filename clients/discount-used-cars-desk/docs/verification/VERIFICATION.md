@@ -15,6 +15,756 @@ passed on the command line and never written to a file:
 
 The desk this one was forked from has the same requirements.
 
+## 000000. Merge: void, lock and reset with the automatic empty weight (10/03/2026)
+
+This section records the merge of `claude/desk-void-and-freeze` (sections
+00000 and the first 0000 below) and `claude/desk-empty-weight` (the second
+0000 below), which were built in parallel on 10/02/2026. It supersedes them
+only where the two met; everything else in each still stands. Port **5193**
+only (5190, 5191 and 5192 were not touched; every walk script refuses any
+other local port).
+
+**Where the two met, and how they were joined.** Nothing either side does
+was dropped: every refusal, guard, test and walk feature of both is kept.
+
+1. **`finalizePaperwork`** (`src/lib/actions/paperwork.ts`). The void
+   branch files from answers the server resolves itself
+   (`paperworkFilingContext` then `paperworkAnswers`) and adds the
+   `billOfSaleAlreadyFiled`, `billOfSaleFirst` and `figuresChanged`
+   refusals; the weight branch refuses a 130-U whose box 11 nobody settled
+   (or whose sale cannot be read) and writes box 11 with its nine
+   `_emptyWeight*` keys from the server's own read. Joined: the filing
+   context now carries the empty-weight context, so box 11 and its record
+   are among the server-derived answers (a review screen that posted a box
+   11 or a record the sale no longer holds is refused as `figuresChanged`);
+   the box 11 guard and overwrite run after the refiling gates, so the
+   provenance keys it writes blank are never mistaken for answers the sale
+   does not hold. A 130-U still refuses without its sale or a settled box 11.
+2. **`savePaperworkAnswer`**: the freeze check on the bill of sale's
+   answers and the box 11 guard (only the empty-weight screen writes
+   `emptyWeight` and `_emptyWeight*`) both stand.
+3. **Screens**: `PaperworkScreen` takes both `freeze` and
+   `weightPrompt`/`suggestionNote`; `SaleDetailView` keeps the void link,
+   the printed licence and price for Close The Sale, and the empty-weight
+   line; `ReviewStep` had `Link` imported by both sides, now once.
+4. **Migrations**: both branches named theirs `20261002000000_*`, one
+   version for two files (the Supabase CLI records a migration by its
+   version, so the second could not be recorded). The
+   empty-weight one is now `20261002000001_vehicle_empty_weight.sql`
+   (unchanged inside; the two are independent). README owner step 2 lists
+   all three in order.
+5. **Walk scripts**: one `DESK_BASE` reading, in `desk-base.cjs` (default
+   `http://localhost:5190`), with its guard against other local ports; the
+   ceremony follows a signing link to the same path on `DESK_BASE`
+   (`follow()` in `desk-base.cjs`) and saves it to `signing-url.txt`, and
+   keeps the Spanish prompt and receipt; `sale.cjs` keeps `RESUME_DEAL`, the refused
+   start, the `vin` start through "Not on the lot?" and the `expect` checks;
+   `bhph-void.json` taps "Texas Title" after typing box 11, like the
+   scenario it follows.
+6. **Docs**: SKILL.md and the SOP carry every rule of both once; the SOP
+   keeps "Empty weight (130-U box 11)" and "Voiding and filing again" as
+   their own subsections and states the joined filing rule in each.
+
+**Tests.** One existing test needed the merged rule: in
+`filing-again-goes-through-the-same-gates`, a 130-U now files only with a
+settled box 11, so the fixture's deal carries one (typed off a Texas title,
+as the empty-weight screen writes it), and the re-filed 130-U is also
+checked to carry it. Two new cases there: a 130-U posted with a box 11 or a
+box 11 source the sale does not hold is refused as `figuresChanged`, and one
+past every refiling gate with no settled box 11 still does not file; and a
+130-U whose box 11 is the car's own title figure files when posted the way
+the review screen posts it (it fails if the filing context drops the
+empty-weight context, or if the box 11 overwrite runs before the gates). The
+migration rename moved one path in `the-public-site-never-sees-a-weight`.
+Nothing was skipped, weakened or deleted.
+
+### Checks
+
+| Check | Result |
+|---|---|
+| `npx tsc --noEmit` | exit 0 |
+| `npx eslint .` | 0 errors, the same 4 pre-existing warnings |
+| `npx vitest run` (default workers, first run after the merge, before the last new case) | **176 files, 2,235 tests passed** (void 155 / 2,010 and weight 161 / 1,960 over a common 140 / 1,736, plus one new case) |
+| `npx vitest run` (default workers, three later runs, load average 11 to 13 from other work on the machine) | every test passed but one timeout by time alone per run, each a different fact of `no-hardcoded-dealer-facts` (5,040, 5,152 and 6,458 ms against its 5,000 ms limit; the known loaded case in section 0000 below); alone it passes 28 / 28 |
+| `npx vitest run --maxWorkers=2` (final) | **176 files, 2,236 tests passed**; `test-output.txt` |
+| `npx next build` | exit 0; `next-env.d.ts` restored with `git checkout` |
+
+### Live (port 5193, preview mock)
+
+`.next` deleted, then
+
+```
+setsid env PORT=5193 NEXT_PUBLIC_SITE_URL=http://localhost:5193 \
+  DESK_ALLOW_UNSET_FACTS=true DESK_PREVIEW_MEMBER=fresh \
+  ADMIN_SESSION_SECRET=<throwaway> INTERNAL_RENDER_TOKEN=<throwaway> \
+  CHROME_PATH=<chromium> node_modules/.bin/next dev -p 5193
+```
+
+stopped with `kill -- -<PGID>`. Walks with `DESK_BASE=http://localhost:5193`,
+all at 1440×900, on one server, in this order:
+
+| Walk | Result |
+|---|---|
+| `onboard.cjs` as Maria Lopez | name, signature, "You Are All Set", Handle A Sale |
+| `estimate-confirm` sale, then ceremony (first, before any walk types a weight for the Camry) | `EXPECT OK form130U/review :: Estimate (EPA test data), confirmed by`; **2 / 2 signed**, Ready To Print |
+| `cash-otd` sale (typed 3340, Texas Title), then ceremony | **2 / 2 signed**, Ready To Print |
+| `freeze.cjs` on the cash-otd deal | funding and the amount refused with the bill of sale's sentence, registration and insurance with `planFrozen` (the filed 130-U), each EN and ES; held note shown; reload unchanged |
+| `bhph-trade` sale (typed 4400, Texas Title), then ceremony | **3 / 3 signed**, Ready To Print |
+| `void.cjs` as sales | Void disabled, "Only an owner or a manager can void it." |
+| `void.cjs` as owner, `NEW_DOWN=2000`, with the ceremony's link | "Void The Bill Of Sale?", three documents "Signed by the buyer", Keep It focused; summary banner; "Waiting For The New Copies 0 on file · 3 to file again"; the notice with who, when and the quoted reason; Voided Copies (3); old link "This link was replaced." and its buyer route **410**; Down today 2000 saved, no refusal |
+| `sale.cjs` with `RESUME_DEAL` and `bhph-void.json`, then ceremony with the new link | bill of sale, 130-U (box 11 not asked again: settled on the deal) and contract filed again; **3 / 3 signed**, Ready To Print; "Replaces the copy voided" on all three |
+
+`follow()` was moved into `desk-base.cjs` after these walks (the ceremony
+had done the same rewrite inline); on a second fresh server `onboard.cjs`,
+then `cash-otd` and its ceremony with the final scripts: **2 / 2 signed**,
+the saved link on port 5193.
+
+Every walk: **0 contrast failures, 0 page errors**. Server log: no
+TypeError and no failed write; three `Error: aborted` (`ECONNRESET`) lines
+when `freeze.cjs` closed its browser with a request in flight.
+
+**Read back** (`GET /api/documents/agreements/<id>`, and the PDFs through
+the packet's own links, PyMuPDF):
+
+| Filing | Box 11 | `_emptyWeightSource` | Reading | Rule | From | By | Keys |
+|---|---|---|---|---|---|---|---|
+| `estimate-confirm` 130-U | 3500 | `estimate_epa` | 3325 | `plus100RoundUp` | deal | Maria Lopez | 9 |
+| `cash-otd` 130-U | 3400 | `texas_title` | 3340 | `roundUp` | deal | Maria Lopez | 9 |
+| `bhph-trade` 130-U, voided | 4400 | `texas_title` | 4400 | `roundUp` | deal | Maria Lopez | 9 |
+| `bhph-trade` 130-U, filed again (parent: the voided one) | 4400 | `texas_title` | 4400 | `roundUp` | deal | Maria Lopez | 9 |
+
+On the voided deal: the two 130-U PDFs print `11 Empty Weight` 4400, the
+voided one stamped VOID on both pages; the three voided PDFs are named
+`…_VOIDED_20261002.pdf` and stamped on every page; the voided bill of sale
+and contract state the lien and amount financed **$6,045.50** (down
+$1,500), the new ones **$5,545.50** (down $2,000), as in the void branch's
+own run.
+
+**Not run again here** (each branch ran them at both sizes, and none of
+their code paths changed in the merge beyond what the walks above cover):
+the 390×844 walks, the Spanish void, `reset.cjs`, and the `title-on-file`,
+`no-source`, `cash-balance`, `bank` and `buyer-files` scenarios.
+
+**Seen, not changed:** neither branch holds box 11 once the 130-U is filed.
+The void's lock covers what the bill of sale prints, and box 11 is not on
+it, so the empty-weight screen can still change the deal's box 11 after the
+130-U is filed (the filed copy keeps its own). Whether a filed 130-U should
+hold it is the owner's call.
+
+## 00000. Review and verify fixes to the void, the freeze and the reset (10/02/2026)
+
+This section records the latest run and supersedes section 0000 and below
+where they differ. Port **5191** only (5190, 5181 and 5183 were not touched;
+every walk script refuses any other local port).
+
+**What the reviews and the live verification found, and what changed.** Each
+fix has a test; no existing test was edited, skipped or deleted.
+
+1. **Only the void function voids** (review, major). An owner or manager could
+   void a row with a direct `UPDATE` through the API (any name as who voided,
+   the power of attorney, one document without the rest, no audit event, the
+   links left alive), and a sales user could `INSERT` a row already "voided"
+   in 2099, which no one could delete and which killed every signing link of
+   the deal. **Fixed in the migration:** a row is never inserted with a void
+   column; a signed-in session (`authenticated` or `anon`) writing `voided_at`
+   is refused, even an owner's; only the security-definer
+   `void_filed_documents` voids; the power of attorney is never voided, even
+   inside the database. Test: `only-the-void-function-voids-and-a-reset-reaches-the-database`
+   (PGlite, both migrations). The review's own probe now answers
+   `voided_on_insert` and `not_voidable`.
+2. **The function took its cascade and its names from the caller** (review,
+   major). **Fixed:** `p_types` must be exactly the fixed set (every corridor
+   document but the power of attorney), the "Not Yet" attestation is required
+   in the database (`title_question`), and the audit's `memberId` and
+   `memberName` are always the session's own team row. Same test file.
+3. **A filing printed its answers from what the browser posted** (review,
+   major): the mileage statement, trade-in, payment method, warranty, how a
+   salvage car leaves, and the contract's rate, count and payments.
+   **Fixed:** `finalizePaperwork` resolves the answers the way the review
+   screen does (`paperworkAnswers` through `paperworkFilingContext`), refuses
+   a posted answer that differs or one the sale does not hold
+   (`figuresChanged`), and fills a left-out one from the sale. Test:
+   `the-paper-holds-the-filing-the-close-and-the-next-sale`.
+4. **A contract or 130-U filed at the moment of a void stayed current with the
+   voided figures** (review, minor). **Fixed:** a `BEFORE INSERT` trigger
+   refuses filing a financing contract, 130-U, vehicle responsibility or
+   tow-away sheet while no bill of sale is current, locking the deal row
+   `FOR SHARE` so it waits for the void's `FOR UPDATE`; the filing also
+   compares its figures with the ones the current bill of sale PRINTED (read
+   off its completed link); and the re-file count holds a dependent filed
+   while no bill of sale was current. Tests: the two files above.
+5. **An old signing link minted just before the void committed could
+   survive it** (review, minor). **Fixed:** the void is dated the later of
+   the app's time and the database's clock at the moment of voiding, and a
+   link minted after a void is dated just after it (`signingIssueTime`), so
+   it is never born revoked. Test: `a-void-says-why-and-the-new-link-is-born-alive`.
+6. **The audit's "was it signed" was read before the rows were locked**
+   (review, minor). **Fixed:** every row the void takes is locked `FOR
+   UPDATE` before the audit list is read.
+7. **The void reason** was counted in UTF-16 units while the database counts
+   characters, and ten zero-width spaces or a bidi override passed as a
+   reason (both reviews, minor). **Fixed:** counted in code points; control
+   characters become spaces and invisible format characters are dropped, in
+   the dialog, the action and the database alike. Tests: the two files above.
+8. **The device cookie vouched for any account** (both reviews, major): a
+   fresh cookie from one's own sign-in could carry another member's pre-reset
+   session past the cutoff. **Fixed:** the cookie is
+   `<issuedAtMs>.<userId>.<sig>`, minted with the account at every sign-in
+   path, and a cookie bound to another account counts as no cookie. Test:
+   `a-reset-account-signs-in-again-and-a-cookie-vouches-for-one-account`.
+9. **After any reset, Google and Apple sign-in never worked again** (auth
+   review, major): the callback judged the new session by the old cookie and
+   signed it out as "not on the team". **Fixed:** every sign-in path mints
+   the cookie first and hands it to the team check. Same test file.
+10. **A reset did not end the stale session at the database** (auth review,
+    major). **Fixed:** every stamping path calls the service-only
+    `end_sessions_before` (best effort; it deletes the account's older auth
+    sessions, so their refresh tokens die), and `private.current_team_role()`
+    gives no role to a session whose earliest amr time predates the reset, so
+    RLS and the void function refuse a stale device that goes around the
+    desk. A reset time nobody can read signs nobody out and is logged as an
+    error. Tests: the PGlite file and the cookie file.
+11. **The older agreements route** could rewrite, trash or duplicate a sale's
+    filed bill of sale (auth review, minor, pre-existing). **Fixed:** 409 for
+    a filed or voided sale document; a second filed bill of sale is refused.
+    Test: `a-filed-document-keeps-its-name-and-its-place`,
+`the-packet-dates-are-the-business-date`.
+12. **Close The Sale took another price on a filed deal** (verify): the cash
+    out-the-door deal closed at $12,345. **Fixed:** on a deal whose amount was
+    typed, the car is marked sold at the price the bill of sale printed; the
+    panel starts from it. Test plus the live walk below.
+13. **Contrast failure on Close The Sale's refusal** (verify; 2.10:1).
+    **Fixed:** it uses the danger token (#B00020). Live: 0 failures.
+14. **Start A Sale renamed a filed sale's buyer** (verify): a new sale on the
+    same phone number rewrote the customer row another open sale's filed
+    paperwork names. **Fixed:** while such paperwork is filed the row is not
+    rewritten; the same buyer still starts a second sale, and a different
+    name on that phone number is refused with the other buyer's name and the
+    way out. Test plus the live walk below.
+15. **A Spanish buyer's file name** downloaded as "130-U_HernÃ¡ndez" or lost
+    its letters ("Luca_Hernndez"). **Fixed:** RFC 6266 `filename*` with a
+    plain accent-folded `filename`. Live: `130-U_Hernandez_…pdf`,
+    `Discount_BillOfSale_Lucia_Hernandez_…pdf`, header
+    `filename*=UTF-8''130-U_Hern%C3%A1ndez_…`.
+16. **Walk scripts:** `ceremony.cjs` now reads the Spanish "read to the end"
+    prompt and the Spanish receipt and waits longer for the 130-U;
+    `void.cjs` and `freeze.cjs` ignore Next's route announcer; `void.cjs`
+    takes `VOID_LANG=es`; `sale.cjs` reports a refused start
+    (`START REFUSED`) instead of timing out. Throwaway token files
+    (`sign-actions.json`, `ctx1-*.json`, `signing-url.txt`) were removed from
+    the evidence, and the unvoided 130-U PDFs (2.3 MB each) were dropped.
+
+17. **The packet's dates were the viewer's day, not the business day**
+    (found in this run): a void at 7:30 pm Central read "Voided Oct 3, 2026"
+    on the packet while the voided PDF's band said 10/02/2026. **Fixed:** the
+    void notice, Voided Copies, and the packet's Signed, Filed and "Replaces
+    the copy voided" dates are formatted on the dealership's clock
+    (`dealership.timeZone`). Test: `the-packet-dates-are-the-business-date`;
+    live: "Voided Oct 2, 2026" and "Reemplaza la copia anulada el 2 oct 2026"
+    after 00:00 UTC.
+
+Not changed, and why: a margin on the signing-link cutoff (finding 5) was not
+added; dating the void by the database's clock closes the case found, and a
+skew between two app servers is the only window left. A signing link a stale
+session minted before a reset lives out its 20 minutes (one deal's
+documents, not admin access). The legacy two-part device cookie is still read
+(every one predates any reset this round records).
+
+### Checks
+
+| Check | Result |
+|---|---|
+| `npx tsc --noEmit` | exit 0 |
+| `npx eslint .` | 0 errors, the same 4 pre-existing warnings |
+| `npx vitest run --maxWorkers=1` | **155 files, 2,010 tests passed** (was 149 / 1,956); `test-output.txt` |
+| `npx next build` | exit 0; `next-env.d.ts` restored with `git checkout` |
+
+Under a parallel run on this shared machine one PDF-stamping case of
+`a-voided-copy-prints-marked-void` timed out once at 5 s under load; it runs
+in 254 ms alone and passes in the one-worker run.
+
+New tests this round: `only-the-void-function-voids-and-a-reset-reaches-the-database`,
+`the-paper-holds-the-filing-the-close-and-the-next-sale`,
+`a-void-says-why-and-the-new-link-is-born-alive`,
+`a-reset-account-signs-in-again-and-a-cookie-vouches-for-one-account`,
+`a-filed-document-keeps-its-name-and-its-place`.
+
+### Live (port 5191, preview mock)
+
+Server as in section 0000 (`.next` deleted; `PORT=5191`,
+`NEXT_PUBLIC_SITE_URL=http://localhost:5191`, `DESK_ALLOW_UNSET_FACTS=true`,
+throwaway secrets; `setsid`, stopped with `kill -- -<PGID>`).
+
+S1 (`DESK_PREVIEW_MEMBER=fresh`, onboarded as Maria Lopez):
+
+| Walk | Result |
+|---|---|
+| regressions, sale + ceremony, 1440×900 | cash-otd 2/2, cash-balance 2/2, bank 2/2, buyer-files 3/3 |
+| regressions, sale + ceremony, 390×844 | cash-otd 2/2, cash-balance 2/2, bank 2/2, buyer-files 3/3, bhph-trade 3/3 |
+| Start A Sale, Lucía Hernández on Andrea Salinas's phone (Andrea's bhph sale filed), both sizes | refused: "This phone number belongs to Andrea Salinas, the buyer on another open sale whose paperwork is filed. Start this sale with the buyer's own phone number, or close or void that sale's paperwork first." |
+| `freeze.cjs` on the cash-otd deals, both sizes | funding and the amount refused with the bill of sale's sentence, registration and insurance with `planFrozen` (the filed 130-U), each EN and ES; held note shown; reload unchanged |
+| Close The Sale on the cash-otd deals, both sizes | the panel starts at $3,663.06 (the printed price of the $4,000 out-the-door deal); $12,345 refused with "The bill of sale is already filed with the price it states…"; $3,663.06 closes ("Filed against Maria Delgado. Past Sales"); 0 contrast failures |
+
+S1 also ran the Spanish void round trip; its sale and ceremony output
+filtered page errors out, so S3 below ran every sale, ceremony and void walk
+again with them kept.
+
+S2 (`DESK_PREVIEW_MEMBER=fresh-reset`, a fresh server per size), `reset.cjs`
+at 1440×900 and 390×844: the preview cookie alone, and a signed-in time a
+day old, land on `/admin/login?notice=signed-out-reset` with the EN · ES
+notice; the stale device's API call answers **401** "Signed out: the password
+was reset. Sign in again."; a fresh sign-in reaches Choose A Password, saves
+it and goes on to "What Is Your Name?".
+
+S3 (`DESK_PREVIEW_MEMBER=fresh`, onboarded again; page errors kept in every
+walk's output):
+
+| Walk | 1440×900, English (Andrea Salinas) | 390×844, desk in Spanish (Lucía Hernández) |
+|---|---|---|
+| bhph-trade sale, then ceremony | 3 / 3 signed | 3 / 3 signed, the ceremony in Spanish to "Todo firmado." |
+| `void.cjs` as sales | Void disabled, "Only an owner or a manager can void it." | "Solo el dueño o un gerente puede anularla." |
+| `void.cjs` as owner | "Void The Bill Of Sale?", three documents "Signed by the buyer", Keep It focused; after the hold: the summary banner, "Waiting For The New Copies 0 on file · 3 to file again", the notice with who, when and the quoted reason, Voided Copies (3) | `VOID_LANG=es`: "¿Anular La Factura De Venta?", "Firmado por el comprador" ×3, "Conservarla" focused; after Mantén Para Anular: "Se anuló la factura de venta…", "Esperando Las Copias Nuevas 0 en el expediente · 3 por archivar de nuevo", "Anulada el 2 oct 2026 por Maria Lopez…", Copias Anuladas (3) |
+| the old signing link | "This link was replaced. · Este enlace fue reemplazado." page; buyer route **410** | same |
+| Down today 1500 → 2000 | saved, no refusal | saved, no refusal |
+| file again (`RESUME_DEAL`, `bhph-void.json`), new link | bill of sale, 130-U, contract filed again; 3 / 3 signed, Ready To Print, each "Replaces the copy voided Oct 2, 2026." | 3 / 3, "Listos Para Imprimir 3 / 3 firmados", "Reemplaza la copia anulada el 2 oct 2026." |
+| regressions, sale + ceremony | cash-otd 2/2, cash-balance 2/2, bank 2/2, buyer-files 3/3 | cash-otd 2/2, cash-balance 2/2, bank 2/2, buyer-files 3/3, bhph-trade 3/3 |
+
+Page errors across S3: **0** (no `PAGEERR` line in any walk).
+
+**PDF read-back** (PyMuPDF): on both void deals the three voided PDFs are
+named `…_VOIDED_20261002.pdf` and carry VOID on every page with the band
+("Voided 10/02/2026 by Maria Lopez: …" in English, "Anulado el 10/02/2026 por
+Maria Lopez: …" with ANULADO on the Spanish deal). Voided bill of sale lien
+**$6,045.50** = voided contract amount financed **$6,045.50** (down $1,500);
+new bill of sale lien **$5,545.50** = new contract amount financed
+**$5,545.50** (down $2,000), on both deals.
+
+Every walk: 0 page errors, 0 contrast failures.
+
+Evidence: `review-fixes/` (`0-onboard/`, `void-en-1440x900/`,
+`void-es-390x844/` with `8-pdfs/`, `regressions/`, `held-buyer-*/`,
+`freeze-*/`, `close-*/`, `reset-*/`).
+
+### Still open
+
+- **Live Supabase is unverified** (source only; check on staging before
+  go-live): an admin password update ends every session, `getUser()` rejects
+  a deleted session, amr timestamps survive a refresh, the migration applies
+  over the real schema (PGlite in the tests), the `postgres` role may delete
+  from `auth.sessions` (`end_sessions_before`), and the per-request cost of
+  the amr check inside `current_team_role()` is acceptable.
+- Two bills of sale filed at the very same instant are not stopped by the
+  database (a partial unique index of one current bill of sale per deal is a
+  hardening follow-up; the desk's own gate and the re-file count catch it
+  afterwards).
+- The owner resetting a member from the team screen cannot run in preview
+  (the preview member is the owner); the stamping paths are covered by unit
+  tests, and the live reset walks use the `fresh-reset` preview member.
+- Pre-existing, not fixed: the bill of sale's "Which State Issued Their
+  Licence?" answer never prints; a trade-in allowance typed "2,000" reads as
+  no allowance; `signPacketDocument` does not refuse re-signing a signed
+  row; `setVehicleTitleStatus` and an inventory price edit can change a
+  vehicle mid-sale; `logoutAdmin` signs out every device; a PDF's file name
+  carries the UTC day it was downloaded (`…_20261003.pdf` for a copy filed
+  on the evening of 10/02/2026), not the business date its `_VOIDED_` part
+  uses.
+- The new Spanish strings need a native speaker's or counsel's review.
+
+## 0000. Void and file again, the wider freeze, reset sign-out (10/02/2026)
+
+This section records the latest run and supersedes the sections below where
+they differ. It was run on port **5191** (the worktree's server); 5190, 5181
+and 5183 were not touched, and every walk script now refuses any local port
+other than `DESK_BASE`.
+
+**What the owner decided, and what the desk now does.**
+
+1. **Void and file again.** An Owner or a Manager voids the filed bill of
+   sale from the packet with a typed reason (10 to 500 characters), a "Not
+   Yet" answer to "Has The Title Application Gone To The County?" and Hold
+   To Void. Every current filed copy of the bill of sale and of every
+   document its figures, plan or buyer reached is voided with it (never the
+   power of attorney), with who, when and why; nothing is deleted. The
+   voided copies stay under Voided Copies and print stamped VOID; their
+   signatures stop counting; the old signing link is refused; the packet
+   waits for the new copies, the corridor files them again (one current
+   bill of sale, the bill of sale first, the server's own figures), and
+   Complete Sale waits too. Refused for a closed sale, a plate recorded
+   after filing (the title application went to the county), a "Yes", or a
+   person with no team row. New migration
+   `supabase/migrations/20261002000000_void_filed_documents.sql` (additive;
+   the owner applies it).
+2. **The bill of sale holds everything it states.** Price, what it
+   includes, funding, lender, trade-in, payment method, mileage statement,
+   warranty, how a salvage car leaves, the buyer's name, ID and address, the
+   plan's Still To Do, the printed plate, the language, and Close The Sale's
+   price and ID: every server action that can write one refuses a change
+   with `billOfSaleFrozen` and the field, in English and Spanish, failing
+   closed. A plan answer held by another filed document now says so with
+   `planFrozen` in both languages and points at the same void.
+3. **A reset signs out every device.** Every owner reset or approval stamps
+   `app_metadata.password_reset_at`; the proxy, the current-admin check, the
+   API guard, the layout, the template and Choose A Password refuse a
+   session that signed in before it (the desk's device cookie is the
+   guarantee; the earliest amr can only add a refusal), with a one-line
+   notice on the sign-in page in both languages.
+
+### Checks
+
+| Check | Result |
+|---|---|
+| `npx tsc --noEmit` | exit 0 |
+| `npx eslint` | 0 errors, the same 4 pre-existing warnings |
+| `npx vitest run` | **149 files, 1,956 tests passed** (was 140 / 1,736); `test-output.txt` |
+| `npx next build` | exit 0; `next-env.d.ts` restored with `git checkout`, no diff |
+
+`test-output.txt` is a run with `--maxWorkers=1`. On this shared 4-core
+machine (load average 12 to 15 from other jobs) a default parallel run has
+timed out 1 to 7 cases of `no-hardcoded-dealer-facts` at vitest's 5 s
+default (each re-parses every source file); the same file passes alone
+(28/28) and the whole suite passes in one worker. Nothing in it fails.
+
+New tests (no existing test edited, skipped or deleted):
+`a-voided-document-stays-on-record-and-stops-counting`,
+`voiding-the-bill-of-sale-takes-what-it-fed`,
+`the-void-is-final-in-the-database` (the migration run on PGlite: the
+trigger, the function's refusals, the audit event),
+`filing-again-goes-through-the-same-gates`,
+`an-old-signing-link-dies-with-the-void`, `a-voided-copy-prints-marked-void`,
+`the-bill-of-sale-holds-everything-it-states` (92: the statement, the
+renderer key guard, both catalogues, every writer refusing, saving the same
+answer, moving before filing and after a void, failing closed, the power of
+attorney, `planFrozen`), `a-password-reset-signs-out-every-device` (21) and
+`a-password-reset-is-recorded-on-the-account` (9).
+
+### Live (port 5191, preview mock)
+
+Server: `.next` deleted, then
+
+```
+setsid env PORT=5191 NEXT_PUBLIC_SITE_URL=http://localhost:5191 \
+  DESK_ALLOW_UNSET_FACTS=true DESK_PREVIEW_MEMBER=<fresh|fresh-reset> \
+  ADMIN_SESSION_SECRET=<throwaway> INTERNAL_RENDER_TOKEN=<throwaway> \
+  CHROME_PATH=<chromium> node_modules/.bin/next dev -p 5191
+```
+
+stopped with `kill -- -<PGID>`. Walks with `DESK_BASE=http://localhost:5191`.
+
+- **S1** (`DESK_PREVIEW_MEMBER=fresh`; the void needs the voider's roster
+  row, so the member onboarded first as Maria Lopez with `onboard.cjs`).
+  Two servers: the first ran the onboarding at 1440×900, the void round
+  trip at both sizes and the 1440×900 freeze and regressions; the second
+  (a fresh store) the onboarding at 390×844, then the 390×844 freeze and
+  regressions:
+
+| Walk | 1440×900 | 390×844 |
+|---|---|---|
+| bhph-trade sale, then ceremony | 3 / 3 signed | 3 / 3 signed |
+| `void.cjs` as sales | Void disabled, "Only an owner or a manager can void it." | same |
+| `void.cjs` as owner | dialog read-back (3 documents, signed), Keep It focused; after the hold: summary banner, "Waiting For The New Copies · 3 to file again", the notice (who, when, the quoted reason), Voided Copies (3) | same |
+| the old signing link | "This link was replaced. · Este enlace fue reemplazado." page; its buyer document route **410** | same |
+| Down today 1500 → 2000 after the void | saved, back to the summary, no refusal | same |
+| `sale.cjs` with `RESUME_DEAL` and `bhph-void.json` | bill of sale, 130-U, contract filed again | same |
+| ceremony with the new link | 3 / 3 signed, Ready To Print | same |
+| cash-otd sale, then `freeze.cjs` | the funding and the amount refused with the bill of sale's sentence, registration and insurance with `planFrozen` (the filed 130-U holds them), each in EN and ES; held note shown; reload unchanged | same (and the sale's ceremony 2 / 2) |
+| cash-balance, bank, buyer-files (sale + ceremony) | 2/2, 2/2, 3/3 signed | 2/2, 2/2, 3/3 signed |
+
+- **S2** (`DESK_PREVIEW_MEMBER=fresh-reset`, a fresh server per size):
+  `reset.cjs` at 1440×900 and 390×844. The preview cookie alone, and a
+  signed-in time a day old, both land on
+  `/admin/login?notice=signed-out-reset` with "Your password was reset, so
+  this device was signed out. Sign in again. · Se restableció su contraseña,
+  así que este dispositivo cerró la sesión. Vuelva a iniciar sesión."; an
+  API call from the stale device answers **401** "Signed out: the password
+  was reset. Sign in again."; a fresh sign-in on the form reaches Choose A
+  Password, saves it and goes on to the name.
+
+Every walk: **0 page errors, 0 contrast failures**.
+
+**PDF read-back** (PyMuPDF, `pdfs.cjs` on the voided deal, 1440×900 and
+390×844): six files each, the three voided ones named `…_VOIDED_20261002.pdf`
+and carrying "VOID" and the band "Voided 10/02/2026 by Maria Lopez: The down
+payment was 2000, not 1500, so the figures change" on every page. The voided
+bill of sale's seller lien is **$6,045.50**, equal to the voided contract's
+amount financed ($6,045.50, down $3,500 = $1,500 + the $2,000 trade); the
+new bill of sale's lien is **$5,545.50**, equal to the new contract's amount
+financed ($5,545.50, down $4,000 = $2,000 + the trade).
+
+Evidence: `void-and-refile/` (`1440x900/` and `390x844/`: the disabled
+control, the dialog open and ready, the summary banner, Voided Copies, the
+replaced link, the re-filed packet; `freeze-1440x900/` and
+`freeze-390x844/`; `reset-1440x900/`
+and `reset-390x844/`; `pdfs/` holds the stamped voided bill of sale).
+
+### Still open
+
+- **Live Supabase behaviour is unverified** (checked against the source
+  only; check on a staging project before go-live): that an admin password
+  update ends every session including the current one (Choose A Password
+  then signs the member straight back in), that `getUser()` rejects a
+  deleted session, that amr timestamps survive a refresh, and that the
+  migration applies cleanly over the real schema (it runs on PGlite in the
+  tests).
+- A device that never contacts the desk again keeps its refresh token
+  against the database until it does; supabase-js has no sign-out by user
+  id. An RLS amr check is a follow-up.
+- A reset still does not change an existing account's password (earlier
+  decision); README keeps "set the member inactive" for a known password.
+- Race windows are narrowed, not closed (a filing at the same instant as a
+  void is caught by the re-file count and Complete Sale); a partial unique
+  index of one current bill of sale per deal is a hardening follow-up.
+- Pre-existing, found and not fixed: the bill of sale's "Which State Issued
+  Their Licence?" answer is never printed (the profile state or TX prints);
+  a trade-in allowance typed as "2,000" reads as no allowance (the money
+  reader takes plain figures; the freeze measures what prints, so it calls
+  that a change); `signPacketDocument` does not refuse re-signing a signed
+  row; `startSale` for a returning buyer rewrites the customer row other
+  open deals read; `setVehicleTitleStatus` and an inventory price edit can
+  change a vehicle mid-sale; `logoutAdmin` signs out every device (global
+  scope).
+- The new Spanish strings (freeze, void, ceremony, reset, `planFrozen`) need
+  a native speaker's or counsel's review.
+
+## 0000. The 130-U empty weight, automatic and sourced (10/02/2026)
+
+This section records the empty-weight change and supersedes the sections
+below where they differ. How the weight is found and what staff see is in
+the README ("The 130-U empty weight (box 11)"); the standard every desk ships
+with is in the SOP ("Empty weight (130-U box 11)").
+
+The runs used the desk's own dev server on port 5192, started fresh for each
+screen size, on the in-memory preview mock (no Supabase) with
+`DESK_ALLOW_UNSET_FACTS=true` and throwaway `ADMIN_SESSION_SECRET` and
+`INTERNAL_RENDER_TOKEN` values passed on the command line. This sandbox has
+no Chrome, so the bill of sale's HTML-to-PDF route answers 500 "Chrome not
+found"; that route is not part of this change. The 130-U PDF is filled on the
+server and was read back field by field.
+
+**What the desk does now.**
+
+- A document figure on the car (Texas title, out-of-state title, MCO, weight
+  certificate, KBB or JD Power) skips the 130-U question and is affixed with
+  its source.
+- Otherwise a sourced estimate is offered for one tap: EPA test weight less
+  300 lb from a bundled table, cross-checked against Transport Canada and the
+  VIN decode, rounded per TxDMV, with the sentence that says which EPA models
+  it stands on.
+- Pickups, work vans, cab-chassis, heavy duty, buses, a vehicle whose kind
+  nobody recorded, a low-confidence estimate no second source supports, and
+  anything within 300 lb of 6,000 lb need a document; the estimate is shown
+  as a hint only.
+- Nothing known: the question is asked exactly as before.
+- A 130-U with box 11 unsettled does not file. Filing rewrites box 11 and
+  its `_emptyWeight*` record in `form_data` from the server's own read.
+
+**What the review found, and what changed.**
+
+1. **A pickup with no body style and no decode got the one-tap Confirm and
+   the passenger +100** (2018 F-150, Gladiator, Frontier, Ranger, Maverick,
+   Santa Cruz). **Fixed:** an unknown class needs a document
+   (`classUnknown`); a pickup or work van is also known by name
+   (`workVehicleByName`, whole words, so a Range Rover is never a Ranger and
+   a Mercedes E 350 is never a Ford E-350) and by an EPA match named PICKUP,
+   CAB or CHASSIS; a pickup by name is a truck for the rounding, so its MCO
+   gets no +100; a lot body style of "Van" or "Cargo Van" is a work van.
+   Test: `an-unknown-vehicle-is-never-a-car`.
+2. **One vPIC timeout fixed a car's class for the life of the table** (the
+   lot-row estimate was stored and reused). **Fixed:** only an estimate made
+   from a decode (or for a car with no VIN) is stored; a lot-row stand-in is
+   held in memory for 5 minutes and the decode is tried again; a stored
+   lot-row estimate is decoded over. Test:
+   `a-weight-estimate-follows-the-car`.
+3. **A stored estimate outlived a corrected vehicle row.** **Fixed:** the
+   estimate carries the row's fingerprint (VIN, year, make, model, trim, body
+   style, engine, drive, fuel) and is worked out again when it no longer
+   matches, written over only where the old one still stands. Test:
+   `a-weight-estimate-follows-the-car`.
+4. **Short names matched longer, different vehicles at medium confidence**
+   (ProMaster as PROMASTER CITY, Bronco with BRONCO SPORT, Range Rover with
+   EVOQUE, Transit with TRANSIT CONNECT). **Fixed:** the query's own model
+   wins over names that add a different-vehicle word; a match on such names
+   only is `+partial`; `+partial`, a range wider than 600 lb, or a lot row
+   with no engine size is low confidence, and low confidence no second source
+   supports within 250 lb needs a document. **Added this run:** the
+   reviewer's 2018 Civic whose decode Series is "Type R" still blended in the
+   plain Civic's rows (2,700 lb). A query that names the variant now keeps
+   only the rows that carry it (`+variant`): 3,075 lb, against a published
+   curb weight of about 3,117. Measured on all 1,706 crash-test vehicles
+   before adopting it: no vehicle changed (coverage 1,534, 89.9%; median
+   error 67 lb; p95 346 lb), and the regenerated fixture is byte-identical.
+   Adding POLICE to the different-vehicle words was tried and left out: it
+   moved Crown Victoria and Explorer away from their lab weights. Test:
+   `the-estimate-names-what-epa-tested` (the new case fails without the
+   rule).
+5. **The method sentence named the car being sold as what EPA tested.**
+   **Fixed:** it names the EPA models it stands on ("EPA tested the Camry,
+   Camry LE/SE and Camry XLE/XSE (2019) at 3,625 lb"), and the confirmed
+   record keeps them. Test: `the-estimate-names-what-epa-tested`.
+6. **webDEALER's Copy All pasted a weight nobody recorded the source of.**
+   **Fixed:** that figure is shown with "Source not recorded; confirm it on
+   the 130-U", has no copy button (a link to the 130-U instead), reads "(not
+   confirmed; settle it on the 130-U)" in Copy All, and counts as missing.
+   The pinned `webdealer-copy-fields` test (3265 shown) is unchanged. Test:
+   `an-unsourced-weight-is-never-pasted`.
+7. **With the sale unreadable, the filing skipped the weight gate.**
+   **Fixed:** a 130-U whose sale the server cannot read does not file. Test:
+   `a-130u-without-its-sale-does-not-file`.
+8. **The table build took its dates from file times.** **Fixed:** it reads a
+   manifest (URL, sha256, download date) written by `--download`, stops on a
+   file the manifest does not name or whose bytes changed, and never reads a
+   file time. Test: `the-epa-table-rebuilds-the-same`.
+9. **A VIN that decodes to another make of the same year drove the
+   estimate.** **Fixed:** the decode is used only when it agrees with the lot
+   row on year and make (FORD and Ford, RAM and Dodge are one make). Test:
+   `a-weight-estimate-follows-the-car`.
+
+The verification's own notes, settled:
+
+- *A decoder curb weight does not skip the question.* By design: it is an
+  estimate, and an estimate needs a person's confirmation before it is
+  filed. Only a document figure skips the question.
+- *The "Not on any record" state was never seen live.* It is now: the new
+  `no-source` walk starts a sale for a 1991 Geo Storm through "Not on the
+  lot? Enter a VIN". EPA's table starts at MY1995, Transport Canada returns
+  nothing for it, and vPIC has no curb weight before 2015. The question
+  reads "Not on any record. Read it off the title; without one, a weight
+  certificate is needed.", the input starts empty, and the typed title
+  figure (2,340) files as 2,400 with its source.
+- *The Camry range reads 3,137 to 3,388 lb around 3,325.* Correct as shown:
+  EPA tested the 2019 Camry 2.5 twice at ETW 3,500 (the L) and six times at
+  3,625. The median gives 3,325, and the range runs from the lighter class's
+  floor to the heavier class's ceiling. Box 11 is 3,500 either way.
+- *`form_data` was not dumped.* It is now, below, from
+  `GET /api/documents/agreements/<id>` on the running preview.
+- *The override script logged "REFUSAL NONE".* The script read only the
+  first alert node (Next's route announcer). It now reads every alert; the
+  screenshots show the refusal at both sizes.
+
+### Checks
+
+| Check | Result |
+|---|---|
+| `npx tsc --noEmit` | exit 0 |
+| `npx eslint` | 0 errors, the same 4 warnings, all in files this change does not touch |
+| `npx vitest run` | 161 files, 1960 tests passed (was 140 and 1736); 21 new files, no existing test file changed; `test-output.txt` |
+| `npx next build` | exit 0; `next-env.d.ts` restored afterwards |
+| EPA table in the client bundle | 0 files in `.next/static` carry it; 4 server chunks do |
+| Crash-test accuracy (Python reference, all 1,706 vehicles) | coverage 1,534 (89.9%), median error 67 lb, p95 346 lb |
+| TypeScript port against the reference | equal on every fixture row (parity test); fixture regenerated byte-identical after the `+variant` rule |
+
+The first full test run after a machine restart failed one check by time
+alone: `no-hardcoded-dealer-facts` "does not hardcode the phone number" took
+5,027 ms against its 5,000 ms limit while every file was compiled cold
+(imports 55 s against 30 s warm). Two warm runs passed 161 of 161 at the
+default worker count, and the check passes alone in about 1.9 s. The guard
+re-parses every script once per fact; the new empty-weight files add about
+65 ms (about 6%) to each 1.1 s pass, most of which is existing code. The
+test was not changed.
+
+### Walks, at 390×844 and 1440×900
+
+Eight scenarios at each size, each on a fresh server, each signed through
+the ceremony to its packet:
+
+| Scenario | 390×844 | 1440×900 |
+|---|---|---|
+| `estimate-confirm` (2019 Camry, one-tap EPA estimate; review shows "Estimate (EPA test data), confirmed by") | 2 / 2 signed | 2 / 2 signed |
+| `title-on-file` (2020 Altima, Texas title on the car; no weight screen; review shows "Texas title") | 2 / 2 signed | 2 / 2 signed |
+| `no-source` (1991 Geo Storm by VIN; question reads "Not on any record"; typed title figure) | 2 / 2 signed | 2 / 2 signed |
+| unfiled Camry (stopped at the weight question; refused at filing; settled; filed) | 2 / 2 signed | 2 / 2 signed |
+| `cash-otd` | 2 / 2 signed | 2 / 2 signed |
+| `bank` | 2 / 2 signed | 2 / 2 signed |
+| `bhph-trade` | 3 / 3 signed | 3 / 3 signed |
+| `buyer-files` (no 130-U) | 3 / 3 signed | 3 / 3 signed |
+| `cash-balance` | 2 / 2 signed | 2 / 2 signed |
+
+Every `expect` check passed, 0 contrast failures in the sales and the
+ceremonies, 0 page errors in the walks and the direct scripts. Server logs:
+no TypeError, no unhandled error, no failed weight write; the only errors
+are the bill of sale's "Chrome not found" (8 per run).
+
+### Box 11 on paper and on the record
+
+Read back from each filing's `form_data` (`GET /api/documents/agreements/<id>`),
+identical at both sizes, and, for the first four, from the filed 130-U PDFs
+(field `11 Empty Weight`, PyMuPDF):
+
+| Sale | PDF box 11 | `_emptyWeightSource` | Reading | Rule | From | By |
+|---|---|---|---|---|---|---|
+| `estimate-confirm` (Camry) | 3500 | `estimate_epa` | 3325 | `plus100RoundUp` | deal | owner@example.dev |
+| `title-on-file` (Altima) | 3300 | `texas_title` | 3252 | `roundUp` | vehicle | Preview Fixture |
+| `no-source` (Geo Storm) | 2400 | `texas_title` | 2340 | `roundUp` | deal | owner@example.dev |
+| unfiled, then settled (Camry) | 3500 | `estimate_epa` | 3325 | `plus100RoundUp` | deal | owner@example.dev |
+| `cash-otd` (Camry) and `bank` (CR-V), typed | 3400 | `texas_title` | 3340 | `roundUp` | deal | owner@example.dev |
+| `bhph-trade` (Explorer), typed | 4400 | `texas_title` | 4400 | `roundUp` | deal | owner@example.dev |
+| `cash-balance` (Malibu), typed | 3100 | `texas_title` | 3100 | `roundUp` | deal | owner@example.dev |
+
+Each confirmed estimate also keeps `_emptyWeightEstimate`: EPA 2019, ETW
+3,625, the models CAMRY, CAMRY LE/SE and CAMRY XLE/XSE, the EPA file
+(`19tstcar-2020-10-02.xlsx`), Transport Canada 3,472 lb, the VIN decode
+3,572 lb, confidence high, table built 10/02/2026. Every filing carries
+`_emptyWeightAt`. The state form prints only the number. The rasterised box
+is in `empty-weight/pdf-box11-*.png`.
+
+### What the screens showed (both sizes)
+
+Screenshots in `docs/verification/empty-weight/` (each at 390 and 1440),
+with the full log in `walk-summary.txt`:
+
+- **Estimate** (`b1-estimate-card`): "Estimate 3,500 lb", the method
+  sentence naming the EPA models, "Transport Canada lists 3,472 lb. The VIN
+  decode lists 3,572 lb.", one Confirm This Weight.
+- **Unsettled** (`b2`, `b3`): the review reads "Empty Weight: Not settled
+  yet · Settle It", and File The Form 130-U is refused with "Settle the
+  empty weight (box 11) first: confirm it, or type it from the title." After
+  one tap (`b4`) the review reads "3,500 lb · Estimate (EPA test data),
+  confirmed by owner@example.dev on 10/02/2026" and it files (`b5`).
+- **Nothing known** (`d-no-source-vin`, `d-no-source-question`,
+  `d-no-source-review`): the decoded card shows no weight line; the question
+  reads "Not on any record. Read it off the title; without one, a weight
+  certificate is needed." with an empty input; the review reads "2,400 lb ·
+  Texas title, entered by owner@example.dev on 10/02/2026".
+- **Pickup** (`01` to `04`): "This one needs the weight from a document ...
+  A pickup or work truck is never filed on an estimate. For reference only:
+  estimated at about 4,950 lb." with no Confirm; 5012 from a Texas title
+  reads "Box 11 will read 5,100 lb"; carrying capacity starts at 1000,
+  labelled "TxDMV minimum for this empty weight (Registration Manual Table
+  2-1)".
+- **Weight with no recorded source** (`05`, `06`, `bmw-handoff-row`): "On
+  the vehicle record: 3,765 lb. Where it came from was not recorded.", the
+  input starts empty; the webDEALER row shows 3765 with "Source not
+  recorded; confirm it on the 130-U", no copy button and a link to the
+  130-U; the sale page reads "About 3,950 lb · Estimate, not confirmed (EPA
+  test data)".
+- **Override with a reason** (`10` to `14`): the Altima review shows "3,300
+  lb · Texas title, entered by Preview Fixture on 10/01/2026"; Change
+  reopens with "On file: 3,300 lb (Texas title)."; 3400 with no reason is
+  refused ("Say why it is different from the document on file."); with "Title
+  reissued after a bed liner was fitted" it saves, and the review, sale page
+  and handoff all show 3,400 with its source and reason.
+- **Handoff and sale page** (`*-handoff-row`, `*-sale-page`): the same
+  figure and source line as the review and the PDF for every sale above.
+
+### Open items
+
+1. **Apply the migration before deploying** this version:
+   `supabase/migrations/20261002000001_vehicle_empty_weight.sql` (README
+   owner step 14). The sale pages read the new columns.
+2. **Two questions for the county**, recorded in the SOP: whether +100
+   applies to a passenger-truck vehicle registered Passenger from a web curb
+   weight, and how RTB 010-16's +100 sits with the 2026 guideline. The
+   confirm step keeps a person in the loop meanwhile.
+3. **Walk and demo data:** a typed weight must name its document, so the
+   five standard scenarios tap "Texas Title" after typing it, and any
+   recorded demo that files a 130-U needs the same tap. A title figure typed
+   on one sale is written to the car, so walk `estimate-confirm` first on a
+   fresh preview server (SOP, Verification).
+4. **The bill of sale PDF** could not be rendered here (no Chrome); the
+   130-U PDFs were.
+5. **Merge:** the void/freeze work also edits `finalizePaperwork` in
+   `src/lib/actions/paperwork.ts`; this change adds 14 lines there, plus a
+   5-line guard in `savePaperworkAnswer` and one import.
+
 ## 000. Review fixes to the four decisions (10/02/2026)
 
 This section records the latest run and supersedes sections 00 and below

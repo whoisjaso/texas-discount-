@@ -8,6 +8,8 @@ import {
 } from "@/lib/sales/deal-language";
 import { casMergeStepData } from "@/lib/sales/step-data-write";
 import { requireAdminActionPermission } from "@/lib/admin/current-admin";
+import { filedBillOfSaleOn } from "@/lib/sales/filed-bill-of-sale";
+import { billOfSaleFrozen, type BillOfSaleFrozenRefusal } from "@/lib/sales/bill-of-sale-freeze";
 
 /**
  * Answer, for a deal that predates the question, what language the sale is
@@ -22,7 +24,7 @@ import { requireAdminActionPermission } from "@/lib/admin/current-admin";
 export async function setDealLanguage(
   dealId: string,
   language: DealLanguage,
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<{ ok: boolean; error?: string; code?: undefined } | BillOfSaleFrozenRefusal> {
   if (language !== "en" && language !== "es") {
     return { ok: false, error: "notALanguage" };
   }
@@ -37,6 +39,14 @@ export async function setDealLanguage(
       error: authError,
     } = await supabase.auth.getUser();
     if (authError || !user) return { ok: false, error: "unauthorized" };
+
+    /*
+      The filed bill of sale was filed in the sale's language (owner's
+      decision 10/02/2026; SOP Freeze): answering another language is refused
+      until it is voided and filed again. The same language goes through.
+    */
+    const filed = await filedBillOfSaleOn(dealId);
+    if (filed && (filed.language === "es" ? "es" : "en") !== language) return billOfSaleFrozen("language");
 
     const patch = languageConfirmationPatch(language, user.id);
 

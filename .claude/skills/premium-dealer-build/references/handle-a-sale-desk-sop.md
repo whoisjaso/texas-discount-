@@ -154,7 +154,25 @@ alter table vehicles add column if not exists model text;
 alter table vehicles add column if not exists body_style text;
 alter table vehicles add column if not exists price numeric(12,2);
 alter table vehicles add column if not exists mileage int;          -- written at Start A Sale
-alter table vehicles add column if not exists empty_weight int;     -- 130-U box 11
+-- 130-U box 11, the empty weight, with its source (section "Empty weight").
+-- weight_lbs is box 11 as a person confirmed it FROM A DOCUMENT, rounding
+-- applied. An estimate never goes in weight_lbs: it lives in weight_estimate.
+alter table vehicles add column if not exists weight_lbs int;
+alter table vehicles add column if not exists weight_source text check (weight_source in
+  ('texas_title','out_of_state_title','mco','weight_certificate','kbb_jdpower'));
+alter table vehicles add column if not exists weight_reading_lbs int;   -- as printed, before rounding
+alter table vehicles add column if not exists weight_rule text check (weight_rule in ('roundUp','plus100RoundUp'));
+alter table vehicles add column if not exists weight_confirmed_by uuid;
+alter table vehicles add column if not exists weight_confirmed_by_name text;
+alter table vehicles add column if not exists weight_confirmed_at timestamptz;
+alter table vehicles add column if not exists weight_note text;         -- the reason for an override
+alter table vehicles add column if not exists weight_estimate jsonb;    -- source, method, range, confidence,
+                                                                        -- and the row it was made for (fingerprint)
+alter table vehicles add column if not exists weight_estimated_at timestamptz;
+-- weight_estimate is written only for an estimate made from a VIN decode (or
+-- for a car with no VIN), only over nothing or over the exact estimate read,
+-- and is stale once the row's VIN, year, make, model, trim, body style,
+-- engine, drive or fuel no longer match its fingerprint.
 alter table vehicles add column if not exists title_status text not null default 'unknown'
   check (title_status in ('clean','rebuilt_salvage','bonded','salvage_unrebuilt',
                           'nonrepairable','export_only','unknown'));
@@ -208,6 +226,68 @@ create table document_agreements (
 create index on document_agreements (deal_id);
 ```
 
+**Voiding (a second additive migration, owner's decision 10/02/2026).** A
+filed document is never deleted or rewritten; a filed bill of sale can be
+voided, which marks rows rather than removing them:
+
+```sql
+alter table document_agreements add column if not exists voided_at timestamptz;
+alter table document_agreements add column if not exists voided_by uuid;           -- auth user id
+alter table document_agreements add column if not exists voided_by_member_id uuid; -- team_members.id
+alter table document_agreements add column if not exists voided_by_name text;      -- name snapshot
+alter table document_agreements add column if not exists void_reason text;         -- 10 to 500 chars
+alter table document_agreements add column if not exists void_group_id uuid;       -- one per void
+alter table document_agreements add column if not exists voided_with_id uuid;     -- the bill of sale; null on it
+-- No foreign keys on these: no foreign-key action may ever write a voided row.
+-- Check: all null, or voided_at + void_reason (10..500 after trim) + void_group_id set.
+-- Partial index (deal_id, document_type) where voided_at is null.
+-- Trigger (BEFORE UPDATE OR DELETE, named to fire after the null-expiry one):
+--   a voided row is final (never updated, never deleted, so a deal holding
+--   one cannot be deleted either); setting voided_at needs documents:manage,
+--   may change only the void columns (plus expires_at), is refused to a
+--   signed-in session writing it straight through the API (current_user
+--   authenticated or anon: only the function below voids), and is refused
+--   for the power of attorney.
+-- Trigger (BEFORE INSERT): no row is ever inserted already voided.
+-- Trigger (BEFORE INSERT): a filed financing, form130U, vehicleResponsibility
+--   or towAwayAcknowledgment needs a current filed bill of sale on the deal;
+--   it locks the deal FOR SHARE (security definer), so it serialises with a
+--   void's FOR UPDATE and a dependent can never be filed across a void.
+-- Function void_filed_documents(p_deal_id, p_root_id, p_types, p_reason,
+--   p_at, p_detail), security definer, execute to authenticated only: one
+--   transaction that checks documents:manage and an active roster row (who
+--   voided comes from auth.uid(), never the caller; a memberId or memberName
+--   in p_detail is overwritten with the session's own), voids a FIXED set
+--   (p_types must equal every corridor type but the power of attorney, else
+--   'not_voidable'), refuses a reason outside 10..500 characters after
+--   dropping control and invisible format characters, p_at more than 5
+--   minutes off the database clock, a missing 'Not Yet' attestation
+--   (p_detail.titleApplication; 'title_question'), a closed sale (deal
+--   locked FOR UPDATE), a stale or non-bill-of-sale root, and the plate
+--   evidence below; locks the rows it voids before reading whether they were
+--   signed; dates the void greatest(p_at, clock_timestamp()); voids every
+--   current filed row of the set with one group id; deactivates
+--   packet_signing_texts; revokes active paperwork_invites (a 'revoked'
+--   event each); and writes one team_activity_events row
+--   'sale_documents_voided' with the reason, the attestation, the documents
+--   and how many were signed.
+-- Function end_sessions_before(p_user, p_at), service role only: deletes
+--   the account's auth.sessions started before the reset (their refresh
+--   tokens go with them).
+-- private.current_team_role() gives no role to a request whose session
+--   first authenticated (earliest amr time in its JWT) more than 3 seconds
+--   before the account's password_reset_at, so every policy and the void
+--   function refuse it (no amr time, no reset, or an unreadable reset: no
+--   change).
+```
+
+A copy filed again after a void sets the existing `parent_agreement_id` to
+the newest voided copy of its type. `step_data.plateRecordedAt` (ISO) is
+written with the plate when the plate changes: a plate recorded at or after
+the bill of sale was filed is the desk's evidence that the title application
+went to the county (no recorded time counts as evidence). The auth account's
+`app_metadata.password_reset_at` (ISO) records an owner's reset (Security).
+
 Signature evidence is written onto the document's own row, inside
 `form_data`: `signature` (the PNG data URL), `signedAt`, `signedVia`
 (`desk` or `ceremony`), `signedUserAgent` (first 240 characters),
@@ -252,11 +332,16 @@ corridor styling, the counter counting only the screens this member gets
    from the name). There is no Back to it once saved. A member who had already finished onboarding (a reset) gets
    this screen and Done only. Choosing a password through the emailed
    recovery link clears the flag too, so the invite link is not followed by
-   a second password screen. A reset does not sign out a device already
-   signed in to the account, and that device can choose the new password
-   without the old one; the screen refuses a roster row that is not active,
-   so an owner who suspects a device sets the member inactive rather than
-   resetting them.
+   a second password screen. **A reset signs out every device signed in
+   before it** (owner's decision 10/02/2026; Security): only a session that
+   signed in after the reset reaches this screen, a stale one is refused
+   ("This device signed in before the password was reset. Sign in again
+   first."), and after the save the member is signed straight back in on
+   the server with a new device cookie, because the auth server's admin
+   password write ends every session, this one included. The screen also
+   refuses a roster row that is not active; a reset does not change the
+   password of an account that already has one, so an owner who suspects
+   the password itself is known sets the member inactive.
 1. **What Is Your Name?** First name and last name, two fields, required.
    Saved as `full_name` ("First Last") and `display_name` (first name). This
    is the name that prints in parentheses on the 130-U and under the dealer
@@ -330,7 +415,7 @@ All under the site's existing admin sign-in.
 | `/admin/sales/[dealId]/guide/[step]` | One corridor question. `step` is the step key, URL-encoded (`plan%3Aregistration`, `document%3AbillOfSale`). |
 | `/admin/sales/[dealId]/paperwork/[doc]/[q]` | One question inside one document, then `.../[doc]/review` for read-back, pad and preview. |
 | `/admin/sales/[dealId]/summary` | Check Answers: the whole sale on one page, every row a link back into its question. |
-| `/admin/sales/[dealId]/packet` | Everything filed: open, print, download, start the signing ceremony, text the buyer. |
+| `/admin/sales/[dealId]/packet` | Everything filed: open, print, download, start the signing ceremony, text the buyer; void the filed bill of sale (`?void=billOfSale&return=<step>` opens the dialog from a refusal) and the Voided Copies history. |
 | `/admin/sales/past` | Completed sales, newest first, searchable. |
 | `/admin/sales/times` | Optional: sale times board (see Sale clock). |
 | `/admin/sales/promises` | Optional: balances promised and due, soonest first. |
@@ -345,7 +430,8 @@ Server actions, one per decision: `startSale`, `setDealLanguage`,
 `saveBuyerId`, `setFunding`, `saveMoney`, `answerPlanQuestion`,
 `setSalvagePath`, `setPlate`, `answerPaperwork`, `finalizeDocument`,
 `signDocumentAtDesk`, `openSigningCeremony`, `signPacketDocument`,
-`completeSale`, `deleteSale`. Each: verify the session (or token), validate
+`voidBillOfSale` (owner or manager; calls the `void_filed_documents`
+function), `completeSale`, `deleteSale`. Each: verify the session (or token), validate
 the value against the pure module's `isValidAnswer`, read the current
 `step_data`, merge ONE key, write with an `updated_at` compare-and-swap
 (retry once on conflict), revalidate the route.
@@ -388,7 +474,24 @@ One screen, read back before anything is written.
   2WD), transmission, fuel, engine (`{DisplacementL}L V{cylinders}` or
   `{cylinders}-Cylinder`), doors, plant country, GVWR, curb weight (lbs).
   Treat `"Not Applicable"` and empty strings as null.
-- Curb weight, when present, prefills the 130-U empty-weight question. Body
+- For the empty-weight estimate the decode also keeps the raw `Model`,
+  `Series`, `DisplacementL`, `DriveType`, `ElectrificationLevel`, `BodyClass`,
+  `VehicleType` and the GVWR class code (`Class 1C` gives `1C`), and the
+  decode route answers with a sourced estimate beside the decode (see "Empty
+  weight (130-U box 11)"). Start A Sale shows it read-only, labelled as an
+  estimate; nothing it decoded is submitted.
+- The decode is used for the weight only when it agrees with the lot row on
+  the year and the make (FORD and Ford, RAM and Dodge are one make). A VIN
+  that decodes to another car (a typo) is ignored and the lot row is used.
+- A decode that fails or times out never fixes the car's class for good: the
+  estimate made from the lot row instead is shown, held for a few minutes and
+  never stored, and the decode is tried again on the next screen. Only a
+  decoded estimate (or one for a car with no VIN) is kept on the vehicle.
+- `CurbWeightLB` is a VIN-pattern value, often the heaviest version of the
+  model: measured against crash-test scales it reads +139 lb at the median,
+  p95 686 lb, and it is missing before MY2015 and for whole makes (Chevrolet,
+  GMC, Kia, Jeep, BMW, Lincoln). It is a cross-check only, never box 11.
+  vPIC's GVWR is a class range and is never used for carrying capacity. Body
   style decides whether carrying capacity is asked (trucks and vans only).
 - Show the decoded car for confirmation. A decode failure never blocks: the
   desk can type year, make and model.
@@ -606,13 +709,61 @@ homes store the down payment as one plain figure ("$1,500.00" is saved as
 balance, the contract's itemisation and the note's payment read the same
 text; a figure below zero or one that is not a dollar amount is refused
 outright, filed or not. "Filed" is the packet's own rule: finalized at the
-desk, or completed through the older e-sign path. The check fails closed when
-the filed documents cannot be read. The freeze names the down payment only:
-the price, its basis, the funding and the bill of sale's trade-in are not
-frozen by it (an open decision for the owner). So the down payment belongs on the money
-step, before anything is filed: that is what makes the bill of sale's
-balance and the contract's amount financed one figure. A signed document
-must never silently reattach to changed terms.
+desk, or completed through the older e-sign path, and never a voided copy.
+The check fails closed when the filed documents cannot be read.
+
+**The filed bill of sale holds everything it states** (owner's decision
+10/02/2026). Besides the down payment (which keeps its own code and
+sentence), every server action that can write something the bill of sale
+prints refuses a change with code `billOfSaleFrozen`, the field, and "The
+bill of sale is already filed with … Void the bill of sale and file it
+again before changing …" (Spanish: "… Anule la factura de venta y vuelva a
+archivarla antes de …"); the screens only display it, with **Void The Bill
+Of Sale** for an owner or a manager and "Only an owner or a manager can void
+it." for everyone else. Held, and the writers that hold them:
+
+- the price and whether it includes tax and fees (`saveSaleMoney`);
+- how the buyer pays and the lender (`saveDealFunding`);
+- the trade-in (yes/no, the vehicle, the allowance), how the money was paid
+  on a cash deal, the mileage statement, the warranty, the bill of sale's
+  licence-state answer, and how a salvage car leaves (`savePaperworkAnswer`,
+  every bill-of-sale and salvage-bill-of-sale answer);
+- the buyer's confirmed name and name parts, ID number and mailing address
+  (`saveConfirmedId`); while a power of attorney is filed it holds the name
+  and address on its own (it is ink and is never voided at the desk);
+- the plan's Still To Do as printed: who files the title and registration,
+  where the inspection stands, whether proof of insurance was shown, an
+  open row included (`saveSalePlanAnswer`);
+- the plate, against the plate the filed copy PRINTED (a bill of sale filed
+  with no plate lets the title step record the issued one;
+  `saveSalePlate`);
+- the language of the sale (`setDealLanguage`);
+- at Close The Sale, the ID number against the printed licence, and the
+  price: through the vehicle row on a deal with no typed amount (the row is
+  what the figures are drawn from), and against the price the bill of sale
+  printed on a deal whose amount was typed (the car is marked sold at the
+  paper's price; the panel starts from it) (`completeSale`);
+- at Start A Sale, the buyer's customer row while another open sale of that
+  customer has current filed paperwork: the same buyer starts a second sale
+  without the row being rewritten, and a different name with the same phone
+  number is refused, naming the other buyer (`startSale`).
+
+Measured as the paper prints it (`billOfSaleStatement`): the same answer
+saved again goes through, the same figure typed another way is not a
+change, an answer that does not print (a payment method on a financed deal,
+who signs the title, whether the price includes registration) is not held.
+Pass 1 compares the raw inputs with no lookup; only when one moved is the
+filed bill of sale looked up and pass 2 compares what prints, inside the
+same version-checked merge. Every lookup fails closed. A guard test
+classifies every key the bill of sale's renderer prints as frozen or fixed.
+A plan answer held by another filed document (the 130-U, the
+acknowledgments, the power of attorney) is refused with code `planFrozen`,
+naming the documents and the same way out (a power of attorney needs a new
+one). So the down payment, and the rest, belong on their screens before
+anything is filed: that is what makes the bill of sale's balance and the
+contract's amount financed one figure. A signed document must never
+silently reattach to changed terms; the way out is the void below (The
+documents, Voiding and filing again).
 
 ## Salvage
 
@@ -652,8 +803,11 @@ Per-document questions (only what the record does not already hold):
 - **130-U:** Which State Issued Their Licence? (only if unknown), Which County
   Do They Live In? (only if not derived), What Are We Applying For? (Title And
   Registration / Title Only / Registration Only), Is The Buyer A Person Or A
-  Business?, What Is The Empty Weight? (prefilled from the decode), What Is
-  The Carrying Capacity? (trucks and vans only, "Not Applicable" allowed).
+  Business?, What Is The Empty Weight? (skipped when a title, MCO or
+  weight-certificate figure is on the vehicle; a one-tap confirmation of a
+  sourced estimate; otherwise typed with its source; see "Empty weight (130-U
+  box 11)"), What Is The Carrying Capacity? (trucks and vans only, "Not
+  Applicable" allowed; starts at the TxDMV minimum for a truck).
 - **Financing:** How Much Are They Putting Down? (prefilled from what the
   money step says crossed the desk; never asked twice), How Often Do They
   Pay? (Weekly / Every Two Weeks / Monthly), What Did You Agree On? (The
@@ -675,6 +829,236 @@ preview of the exact sheet that will print, the signature pad for the buyer
 writes `form_data` (answers and computed figures), builds `completed_link`
 (the render payload every print path reads), and sets `finalized_at`. Filing unsigned and printing for ink is always
 allowed; that is how a sale closes on the day the pad breaks.
+
+### Empty weight (130-U box 11)
+
+The state classes the registration fee by box 11 and the county returns an
+application without it. The desk works it out and affixes it, and every
+figure it files carries its source. Code: `src/lib/vehicles/empty-weight/`.
+
+**Sources, in this order** (measured against 1,706 NHTSA crash-test vehicles
+with lab-measured curb weights, MY1996 to 2026):
+
+1. A document a person holds, typed with its kind: Texas title (WEIGHT),
+   out-of-state title, MCO, weight certificate, KBB or JD Power (TxDMV
+   accepts these). The only source that skips the question.
+2. EPA test weight less 300 lb, from a bundled table: coverage 89.9%
+   (1,534 of 1,706), median error 67 lb, p95 346 lb. EPA's Equivalent Test Weight is the inertia class
+   of loaded vehicle weight, and loaded vehicle weight is curb weight plus 300
+   lb (40 CFR 86.1803-01; 40 CFR 1066.805, Table 1 and paragraph (b)), so the
+   estimate is the median ETW less 300 with half a class either side (62.5 lb
+   to ETW 4,000, 125 to 5,500, 250 above).
+3. Transport Canada's curb weight (vPIC `GetCanadianVehicleSpecifications`),
+   live, median trim: median error 84 lb. Also the cross-check.
+4. vPIC `CurbWeightLB` from the decode: last resort and cross-check (it
+   reads high; its range runs 700 lb DOWN from the figure).
+5. Nothing: the question is asked exactly as before.
+
+Agreement is a confidence hint, never an approval: EPA and Canada within 150
+lb put EPA within 150 lb of the scale 86% of the time; more than 250 lb apart
+and the screen shows both figures and the spread. The EPA match is strict
+about the engine (displacement within 0.1 L: a V6 never borrows a V8's
+weight), matches an EV only to EVs, prefers the hybrid, then the query's own
+model, then the drive, tries the model year then Y-1, Y-2, Y+1, and needs the
+same series number in the EPA name for a heavy-duty vehicle. "The query's own
+model" means an EPA name that adds a different-vehicle word (SPORT, CITY,
+CONNECT, EVOQUE, VELAR, CLUBMAN, COUNTRYMAN, GRAND, CROSS, TYPE, PRIME, MAX,
+XL, ESV and the like) loses to one that does not: a Bronco is never weighed
+as a Bronco Sport, a Cherokee never as a Grand Cherokee. Trim words (LE, SE,
+XLE) are not on that list. When only such names match, the match level says
+`+partial`. The other way round, a query that names the variant itself (a
+Civic whose decode Series is Type R) keeps only the EPA rows that carry it
+(`+variant`), so a Type R is weighed as a Type R (3,075 lb), never blended
+with the plain Civic's 2,700. Every change to these rules is measured on the
+crash-test set before it ships: this one moved none of the 1,706 vehicles,
+while adding POLICE to the list made Crown Victoria and Explorer worse and
+was left out. The Python reference (`scripts/empty-weight/reference_estimate.py`)
+and the TypeScript port apply the same rules and the parity test holds them
+equal on every crash-test row.
+
+**Confidence** is low when only vPIC has a figure, when EPA and Canada are
+more than 250 lb apart, when the match is `+partial`, when the range is wider
+than 600 lb (it spans different vehicles, not one car's trims), when a lot
+row with no engine size was matched (every engine blended), or when a
+neighbouring year was used with the drive unmatched. High needs EPA same-year
+with the drive matched and Canada within 150 lb, from a decode.
+
+**Texas rounding** (applied on the server, shown live on the screen):
+round up to the next 100 (VTR-130-UIF box 11). A Texas or out-of-state title
+and a weight certificate get nothing added (Vehicle Weight Verification
+Guidelines, June 2026; Title Manual 10-4, 10-5). An MCO, KBB or JD Power
+figure, and an estimate (a manufacturer-style curb weight), get +100 lb for a
+passenger or passenger-truck class vehicle, not for a truck or bus (Transp.
+Code 502.055(d)(1); RTB 010-16). Vectors: MCO 3,589 is 3,700; the Title
+Manual's 6,415 is 6,600; title 4,200 is 4,200; certificate 3,765 is 3,800.
+
+**The screen, by state:** a document on the vehicle skips the question and is
+affixed with its source; a sourced estimate is shown as box 11 with the
+sentence that explains it, naming the EPA models it actually stands on, not
+the car being sold ("Estimate from EPA test data for the 2019 Toyota Camry
+2.5 L: EPA tested the Camry, Camry LE/SE and Camry XLE/XSE (2019) at 3,625
+lb, which is the car plus 300 lb, so about 3,325 lb") and the cross-checks,
+for one tap (Confirm This Weight); otherwise the figure is typed off a document
+and its kind chosen. The input never starts with an unsourced figure. A
+legacy `weight_lbs` with no source is shown as "where it came from was not
+recorded", never defaulted.
+
+**Gates** (no one-tap confirm; the estimate is a labelled hint and a title,
+MCO or scale ticket is needed): a pickup or work truck, a cargo or work van,
+a cab-chassis (`INCOMPLETE VEHICLE`), heavy duty (GVWR class 2G, 8,001 lb,
+or more, or 2500/3500/HD/Super Duty in the name; 250/350 only on a truck), a
+bus, a vehicle whose class nobody knows (no body style on the lot row and no
+VehicleType from a decode: it could be a pickup, and an unknown class is
+never treated as a passenger car), a low-confidence estimate that no second
+source supports within 250 lb, and, as a HOUSE RULE, an estimate whose box
+11 at the top of its range is within 300 lb of the 6,000 lb registration
+line (5,700 or more). About 1 pickup estimate in 10 lands on the wrong side
+of a Texas weight line.
+
+A pickup or work van is known by NAME as well as by body style and vPIC's
+VehicleType (`rules.ts` `workVehicleByName`: F-150 to F-450, Silverado,
+Sierra, Ram 1500 to 3500, Tundra, Tacoma, Frontier, Titan, Ranger, Colorado,
+Canyon, Gladiator, Ridgeline, Maverick, Santa Cruz and the rest; Transit,
+ProMaster, Sprinter, Express, Savana, NV, E-Series and the rest), and by an
+EPA match named PICKUP, CAB or CHASSIS. Matched on whole words, so a Range
+Rover is never a Ranger and a Mercedes E 350 is never a Ford E-350. A lot
+body style of "Van" or "Cargo Van" is a work van; "Minivan" is not. A pickup
+is a truck for the rounding too: no +100 on its MCO.
+
+**Override with a reason:** the review's Change link reopens the question. A
+typed figure whose box 11 differs from a document already on the deal or the
+vehicle needs a reason, which is kept. An estimate never replaces a document.
+A typed document is also written to the vehicle (`weight_*`) when the caller
+may edit vehicles, so the next sale of that car skips the question.
+
+**The record:** the deal carries `emptyWeight` plus `_emptyWeightSource`
+(a document kind, `estimate_epa`, `estimate_canada`, `estimate_vpic`, or
+`typed_unrecorded` for an answer from before sources were recorded),
+`_emptyWeightFrom`, `_emptyWeightReading`, `_emptyWeightRule`,
+`_emptyWeightBy`, `_emptyWeightById`, `_emptyWeightAt`, `_emptyWeightReason`
+and `_emptyWeightEstimate` (the estimate as shown). The ordinary answer
+action refuses those keys; only the empty-weight screen's action writes them.
+Filing the 130-U overwrites them in `form_data` from the server's own read
+and REFUSES a 130-U whose box 11 nobody settled, and a 130-U whose sale the
+server cannot read (there is nothing to take box 11 from, and the client's
+figure is never written as it came). Box 11 and its record are among the
+answers the filing resolves for itself (`paperworkFilingContext` carries the
+empty-weight context), so a review screen that posted a box 11 or a record
+the sale no longer holds is refused as `figuresChanged` (Voiding and filing
+again); the overwrite comes after that check and after the refiling gates.
+The source is shown on the
+desk (question, review, webDEALER handoff, sale page) and never printed on
+the state form. A weight on the vehicle with no recorded source is shown on
+the webDEALER handoff as "Source not recorded; confirm it on the 130-U", has
+no copy button (a link to the 130-U instead), is left out of Copy All, and
+counts as missing: webDEALER is the filing. The door jamb shows GVWR, not the empty weight: say so in the
+question's note.
+
+**Carrying capacity:** a truck starts at the Registration Manual Table 2-1
+minimum for its box 11 (1,000 lb up to 6,000 lb empty, then 1,500, 2,000,
+3,000, 4,000, 5,000, 6,000, 7,000 to 33,000), labelled as that, on the screen
+only, never a default.
+
+**The yearly step:** when EPA posts a new model year's Test Car List, run
+`python3 scripts/empty-weight/build_epa_table.py --download` and
+`python3 scripts/empty-weight/make_fixtures.py --crash <research dir>`, commit
+the regenerated table and fixture, and run the tests. `--download` writes a
+`manifest.json` beside the files (URL, sha256 and download date per file;
+the same bytes keep their first date). The build reads only the manifest,
+never file times, takes `built` as its newest date, and stops on a file the
+manifest does not name or whose sha256 changed, so the same files always give
+the same table byte for byte. A folder fetched by hand gets its first
+manifest from `--urls urls.txt --downloaded YYYY-MM-DD`. The table records
+each file's URL, sha256 and download date, ships as one JSON string in a
+server-only module, and never reaches a client bundle. Stored estimates made
+against an older table are worked out again on their own.
+
+**Open questions for the county** (the confirm step keeps a person in the
+loop meanwhile): whether +100 applies to a passenger-truck vehicle registered
+as Passenger from a web curb weight, and how RTB 010-16's +100 sits with the
+2026 guideline, which mentions it only for MCOs.
+
+### Voiding and filing again
+
+The owner's decision of 10/02/2026: a filed bill of sale can be voided and
+filed again; nothing is ever deleted.
+
+- **Who and where.** An Owner or a Manager (`documents:manage`), from the
+  packet's **Void** on the filed bill of sale (also linked beside a freeze
+  refusal, on the desk page and on the bill of sale's own step). Other roles
+  see it disabled with "Only an owner or a manager can void it." The record
+  must name a person, so an `ADMIN_EMAIL` owner with no roster row is
+  refused.
+- **The dialog** (a native dialog like the desk's other confirmations; a
+  full-width sheet at 390px): the buyer and the car, "These are voided with
+  it:" with each one's state, "These stay on file:" (the power of attorney),
+  that nothing is deleted, how many signatures stop counting, the required
+  reason (10 to 500 characters, cleaned, kept), the title question **Has
+  The Title Application Gone To The County?** (only **Not Yet** goes ahead;
+  "Yes" is refused), **Keep It** focused, and **Hold To Void** (the hold
+  only arms once the reason and Not Yet are given).
+- **What a void takes:** every current filed copy of the bill of sale (or
+  salvage bill of sale) and of every document its figures, plan or buyer
+  reached: `financing`, `form130U`, `vehicleResponsibility`,
+  `insuranceAcknowledgment`, `rebuiltDisclosure`, `towAwayAcknowledgment`,
+  `buyerResponsibilityStatement`, all with one group id and the same
+  reason. Never the power of attorney (ink on a state form). A guard test
+  keeps every document type in exactly one of the two lists.
+- **Refused** (each writes nothing): not an owner or manager; no roster
+  row; reason outside 10 to 500 characters (counted in characters as the
+  database counts them, after dropping control characters and invisible
+  format characters such as zero-width spaces and bidi overrides, the same
+  rule in the dialog, the action and the database); title question unanswered or
+  "Yes"; a plate recorded at or after the bill of sale was filed (the
+  desk's evidence the title application went to the county; a plate with no
+  recorded time counts too); a completed or abandoned sale; nothing current
+  filed or a stale copy; the documents could not be read (fail closed). The
+  database function re-checks them under the deal's lock. The safer rule
+  was chosen over a stronger warning: once the county or the buyer has the
+  paperwork, the correction starts there, with the owner.
+- **The record.** Voided rows stay readable under **Voided Copies (n)**,
+  grouped by void ("Voided {date} by {name}: {reason}"), each "Was signed by
+  the buyer {date}" or "Was filed, not signed", with Open and Print handing
+  out the stored document stamped **VOID** (**VOID · ANULADO** on a Spanish
+  copy) on every page with that line across the top; the file name carries
+  `_VOIDED_<date>`. The row, its payload and its signature are never
+  changed. A re-filed copy says "Replaces the copy voided {date}." Every
+  date the packet shows (filed, signed, voided, replaces) is the business
+  date on the dealership's clock (`dealership.timeZone`), the same day the
+  band prints; a void at 7:30 pm in Houston once read as the next day.
+- **Counting.** `isFiledAgreement` answers false for a voided row, so every
+  reader (the packet, the desk, the sales list, the guide, the texted
+  copies, the ceremony) skips it; its guide step opens again ("Voided. File
+  it again"). The packet's `refile` count holds what must be filed again (a
+  voided type the sale still owes with no current copy, and a document
+  printing the bill of sale's figures filed before the current bill of
+  sale, or filed while no bill of sale of its kind was current); it reads
+  **Waiting For The New Copies** and is never "Ready To Print" while it is
+  above zero.
+- **Filing again** goes through the corridor's normal steps and three more
+  refusals: `billOfSaleAlreadyFiled` (one current bill of sale per sale; the
+  older agreements route enforces it too), `billOfSaleFirst` (the documents
+  that print its figures, `financing`, `form130U` and
+  `vehicleResponsibility`, or `financing` and `towAwayAcknowledgment` on a
+  tow-away sale, wait for it; the rebuilt disclosure never does; the
+  database refuses the same filing while no bill of sale is current, which
+  closes the race with a void) and `figuresChanged`. That last one covers
+  three things: the server recomputes the figures and refuses a review
+  screen's that differ; it resolves the answers the way the review screen
+  does (`paperworkAnswers`, through `paperworkFilingContext`) and refuses a
+  posted answer that differs or one the sale does not hold, filling any left
+  out with the sale's own, so the mileage statement, trade-in, payment
+  method, warranty, how a salvage car leaves, the 130-U's box 11 with its
+  source record, and the contract's rate, count and payments are the sale's;
+  and a document printing the bill of sale's
+  figures must state the figures the current bill of sale PRINTED (read off
+  its own completed link). After the void the summary opens with a banner,
+  or the screen the void was asked from opens again with `?from=summary`.
+- **A filed document is never rewritten in place** anywhere: the older
+  agreements route refuses (409) rewriting a sale's filed or voided row's
+  payload or status, and trashing it.
+- **Complete Sale** is refused while anything voided is not filed again,
+  and a sale holding voided records cannot be deleted (abandon it).
 
 ### How the paper looks
 
@@ -730,6 +1114,10 @@ Legal content each document must carry:
   dealer-authored sheet (bill of sale, contract, vehicle responsibility,
   insurance acknowledgment, rebuilt disclosure, tow-away sheets) whose
   filing recorded a name.
+  **Box 11 (empty weight)** is rounded up to the next 100 per the rules in
+  "Empty weight (130-U box 11)", and its source (the document, or the
+  confirmed estimate, who confirmed it and when) is recorded in `form_data`,
+  never printed on the form. A 130-U with box 11 unsettled does not file.
 - **VTR-61 (Rebuilt Vehicle Statement):** printed from title work and signed
   in ink. Wherever the dealership is the owner or the rebuilder, that
   party's "Printed Name (Same as Signature)" is the same pairing,
@@ -779,8 +1167,19 @@ When every required document is filed, the packet screen offers **Sign The
 Packet**:
 
 1. `openSigningCeremony(dealId)` mints an HMAC-signed token
-   `{dealId, purpose:"packet-signing", exp}` valid **20 minutes**, stateless,
-   revoked by re-minting. It lets its holder read that one deal's filed
+   `{dealId, purpose:"packet-signing", exp}` valid **20 minutes**,
+   stateless. Minting a new one does not revoke the old one; a **void**
+   does: the token's issue time is its expiry less the 20 minutes, and a
+   token issued at or before the deal's latest void is refused everywhere
+   (the ceremony page says "This link was replaced" in both languages, the
+   buyer's document routes answer 410, `signPacketDocument` answers
+   `replaced`), and a voided row is never shown or signed (404 /
+   `voided`). The void is dated the later of the app's time and the
+   database's clock at the moment of voiding, so a link minted while the
+   void was on its way is dated before it and dies too; a link minted after
+   a void is dated just after it (`signingIssueTime`), so it is never born
+   revoked. The void also switches off the texted link, so Text It sends
+   a new one. It lets its holder read that one deal's filed
    documents and sign them. It cannot edit anything, see another deal, or
    reach the admin.
 2. The desk shows three ways in: a large QR code, **Open Here** (turn the
@@ -825,7 +1224,12 @@ Spanish ceremony shows the sheets and ends with Print For Ink.
   Buyer's Guide in both languages, and Text The Buyer Their Copies (consented
   numbers only). Never cached.
 - **Complete Sale** marks the deal completed, sets `completed_at`, marks the
-  vehicle sold, and moves it to Past Sales.
+  vehicle sold, and moves it to Past Sales. It is refused while anything
+  voided with the bill of sale is not filed again ("Some paperwork was
+  voided and has not been filed again: … File it before closing the
+  sale."), and once a bill of sale is filed it keeps the price and the ID
+  number the bill of sale printed (the ID box starts from the printed
+  licence). The check reads the documents fail closed.
 - **Summary (the expert lane).** A second RENDERING of the same step list,
   never a second way to store answers. Grouped (Buyer, Money, Plan,
   Documents, Title); each row shows what it was answered with and links into
@@ -899,6 +1303,42 @@ Sales** beneath it (and **Sale Times** and **Promises** if built).
 - Rate-limit `/api/capture` and `signPacketDocument` per token.
 - No secret, key or licence data in client bundles, logs or URLs other than
   the opaque token.
+- **A password reset signs out every device** (owner's decision
+  10/02/2026). Every owner path that resets an account or issues it a
+  temporary password stamps `app_metadata.password_reset_at` (ISO) and logs
+  it. From then on a session counts only if it signed in after that
+  moment. The guarantee is the desk's own HMAC device cookie
+  (`<issuedAtMs>.<userId>.<sig>`, minted by every sign-in path and by
+  nothing else, and bound to the account that signed in): missing, invalid,
+  issued before the reset, or minted for another account means signed out
+  (so a fresh cookie from one's own account can never carry another
+  member's pre-reset session past the cutoff; the older two-part form is
+  still read, and every one of those predates any reset). The
+  session's EARLIEST authentication time (`amr` from `getClaims()`, 3 s of
+  skew) can only add a refusal; when it cannot be read the cookie decides.
+  The JWT's `iat` is never used (a refresh re-issues it). Checked only when
+  a reset is recorded, in the proxy (a local `signOut`, the best effort the
+  SDK offers since it has no sign-out by user id; the auth cookies and the
+  device cookie cleared; a redirect to `/admin/login?notice=signed-out-reset`,
+  never a bounce from the sign-in page), in the current-admin check
+  (`signedOut: "passwordReset"`; the layout and template redirect, actions
+  refuse with "Your password was reset, so this device was signed out. Sign
+  in again."), in the API guard (401) and at Choose A Password. Every
+  sign-in path mints the cookie BEFORE it asks whether the person is on the
+  team and hands it to that check (the OAuth callback once judged a reset
+  account's new sign-in by the old cookie and signed it straight back out
+  as "not on the team", for good). The database holds the line as well:
+  every stamping path calls `end_sessions_before` (best effort), which ends
+  the account's older auth sessions and their refresh tokens, and
+  `private.current_team_role()` gives no role to a session whose earliest
+  amr time predates the reset, so RLS and the void function refuse a stale
+  device that goes around the desk with the public key. A reset time nobody
+  can read signs nobody out and is logged as an error. The preview mock
+  supports it (`DESK_PREVIEW_MEMBER=fresh-reset`, with the preview's own
+  signed-in-time cookie standing in for the device cookie). Left: an access
+  token with no amr time (an older format) is refused by the desk and ends
+  at its expiry; a signing link a stale session minted lives out its 20
+  minutes (it signs one deal's documents, it is not admin access).
 
 ## Tests you must write (pure modules, no database)
 
@@ -913,6 +1353,52 @@ Sales** beneath it (and **Sale Times** and **Promises** if built).
   with nothing down, go through, stored as the plain figure with the note's
   principal and payment unchanged; "-500" and "abc" are refused with no
   write; a bill of sale completed through the older e-sign path freezes too.
+- The bill of sale holds everything it states: the statement changes for
+  every held field and not for the same figure typed differently, an empty
+  amount that resolves to the same figures, or an answer that does not
+  print; every writer returns `billOfSaleFrozen` with the field and writes
+  nothing once filed, saves the same answer, moves freely before filing and
+  after a void, and fails closed when the lookup throws; a filed power of
+  attorney holds the name and address; every key the renderer prints is
+  classified; the refusal exists in both languages with the way out.
+- Void and file again: the cascade covers every document type exactly once
+  and never the power of attorney; each refusal writes nothing; the void
+  marks rows with one group and deletes nothing; the mock and the database
+  (a real Postgres run of the migration) refuse any write to a voided row;
+  voided rows stop counting and their steps reopen; an old signing link is
+  refused once the deal has a later void; the voided PDF is stamped and the
+  stored bytes are not; the three filing refusals; Complete Sale and delete.
+  And on the database (a real Postgres run): a row inserted already voided
+  is refused; a signed-in session writing voided_at through the API is
+  refused, even an owner's; the power of attorney is never voided; the
+  function refuses a shorter or longer list of types and a missing "Not
+  Yet", writes the session's own name whatever the caller passes, drops
+  invisible characters from the reason, and dates the void no earlier than
+  now; a dependent document cannot be filed while no bill of sale is
+  current. In the app: the reason rule counts code points and ignores
+  format characters; a filing posted with an answer the sale does not hold
+  is refused and a left-out answer filled (a 130-U posted with a box 11 or
+  a box 11 source the sale does not hold too, and one past every refiling
+  gate with no settled box 11 still does not file); a dependent whose figures the
+  current bill of sale did not print is refused; Close The Sale's price on a
+  typed-amount deal must be the printed one; Start A Sale refuses a
+  different name on a held customer's phone and never rewrites the row; the
+  older agreements route never rewrites, trashes or duplicates a sale's
+  filed document; an accented buyer name reaches the file name intact;
+  the packet's dates are formatted on the dealership's clock.
+- Password reset: the cutoff's truth table (no reset, no cookie, cookie
+  before, after, amr before beyond the skew, within it); the earliest amr;
+  every reset and approval path stamps the time; the current-admin check,
+  the API guard and the preview sign out a stale session and let a fresh
+  one in; Choose A Password refuses a stale device, keeps its single pinned
+  write, and signs the member back in. The device cookie names its account
+  and never vouches for another (a stale session paired with a fresh cookie
+  from another account is signed out even with no claims to read); every
+  sign-in path mints it with the account; the OAuth callback lets a reset
+  account back in with a new cookie and still turns away a stranger; every
+  stamping path ends the older sessions at the database; on Postgres, a
+  session whose earliest amr predates the reset holds no team role, and an
+  unreadable reset changes nothing and is logged.
 - Onboarding: "Choose A Password" only with `requires_password_change`; the
   10-character floor and the confirmation; the write goes to the session's
   own account and clears the flag; Done refuses until it is cleared; signing
@@ -930,6 +1416,34 @@ Sales** beneath it (and **Sale Times** and **Promises** if built).
 - Tokens: expiry, tampering, wrong purpose.
 - AAMVA: US and Canadian date orders, `NONE`, 9-digit ZIP.
 - VIN: valid, invalid characters, wrong length, check digit.
+- Empty weight: box 11 rounding vectors (MCO 3,589 to 3,700; 6,415 to 6,600;
+  title 4,200; certificate 3,765 to 3,800; no +100 on a truck) and Table
+  2-1; the TypeScript EPA estimate equal to the Python reference on a
+  crash-test fixture, with coverage at least 85%, median error at most 75 lb
+  and p95 at most 400 lb; a Silverado 2500 never matching a light-duty or
+  Suburban row; a 3.6 V6 getting no V8 weight; EVs only to EVs; an estimate
+  or legacy weight never a default and never filed unconfirmed; a document
+  on the vehicle skipping the question and affixing its source; the gates
+  (pickup, cargo van, cab-chassis, heavy duty, bus, unknown class, low
+  confidence uncorroborated, near 6,000 lb) refusing a one-tap confirm on the
+  server; a bare pickup row (no body style, no decode: 2018 F-150, Gladiator,
+  Frontier, Ranger, Maverick, Santa Cruz) coming out a truck with no +100,
+  and Range Rover, E 350, B 250 and Camry never read as work vehicles; a
+  Bronco never weighed as a Bronco Sport and a Cherokee never as a Grand
+  Cherokee, a ProMaster matched only to PROMASTER CITY marked `+partial` and
+  low confidence, a Civic whose Series is Type R weighed on the Type R rows
+  only (`+variant`) while a plain Civic never takes them, and the method
+  sentence naming the EPA models; a failed
+  decode's lot-row estimate never stored and retried after minutes; a stored
+  estimate stale once the row's VIN, year, make or model change; a decode
+  for another make ignored; an unsourced vehicle weight never in webDEALER's
+  Copy All and counted as missing; a 130-U refused when its sale cannot be
+  read; the table build reading no file times and stopping on an unmapped
+  file; an override needing a reason; the printer never
+  using an estimate or an unsourced weight; webDEALER never showing an
+  estimate; the lookup silent on failure and never writing `weight_lbs`; the
+  public site never seeing a weight column; every weight string in both
+  languages with no banned dash.
 - Guards: dealer facts only in the config file; no untranslated literal in
   corridor components; every requirable document type has a question set or
   review screen, a renderer, and is allowed by the database check constraint.
@@ -947,6 +1461,23 @@ Sales** beneath it (and **Sale Times** and **Promises** if built).
    - bank financing (lender named as lienholder, no dealer lien anywhere)
    - buyer files and no insurance shown (vehicle responsibility and insurance
      acknowledgment appear, 130-U does not)
+   And four for box 11: a car with an EPA estimate confirmed with one tap,
+   a car with a title figure on file (no empty-weight screen; the review
+   names "Texas title"), a car no source knows, entered by VIN through
+   "Not on the lot?" (`no-source`: a 1991 Geo Storm, which EPA's table,
+   Transport Canada and vPIC all lack; the question is asked exactly as
+   before, reading "Not on any record", and the typed title figure files
+   with its source), and a pickup (the screen asks for a document and
+   shows the estimate as a hint; after a title figure, carrying capacity
+   starts at the Table 2-1 minimum). On the estimate card, check the method
+   sentence names the EPA models it stands on; on a car with a weight but no
+   recorded source, check the webDEALER handoff shows it with a link to the
+   130-U and no copy button.
+   A title figure typed on one sale is written to the car, so every later
+   sale of that car skips the question, as it should. The in-memory preview
+   reuses the same few cars across walks: walk the estimate confirm first on
+   a freshly started server, before any walk that types a weight for the
+   same car (the scenarios' 2019 Camry is also `cash-otd`'s).
    On each: screenshot every step, sign every document through the ceremony,
    and finish at a packet reading "N Of N Signed".
 3. Before trusting any screenshot, assert one computed style the client's
@@ -954,7 +1485,11 @@ Sales** beneath it (and **Sale Times** and **Promises** if built).
    if it is wrong.
 4. Download every PDF of one full packet through the same route the Open
    button uses, rasterise the pages, and read them: the 130-U's filled fields
-   dumped by name (applicant, address, county, licence, odometer, lienholder),
+   dumped by name (applicant, address, county, licence, odometer, lienholder,
+   and `11 Empty Weight` beside the filed `form_data._emptyWeightSource`,
+   `_emptyWeightReading`, `_emptyWeightRule`, `_emptyWeightBy` and
+   `_emptyWeightAt`, read from `GET /api/documents/agreements/<id>`; the
+   two must agree, and the source must be the one the review named),
    the bill of sale's figures summing to its total, the odometer identical on
    every document, and today's business date on every signature.
 
@@ -972,5 +1507,6 @@ signature, and approve any Spanish translation.
 official form; put the dealer financing contract on a bank deal; print a
 dealer lien on a lender deal; let a signature land on a document the buyer
 could not scroll through; put the power of attorney in the e-sign ceremony;
-store "done"; ask a question the record already answers; restyle the
-client's public site; run destructive database operations.
+store "done"; ask a question the record already answers; file an estimated
+weight nobody confirmed; restyle the client's public site; run destructive
+database operations.

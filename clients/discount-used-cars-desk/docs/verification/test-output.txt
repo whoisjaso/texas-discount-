@@ -1,9 +1,9 @@
 
- RUN  v4.1.6 /home/user/texas-discount-/clients/discount-used-cars-desk
+ RUN  v4.1.6 /home/user/desk-merge-wt/clients/discount-used-cars-desk
 
 
- Test Files  140 passed (140)
-      Tests  1736 passed (1736)
-   Start at  02:18:58
-   Duration  34.92s (transform 4.87s, setup 0ms, import 24.35s, tests 45.31s, environment 7.92s)
+ Test Files  176 passed (176)
+      Tests  2236 passed (2236)
+   Start at  01:49:52
+   Duration  103.28s (transform 9.67s, setup 0ms, import 49.53s, tests 89.33s, environment 12.46s)
 

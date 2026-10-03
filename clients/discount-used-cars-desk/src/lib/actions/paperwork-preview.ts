@@ -9,6 +9,7 @@ import { readMoney } from "@/lib/sales/money";
 import { readBuyerId } from "@/lib/sales/buyer-id";
 import { SITE_URL } from "@/lib/dealership-config";
 import { getStaffSignature } from "@/lib/actions/staff-signature";
+import { emptyWeightContext } from "@/lib/vehicles/empty-weight/on-the-sale";
 
 /**
  * "Preview The PDF", from any screen of the paperwork corridor.
@@ -75,6 +76,10 @@ export async function previewPaperworkPdf(
       buyerCity: held.mailing.city ?? "",
       buyerCounty: held.mailing.county ?? "",
       vehicleWeight: sale.vehicle?.weightLbs ?? null,
+      // Box 11 as it would file: the deal's confirmed answer or the vehicle's
+      // document figure. No lookup and no estimate: an unconfirmed estimate
+      // previews as a blank box, because it would not file.
+      emptyWeight: emptyWeightContext(sale.vehicle, null),
       dealTotal: money.total,
       vehicleYear: sale.vehicle?.year ?? null,
       saleYear: Number((sale.startedAt ?? sale.createdAt).slice(0, 4)) || undefined,

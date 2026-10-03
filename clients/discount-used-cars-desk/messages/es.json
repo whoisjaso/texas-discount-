@@ -913,11 +913,11 @@
         },
         "emptyWeight": {
           "question": "¿Cuál es el peso vacío?",
-          "note": "En libras. Casilla 11 del formulario; está en el marco de la puerta o en el título anterior."
+          "note": "En libras. Casilla 11; está en el título de Texas (WEIGHT) o en el título de otro estado. El marco de la puerta muestra el GVWR, no el peso vacío."
         },
         "carryingCapacity": {
           "question": "¿Cuál es la capacidad de carga?",
-          "note": "Solo camionetas y vanes. Está en el marco de la puerta."
+          "note": "Solo camionetas y vanes. El GVWR del marco de la puerta menos el peso vacío, o la cifra del propio comprador."
         }
       },
       "financing": {
@@ -1065,7 +1065,11 @@
         "rebuiltDisclosure": "Este carro tiene un título Rebuilt Salvage. Texas exige esta divulgación por escrito, firmada, antes de firmar cualquier otra cosa.",
         "towAwayAcknowledgment": "El carro se va en grúa. El comprador firma que no recibe placas, permiso ni registro, y que nadie se los prometió.",
         "buyerResponsibilityStatement": "Desde ahora el título salvage, cualquier reconstrucción, la inspección y cualquier solicitud ante el estado son del comprador, a su propio nombre."
-      }
+      },
+      "billOfSaleAlreadyFiled": "Esta venta ya tiene una factura de venta archivada. Anúlela desde los papeles antes de archivarla de nuevo.",
+      "billOfSaleFirst": "Archive primero la factura de venta. Este documento imprime sus cifras.",
+      "figuresChanged": "Las cifras cambiaron desde que se abrió esta pantalla. Revise el documento otra vez antes de archivarlo.",
+      "openPaperwork": "Abrir Los Papeles"
     },
     "packet": {
       "title": "Los papeles.",
@@ -1605,7 +1609,8 @@
         "none": "Sin empezar",
         "draft": "Empezado",
         "filed": "Archivado",
-        "signed": "Firmado"
+        "signed": "Firmado",
+        "voided": "Anulada"
       }
     },
     "plate": {
@@ -1653,7 +1658,9 @@
         "spanishEsignBlocked": "Por ahora los documentos en español se firman en papel.",
         "writeFailed": "La firma no se guardó. Intente de nuevo.",
         "generic": "Algo salió mal. Intente de nuevo.",
-        "reuseConsent": "Marque la casilla para usar la firma anterior en este documento, o firme de nuevo."
+        "reuseConsent": "Marque la casilla para usar la firma anterior en este documento, o firme de nuevo.",
+        "voided": "Ese documento se anuló en el mostrador. Pida el nuevo en el mostrador.",
+        "replaced": "Este enlace de firma fue reemplazado. Pida el enlace nuevo en el mostrador."
       },
       "meanings": {
         "rebuiltDisclosure": "Esto dice, por escrito y antes que nada, que el carro tiene un título reconstruido.",
@@ -1669,7 +1676,9 @@
       "buyerFallbackName": "Comprador",
       "reuseConsent": "Poner en este documento la firma que dibujé en la página anterior. Leí este documento hasta el final.",
       "savePdf": "Guardar PDF",
-      "downloadNote": "Guarde sus copias firmadas ahora. El concesionario también puede enviarle un enlace privado para después."
+      "downloadNote": "Guarde sus copias firmadas ahora. El concesionario también puede enviarle un enlace privado para después.",
+      "replacedTitle": "Este enlace fue reemplazado.",
+      "replacedNote": "Los papeles cambiaron en el mostrador. Pida el enlace de firma nuevo."
     },
     "badges": {
       "readyNormal": "Lista Para Venta Normal",
@@ -1784,7 +1793,188 @@
         "passwordTooShort": "Use al menos {min} caracteres.",
         "passwordMismatch": "Las dos contraseñas no coinciden. Escriba la misma contraseña en los dos recuadros.",
         "passwordNotNeeded": "Esta cuenta ya tiene su propia contraseña. Para cambiarla, use ¿Olvidó su contraseña? en la pantalla de inicio de sesión.",
-        "passwordSaveFailed": "No se pudo guardar esa contraseña. Inténtelo de nuevo o elija otra."
+        "passwordSaveFailed": "No se pudo guardar esa contraseña. Inténtelo de nuevo o elija otra.",
+        "signedInBeforeReset": "Este dispositivo inició sesión antes de que se restableciera la contraseña. Primero vuelva a iniciar sesión."
+      },
+      "signedOutReset": "Se restableció su contraseña, así que este dispositivo cerró la sesión. Vuelva a iniciar sesión."
+    },
+    "freeze": {
+      "price": "La factura de venta ya está archivada con el precio que indica. Anule la factura de venta y vuelva a archivarla antes de cambiar el precio.",
+      "priceBasis": "La factura de venta ya está archivada con lo que incluye su precio. Anule la factura de venta y vuelva a archivarla antes de cambiar si el precio incluye impuestos y cargos.",
+      "funding": "La factura de venta ya está archivada con la forma de pago que indica. Anule la factura de venta y vuelva a archivarla antes de cambiar la forma de pago.",
+      "lender": "La factura de venta ya está archivada con la financiera que nombra. Anule la factura de venta y vuelva a archivarla antes de cambiar la financiera.",
+      "tradeIn": "La factura de venta ya está archivada con el trade-in que indica. Anule la factura de venta y vuelva a archivarla antes de cambiar el trade-in.",
+      "paymentMethod": "La factura de venta ya está archivada con el método de pago que indica. Anule la factura de venta y vuelva a archivarla antes de cambiar el método de pago.",
+      "odometer": "La factura de venta ya está archivada con su declaración de millaje. Anule la factura de venta y vuelva a archivarla antes de cambiar la declaración de millaje.",
+      "warranty": "La factura de venta ya está archivada con la garantía que indica. Anule la factura de venta y vuelva a archivarla antes de cambiar la garantía.",
+      "howLeaving": "La factura de venta ya está archivada con la forma en que el carro sale del lote. Anule la factura de venta y vuelva a archivarla antes de cambiarla.",
+      "buyerName": "La factura de venta ya está archivada con el nombre del comprador. Anule la factura de venta y vuelva a archivarla antes de cambiar el nombre del comprador.",
+      "buyerId": "La factura de venta ya está archivada con la identificación del comprador. Anule la factura de venta y vuelva a archivarla antes de cambiar la identificación del comprador.",
+      "buyerAddress": "La factura de venta ya está archivada con la dirección del comprador. Anule la factura de venta y vuelva a archivarla antes de cambiar la dirección del comprador.",
+      "plate": "La factura de venta ya está archivada con la placa que indica. Anule la factura de venta y vuelva a archivarla antes de cambiar la placa.",
+      "registration": "La factura de venta ya está archivada con quién tramita el título y el registro. Anule la factura de venta y vuelva a archivarla antes de cambiar quién los tramita.",
+      "inspection": "La factura de venta ya está archivada con el estado de la inspección. Anule la factura de venta y vuelva a archivarla antes de cambiarlo.",
+      "insurance": "La factura de venta ya está archivada con si se mostró comprobante de seguro. Anule la factura de venta y vuelva a archivarla antes de cambiarlo.",
+      "generic": "La factura de venta ya está archivada con lo que esto cambiaría. Anule la factura de venta y vuelva a archivarla antes de cambiarlo.",
+      "language": "La factura de venta ya está archivada en el idioma de la venta. Anule la factura de venta y vuelva a archivarla antes de cambiar el idioma.",
+      "heldByPowerOfAttorney": "La carta poder está archivada con el nombre y la dirección del comprador y se firma con tinta. Se necesita una nueva antes de cambiarlos; consulte al dueño.",
+      "planHeld": "Esta respuesta está en los papeles archivados ({documents}). Anule la factura de venta y vuelva a archivarla antes de cambiarla.",
+      "planHeldByPowerOfAttorney": "La carta poder está archivada con esta respuesta y se firma con tinta. Se necesita una nueva antes de cambiarla; consulte al dueño.",
+      "heldNote": "Está en la factura de venta archivada.",
+      "voidLink": "Anular La Factura De Venta",
+      "whoCan": "Solo el dueño o un gerente puede anularla."
+    },
+    "void": {
+      "action": "Anular",
+      "title": "¿Anular La Factura De Venta?",
+      "titleSalvage": "¿Anular La Factura De Venta De Vehículo Salvage?",
+      "voidedWith": "Se anulan con ella:",
+      "stays": "Estos quedan archivados:",
+      "staysNote": "Mientras esté archivada, las respuestas del plan y el nombre y la dirección del comprador no cambian.",
+      "kept": "No se borra nada. Cada copia anulada queda en el paquete, marcada como anulada, con quién, cuándo y por qué.",
+      "signaturesStop": "El comprador firmó {count} de estos. Esas firmas dejan de contar y el enlace de firma anterior deja de servir. Las copias nuevas se firman de nuevo.",
+      "reasonLabel": "¿Por Qué Se Anula?",
+      "reasonHelp": "Al menos {min} caracteres. Cualquiera que abra el registro lo leerá.",
+      "titleQuestion": "¿Ya Se Envió La Solicitud De Título Al Condado?",
+      "titleNotYet": "Todavía No",
+      "titleSent": "Sí, Ya Se Envió",
+      "keep": "Conservarla",
+      "hold": "Mantén Para Anular",
+      "holding": "Sigue Presionando",
+      "release": "Suelta Para Anular",
+      "preparing": "Preparando",
+      "ready": "Listo para anular.",
+      "hint": "Mantén presionado durante 1.2 segundos y suelta para anular. Suelta antes para cancelar. Con tecnología de asistencia, activa una vez para preparar y otra vez cuando esté listo.",
+      "done": "Anulada. Archive los papeles de nuevo.",
+      "noticeTitle": "Factura De Venta Anulada",
+      "noticeBy": "Anulada el {date} por {name}.",
+      "noticeRefile": "Archivar de nuevo: {list}.",
+      "noticeSign": "El comprador firma las copias nuevas. El enlace de firma anterior ya no sirve.",
+      "fileAgain": "Archivarlas De Nuevo",
+      "changeSale": "Cambiar La Venta",
+      "seeVoided": "Ver las copias anuladas",
+      "progressWaiting": "Esperando Las Copias Nuevas",
+      "toFileAgain": "{count} por archivar de nuevo",
+      "voidedHeading": "Copias Anuladas",
+      "voidedLine": "Anulada el {date} por {name}: {reason}",
+      "wasSigned": "La firmó el comprador el {date}",
+      "wasFiled": "Estaba archivada, sin firmar",
+      "voidedWithBillOfSale": "Anulada con la factura de venta",
+      "replaces": "Reemplaza la copia anulada el {date}.",
+      "summaryBanner": "Se anuló la factura de venta. Cambie lo necesario y vuelva a archivarla.",
+      "deskState": "Anulada. Archívela de nuevo",
+      "errors": {
+        "voidNotAllowed": "Solo el dueño o un gerente puede anular una factura de venta archivada.",
+        "voidNeedsTeamRow": "Su cuenta no tiene fila en el equipo, así que el registro no podría decir quién la anuló. Agregue primero su fila del equipo.",
+        "voidReasonRequired": "Diga por qué se anula, con al menos {min} caracteres.",
+        "voidReasonTooLong": "Escriba el motivo en menos de {max} caracteres.",
+        "voidTitleQuestion": "Responda si la solicitud de título ya se envió al condado.",
+        "voidTitleSubmitted": "La solicitud de título ya se envió al condado con estas cifras, así que la factura de venta no se anula en el mostrador. Corríjala primero con el condado; consulte al dueño.",
+        "voidTitleFiled": "Se registró una placa en esta venta después de archivar la factura de venta, así que la solicitud de título ya se envió al condado. La factura de venta no se anula en el mostrador; consulte al dueño.",
+        "voidSaleClosed": "Esta venta está cerrada: el carro está marcado como vendido y la venta está en Ventas Pasadas. Sus papeles no se anulan en el mostrador; consulte al dueño.",
+        "voidNothingFiled": "Esta venta no tiene una factura de venta archivada que anular.",
+        "voidNotCurrent": "Esa copia ya no es la archivada. Vuelva a cargar los papeles.",
+        "voidCouldNotCheck": "No se pudieron revisar los papeles, así que no se anuló nada. Intente de nuevo.",
+        "voidFailed": "No se pudo anular. No cambió nada. Intente de nuevo."
+      }
+    },
+    "weight": {
+      "sources": {
+        "texas_title": "Título de Texas",
+        "out_of_state_title": "Título de otro estado",
+        "mco": "MCO",
+        "weight_certificate": "Certificado de peso",
+        "kbb_jdpower": "KBB o JD Power",
+        "estimate_epa": "Estimado (datos de prueba de la EPA)",
+        "estimate_canada": "Estimado (Transport Canada)",
+        "estimate_vpic": "Estimado (decodificación del VIN)",
+        "typed_unrecorded": "Escrito en esta venta, sin fuente registrada"
+      },
+      "sourceButtons": {
+        "texas_title": "Título De Texas",
+        "out_of_state_title": "Título De Otro Estado",
+        "mco": "MCO",
+        "weight_certificate": "Certificado De Peso",
+        "kbb_jdpower": "KBB O JD Power"
+      },
+      "estimateLabel": "Estimado",
+      "box11": "{lbs} lb",
+      "box11Reads": "La casilla 11 dirá {lbs} lb ({rule}).",
+      "rules": {
+        "roundUp": "redondeado hacia arriba a la siguiente centena",
+        "plus100RoundUp": "más 100 lb por ser vehículo de pasajeros, redondeado hacia arriba a la siguiente centena"
+      },
+      "methodEpa": "Estimado con datos de prueba de la EPA para el {vehicle}: la EPA probó el {epaModels} ({yearUsed}) a {etw} lb, que es el carro más 300 lb, así que pesa unas {curb} lb (de {low} a {high} lb).",
+      "methodEpaOtherYear": "La EPA no publicó {year}; esta es su cifra de {yearUsed}.",
+      "listAnd": "y",
+      "methodCanada": "Estimado con las especificaciones de Transport Canada: unas {curb} lb (de {low} a {high} lb entre las versiones).",
+      "methodVpic": "Estimado de la decodificación del VIN: {curb} lb. Suele dar la versión más pesada, así que puede estar hasta 700 lb alto.",
+      "ruleLine": "Casilla 11: {rule}.",
+      "crossCanada": "Transport Canada indica {lbs} lb.",
+      "crossVpic": "La decodificación del VIN indica {lbs} lb.",
+      "lowConfidence": "Las fuentes difieren por {spread} lb. Léalo del título si puede.",
+      "confirm": "Confirmar Este Peso",
+      "confirming": "Confirmando",
+      "orType": "O escríbalo de un documento",
+      "typeIt": "Escríbalo de un documento",
+      "typeLabel": "Peso como aparece impreso, en libras",
+      "whichDocument": "¿De qué documento es?",
+      "reason": "¿Por Qué Es Diferente?",
+      "reasonHint": "El documento registrado dice {lbs} lb.",
+      "farFromEstimate": "Eso está a más de 300 lb del estimado de {lbs} lb. Revise el documento.",
+      "gateLead": "Este necesita el peso de un documento: el título, el MCO o un certificado de peso.",
+      "gate": {
+        "pickup": "Una pickup o camioneta de trabajo nunca se tramita con un estimado.",
+        "cargoVan": "Una van de carga o de trabajo nunca se tramita con un estimado.",
+        "incomplete": "Un chasis cabina no tiene peso vacío hasta que se termina de construir.",
+        "heavyDuty": "La EPA no tiene datos de prueba de vehículos de servicio pesado.",
+        "bus": "Un autobús se pesa, no se estima.",
+        "classUnknown": "El registro no dice qué tipo de vehículo es, así que podría ser una camioneta.",
+        "lowConfidence": "Las fuentes no coinciden lo suficiente para tramitarlo con un estimado.",
+        "nearSixThousand": "El estimado queda a menos de 300 lb de la línea de registro de 6,000 lb."
+      },
+      "hint": "Solo como referencia: se estima en unas {lbs} lb.",
+      "legacy": "En el registro del vehículo: {lbs} lb. No se anotó de dónde salió.",
+      "none": "No está en ningún registro. Léalo del título; sin título, se necesita un certificado de peso.",
+      "onFile": "Registrado: {lbs} lb ({source}).",
+      "answered": "En esta venta: {lbs} lb. {line}",
+      "entered": "{source}, escrito por {by} el {date}",
+      "confirmed": "{source}, confirmado por {by} el {date}",
+      "noDate": "{source}",
+      "reasonLine": "Por qué difiere: {reason}",
+      "review": {
+        "notSettled": "Todavía no se define",
+        "settle": "Definirlo",
+        "change": "Cambiar"
+      },
+      "handoff": {
+        "notRecorded": "Fuente no registrada; confírmelo en el 130-U",
+        "source": "Fuente: {line}"
+      },
+      "sale": {
+        "label": "Peso vacío",
+        "onFile": "{lbs} lb · {line}",
+        "estimate": "Unas {lbs} lb · Estimado, sin confirmar ({source})",
+        "legacy": "{lbs} lb · fuente no registrada",
+        "unknown": "Todavía no se sabe"
+      },
+      "start": "Peso vacío: unas {lbs} lb (estimado de {source}, se confirma en el 130-U)",
+      "startSources": {
+        "epa": "datos de prueba de la EPA",
+        "canada": "Transport Canada",
+        "vpic": "la decodificación del VIN"
+      },
+      "capacityMinimum": "Mínimo de TxDMV para este peso vacío (Manual de Registro, Tabla 2-1)",
+      "notSettledRefusal": "Primero defina el peso vacío (casilla 11): confírmelo, o escríbalo del título.",
+      "errors": {
+        "estimateMissing": "No hay estimado para este vehículo. Escriba la cifra del título.",
+        "estimateNeedsDocument": "Este vehículo necesita el peso de un documento: el título, el MCO o un certificado de peso.",
+        "estimateChanged": "El estimado cambió; revíselo de nuevo.",
+        "documentOnFile": "Ya hay una cifra de un documento registrada. Escriba la nueva cifra de un documento para cambiarla.",
+        "weightInvalid": "Escriba el peso en libras, como aparece impreso.",
+        "weightSourceMissing": "Diga de qué documento es la cifra.",
+        "reasonRequired": "Diga por qué es diferente del documento registrado.",
+        "saveFailed": "No se pudo guardar. Inténtelo de nuevo."
       }
     }
   }

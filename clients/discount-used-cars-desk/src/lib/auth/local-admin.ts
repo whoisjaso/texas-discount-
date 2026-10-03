@@ -3,6 +3,15 @@ import { isTeamRole, type TeamRole } from "@/lib/operations/team";
 
 export const LOCAL_ADMIN_SESSION_COOKIE = "tj-local-admin-preview";
 
+/**
+ * Preview only: when this browser signed in (ms), set beside the preview
+ * cookie by the preview sign-in paths and deleted at sign-out. It stands in
+ * for the device cookie's issue time, so a password reset recorded on the
+ * preview account signs out a preview session that began before it
+ * (password-reset-cutoff.ts; DESK_PREVIEW_MEMBER=fresh-reset).
+ */
+export const LOCAL_ADMIN_SIGNED_IN_COOKIE = "tj-local-admin-signed-in";
+
 export const localAdminSessionCookieOptions = {
   httpOnly: true,
   path: "/",

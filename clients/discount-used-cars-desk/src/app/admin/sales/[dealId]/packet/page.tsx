@@ -15,12 +15,18 @@ import { readSalePlan } from "@/lib/sales/sale-plan";
 import { readSalvagePlan } from "@/lib/sales/salvage-plan";
 import { dealTitleBadge } from "@/lib/sales/deal-badge";
 import { SITE_URL } from "@/lib/dealership-config";
+import { getCurrentAdminAccess } from "@/lib/admin/current-admin";
+import { requiredDocumentTypes } from "@/lib/sales/deal-type";
+import { settledPlan } from "@/lib/sales/sale-plan";
+import { canVoidDocuments, signingIssueTime, voidEligibility, type VoidRefusalCode } from "@/lib/sales/void-bill-of-sale";
+import type { PacketVoidContext } from "@/components/admin/packet/PacketScreen";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: `Paperwork - ${dealership.name}` };
 
 interface Props {
   params: Promise<{ dealId: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }
 
 /**
@@ -40,8 +46,9 @@ interface Props {
  * photographs in a private bucket, so they are signed for ten minutes at a
  * time, which is why this page is never cached.
  */
-export default async function SalePacketPage({ params }: Props) {
+export default async function SalePacketPage({ params, searchParams }: Props) {
   const { dealId } = await params;
+  const query = (await searchParams) ?? {};
 
   const sale = await getSaleDetail(dealId);
   if (!sale) notFound();
@@ -118,12 +125,17 @@ export default async function SalePacketPage({ params }: Props) {
         finalized: document.finalized,
         hasCompletedLink: document.hasCompletedLink,
         signed: document.signed,
+        voided: document.voided,
       })),
       { dealerSignsTitle: readSalePlan(sale.stepData).titleSignedBy === "dealer" },
     ).some((document) => !document.signed);
     if (!unsigned) return null;
     try {
-      const token = issueSigningToken(sale.id);
+      // Dated after the latest void, so a link minted right after one is never born revoked.
+      const token = issueSigningToken(
+        sale.id,
+        signingIssueTime(documents.map((document) => ({ voided_at: document.voidedAt ?? null }))),
+      );
       const url = signingUrl(SITE_URL, token);
       const qr = await QRCode.toDataURL(url, { margin: 1, width: 360, errorCorrectionLevel: "M" });
       return { url, qr, canSign: ceremonyCanSign(sale.language) };
@@ -133,6 +145,48 @@ export default async function SalePacketPage({ params }: Props) {
   })();
 
   const { lang, userId } = await resolveAdminLanguageWithUser();
+
+  /*
+    What this sale owes, so a voided document it still owes reads as waiting
+    to be filed again; and whether this viewer may void the filed bill of
+    sale, and whether the sale's own state refuses it (owner's decision
+    10/02/2026). The rules are the action's own, run without a reason or a
+    title answer, so only the sale's state can refuse here.
+  */
+  const owed = requiredDocumentTypes(
+    sale.funding.type,
+    settledPlan(sale.stepData),
+    sale.vehicle?.titleStatus ?? null,
+    readSalvagePlan(sale.stepData).path,
+  );
+  const voidContext: PacketVoidContext | null = await (async () => {
+    const access = await getCurrentAdminAccess().catch(() => null);
+    const canVoid = canVoidDocuments(access?.role ?? null);
+    const verdict = voidEligibility({
+      role: "owner",
+      hasMember: Boolean(access?.member),
+      reason: "x".repeat(10),
+      titleApplication: "notYet",
+      dealStatus: sale.status,
+      rows: documents.map((document) => ({
+        id: document.id,
+        document_type: document.documentType,
+        status: document.finalized ? "finalized" : "pending",
+        finalized_at: document.finalized ? (document.finalizedAt ?? document.filedAt) : null,
+        voided_at: document.voided ? document.voidedAt : null,
+        has_buyer_signature: document.signed,
+      })),
+      stepData: sale.stepData,
+    });
+    const refusal: VoidRefusalCode | null = verdict.ok
+      ? null
+      : verdict.code === "voidNothingFiled" || verdict.code === "voidNotCurrent"
+        ? null
+        : verdict.code;
+    const wanted = typeof query.void === "string" ? query.void : null;
+    const returnTo = typeof query.return === "string" ? query.return : null;
+    return { canVoid, refusal, openOnLoad: wanted === "billOfSale", returnTo };
+  })();
 
   return (
     <FunnelLocaleProvider bundles={getFunnelBundles()} initial={lang} userId={userId}>
@@ -153,6 +207,8 @@ export default async function SalePacketPage({ params }: Props) {
         buyersGuideHrefs={{ en: buyersGuideHref("en"), es: buyersGuideHref("es") }}
         textingEnabled={dealership.paperworkTextsEnabled}
         buyerHasPhone={Boolean(sale.buyer?.phone?.trim())}
+        owed={owed}
+        voidContext={voidContext}
       />
     </FunnelLocaleProvider>
   );

@@ -6,6 +6,7 @@ import { saveDealFunding } from "@/lib/actions/sale-funding";
 import { DEAL_TYPES, type DealType } from "@/lib/sales/deal-type";
 import { tapHaptic } from "@/lib/haptics";
 import { useFunnel } from "@/components/admin/funnel/FunnelLocaleProvider";
+import { FreezeWayOut, useFreezeRefusal } from "@/components/admin/guide/HeldByBillOfSale";
 
 /**
  * How are they paying.
@@ -42,6 +43,8 @@ export default function FundingStep({
   const [pending, startTransition] = useTransition();
   const [choosing, setChoosing] = useState<DealType | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // A refusal from the filed bill of sale names what it holds and the way out.
+  const freezeRefusal = useFreezeRefusal();
 
   // The three answers, in the operator's language. Values stay the stored
   // enum; only what a person reads changes. "Buy Here Pay Here" is the
@@ -67,7 +70,7 @@ export default function FundingStep({
     startTransition(async () => {
       const result = await saveDealFunding(dealId, data);
       if (!result.ok) {
-        setError(result.error ?? t.chrome.couldNotSave);
+        setError(freezeRefusal.text(result) ?? result.error ?? t.chrome.couldNotSave);
         setChoosing(null);
         return;
       }
@@ -135,6 +138,7 @@ export default function FundingStep({
           {error}
         </p>
       ) : null}
+      {error ? <FreezeWayOut heldBy={freezeRefusal.heldBy} /> : null}
     </div>
   );
 }

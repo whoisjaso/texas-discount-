@@ -61,8 +61,30 @@ export type SaleVehicle = {
   exteriorColor: string | null;
   /** Trim level, for the bill of sale's vehicle line. */
   trim: string | null;
-  /** Empty weight in pounds, when the row holds one: the 130-U's starting answer for box 11. */
+  /**
+   * Box 11 as a person confirmed it from a document, when the row holds one.
+   *
+   * With `weightSource` set (a title, an MCO, a weight certificate, KBB / JD
+   * Power) this is the 130-U's box 11 and the question is skipped. Without a
+   * source it is a legacy figure nobody recorded the origin of: shown, never
+   * defaulted (empty-weight/on-the-sale.ts).
+   */
   weightLbs: number | null;
+  /** Which document box 11 was read from (empty-weight/rules.ts DOCUMENT_KINDS). */
+  weightSource?: string | null;
+  /** The figure as printed on that document, before rounding. */
+  weightReadingLbs?: number | null;
+  /** roundUp or plus100RoundUp. */
+  weightRule?: string | null;
+  weightConfirmedByName?: string | null;
+  weightConfirmedAt?: string | null;
+  weightNote?: string | null;
+  /** An estimate with its source (empty-weight/estimate.ts). Never a fact. */
+  weightEstimate?: unknown;
+  /** For the estimate: what the decode and the lot know about the car. */
+  engine?: string | null;
+  drivetrain?: string | null;
+  fuelType?: string | null;
 };
 
 /**
@@ -78,9 +100,15 @@ export type SaleVehicle = {
  * own signature is on it. Both count as done for the corridor's progress,
  * because filing IS the step; only the wording stops overstating.
  */
-export type SaleDocumentState = "signed" | "filed" | "finalized" | "draft" | "none";
+export type SaleDocumentState = "signed" | "filed" | "finalized" | "draft" | "voided" | "none";
 
-/** Both finished states, for the many callers that only care whether it exists. */
+/**
+ * Both finished states, for the many callers that only care whether it exists.
+ *
+ * "voided" is not done: every copy of the document on this sale was voided
+ * with the bill of sale (owner's decision 10/02/2026), so its guide step opens
+ * again and the document is filed and signed again.
+ */
 export function isDocumentDone(state: SaleDocumentState): boolean {
   return state === "signed" || state === "filed" || state === "finalized";
 }
@@ -132,7 +160,7 @@ export async function getSaleDetail(dealId: string): Promise<SaleDetail | null> 
   const { data, error } = await supabase
     .from("deals")
     .select(
-      "id, status, language, created_at, started_at, completed_at, step_data, customers(id, name, phone, email, profile_data), vehicles(id, year, make, model, vin, status, sale_price, body_style, title_status, mileage, exterior_color, trim, weight_lbs)",
+      "id, status, language, created_at, started_at, completed_at, step_data, customers(id, name, phone, email, profile_data), vehicles(id, year, make, model, vin, status, sale_price, body_style, title_status, mileage, exterior_color, trim, weight_lbs, weight_source, weight_reading_lbs, weight_rule, weight_confirmed_by_name, weight_confirmed_at, weight_note, weight_estimate, engine, drivetrain, fuel_type)",
     )
     .eq("id", dealId)
     .maybeSingle();
@@ -169,19 +197,31 @@ export async function getSaleDetail(dealId: string): Promise<SaleDetail | null> 
       exterior_color: string | null;
       trim: string | null;
       weight_lbs: number | null;
+      weight_source?: string | null;
+      weight_reading_lbs?: number | null;
+      weight_rule?: string | null;
+      weight_confirmed_by_name?: string | null;
+      weight_confirmed_at?: string | null;
+      weight_note?: string | null;
+      weight_estimate?: unknown;
+      engine?: string | null;
+      drivetrain?: string | null;
+      fuel_type?: string | null;
     } | null;
   };
 
   const { data: agreements, error: agreementError } = await supabase
     .from("document_agreements")
     .select(
-      "document_type, status, completed_at, finalized_at, has_buyer_signature, signature_svg, signed_at",
+      "document_type, status, completed_at, finalized_at, has_buyer_signature, signature_svg, signed_at, voided_at",
     )
     .eq("deal_id", dealId);
 
   if (agreementError) throw agreementError;
 
   const documents: Record<string, SaleDocumentState> = {};
+  /** Types with a voided copy: "voided" when nothing current replaced it. */
+  const voidedTypes = new Set<string>();
   for (const raw of agreements ?? []) {
     const agreement = raw as unknown as {
       document_type: string | null;
@@ -191,9 +231,19 @@ export async function getSaleDetail(dealId: string): Promise<SaleDetail | null> 
       has_buyer_signature: boolean | null;
       signature_svg: string | null;
       signed_at: string | null;
+      voided_at?: string | null;
     };
     const type = agreement.document_type;
     if (!type) continue;
+    /*
+      A voided copy is a record, not a document of the sale any more: its
+      signature stops counting and its step opens again (owner's decision
+      10/02/2026). It is kept, and shown, under the packet's Voided Copies.
+    */
+    if (agreement.voided_at) {
+      voidedTypes.add(type);
+      continue;
+    }
 
     const finished =
       Boolean(agreement.finalized_at) ||
@@ -222,11 +272,15 @@ export async function getSaleDetail(dealId: string): Promise<SaleDetail | null> 
       furthest one: a superseded draft must never hide a signed copy, and a
       filed copy must never hide a signed one either.
     */
-    const rank = { none: 0, draft: 1, filed: 2, finalized: 2, signed: 3 } as const;
+    const rank = { none: 0, voided: 0, draft: 1, filed: 2, finalized: 2, signed: 3 } as const;
     const held = documents[type];
     if (held === undefined || rank[state] > rank[held]) {
       documents[type] = state;
     }
+  }
+  for (const type of voidedTypes) {
+    const held = documents[type];
+    if (held === undefined || held === "draft") documents[type] = "voided";
   }
 
   const profile = readBuyerProfile(row.customers?.profile_data);
@@ -267,6 +321,16 @@ export async function getSaleDetail(dealId: string): Promise<SaleDetail | null> 
           exteriorColor: row.vehicles.exterior_color ?? null,
           trim: row.vehicles.trim ?? null,
           weightLbs: row.vehicles.weight_lbs ?? null,
+          weightSource: row.vehicles.weight_source ?? null,
+          weightReadingLbs: row.vehicles.weight_reading_lbs ?? null,
+          weightRule: row.vehicles.weight_rule ?? null,
+          weightConfirmedByName: row.vehicles.weight_confirmed_by_name ?? null,
+          weightConfirmedAt: row.vehicles.weight_confirmed_at ?? null,
+          weightNote: row.vehicles.weight_note ?? null,
+          weightEstimate: row.vehicles.weight_estimate ?? null,
+          engine: row.vehicles.engine ?? null,
+          drivetrain: row.vehicles.drivetrain ?? null,
+          fuelType: row.vehicles.fuel_type ?? null,
         }
       : null,
     documents,
@@ -447,6 +511,7 @@ export function describeDocumentState(
   if (state === "signed") return "Signed and on file";
   if (state === "filed" || state === "finalized") return "Filed. No signature yet";
   if (state === "draft") return "Draft saved. Not signed yet";
+  if (state === "voided") return "Voided. File it again";
   return entry.optional ? "Not needed yet" : "Not started";
 }
 

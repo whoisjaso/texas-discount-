@@ -15,6 +15,8 @@ import { spanishEsignBlocked } from "@/lib/legal/spanish-esign";
  *     state form, never a stroke on a screen
  *   - a row with no completed link: there is no sheet to show, and a buyer
  *     must not sign what they cannot read
+ *   - a voided row: it was voided with the bill of sale and is a record now,
+ *     never signed again (owner's decision 10/02/2026)
  */
 
 export type CeremonyRow = {
@@ -23,6 +25,8 @@ export type CeremonyRow = {
   finalized: boolean;
   hasCompletedLink: boolean;
   signed: boolean;
+  /** Voided with the bill of sale: never offered, never signed. */
+  voided?: boolean;
 };
 
 export type CeremonyDocument = {
@@ -52,7 +56,7 @@ export function ceremonyDocuments(rows: CeremonyRow[], options: CeremonyOptions 
   };
   const seen = new Set<string>();
   return rows
-    .filter((row) => row.documentType && row.finalized && row.hasCompletedLink && !INK_ONLY.has(row.documentType))
+    .filter((row) => row.documentType && row.finalized && !row.voided && row.hasCompletedLink && !INK_ONLY.has(row.documentType))
     .filter((row) => !(options.dealerSignsTitle && row.documentType === "form130U"))
     .sort((a, b) => rank(a.documentType as string) - rank(b.documentType as string))
     .filter((row) => {

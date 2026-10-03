@@ -16,6 +16,14 @@ import {
   downPaymentChanges,
 } from "@/lib/sales/down-payment-freeze";
 import { filedBillOfSaleOn } from "@/lib/sales/filed-bill-of-sale";
+import {
+  BILL_OF_SALE_FROZEN_CODE,
+  FREEZE_MESSAGES,
+  billOfSaleStatement,
+  frozenFieldsChanged,
+  statementInputsChanged,
+  type FreezeField,
+} from "@/lib/sales/bill-of-sale-freeze";
 
 /**
  * What the price meant, and whether the registration is paid.
@@ -32,7 +40,9 @@ import { filedBillOfSaleOn } from "@/lib/sales/filed-bill-of-sale";
 export type MoneyState = {
   ok: boolean;
   error?: string;
-  code?: typeof DOWN_PAYMENT_FROZEN_CODE | typeof PAID_TODAY_INVALID_CODE;
+  code?: typeof DOWN_PAYMENT_FROZEN_CODE | typeof PAID_TODAY_INVALID_CODE | typeof BILL_OF_SALE_FROZEN_CODE;
+  /** On a billOfSaleFrozen refusal: what the filed bill of sale states that this would change. */
+  field?: FreezeField | "generic";
 };
 
 export async function saveSaleMoney(
@@ -62,45 +72,84 @@ export async function saveSaleMoney(
 
     /*
       The down payment is frozen once the bill of sale is filed (owner's
-      decision 10/01/2026; SOP Freeze). Looked up only when this save carries
-      a down payment at all; the refusal itself is decided below, on the
-      blob as it stands at write time.
-    */
-    const frozen =
-      patch.paidTodayAmount !== undefined ? await filedBillOfSaleOn(dealId) : null;
-    let refused: boolean = false;
+      decision 10/01/2026; SOP Freeze). Looked up up front when this save
+      carries a down payment at all; the refusal itself is decided below, on
+      the blob as it stands at write time.
 
-    // Version-checked: the second answer merges onto whatever is truly
-    // there at write time, so it cannot erase the first — or anything
-    // else that landed since this screen's read.
-    const merged = await casMergeStepData(supabase, dealId, (current) => {
-      const next: MoneyAnswers = { ...readMoney(current), ...patch };
-      // Only a change to the figure is refused: the same down payment saved
-      // again (every Next on this screen resends it) goes through.
-      refused =
-        frozen !== null &&
-        patch.paidTodayAmount !== undefined &&
-        downPaymentChanges({
-          advertised: frozen.advertised,
-          stepData: current,
-          money: next,
-          to: patch.paidTodayAmount,
-        });
-      if (refused) return null;
-      const written = writeMoney(current, next);
-      // A changed "down today" also changes the contract's down payment once
-      // the contract holds one: the same dollars, one fact (SOP "Money").
-      // Only on a buy here pay here deal, the one packet the contract is in.
-      if (
-        patch.paidTodayAmount !== undefined &&
-        readFunding(current).type === "inHouse" &&
-        hasFinancingDownPayment(current)
-      ) {
-        return withDownPayment(written, next.paidTodayAmount);
-      }
-      return written;
-    });
+      The price and what it includes are frozen the same way (owner's
+      decision 10/02/2026): the bill of sale states them. Their lookup is
+      lazy, so the common save costs nothing: pass 1 compares the raw inputs
+      and writes when nothing the bill of sale states moved; only when
+      something did is the filed bill of sale looked up and pass 2 compares
+      what the paper prints.
+    */
+    let frozen =
+      patch.paidTodayAmount !== undefined ? await filedBillOfSaleOn(dealId) : undefined;
+    let refused: boolean = false;
+    let frozenField: FreezeField | null = null;
+    let needsLookup: boolean = false;
+    let merged: Awaited<ReturnType<typeof casMergeStepData>> = { ok: false, error: "write-failed" };
+
+    for (let pass = 0; pass < 2; pass += 1) {
+      needsLookup = false;
+      // Version-checked: the second answer merges onto whatever is truly
+      // there at write time, so it cannot erase the first — or anything
+      // else that landed since this screen's read.
+      merged = await casMergeStepData(supabase, dealId, (current) => {
+        const next: MoneyAnswers = { ...readMoney(current), ...patch };
+        // Only a change to the figure is refused: the same down payment saved
+        // again (every Next on this screen resends it) goes through.
+        refused =
+          frozen !== undefined &&
+          frozen !== null &&
+          patch.paidTodayAmount !== undefined &&
+          downPaymentChanges({
+            advertised: frozen.advertised,
+            stepData: current,
+            money: next,
+            to: patch.paidTodayAmount,
+          });
+        if (refused) return null;
+        const written = writeMoney(current, next);
+        // The price and its basis, as the filed bill of sale prints them.
+        frozenField = null;
+        if (statementInputsChanged(current, written)) {
+          if (frozen === undefined) {
+            needsLookup = true;
+            return null;
+          }
+          if (frozen !== null) {
+            const context = { advertised: frozen.advertised, rootType: frozen.type };
+            const [field] = frozenFieldsChanged(
+              billOfSaleStatement(current, context),
+              billOfSaleStatement(written, context),
+            );
+            if (field) {
+              frozenField = field;
+              return null;
+            }
+          }
+        }
+        // A changed "down today" also changes the contract's down payment once
+        // the contract holds one: the same dollars, one fact (SOP "Money").
+        // Only on a buy here pay here deal, the one packet the contract is in.
+        if (
+          patch.paidTodayAmount !== undefined &&
+          readFunding(current).type === "inHouse" &&
+          hasFinancingDownPayment(current)
+        ) {
+          return withDownPayment(written, next.paidTodayAmount);
+        }
+        return written;
+      });
+      if (!needsLookup) break;
+      frozen = await filedBillOfSaleOn(dealId);
+    }
     if (refused) return { ok: false, error: DOWN_PAYMENT_FROZEN_MESSAGE, code: DOWN_PAYMENT_FROZEN_CODE };
+    if (frozenField) {
+      const field: FreezeField = frozenField;
+      return { ok: false, code: BILL_OF_SALE_FROZEN_CODE, field, error: FREEZE_MESSAGES[field] };
+    }
     if (!merged.ok) throw new Error(merged.error);
   } catch {
     return { ok: false, error: "Could not save that. Try again." };

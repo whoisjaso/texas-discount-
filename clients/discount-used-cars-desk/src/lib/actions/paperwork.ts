@@ -3,7 +3,20 @@
 import { revalidatePath } from "next/cache";
 import { requireAdminActionPermission } from "@/lib/admin/current-admin";
 import { createClient } from "@/lib/supabase/server";
-import { readPaperwork, withDownPayment, writePaperwork } from "@/lib/sales/paperwork";
+import { paperworkAnswers, paperworkMoney, readPaperwork, withDownPayment, writePaperwork } from "@/lib/sales/paperwork";
+import { paperworkFilingContext } from "@/lib/sales/paperwork-filing-context";
+import { readMoney } from "@/lib/sales/money";
+import { currentCopy, readDealAgreements, readPrintedData } from "@/lib/sales/filed-documents";
+import {
+  AGREES_WITH_BILL_OF_SALE,
+  FILING_GATE_MESSAGES,
+  answersDiffer,
+  figuresDisagreeWithBillOfSale,
+  filingGate,
+  replacedCopyId,
+  rootFor,
+  withServerAnswers,
+} from "@/lib/sales/refile-gates";
 import { casMergeStepData } from "@/lib/sales/step-data-write";
 import { corridorCompletedLink } from "@/lib/sales/corridor-link";
 import { getSaleDetail } from "@/lib/admin/sale-desk";
@@ -28,6 +41,15 @@ import {
   downPaymentChanges,
 } from "@/lib/sales/down-payment-freeze";
 import { filedBillOfSaleOn } from "@/lib/sales/filed-bill-of-sale";
+import {
+  BILL_OF_SALE_FROZEN_CODE,
+  FREEZE_MESSAGES,
+  billOfSaleStatement,
+  frozenFieldsChanged,
+  type FreezeField,
+} from "@/lib/sales/bill-of-sale-freeze";
+import { BILL_OF_SALE_TYPES } from "@/lib/sales/down-payment-freeze";
+import { emptyWeightForFiling } from "@/lib/vehicles/empty-weight/on-the-sale";
 
 /**
  * The paperwork answers, and the document they end up as.
@@ -50,7 +72,15 @@ import { filedBillOfSaleOn } from "@/lib/sales/filed-bill-of-sale";
 export type PaperworkState = {
   ok: boolean;
   error?: string;
-  code?: typeof DOWN_PAYMENT_FROZEN_CODE | typeof PAID_TODAY_INVALID_CODE;
+  code?:
+    | typeof DOWN_PAYMENT_FROZEN_CODE
+    | typeof PAID_TODAY_INVALID_CODE
+    | typeof BILL_OF_SALE_FROZEN_CODE
+    | "billOfSaleAlreadyFiled"
+    | "billOfSaleFirst"
+    | "figuresChanged";
+  /** On a billOfSaleFrozen refusal: what the filed bill of sale states that this would change. */
+  field?: FreezeField | "generic";
 };
 
 /**
@@ -72,6 +102,11 @@ export async function savePaperworkAnswer(
   const access = await requireAdminActionPermission(["sales:manage", "paperwork:manage"]);
   if (!access.ok) return { ok: false, error: access.error };
   if (!key.trim()) return { ok: false, error: "Nothing to save." };
+  // Box 11 arrives with its source or not at all: only the empty-weight
+  // screen's own action (actions/empty-weight.ts) writes it.
+  if (documentType === "form130U" && (key === "emptyWeight" || key.startsWith("_emptyWeight"))) {
+    return { ok: false, error: "Use the empty weight screen." };
+  }
 
   /*
     Who may move the money step from here. The down payment is one fact with
@@ -103,8 +138,17 @@ export async function savePaperworkAnswer(
       down payment other than the one the filed bill of sale states, whoever
       types it and whether or not it writes back to the money step.
     */
-    const frozen = isDownPayment ? await filedBillOfSaleOn(dealId) : null;
+    /*
+      And every answer the bill of sale itself prints (owner's decision
+      10/02/2026): the mileage statement, how the money was paid, the
+      trade-in, the warranty and the licence state on the bill of sale, and
+      how a salvage car leaves on the salvage bill of sale. Looked up only
+      for those two documents' answers.
+    */
+    const billAnswer = (BILL_OF_SALE_TYPES as readonly string[]).includes(documentType);
+    const frozen = isDownPayment || billAnswer ? await filedBillOfSaleOn(dealId) : null;
     let refused: boolean = false;
+    let frozenField: FreezeField | null = null;
     // Version-checked merge: the patch is rebuilt from the blob as it
     // stands at each attempt, so an answer typed in a second tab a moment
     // earlier survives this one instead of being silently replayed over.
@@ -112,7 +156,9 @@ export async function savePaperworkAnswer(
       // Only a change to the figure is refused: the same down payment, or
       // the prefilled one the money step already holds, goes through.
       refused =
-        frozen !== null && downPaymentChanges({ advertised: frozen.advertised, stepData: current, to: value });
+        isDownPayment &&
+        frozen !== null &&
+        downPaymentChanges({ advertised: frozen.advertised, stepData: current, to: value });
       if (refused) return null;
       // The down payment is one fact with two homes: written to both in the
       // same transform, so the bill of sale's balance and the contract's
@@ -126,9 +172,23 @@ export async function savePaperworkAnswer(
         return withDownPayment(current, value);
       }
       const answers = { ...readPaperwork(current, documentType), [key]: value };
-      return writePaperwork(current, documentType, answers);
+      const written = writePaperwork(current, documentType, answers);
+      frozenField = null;
+      if (billAnswer && frozen !== null) {
+        const context = { advertised: frozen.advertised, rootType: frozen.type };
+        const [field] = frozenFieldsChanged(billOfSaleStatement(current, context), billOfSaleStatement(written, context));
+        if (field) {
+          frozenField = field;
+          return null;
+        }
+      }
+      return written;
     });
     if (refused) return { ok: false, error: DOWN_PAYMENT_FROZEN_MESSAGE, code: DOWN_PAYMENT_FROZEN_CODE };
+    if (frozenField) {
+      const field: FreezeField = frozenField;
+      return { ok: false, code: BILL_OF_SALE_FROZEN_CODE, field, error: FREEZE_MESSAGES[field] };
+    }
     if (!merged.ok) throw new Error(merged.error);
   } catch {
     return { ok: false, error: "Could not save that. Try again." };
@@ -292,6 +352,104 @@ export async function finalizePaperwork(
       };
     }
 
+    /*
+      Filing again goes through the same gates, and three more (owner's
+      decision 10/02/2026): one current bill of sale per sale (a second is
+      filed only after the first is voided), the documents printing its
+      figures wait for it, and the figures posted by the review screen must
+      be the server's own, recomputed now, so a screen opened before a change
+      files nothing. Read through the helper, failing closed: a read that
+      errors refuses the filing.
+    */
+    let replaces: string | null = null;
+    if (sale) {
+      const rows = await readDealAgreements(supabase, dealId);
+      const owed = requiredDocumentTypes(
+        sale.funding.type,
+        settledPlan(sale.stepData),
+        sale.vehicle?.titleStatus ?? null,
+        salvagePath,
+      );
+      const money = paperworkMoney(
+        sale.vehicle?.salePrice,
+        readPaperwork(sale.stepData, "billOfSale"),
+        readMoney(sale.stepData),
+        sale.funding.type,
+      );
+      const storedDown = (readPaperwork(sale.stepData, "financing").downPayment ?? "").trim();
+      const downPayment = storedDown !== ""
+        ? Number(storedDown.replace(/[$,\s]/g, "")) || 0
+        : money.paidToday > 0
+          ? money.paidToday
+          : 0;
+      const gate = filingGate({
+        documentType,
+        rows,
+        owed,
+        formData: input.formData,
+        expected: { money, downPayment },
+      });
+      if (gate) return { ok: false, code: gate, error: FILING_GATE_MESSAGES[gate] };
+
+      /*
+        The answers are the sale's own too, not only the money. The bill of
+        sale prints its mileage statement, trade-in, payment method, warranty
+        and how a salvage car leaves from the posted answers, and the contract
+        its rate, count and payments: a review tab opened before an answer
+        changed, or a hand-made request, is refused rather than filing words
+        the sale no longer holds. Resolved the way the review screen resolves
+        them; the county, the one looked-up input, is the posted one.
+      */
+      if (documentType !== "powerOfAttorney") {
+        const { context } = paperworkFilingContext(
+          sale,
+          documentType,
+          typeof input.formData.countyOfResidence === "string" ? input.formData.countyOfResidence : "",
+        );
+        const serverAnswers = paperworkAnswers(documentType, context);
+        const moneyKeys = Object.keys(money);
+        if (answersDiffer(input.formData, serverAnswers, moneyKeys)) {
+          return { ok: false, code: "figuresChanged", error: FILING_GATE_MESSAGES.figuresChanged };
+        }
+        input = { ...input, formData: withServerAnswers(input.formData, serverAnswers, moneyKeys) };
+      }
+
+      /*
+        And a document printing the bill of sale's figures states the figures
+        the current bill of sale printed, read off that copy itself.
+      */
+      const root = currentCopy(rows, rootFor(owed));
+      if (root?.id && (AGREES_WITH_BILL_OF_SALE as readonly string[]).includes(documentType)) {
+        const printed = await readPrintedData(supabase, root.id);
+        if (figuresDisagreeWithBillOfSale(documentType, input.formData, printed)) {
+          return { ok: false, code: "figuresChanged", error: FILING_GATE_MESSAGES.figuresChanged };
+        }
+      }
+      replaces = replacedCopyId(rows, documentType);
+    }
+
+    /*
+      Box 11 from the server's own read, never the client's: a 130-U without
+      a confirmed empty weight does not file (webDEALER requires it and the
+      county returns the application without it), and form_data records
+      which source filed it, who confirmed it and when. Without the sale
+      there is no server read to take it from, so a 130-U does not file:
+      the client's box 11 is never written as it came.
+
+      After the gates above, so both sets of refusals apply: box 11 and its
+      record are among the server-derived answers (paperworkFilingContext
+      carries the empty-weight context), so a review screen that posted a
+      box 11 the sale no longer holds is refused as figuresChanged; then the
+      full provenance record overwrites every `_emptyWeight*` key, blank
+      where unknown, so a client-sent key can never survive.
+    */
+    if (documentType === "form130U") {
+      if (!sale) return { ok: false, error: "That sale could not be found. Open it again from Sales." };
+      const weight = emptyWeightForFiling(sale);
+      if (!weight.ok) return { ok: false, error: "Settle the empty weight (box 11) first: confirm it, or type it from the title." };
+      input = { ...input, formData: { ...input.formData, ...weight.fields } };
+    }
+
     // The filer's own stroke, and none once their signing is turned off.
     const staffSignature = held ? dealerStroke(held) : null;
     const dealerSignerName = held?.signerName ?? null;
@@ -346,10 +504,16 @@ export async function finalizePaperwork(
         has_buyer_signature: Boolean(input.signature),
         finalized_at: now,
         completed_at: now,
+        // A copy filed again after a void names the voided copy it replaces.
+        ...(replaces ? { parent_agreement_id: replaces } : {}),
       })
       .select("id")
       .single();
 
+    // The database's own backstop for a filing that crossed a void.
+    if (error && /bill_of_sale_first/.test(String((error as { message?: unknown }).message ?? ""))) {
+      return { ok: false, code: "billOfSaleFirst", error: FILING_GATE_MESSAGES.billOfSaleFirst };
+    }
     if (error) throw error;
     revalidatePath(`/admin/sales/${dealId}`);
     return { ok: true, agreementId: (data as { id: string }).id };

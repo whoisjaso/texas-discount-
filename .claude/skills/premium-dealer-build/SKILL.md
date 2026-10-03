@@ -1,13 +1,25 @@
 ---
 name: premium-dealer-build
-description: End-to-end playbook for onboarding a new car dealership client: research the dealer's real facts, build a Porsche-grade public website (fixed hero photo, black-and-white marque design, Title Case, real inventory), write the ChatGPT image-generation brief for the team and place the returned images, and port the Handle A Sale admin sale desk (Next.js + Supabase, Texas paperwork, e-signing) in the same theme, then verify and deploy. Use this whenever the user onboards a dealership or auto business, asks to "do what we did for Vega's" or Triple J, wants a luxury dealer site, a sale desk / admin dashboard for a dealer, image prompts for a dealer site, or to load a dealer's Facebook inventory, even if they only name one of those parts.
+description: >-
+  End-to-end playbook for onboarding a new car dealership client: research the dealer's real facts,
+  build a Porsche-grade public website (fixed hero photo, black-and-white marque design, Title Case,
+  real inventory), write the ChatGPT image-generation brief for the team and place the returned
+  images, and port the Handle A Sale admin sale desk (Next.js + Supabase, Texas paperwork, e-signing)
+  in the same theme, verify and deploy, then make the house demo video (short showcase cut plus the
+  narrated walkthrough, via the recordly-demo skill). Use this whenever the user onboards a dealership
+  or auto business, asks to "do what we did for Vega's" or Triple J, wants a luxury dealer site, a
+  sale desk / admin dashboard for a dealer, image prompts for a dealer site, a demo video for a
+  dealer, or to load a dealer's Facebook inventory, even if they only name one of those parts.
 ---
 
 # Premium dealer build
 
 This is the repeatable version of the Vega's Auto Sales & Glass Co. build
 (`clients/vegas-auto-sales` = public site, `clients/vegas-desk` = sale desk,
-PR whoisjaso/xlnc-perception#2). A new client gets the same three things:
+PR whoisjaso/xlnc-perception#2), brought up to date by the Discount Used Cars
+and Trucks build (`clients/discount-used-cars-site`, `-desk`, `-demo`,
+whoisjaso/texas-discount- PR #1), which is now the reference. A new client gets
+the same four things:
 
 1. **A public website** that feels like porsche.com/usa: one fixed hero photo,
    black and white with the client's logo as the only colour, one narrow
@@ -16,6 +28,10 @@ PR whoisjaso/xlnc-perception#2). A new client gets the same three things:
    unchanged, wearing the site's clothes.
 3. **An image brief** the team runs in ChatGPT, with Claude placing every
    returned image and tracking what's left.
+4. **A demo video** made with the `recordly-demo` skill: the short
+   Recordly-style showcase (site, then the desk, then the iPhone cut) and the
+   narrated walkthrough that sells the desk to the dealer in money made and
+   time saved. Every claim in the narration is checked against the desk.
 
 Two rules outrank everything, because the dealership's name goes on legal
 paper and its customers drive to the address on the site:
@@ -36,14 +52,19 @@ facts to collect.
 
 ## Start from the last build, not from zero
 
-Copy `clients/vegas-auto-sales` → `clients/<client>-site` and
-`clients/vegas-desk` → `clients/<client>-desk`. They are clean, tested and
-already free of the reference dealer's facts; every dealer fact lives in one
-file (`src/data/business.ts` for the site, `src/lib/dealership-config.ts` for
-the desk). Then:
+Copy the newest build: `clients/discount-used-cars-site` → `clients/<client>-site`
+and `clients/discount-used-cars-desk` → `clients/<client>-desk` (repo
+whoisjaso/texas-discount-). It carries every desk standard listed under
+Phase 4; the older Vega's copies (`clients/vegas-auto-sales`, `clients/vegas-desk`)
+do not, so use them only if the Discount build is unavailable, and then port
+the Phase 4 standards in. Both are clean, tested and free of the reference
+dealer's facts; every dealer fact lives in one file (`src/data/business.ts`
+for the site, `src/lib/dealership-config.ts` for the desk). Then:
 
-- replace every Vega's fact and asset (grep for `Vega`, `7722`, `941-1622`,
-  `P113248`, `Galveston`, `Constantino`) and add those strings to the desk's
+- replace every reference dealer's fact and asset (Discount: grep for
+  `Discount`, `900-5050`, `203-3890`, `P145000`, `8108`, `Gulf Fw`, `Park Place`,
+  `discountusedcarsandtrucks`; Vega's: `Vega`, `7722`, `941-1622`, `P113248`,
+  `Galveston`, `Constantino`) and add those strings to the desk's
   `no-hardcoded-dealer-facts` guard list so they can never leak into the new
   client;
 - rename the Loader SEEN_KEY, the photo files and `package.json` names;
@@ -99,12 +120,52 @@ and verification. The SOP's rules still hold: structure and logic fixed, no
 invented facts, filing refused while a legal fact is missing, no destructive
 database operations, the client creates their own Supabase project.
 
+Every desk ships with these standards (each is a section of the SOP, with its
+tests; a build missing one is not done):
+- **First sign-in onboarding**: Choose A Password when the account is on a
+  temporary one, then the legal name, then the signature drawn once (SOP,
+  First sign-in: onboarding).
+- **The person on the paper**: the 130-U seller line and the VTR-61 printed
+  name read `<Legal Name> (<First Last>)` with the onboarded signature;
+  Owner, Manager and Registration are cleared to sign by default.
+- **The bill of sale locks what it states**: once filed, the price, basis,
+  down payment, funding, trade-in, buyer details and every other printed
+  answer are refused in every server action until it is voided and filed
+  again (SOP, The sale plan: Freeze).
+- **Void and file again**: owners and managers void a filed bill of sale
+  with a reason; every document carrying its figures is voided with it,
+  nothing is deleted, old signing links die, the new copies are signed again
+  (SOP, Voiding and filing again).
+- **A password reset signs out every device** signed in before it (SOP,
+  Security).
+- **Automatic empty weight** for 130-U box 11 with its source (SOP, Empty
+  weight).
+Apply the desk's migrations in filename order on the client's project.
+
 ### Phase 5: Verify
 Everything in `references/verification.md`: builds, tests, site screenshots at
 1440/1920/390, five desk walks at two sizes signed N/N with zero contrast
 failures, one packet PDF read back.
 
-### Phase 6: Deliver and deploy
+### Phase 6: The demo video
+Use the `recordly-demo` skill (install it alongside this one). It makes two
+cuts from the verified site and the desk's preview:
+- **The short cut** (about 80 s, no voice): the site in a macOS window,
+  the Admin click into the desk, first sign-in, a sale to N / N signed, the
+  130-U close-up, the iPhone cut, the facts-only outro. For social and for the
+  owner's first look.
+- **The narrated walkthrough** (about 4 min): the whole Handle A Sale corridor,
+  unhurried, with a voice that tells the dealer what each step makes them or
+  saves them. Write the script in money-made / time-saved terms, fact-check
+  every line against the desk's code before voicing it (never narrate a
+  feature that is not shipped), have the user approve the script, voice it
+  with the free Kokoro-82M model (the user's pick was `af_heart`) and
+  transcribe it back before cutting.
+Demo data is fictional and realistic (no "Example" anywhere on screen);
+identity emails are blurred; only the dealer's confirmed facts appear. Send
+both MP4s in chat.
+
+### Phase 7: Deliver and deploy
 Commit on the session branch with clear messages, push, open or update the PR
 (draft), send screenshots, and deploy the public site to Vercel as its own
 project (`references/verification.md`, Deploy). List what only the owner can
@@ -134,8 +195,24 @@ secrets.
   desk: the Vega's port redirected new members to a route that did not exist.
 - The website printed on documents is the public domain; the desk's origin is
   only for signing links. Keep them as two values.
-- Demo videos: `references/demo-video.md` (Recordly-style screen capture with
-  zoom, cursor and macOS window, cut with the jason-video-editor template).
+- Empty weight is resolved automatically with its source, on every desk: a
+  title, MCO or scale figure on the car skips the 130-U question; otherwise a
+  bundled EPA estimate (test weight less 300 lb, matched to the model's own
+  EPA rows, cross-checked against Transport Canada) is offered for one tap,
+  rounded per TxDMV; pickups and work vans (known by name too), heavy duty,
+  buses, a class nobody recorded, an unsupported low-confidence estimate and
+  anything within 300 lb of 6,000 lb need a document; with no source at all
+  the question is asked as before. A failed decode is never stored, an
+  unsourced weight is never filed or pasted into webDEALER, and filing writes
+  box 11's source into `form_data` (SOP, Empty weight).
+- Demo videos come from the `recordly-demo` skill, exactly as the approved
+  Discount film (Phase 6), not from a fresh edit. The dealer buys on money and
+  time: a silent showcase is not enough on its own, so the narrated cut ships
+  too.
+- Never generate images for the user's team: write the prompts and hand them
+  over; the team runs them and sends the files back.
+- A credential pasted into chat is never used: ask for it in the
+  environment's settings instead, and suggest rotating the pasted one.
 
 ## Scripts
 
@@ -145,5 +222,14 @@ secrets.
   plus a contact sheet to check.
 - `scripts/site_screens.cjs`: desktop and phone screenshots of the public site.
 - `scripts/desk-walk/`: `sale.cjs`, `ceremony.cjs`, `pdfs.cjs`, `audit-fn.cjs`
-  and five sale scenarios: full end-to-end desk walks with the theme assertion
-  and WCAG contrast audit, the signing ceremony, and packet PDF download.
+  and eight sale scenarios (the five SOP walks plus `estimate-confirm`,
+  `title-on-file` and `no-source` for box 11): full end-to-end desk walks
+  with the theme assertion and WCAG contrast audit, the signing ceremony, and
+  packet PDF download. A scenario's `expect` map names text a screen must
+  show, and a scenario with a `vin` starts the sale through "Not on the lot?"
+  instead of a lot car. Also `onboard.cjs` (first sign-in), `void.cjs` (void
+  the filed bill of sale, `VOID_LANG=es` for the Spanish desk;
+  `bhph-void.json` with `RESUME_DEAL` files again), `freeze.cjs` (held
+  screens refuse, EN and ES) and `reset.cjs` (a reset signs out old devices).
+  Every script reads `DESK_BASE` (default `http://localhost:5190`) through
+  `desk-base.cjs`, which aborts any request to another local port.
