@@ -31,6 +31,7 @@ import { createMockSupabaseClient, mockInserted, resetMockWrites } from "@/lib/s
 import { paperworkMoney, readPaperwork, type PaperworkMoney } from "@/lib/sales/paperwork";
 import { readMoney } from "@/lib/sales/money";
 import { filingGate, figuresDiffer, replacedCopyId } from "@/lib/sales/refile-gates";
+import { WALKED_BUYER_ID } from "./helpers/fee-filing";
 import { finalizePaperwork } from "@/lib/actions/paperwork";
 import { affixedEmptyWeight, emptyWeightContext } from "@/lib/vehicles/empty-weight/on-the-sale";
 import { completeSale } from "@/lib/actions/complete-sale";
@@ -43,8 +44,11 @@ const STEP_DATA = {
   funding: { type: "inHouse", lenderId: null, lenderOther: null },
   money: { amount: "9000", priceBasis: "vehicleOnly", paidTodayAmount: "2000" },
   salePlan: { registrationBy: "dealer", titleSignedBy: "buyer", insuranceShown: true, inspectionBy: "done" },
+  // The licence step settled, as a walked sale holds it: the pages print it.
+  buyerId: WALKED_BUYER_ID,
   paperwork: {
-    billOfSale: { tradeIn: "yes", tradeInAllowance: "2000", tradeInDescription: "2012 Honda Civic LX" },
+    // The mileage statement answered: a sworn statement files only from an answer.
+    billOfSale: { odometerStatus: "actual", tradeIn: "yes", tradeInAllowance: "2000", tradeInDescription: "2012 Honda Civic LX" },
     financing: { downPayment: "2000", paymentFrequency: "Monthly" },
     // Box 11 settled off the Texas title, as the empty-weight screen writes
     // it: a 130-U never files without it (empty-weight/on-the-sale.ts).
@@ -77,7 +81,7 @@ async function seed(
     language: "en",
     step_data: stepData,
     customers: { id: "refile-buyer", name: "Andrea Salinas", phone: "7135550188" },
-    vehicles: { id: "refile-car", year: 2017, make: "Ford", model: "Explorer", vin: "1FM5K8D80HGA00001", title_status: "clean", sale_price: 9000, ...vehicle },
+    vehicles: { id: "refile-car", year: 2017, make: "Ford", model: "Explorer", vin: "1FM5K8D80HGA00001", title_status: "clean", sale_price: 9000, mileage: 118340, body_style: "SUV", exterior_color: "White", ...vehicle },
   });
   if (documents.length) await client.from("document_agreements").insert(documents.map((row) => ({ deal_id: DEAL, language: "en", ...row })));
 }

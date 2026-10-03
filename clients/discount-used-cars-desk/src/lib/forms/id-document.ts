@@ -533,3 +533,32 @@ export function readIdKind(value: unknown): IdDocumentKind {
     ? value
     : "stateLicence";
 }
+
+const ID_KIND_SPANISH: Record<IdDocumentKind, string> = {
+  stateLicence: "Licencia de conducir",
+  stateIdCard: "Tarjeta de identificación estatal",
+  passport: "Pasaporte",
+  militaryId: "Identificación militar",
+  other: "Otra identificación",
+};
+
+/**
+ * The ID number with what it is and who issued it, for a sheet that has one
+ * line for it: "12345678 (Driver Licence, TX)", "G1234567 (Passport, Mexico)".
+ * A number alone reads the same whether a Texas licence or a passport; the
+ * 130-U has always said which, and now every sheet does.
+ */
+export function idNumberLine(
+  number: string,
+  kind: unknown,
+  issuer: string | null | undefined,
+  language: "en" | "es" = "en",
+): string {
+  const value = (number ?? "").trim();
+  if (!value) return "";
+  const resolved = readIdKind(kind);
+  const type = idDocumentType(resolved);
+  const label = language === "es" ? ID_KIND_SPANISH[resolved] : type.label;
+  const from = type.needsCountry ? passportIssuerName(issuer) : type.needsState ? (issuer ?? "").toUpperCase() : "";
+  return `${value} (${[label, from].filter(Boolean).join(", ")})`;
+}

@@ -119,6 +119,12 @@ export type Vtr61Data = {
   dateWorkCompleted: string;
   /** Empty means the dealership rebuilt it. */
   rebuilderName: string;
+  /**
+   * The shop's own address, when a shop rebuilt it. The VTR-61's address
+   * row belongs to the rebuilder: a shop printed with the dealership's
+   * address under its name until this existed.
+   */
+  rebuilderAddress: string;
   /** The account of the work, for the form's details box. */
   workPerformed: string;
   /** True when no component part was replaced: then the labour statement stands in for the parts list. */
@@ -130,6 +136,7 @@ export type Vtr61Data = {
 export const EMPTY_VTR61: Vtr61Data = {
   dateWorkCompleted: "",
   rebuilderName: "",
+  rebuilderAddress: "",
   workPerformed: "",
   noPartsUsed: false,
   laborStatement: "",
@@ -158,6 +165,7 @@ export function readVtr61(raw: unknown): Vtr61Data {
   return {
     dateWorkCompleted: text(data.dateWorkCompleted),
     rebuilderName: text(data.rebuilderName),
+    rebuilderAddress: text(data.rebuilderAddress),
     workPerformed: text(data.workPerformed),
     noPartsUsed: data.noPartsUsed === true,
     laborStatement: text(data.laborStatement),
@@ -178,6 +186,7 @@ export function vtr61Missing(data: Vtr61Data): string[] {
   const missing: string[] = [];
   if (!data.dateWorkCompleted) missing.push("the date the work was finished");
   if (!data.workPerformed) missing.push("what work was done");
+  if (data.rebuilderName && !data.rebuilderAddress) missing.push("the shop's address");
   if (data.noPartsUsed) {
     if (!data.laborStatement) missing.push("the written statement that no component part was replaced, and what the labour was");
   } else {

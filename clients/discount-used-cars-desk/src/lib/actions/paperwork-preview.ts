@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getSaleDetail, vehicleLabel } from "@/lib/admin/sale-desk";
 import { corridorCompletedLink } from "@/lib/sales/corridor-link";
 import { paperworkAnswers, paperworkMoney, readPaperwork } from "@/lib/sales/paperwork";
+import { saleContextExtras } from "@/lib/sales/paperwork-filing-context";
 import { readMoney } from "@/lib/sales/money";
 import { readBuyerId } from "@/lib/sales/buyer-id";
 import { SITE_URL } from "@/lib/dealership-config";
@@ -87,6 +88,7 @@ export async function previewPaperworkPdf(
       vehicleYear: sale.vehicle?.year ?? null,
       saleYear: Number((sale.startedAt ?? sale.createdAt).slice(0, 4)) || undefined,
       answers,
+      ...saleContextExtras(sale),
     });
 
     // The same shape ReviewStep files, minus signatures: the preview must

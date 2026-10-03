@@ -38,7 +38,28 @@ export type FilingGateCode =
   /* The sale's government fees, recorded from webDEALER (government-fees.ts). */
   | GovernmentFeesFilingProblem
   /* A ch. 345 vehicle (chapter-345.ts): not this desk's paperwork. */
-  | "chapter345Vehicle";
+  | "chapter345Vehicle"
+  /*
+    The page-by-page refusals (field-maps/), after every refusal above. Each
+    only refuses, and DESK_ALLOW_UNSET_FACTS lifts none of them.
+  */
+  | PageGateCode;
+
+/** The refusals the document's own pages add, in the order the filing checks them. */
+export type PageGateCode =
+  | "mustAnswer"
+  | "termsUnsolved"
+  | "rebuiltDisclosureFirst"
+  | "poaInstrument"
+  | "fieldMissing";
+
+export const PAGE_GATE_MESSAGES: Record<PageGateCode, string> = {
+  mustAnswer: "Answer this first; it is a statement the paper swears to and it is never filled in for you:",
+  termsUnsolved: "The note's terms are not worked out. Answer the payment, the number of payments or the rate so the contract has a payment schedule.",
+  rebuiltDisclosureFirst: "File the Rebuilt Title Disclosure first. Texas wants it signed before the bill of sale.",
+  poaInstrument: "The power of attorney on record must be the one this car's model year allows. Check the year on the vehicle and open the review again.",
+  fieldMissing: "This document would print blank where the sale should say something. Fill these in first:",
+};
 
 export const FILING_GATE_MESSAGES: Record<FilingGateCode, string> = {
   billOfSaleAlreadyFiled: "This sale already has a filed bill of sale. Void it from the paperwork before filing it again.",
@@ -47,6 +68,7 @@ export const FILING_GATE_MESSAGES: Record<FilingGateCode, string> = {
   ...DEALER_CHARGES_MESSAGES,
   ...GOVERNMENT_FEES_FILING_MESSAGES,
   chapter345Vehicle: CHAPTER_345_MESSAGE,
+  ...PAGE_GATE_MESSAGES,
 };
 
 const ROOTS = ["billOfSale", "salvageBillOfSale"] as const;

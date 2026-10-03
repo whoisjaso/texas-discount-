@@ -8,6 +8,7 @@ import SmsConsentSection from '@/components/documents/SmsConsentSection';
 import DocumentLetterhead from '@/components/documents/DocumentLetterhead';
 import DocFeeNotice from '@/components/documents/DocFeeNotice';
 import { dealership, dealerSignerPrintedName } from '@/lib/dealership-config';
+import { printedPhone } from '@/lib/forms/phone';
 import {
   DOC_FEE_NOTICE_EN,
   DOC_FEE_NOTICE_ES,
@@ -131,14 +132,14 @@ export default function ContractPreview({ data, signatures, copyLabel, strings: 
             <h3 className="doc-section-heading mb-4">{s.buyerInfo}</h3>
             <p className="font-[family-name:var(--font-display)] text-xl mb-1 min-h-[1.75rem]">{data.buyerName}</p>
             <p className="text-sm text-[color:var(--tj-ink)] min-h-[1.25rem]">{data.buyerAddress}</p>
-            <p className="text-sm text-[color:var(--tj-ink)] min-h-[1.25rem]">{data.buyerPhone}</p>
+            <p className="text-sm text-[color:var(--tj-ink)] min-h-[1.25rem]">{printedPhone(data.buyerPhone)}</p>
             <p className="text-sm text-[color:var(--tj-ink)] min-h-[1.25rem]">{data.buyerEmail}</p>
           </div>
           <div className="p-6" data-mobile-empty={!hasCoBuyer ? 'true' : undefined}>
             <h3 className="doc-section-heading mb-4">{s.coBuyerInfo}</h3>
             <p className="font-[family-name:var(--font-display)] text-xl mb-1 min-h-[1.75rem]">{data.coBuyerName}</p>
             <p className="text-sm text-[color:var(--tj-ink)] min-h-[1.25rem]">{data.coBuyerAddress}</p>
-            <p className="text-sm text-[color:var(--tj-ink)] min-h-[1.25rem]">{data.coBuyerPhone}</p>
+            <p className="text-sm text-[color:var(--tj-ink)] min-h-[1.25rem]">{printedPhone(data.coBuyerPhone)}</p>
             <p className="text-sm text-[color:var(--tj-ink)] min-h-[1.25rem]">{data.coBuyerEmail}</p>
           </div>
         </div>
@@ -160,7 +161,7 @@ export default function ContractPreview({ data, signatures, copyLabel, strings: 
                 <td className="p-3" data-label={s.year}>{data.vehicleYear}</td>
                 <td className="p-3" data-label={s.make}>{data.vehicleMake}</td>
                 <td className="p-3" data-label={s.model}>{data.vehicleModel}</td>
-                <td className="p-3" data-label={s.mileage}>{data.vehicleMileage}</td>
+                <td className="p-3" data-label={s.mileage}>{/^\d+$/.test(String(data.vehicleMileage ?? "")) ? Number(data.vehicleMileage).toLocaleString("en-US") : data.vehicleMileage}</td>
               </tr>
             </tbody>
           </table>
@@ -500,7 +501,7 @@ export default function ContractPreview({ data, signatures, copyLabel, strings: 
           </div>
 
           <div className="grid grid-cols-2 gap-16 mt-8">
-            <SignatureLinePreview label={`${s.dealerRepSignature}. DL# ${DEALER_LICENSE}`} signatureImage={signatures.dealerSignature} signatureDate={signatures.dealerSignatureDate} printedName={dealerSignerName ? dealerSignerPrintedName(dealerSignerName) : undefined} />
+            <SignatureLinePreview label={`${s.dealerRepSignature}. ${s.dealerLicense} ${DEALER_LICENSE}`} signatureImage={signatures.dealerSignature} signatureDate={signatures.dealerSignatureDate} printedName={dealerSignerName ? dealerSignerPrintedName(dealerSignerName) : undefined} />
           </div>
         </div>
 

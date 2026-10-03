@@ -101,7 +101,11 @@ export default async function SalePacketPage({ params, searchParams }: Props) {
   const buyersGuideHref = (lang: "en" | "es"): string => {
     const params = new URLSearchParams();
     if (sale.vehicle?.id) params.set("vehicleId", sale.vehicle.id);
+    // The sale's warranty answer marks the guide's boxes.
+    params.set("dealId", sale.id);
     if (lang === "es") params.set("lang", "es");
+    // The copy for the window: the front and the back.
+    params.set("copy", "window");
     const qs = params.toString();
     return qs ? `/api/documents/buyers-guide?${qs}` : "/api/documents/buyers-guide";
   };

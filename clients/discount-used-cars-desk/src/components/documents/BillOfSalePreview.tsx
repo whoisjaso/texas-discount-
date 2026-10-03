@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import DocumentLetterhead from '@/components/documents/DocumentLetterhead';
 import SignatureLinePreview from '@/components/documents/SignatureLinePreview';
 import { chicagoDateKey } from '@/lib/customers/recurring-dates';
+import { printedPhone } from '@/lib/forms/phone';
 import { brand, dealerSignerPrintedName } from '@/lib/dealership-config';
 import { toTitleCaseDisplay } from '@/lib/display/title-case';
 import {
@@ -136,7 +137,15 @@ export default function BillOfSalePreview({
   */
   const buyerIdKind = readIdKind(data.buyerIdKind);
   const buyerIdLabel =
-    buyerIdKind === 'passport' ? s.passport : buyerIdKind === 'militaryId' ? s.militaryId : s.driverLicense;
+    buyerIdKind === 'passport'
+      ? s.passport
+      : buyerIdKind === 'militaryId'
+        ? s.militaryId
+        : buyerIdKind === 'stateIdCard'
+          ? s.idCard
+          : buyerIdKind === 'other'
+            ? s.otherId
+            : s.driverLicense;
   const buyerIssuerLabel = idDocumentType(buyerIdKind).needsCountry ? s.issuedBy : s.state;
   const buyerIssuer = idDocumentType(buyerIdKind).needsCountry
     ? passportIssuerName(data.buyerLicenseState)
@@ -158,10 +167,39 @@ export default function BillOfSalePreview({
   ]
     .filter(Boolean)
     .join(', ');
+  /*
+    The method as a person reads it ("Cash App", not the stored "CashApp"),
+    and on a bank deal the lender beside "Financing".
+  */
+  const methodLabels: Record<string, string> = {
+    Cash: b.payCash,
+    Zelle: b.payZelle,
+    CashApp: b.payCashApp,
+    Venmo: b.payVenmo,
+    Card: b.payCard,
+    Check: b.payCheck,
+    Financing: b.payFinancing,
+    Other: b.payOther,
+  };
   const paymentDisplay =
     data.paymentMethod === 'Other'
       ? data.paymentMethodOther
-      : data.paymentMethod;
+      : data.paymentMethod === 'Financing' && data.paymentMethodOther
+        ? `${methodLabels.Financing ?? data.paymentMethod}, ${data.paymentMethodOther}`
+        : methodLabels[data.paymentMethod] ?? data.paymentMethod;
+  /** The reading with its thousands separator, as a person writes it. */
+  const mileage = (value: string | undefined) => {
+    const digits = String(value ?? '').replace(/[,\s]/g, '');
+    return /^\d+$/.test(digits) ? Number(digits).toLocaleString('en-US') : String(value ?? '');
+  };
+  /*
+    What was paid today, on a copy that carries it. A copy filed before the
+    key existed prints its old "Total Paid", the total due.
+  */
+  const paidToday =
+    typeof (data as { amountPaidToday?: unknown }).amountPaidToday === 'number'
+      ? ((data as { amountPaidToday?: number }).amountPaidToday as number)
+      : null;
   const dataRecord = data as BillOfSaleData & { buyerIdBackImage?: string };
   const buyerIdBackImage = dataRecord.buyerIdBackImage || '';
   const hasCoBuyer = Boolean(
@@ -180,7 +218,12 @@ export default function BillOfSalePreview({
       : data.odometerStatus === 'exceeds'
         ? b.odometerExceedsLabel
         : b.odometerDiscrepancyLabel;
-  const today = chicagoDateKey();
+  /*
+    A line left for ink is dated the day of the sale, never the day it was
+    printed: a copy reprinted next week used to date the buyer's line next
+    week. The render date stands only when the copy has no sale date.
+  */
+  const today = data.saleDate || chicagoDateKey();
   const sellerLienReason =
     sellerLien.reason === DEFAULT_SELLER_LIEN_REASON
       ? b.defaultSellerLienReason
@@ -342,7 +385,7 @@ export default function BillOfSalePreview({
               <h2 className="bos-section-heading">{s.buyerInfo}</h2>
               <p className="bos-party-name">{data.buyerName}</p>
               <p className="bos-party-detail">{buyerFullAddress}</p>
-              <p className="bos-party-detail">{data.buyerPhone}</p>
+              <p className="bos-party-detail">{printedPhone(data.buyerPhone)}</p>
               <p className="bos-party-detail">{data.buyerEmail}</p>
               <div className="bos-party-meta">
                 <span className="font-mono">
@@ -355,11 +398,14 @@ export default function BillOfSalePreview({
                 )}
               </div>
             </section>
-            <section data-mobile-empty={!hasCoBuyer ? 'true' : undefined}>
+            {/* No co-buyer, no box: an empty "Co-Buyer Information" with a
+                dangling DL# printed on every sale. */}
+            {hasCoBuyer ? (
+            <section>
               <h2 className="bos-section-heading">{s.coBuyerInfo}</h2>
               <p className="bos-party-name">{data.coBuyerName}</p>
               <p className="bos-party-detail">{coBuyerFullAddress}</p>
-              <p className="bos-party-detail">{data.coBuyerPhone}</p>
+              <p className="bos-party-detail">{printedPhone(data.coBuyerPhone)}</p>
               <p className="bos-party-detail">{data.coBuyerEmail}</p>
               <div className="bos-party-meta">
                 <span className="font-mono">
@@ -372,6 +418,7 @@ export default function BillOfSalePreview({
                 )}
               </div>
             </section>
+            ) : null}
           </div>
 
           {(signatures.buyerIdPhoto || buyerIdBackImage) && (
@@ -434,7 +481,7 @@ export default function BillOfSalePreview({
                   <td data-label={s.color}>{data.vehicleColor}</td>
                   <td data-label={s.body}>{data.vehicleBodyStyle}</td>
                   <td data-label={s.mileage} className="font-mono">
-                    {data.odometerReading || data.vehicleMileage}
+                    {mileage(data.odometerReading || data.vehicleMileage)}
                   </td>
                 </tr>
               </tbody>
@@ -461,7 +508,8 @@ export default function BillOfSalePreview({
               </div>
               <div className="doc-reckoning-row">
                 <dt>{b.netTradeIn}</dt>
-                <dd>{formatCurrency(calc.netTradeIn)}</dd>
+                {/* Taken off, so it reads as taken off. */}
+                <dd>{calc.netTradeIn > 0 ? `\u2212 ${formatCurrency(calc.netTradeIn)}` : formatCurrency(calc.netTradeIn)}</dd>
               </div>
               <div className="doc-reckoning-row">
                 <dt>{b.feesTax}</dt>
@@ -578,6 +626,14 @@ export default function BillOfSalePreview({
                   <span>{b.totalAmountDue}</span>
                   <span>{formatCurrency(calc.totalDue)}</span>
                 </div>
+                {/* What crossed the desk today, between the total and the balance
+                    it leaves: the balance is the difference of the two lines. */}
+                {sellerLien.enabled && paidToday !== null && (
+                  <div className="bos-money-row" data-paid-today="">
+                    <span>{b.paidToday}</span>
+                    <span>{formatCurrency(paidToday)}</span>
+                  </div>
+                )}
                 {sellerLien.enabled && (
                   <div className="bos-money-row bos-lien-figure">
                     <span>{b.sellerLienBalanceLine}</span>
@@ -845,7 +901,7 @@ export default function BillOfSalePreview({
               </div>
               <div>
                 <dt className="bos-field-label">{b.odometerReading}</dt>
-                <dd className="font-mono">{data.odometerReading} mi</dd>
+                <dd className="font-mono">{mileage(data.odometerReading)} mi</dd>
               </div>
             </dl>
 
@@ -860,7 +916,9 @@ export default function BillOfSalePreview({
               </div>
               <div>
                 <dt className="bos-field-label">{b.ackTotalPaid}</dt>
-                <dd>{formatCurrency(calc.totalDue)}</dd>
+                {/* What was paid, not what is due: "Total Paid $4,001.75"
+                    printed beside a $501.75 balance still owed. */}
+                <dd data-total-paid="">{formatCurrency(paidToday ?? calc.totalDue)}</dd>
               </div>
               {sellerLien.enabled && (
                 <div>
@@ -916,7 +974,8 @@ export default function BillOfSalePreview({
                 />
               )}
               <SignatureLinePreview
-                label={`${s.sellerDealer}. ${s.driverLicense} ${DEALER_LICENSE}`}
+                // The dealer's GDN under its own name, never a driver's "DL#".
+                label={`${s.sellerDealer}. ${s.dealerLicense} ${DEALER_LICENSE}`}
                 dateLabel={s.date}
                 signatureImage={signatures.dealerSignature}
                 signatureDate={signatures.dealerSignatureDate || today}

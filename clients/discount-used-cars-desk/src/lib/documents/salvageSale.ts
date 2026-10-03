@@ -57,6 +57,10 @@ export interface SalvageSaleData {
   total: number;
   amountPaidToday: number;
   paymentMethod: string;
+  /** The lender on a bank-funded tow-away sale, printed beside "Financing". */
+  paymentMethodOther?: string;
+  /** What is still owed after today, when anything is (display only). */
+  balanceOwed?: number;
   howLeaving: HowLeaving | "";
   /** The dealership's salvage dealer licence, when it holds one. */
   salvageLicense: string;
@@ -101,6 +105,8 @@ export interface SalvageSaleCopy {
   docFeeLabel: string;
   totalLabel: string;
   paidTodayLabel: string;
+  balanceOwedLabel: string;
+  paymentMethodLabels: Record<string, string>;
   paymentMethodLabel: string;
   howLeavingLabel: string;
   howLeaving: Record<HowLeaving, string>;
@@ -161,6 +167,8 @@ export const SALVAGE_COPY_EN: SalvageSaleCopy = {
   docFeeLabel: "Documentary fee",
   totalLabel: "Total",
   paidTodayLabel: "Paid today",
+  balanceOwedLabel: "Balance owed",
+  paymentMethodLabels: { Cash: "Cash", Zelle: "Zelle", CashApp: "Cash App", Venmo: "Venmo", Card: "Card", Check: "Check", Financing: "Financing" },
   paymentMethodLabel: "Paid by",
   howLeavingLabel: "Leaving the lot",
   howLeaving: {
@@ -244,6 +252,8 @@ export const SALVAGE_COPY_ES: SalvageSaleCopy = {
   docFeeLabel: "Cuota documental",
   totalLabel: "Total",
   paidTodayLabel: "Pagado hoy",
+  balanceOwedLabel: "Saldo pendiente",
+  paymentMethodLabels: { Cash: "Efectivo", Zelle: "Zelle", CashApp: "Cash App", Venmo: "Venmo", Card: "Tarjeta", Check: "Cheque", Financing: "Financiamiento" },
   paymentMethodLabel: "Forma de pago",
   howLeavingLabel: "Sale del lote",
   howLeaving: {

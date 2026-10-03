@@ -73,7 +73,8 @@ describe("filing", () => {
       language: "en",
       step_data: stepData,
       customers: { id: "fee-buyer", name: "Andrea Salinas", phone: "7135550188" },
-      vehicles: { id: "fee-bike", year: 2019, make: "Honda", model: "Rebel 500", vin: "JH2PC4400KK000001", title_status: "clean", sale_price: 9000, body_style: bodyStyle },
+      // The reading Start A Sale records: the bill of sale's odometer box prints it.
+      vehicles: { id: "fee-bike", year: 2019, make: "Honda", model: "Rebel 500", vin: "JH2PC4400KK000001", title_status: "clean", sale_price: 9000, body_style: bodyStyle, mileage: 21000 },
     });
     return stepData;
   }

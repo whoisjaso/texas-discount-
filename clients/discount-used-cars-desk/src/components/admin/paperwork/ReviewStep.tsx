@@ -15,6 +15,8 @@ import { DOC_FEE_SET } from "@/lib/documents/billOfSale";
 import { DOC_FEE, STATE_FEES_2026, centsAsDollars } from "@/lib/legal/texas-dealer-fees";
 import { notSet } from "@/lib/dealership-config";
 import { sourceLineFromAnswers } from "@/lib/vehicles/empty-weight/copy";
+import PageReadBack from "@/components/admin/paperwork/PageReadBack";
+import type { ReadBackPage } from "@/lib/documents/field-maps/resolve";
 
 /**
  * The last screen: what was answered, and the signature that files it.
@@ -43,6 +45,8 @@ export default function ReviewStep({
   quotedRegistrationAmount,
   doneHref,
   poa,
+  pages = [],
+  sworn = [],
 }: {
   dealId: string;
   documentType: string;
@@ -73,6 +77,13 @@ export default function ReviewStep({
     grantorName: string;
     grantorAddress: string;
   } | null;
+  /** The document's pages as they will print (field-maps/resolve.ts). */
+  pages?: ReadBackPage[];
+  /**
+   * The sworn statements and signed dates nobody has answered yet: the
+   * filing refuses them, so the screen names them, with the way back.
+   */
+  sworn?: Array<{ key: string; question: string; href: string }>;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -114,7 +125,24 @@ export default function ReviewStep({
     sheet; this screen just does not read it back on the one that will not
     print it.
   */
-  const noRegistration = documentType === "salvageBillOfSale";
+  const noRegistration =
+    documentType === "salvageBillOfSale" ||
+    documentType === "towAwayAcknowledgment" ||
+    documentType === "buyerResponsibilityStatement";
+  /*
+    The money is read back only on the pages that print it. The rebuilt
+    disclosure, the insurance acknowledgment and the two tow-away
+    acknowledgments print no money; their read-back is their page. The
+    figures still post with the filing, so every gate checks them as before.
+  */
+  const printsMoney =
+    documentType === "billOfSale" ||
+    documentType === "salvageBillOfSale" ||
+    documentType === "form130U" ||
+    (pages.length === 0 && documentType !== "financing");
+  /** A box the sale should fill that would print blank: the filing refuses it. */
+  const missingRows = pages.flatMap((page) => page.rows).filter((row) => row.status === "missing");
+  const blockedHere = sworn.length > 0 || missingRows.length > 0;
   const shownTotal = money
     ? noRegistration
       ? Math.round((money.total - money.registrationFee) * 100) / 100
@@ -130,9 +158,13 @@ export default function ReviewStep({
   // figure and let the operator sign off on the wrong one.
   // Underscored keys are the solver's bookkeeping (whether the note was
   // capped, its ceiling), read below and never listed as answers.
-  const entries = Object.entries(answers).filter(
+  const allEntries = Object.entries(answers).filter(
     ([key, value]) => value !== "" && key !== "quotedRegistrationAmount" && !key.startsWith("_"),
   );
+  // With the page read back, the answers are on it with their Change
+  // links; only box 11's own row (its source and its Change) stays listed.
+  const entries =
+    pages.length > 0 ? allEntries.filter(([key]) => key === "emptyWeight" && documentType === "form130U") : allEntries;
 
   function file() {
     tapHaptic();
@@ -193,6 +225,23 @@ export default function ReviewStep({
         setRecordGovernment(government !== null && government !== "chapter345Vehicle");
         if (government) {
           setError(t.review[government]);
+          return;
+        }
+        /*
+          The page's own refusals (refile-gates.ts PAGE_GATE_MESSAGES), in the
+          screen's language, naming the boxes or questions.
+        */
+        const page =
+          result.code === "mustAnswer" ||
+          result.code === "termsUnsolved" ||
+          result.code === "rebuiltDisclosureFirst" ||
+          result.code === "poaInstrument" ||
+          result.code === "fieldMissing"
+            ? result.code
+            : null;
+        if (page) {
+          setOpenPaperwork(page === "rebuiltDisclosureFirst");
+          setError([t.review[page], ...(result.missing ?? [])].join(" "));
           return;
         }
         /*
@@ -264,6 +313,7 @@ export default function ReviewStep({
             <dd>{vin || t.review.notOnFile}</dd>
           </div>
         </dl>
+        <PageReadBack pages={pages} />
 
         {blocked ? (
           <p className="ed-paper-error" role="alert">
@@ -327,6 +377,26 @@ export default function ReviewStep({
   return (
     <div className="ed-paper-review">
       {acknowledgmentNote ? <p className="ed-paper-note">{acknowledgmentNote}</p> : null}
+      <PageReadBack pages={pages} />
+      {sworn.length > 0 ? (
+        <div className="ed-paper-error" role="alert" data-sworn-open="">
+          <p>{t.review.mustAnswer}</p>
+          <ul>
+            {sworn.map((item) => (
+              <li key={item.key}>
+                <Link className="ed-weight-change" href={item.href}>
+                  {item.question}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {missingRows.length > 0 ? (
+        <p className="ed-paper-error" role="alert" data-fields-missing="">
+          {t.review.fieldMissing} {missingRows.map((row) => row.label).join(", ")}.
+        </p>
+      ) : null}
       <dl className="ed-paper-summary">
         {entries.map(([key, value]) =>
           key === "emptyWeight" && documentType === "form130U" ? (
@@ -363,7 +433,7 @@ export default function ReviewStep({
             </dd>
           </div>
         ) : null}
-        {entries.length === 0 && !money && quotedRegistrationAmount === null && !acknowledgmentNote ? (
+        {entries.length === 0 && pages.length === 0 && !money && quotedRegistrationAmount === null && !acknowledgmentNote ? (
           <p className="ed-paper-note">{t.review.nothingAsked}</p>
         ) : null}
       </dl>
@@ -376,7 +446,7 @@ export default function ReviewStep({
         <FinancingFigures t={t} dollars={dollars} money={money} answers={answers} />
       ) : null}
 
-      {money && documentType !== "financing" ? (
+      {money && documentType !== "financing" && printsMoney ? (
         <dl className="ed-paper-summary ed-paper-money">
           <div className="ed-paper-line">
             <dt className="ed-fine">{t.review.money.car}</dt>
@@ -450,7 +520,7 @@ export default function ReviewStep({
         </dl>
       ) : null}
 
-      {quotedRegistrationAmount !== null ? (
+      {quotedRegistrationAmount !== null && pages.length === 0 ? (
         <dl className="ed-paper-summary ed-paper-money">
           <div className="ed-paper-line ed-paper-total">
             <dt className="ed-fine">{t.review.money.taxAndFees}</dt>
@@ -492,7 +562,7 @@ export default function ReviewStep({
         </div>
       ) : null}
 
-      <button type="button" className="ed-btn ed-btn-dark ed-paper-file" disabled={pending} onClick={file}>
+      <button type="button" className="ed-btn ed-btn-dark ed-paper-file" disabled={pending || blockedHere} onClick={file}>
         {pending
           ? t.review.filing
           : fillTemplate(t.review.fileThe, {

@@ -8,6 +8,8 @@ import { tapHaptic } from "@/lib/haptics";
 import { useFunnel } from "@/components/admin/funnel/FunnelLocaleProvider";
 import { FreezeWayOut, useFreezeRefusal } from "@/components/admin/guide/HeldByBillOfSale";
 import { localizeQuestion } from "@/lib/sales/question-i18n";
+import ListPickStep from "@/components/admin/paperwork/ListPickStep";
+import MultiPickStep from "@/components/admin/paperwork/MultiPickStep";
 
 /**
  * One paperwork question, answered.
@@ -49,6 +51,8 @@ export default function AnswerStep({
   const [choosing, setChoosing] = useState<string | null>(null);
   const [value, setValue] = useState(current);
   const [error, setError] = useState<string | null>(null);
+  // The "another ..." card of a choice that can be typed.
+  const [otherOpen, setOtherOpen] = useState(false);
   // A refusal from the filed bill of sale names what it holds and the way out.
   const freezeRefusal = useFreezeRefusal();
 
@@ -84,7 +88,47 @@ export default function AnswerStep({
     });
   }
 
-  if (question.kind === "choice") {
+  if (question.kind === "list" && question.list) {
+    return (
+      <div className="ed-paper-answer">
+        <ListPickStep list={question.list} current={current} pending={pending} choosing={choosing} onPick={answer} />
+        {worded.note ? <p className="ed-paper-note">{worded.note}</p> : null}
+        {error ? (
+          <p className="ed-paper-error" role="alert">
+            {error}
+          </p>
+        ) : null}
+        {error ? <FreezeWayOut heldBy={freezeRefusal.heldBy} /> : null}
+      </div>
+    );
+  }
+
+  if (question.kind === "multi") {
+    return (
+      <div className="ed-paper-answer">
+        <MultiPickStep options={worded.options ?? []} current={current} pending={pending} onDone={answer} />
+        {worded.note ? <p className="ed-paper-note">{worded.note}</p> : null}
+        {error ? (
+          <p className="ed-paper-error" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (question.kind === "choice" || question.kind === "dateChoice") {
+    /*
+      A choice that can also be something off the list (another number of
+      payments, another rate, another date) shows its last card as the way
+      to type it, on the same screen. A stored answer that is none of the
+      cards opens the box with it.
+    */
+    const offList =
+      Boolean(question.other) &&
+      current !== "" &&
+      !(worded.options ?? []).some((option) => option.value === current);
+    const typing = otherOpen || offList;
     return (
       <div className="ed-paper-answer">
         <div className="ed-pay-row">
@@ -109,7 +153,44 @@ export default function AnswerStep({
               </button>
             );
           })}
+          {question.other ? (
+            <button
+              type="button"
+              className="ed-pay-choice"
+              data-active={typing ? "true" : undefined}
+              aria-pressed={typing}
+              disabled={pending}
+              onClick={() => setOtherOpen(true)}
+            >
+              <span className="ed-pay-choice-label">{worded.other?.label ?? question.other.label}</span>
+            </button>
+          ) : null}
         </div>
+        {question.other && typing ? (
+          <form
+            className="ed-paper-other"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (!pending && value.trim()) answer(value.trim());
+            }}
+          >
+            <label className="ed-paper-field">
+              <span className="sr-only">{worded.other?.label ?? question.other.label}</span>
+              <input
+                className="ed-input ed-paper-input"
+                value={offList || otherOpen ? value : ""}
+                onChange={(event) => setValue(event.target.value)}
+                disabled={pending}
+                type={question.other.kind === "date" ? "date" : "text"}
+                inputMode={question.other.kind === "money" || question.other.kind === "number" ? "decimal" : "text"}
+                autoFocus
+              />
+            </label>
+            <button type="submit" className="ed-btn ed-btn-dark ed-paper-next" disabled={pending || !value.trim()}>
+              {pending ? t.chrome.saving : t.chrome.next}
+            </button>
+          </form>
+        ) : null}
         {worded.note ? <p className="ed-paper-note">{worded.note}</p> : null}
         {error ? (
           <p className="ed-paper-error" role="alert">
@@ -122,13 +203,14 @@ export default function AnswerStep({
   }
 
   const numeric = question.kind === "money" || question.kind === "number";
+  const vin = question.kind === "vin";
 
   return (
     <form
       className="ed-paper-answer"
       onSubmit={(event) => {
         event.preventDefault();
-        if (!pending) answer(value.trim());
+        if (!pending && value.trim() !== "") answer(value.trim());
       }}
     >
       <label className="ed-paper-field">
@@ -138,11 +220,13 @@ export default function AnswerStep({
         <input
           className="ed-input ed-paper-input"
           value={value}
-          onChange={(event) => setValue(event.target.value)}
+          // A VIN is seventeen capitals, whatever the keyboard typed.
+          onChange={(event) => setValue(vin ? event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 17) : event.target.value)}
           disabled={pending}
           type={question.kind === "date" ? "date" : "text"}
           inputMode={numeric ? "decimal" : "text"}
-          autoCapitalize={question.kind === "text" ? "words" : "none"}
+          autoCapitalize={question.kind === "text" ? "words" : vin ? "characters" : "none"}
+          maxLength={vin ? 17 : undefined}
           autoCorrect="off"
           spellCheck={false}
           // The hands are already on the keyboard when this screen arrives on
@@ -158,7 +242,9 @@ export default function AnswerStep({
 
       {worded.note ? <p className="ed-paper-note">{worded.note}</p> : null}
 
-      <button type="submit" className="ed-btn ed-btn-dark ed-paper-next" disabled={pending}>
+      {/* An empty box is not an answer: Next waits for one, and "Not
+          applicable" below is the way past a question that allows it. */}
+      <button type="submit" className="ed-btn ed-btn-dark ed-paper-next" disabled={pending || value.trim() === ""}>
         {pending ? t.chrome.saving : t.chrome.next}
       </button>
 

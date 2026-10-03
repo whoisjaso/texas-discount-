@@ -1,6 +1,7 @@
 import { PDFDocument, StandardFonts, rgb, type PDFImage } from "pdf-lib";
 import { embedImageDataUrl, fitWithin } from "@/lib/documents/embed-image";
 import { usDate } from "@/lib/documents/us-date";
+import { embedFontFor, fetchUnicodeFont, type UnicodeFontLoader } from "@/lib/pdf/unicode-font";
 import type { CompletedLinkData } from "@/lib/documents/customerPortal";
 
 export const OFFICIAL_REBUILT_FORM = "ENF-MV-RBLT-DSCLMR";
@@ -34,10 +35,25 @@ export function officialRebuiltDataFromLink(link: CompletedLinkData, includeSign
 }
 
 /** Fill only the write-in lines of the original TxDMV purchaser disclosure. */
-export async function fillOfficialRebuiltDisclosure(source: Uint8Array, data: OfficialRebuiltDisclosureData): Promise<Uint8Array> {
+export async function fillOfficialRebuiltDisclosure(
+  source: Uint8Array,
+  data: OfficialRebuiltDisclosureData,
+  /**
+   * Where the Unicode face comes from when a name needs it: fetched from
+   * public/ in the browser (the default, for the review's preview), read
+   * from disk on the server (`readUnicodeFont`, passed by the PDF route).
+   */
+  loadUnicodeFont: UnicodeFontLoader = fetchUnicodeFont,
+): Promise<Uint8Array> {
   const pdf = await PDFDocument.load(source);
   const page = pdf.getPage(0);
-  const font = await pdf.embedFont(StandardFonts.Helvetica);
+  // Helvetica, unless the purchaser's name has a letter it cannot print.
+  const { font } = await embedFontFor(
+    pdf,
+    await pdf.embedFont(StandardFonts.Helvetica),
+    [data.year, data.make, data.vin, data.buyerName],
+    loadUnicodeFont,
+  );
   function write(value: string | undefined, x: number, y: number, width: number) {
     const text = value?.trim();
     if (!text) return;

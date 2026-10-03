@@ -31,8 +31,20 @@
  *    It approximates the capture (instant scrolls, real-time reveals); the capture and the verify gates stay the
  *    authority, and follow zooms are only indicative here (look at their stills).
  *
+ * 4. DESK PREFLIGHT (--desk --storyboard <file> [--shots a,b] [--var deal=… --var sign=…] [--desk-dir $DESK_DIR]):
+ *    for the desk shots (a shot whose base is the desk, http://localhost:5190, or every shot named in --shots), on a
+ *    THROWAWAY desk server (it makes deals and onboards the member: restart the server afterwards, desk-server.sh
+ *    restart): each shot's own base, cookies, css and clock; its readySelector; then every action replayed instantly
+ *    in order (pre-roll fills and domClicks included), failing on any selector or "contains" label that does not
+ *    resolve and on any value still in double braces. A shot whose url needs a --var that was not given is skipped
+ *    with a WARN (a deal at that step is made by the off-camera walk; give --var to check it too). Zoom framing is
+ *    not judged here (the desk shots use fixed focus points: the cut gates and the part-B stills judge them). When
+ *    clean it stamps storyboard.json → deskPreflight { commit, dirty, on, shots } with the desk's commit (the last one
+ *    touching src/lib/sales or src/components/admin): runbook.cjs refuses the desk captures when the desk has moved
+ *    since. Prints DESK PREFLIGHT CLEAN or DESK PREFLIGHT FAIL.
+ *
  * Exit 0 = clean (warnings and CHECK lines are for reading), 1 = something to fix. Never touches the site source. Uses
- * Playwright from the global npm root and /opt/pw-browsers (never `playwright install`).
+ * Playwright from PWPATH or the global npm root and /opt/pw-browsers (never `playwright install`).
  */
 'use strict';
 const fs = require('fs');
@@ -41,6 +53,7 @@ const { execSync } = require('child_process');
 
 function loadPlaywright() {
   if (!process.env.PLAYWRIGHT_BROWSERS_PATH && fs.existsSync('/opt/pw-browsers')) process.env.PLAYWRIGHT_BROWSERS_PATH = '/opt/pw-browsers';
+  if (process.env.PWPATH) return require(process.env.PWPATH); // scripts/env.sh writes it (default $(npm root -g)/playwright)
   try {
     return require('playwright');
   } catch {
@@ -224,8 +237,109 @@ function suggest(center, d, vw, vh, lines, ins, outs) {
   return null;
 }
 
+/** --var NAME=VALUE (repeatable) */
+const VARS = (() => {
+  const v = {};
+  for (let i = 2; i < process.argv.length; i++) if (process.argv[i] === '--var' && process.argv[i + 1]) {
+    const [k, ...rest] = process.argv[i + 1].split('='); v[k] = rest.join('=');
+  }
+  return v;
+})();
+
+async function deskPreflight(pw) {
+  const { execFileSync } = require('child_process');
+  const { normalizeShot } = require('./capture.cjs');
+  if (!sb) { console.error('--desk needs --storyboard <file>'); process.exit(2); }
+  const DESK = String(args['desk-base'] || process.env.DESK_BASE || 'http://localhost:5190').replace(/\/+$/, '');
+  const only = typeof args.shots === 'string' ? args.shots.split(',') : null;
+  const isDesk = (s) => (only ? only.includes(s.id) : String(s.base || sb.base || '').replace(/\/+$/, '') === DESK || /^https?:\/\/localhost:5190/.test(String(s.url || '')));
+  const shots = sb.shots.filter((s) => s.url && isDesk(s));
+  if (!shots.length) { console.error(`no desk shots in ${args.storyboard} (base ${DESK}${only ? `, --shots ${only.join(',')}` : ''})`); process.exit(2); }
+  const browser = await pw.chromium.launch({ headless: true, executablePath: process.env.CHROME_PATH || undefined });
+  const checked = [];
+  try {
+    for (const raw of shots) {
+      const holes = JSON.stringify(Object.fromEntries(Object.entries(raw).filter(([k]) => !k.startsWith('_') && k !== 'why'))).match(/\{\{\s*[A-Z0-9_]+\s*\}\}/g);
+      if (holes) { problem(`${raw.id}: UNSET ${[...new Set(holes)].join(', ')} (fill-client.cjs desk-storyboard / long-storyboard)`); continue; }
+      const need = [...String(raw.url).matchAll(/\{(\w+)\}/g)].map((m) => m[1]).filter((k) => VARS[k] === undefined && !(raw.vars && raw.vars[k] !== undefined));
+      if (need.length) { warn(`${raw.id}: skipped, its url needs --var ${need.join(', ')} (a deal at that step, made by the off-camera walk)`); continue; }
+      const shot = normalizeShot(raw, sb);
+      const vars = Object.assign({}, shot.vars || {}, VARS);
+      const url = String(raw.url).replace(/\{(\w+)\}/g, (_, k) => encodeURI(String(vars[k])));
+      const vp = shot.viewport || { width: 1440, height: 900 };
+      const c = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, isMobile: !!shot.mobile, hasTouch: !!shot.mobile, locale: 'en-US', timezoneId: shot.timezone || timezone });
+      const host = new URL(DESK).hostname;
+      if (Array.isArray(shot.cookies) && shot.cookies.length) await c.addCookies(shot.cookies.map((k) => Object.assign({ domain: host, path: '/' }, k)));
+      if (shot.css) await c.addInitScript((css) => { const add = () => { const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st); }; if (document.head) add(); else document.addEventListener('DOMContentLoaded', add); }, shot.css);
+      const p = await c.newPage();
+      if (shot.clock) await p.clock.setFixedTime(new Date(shot.clock));
+      const errs = [];
+      const fail = (m) => { errs.push(m); problem(`${shot.id}: ${m}`); };
+      try {
+        await p.goto(/^https?:/.test(url) ? url : DESK + url, { waitUntil: 'load', timeout: 180000 });
+        if (shot.readySelector) await p.waitForSelector(shot.readySelector, { timeout: 60000 }).catch(() => fail(`readySelector ${shot.readySelector} never appeared`));
+        await p.waitForTimeout(800);
+        const find = async (a) => {
+          let loc = p.locator(a.selector);
+          if (a.contains) loc = loc.filter({ hasText: a.contains });
+          const n = await loc.count().catch(() => -1);
+          if (n < 0) return { err: `invalid selector ${a.selector}` };
+          if (!n) return { err: `not found: ${a.selector}${a.contains ? ` contains "${a.contains}"` : ''}` };
+          return { loc: loc.nth(a.nth || 0) };
+        };
+        for (const a of [...shot.actions].sort((x, y) => x.t - y.t)) {
+          const tag = `the ${a.type} at t=${a.t}`;
+          if (a.type === 'eval') { await p.evaluate(a.js).catch((e) => fail(`${tag} threw: ${String(e.message).split('\n')[0]}`)); continue; }
+          if (a.type === 'type') { await p.keyboard.type(String(a.text || '')); continue; }
+          if (a.type === 'press') { await p.keyboard.press(a.key); continue; }
+          if (a.type === 'scrollBy') { await p.evaluate((y) => window.scrollBy({ top: y, behavior: 'instant' }), Number(a.y || 0)); continue; }
+          if (!a.selector) continue; // moveTo waypoints, fromShot starts
+          const r = await find(a);
+          if (r.err) { fail(`${r.err} (${tag})`); continue; }
+          try {
+            if (a.type === 'fill') {
+              const tagName = await r.loc.evaluate((e) => e.tagName);
+              if (tagName === 'SELECT') await r.loc.selectOption(String(a.value)); else await r.loc.fill(String(a.value));
+            } else if (a.type === 'domClick') await r.loc.evaluate((e) => e.click());
+            else if (a.type === 'click') await r.loc.click({ timeout: 15000 });
+            else if (a.type === 'hover') await r.loc.hover({ timeout: 15000 });
+            else if (a.type === 'scrollTo') await r.loc.scrollIntoViewIfNeeded();
+            else if (a.type === 'hold') { const b = await r.loc.boundingBox(); await p.mouse.move(b.x + b.width / 2, b.y + b.height / 2); await p.mouse.down(); await p.waitForTimeout(Math.round((a.holdSec || 2.5) * 1000)); await p.mouse.up(); }
+            else if (a.type === 'draw') { const b = await r.loc.boundingBox(); if (!b || b.width < 50) fail(`${tag}: the pad ${a.selector} has no size`); }
+          } catch (e) { fail(`${tag} on ${a.selector}${a.contains ? ` "${a.contains}"` : ''}: ${String(e.message).split('\n')[0]}`); }
+          if (['click', 'domClick', 'hold'].includes(a.type)) await p.waitForLoadState('networkidle').catch(() => {});
+          await p.waitForTimeout(a.type === 'click' || a.type === 'domClick' ? 900 : 150);
+        }
+      } catch (e) { fail(`could not load ${url}: ${String(e.message).split('\n')[0]}`); }
+      console.log(`${errs.length ? 'FAIL ' : 'OK   '} ${shot.id}: ${shot.actions.length} actions replayed${errs.length ? `, ${errs.length} problem(s)` : ''}`);
+      checked.push(shot.id);
+      await c.close();
+    }
+  } finally { await browser.close(); }
+  const n = report.problems.length;
+  if (!n && args.storyboard) {
+    const dir = args['desk-dir'] || process.env.DESK_DIR;
+    let commit = null, dirty = 0;
+    try {
+      commit = execFileSync('git', ['-C', dir, 'log', '-1', '--format=%h', '--', 'src/lib/sales', 'src/components/admin'], { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() || null;
+      dirty = execFileSync('git', ['-C', dir, 'status', '--porcelain', '--', 'src/lib/sales', 'src/components/admin'], { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim().split('\n').filter(Boolean).length;
+    } catch { /* no desk dir: no stamp */ }
+    if (commit) {
+      const full = JSON.parse(fs.readFileSync(args.storyboard, 'utf8'));
+      full.deskPreflight = { commit, dirty, on: new Date().toISOString().slice(0, 16) + 'Z', shots: checked, skipped: report.warnings.filter((w) => /skipped/.test(w)).length };
+      fs.writeFileSync(args.storyboard, JSON.stringify(full, null, 2) + '\n');
+      console.log(`stamped deskPreflight ${commit}${dirty ? ` (+${dirty} uncommitted)` : ''} into ${args.storyboard}`);
+    } else warn('no --desk-dir / DESK_DIR: deskPreflight not stamped (runbook.cjs will refuse the desk captures)');
+  }
+  if (args.json) fs.writeFileSync(args.json, JSON.stringify(report, null, 2));
+  console.log(n ? `DESK PREFLIGHT FAIL: ${n} to fix (${report.warnings.length} warnings). The desk changed: compare with its docs/verification/paperwork-pages/corridor-changes.md, update the storyboard shot (house template too), re-run. Then restart the server (desk-server.sh restart).`
+    : `DESK PREFLIGHT CLEAN (${checked.length} shots, ${report.warnings.length} warnings). Now restart the server for a fresh desk: desk-server.sh restart`);
+  process.exit(n ? 1 : 0);
+}
+
 async function main() {
   const pw = loadPlaywright();
+  if (args.desk) return deskPreflight(pw);
   const { cursorKind, normalizeShot } = require('./capture.cjs');
   const browser = await pw.chromium.launch({ headless: true });
   try {

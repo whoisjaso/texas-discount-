@@ -5,10 +5,13 @@ const fs = require('fs');
 const { bundle } = require('@remotion/bundler');
 const { renderStill, selectComposition } = require('@remotion/renderer');
 
+// HEADLESS_SHELL, else Playwright's headless shell under PLAYWRIGHT_BROWSERS_PATH (default /opt/pw-browsers)
 const headlessShell = (() => {
+  if (process.env.HEADLESS_SHELL && fs.existsSync(process.env.HEADLESS_SHELL)) return process.env.HEADLESS_SHELL;
+  const root = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers';
   try {
-    const d = fs.readdirSync('/opt/pw-browsers').find((n) => n.startsWith('chromium_headless_shell-'));
-    return d ? `/opt/pw-browsers/${d}/chrome-linux/headless_shell` : undefined;
+    const d = fs.readdirSync(root).find((n) => n.startsWith('chromium_headless_shell-'));
+    return d ? `${root}/${d}/chrome-linux/headless_shell` : undefined;
   } catch {
     return undefined;
   }

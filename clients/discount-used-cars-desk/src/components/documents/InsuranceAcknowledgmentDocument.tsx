@@ -68,6 +68,7 @@ export default function InsuranceAcknowledgmentDocument({
     <div className="print-doc bos-print doc-sheet">
       <section className="bos-page" data-bos-page="insurance">
         <DocumentLetterhead
+          lang={language === "es" ? "es" : "en"}
           title={copy.heading}
           subtitle={copy.subtitle}
           reference={[{ label: copy.dateLabel, value: usDate(data.saleDate) }]}
@@ -142,7 +143,7 @@ export default function InsuranceAcknowledgmentDocument({
             />
           </div>
           <p className="bos-helper" style={{ marginTop: "0.75rem" }}>
-            {dealership.name} · {dealership.address.street}, {dealership.address.locality},{" "}
+            {brand.legal} · {dealership.address.street}, {dealership.address.locality},{" "}
             {dealership.address.region} {dealership.address.postalCode}
           </p>
         </section>

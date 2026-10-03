@@ -6,6 +6,7 @@ import {
   DEALER_PHONE,
   DEALER_WEBSITE,
 } from "@/lib/documents/shared";
+import { getDocStrings } from "@/lib/documents/i18n";
 
 /**
  * The letterhead every document this dealer files carries.
@@ -22,9 +23,12 @@ export default function DocumentLetterhead({
   title,
   subtitle,
   reference,
+  lang = "en",
 }: {
   title: string;
   subtitle?: string;
+  /** The sheet's language: the licence label prints in it (documents.shared.dealerLicenceShort). */
+  lang?: "en" | "es";
   /** Date, stock number and anything else that identifies this copy. */
   reference?: Array<{ label: string; value: string }>;
 }) {
@@ -41,7 +45,9 @@ export default function DocumentLetterhead({
           <p>
             {DEALER_PHONE} · {DEALER_WEBSITE}
           </p>
-          <p>Dealer licence {DEALER_LICENSE}</p>
+          <p>
+            {getDocStrings(lang).shared.dealerLicenceShort} {DEALER_LICENSE}
+          </p>
         </div>
       </div>
 

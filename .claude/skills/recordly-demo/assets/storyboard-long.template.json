@@ -1,0 +1,1744 @@
+{
+ "title": "{{CLIENT}}: the narrated long cut, new desk captures (20-27)",
+ "base": "http://localhost:5190",
+ "clock": "{{DESK_CLOCK}}",
+ "timezone": "{{TIMEZONE}}",
+ "shots": [
+  {
+   "id": "20-car",
+   "part": "narrated",
+   "url": "/admin/sales/new",
+   "viewport": {
+    "width": 1440,
+    "height": 900,
+    "deviceScaleFactor": 2
+   },
+   "cookies": [
+    {
+     "name": "tj-local-admin-preview",
+     "value": "{{DESK_COOKIE}}"
+    }
+   ],
+   "prerollSec": 0.8,
+   "readySelector": "button.ed-pick",
+   "durationSec": 33.6,
+   "cursor": {
+    "kind": "pointer",
+    "start": {
+     "x": 1330.7,
+     "y": 94
+    }
+   },
+   "css": "nextjs-portal{display:none!important} .text-\\[\\#3F5A43\\]{color:var(--tj-ink,#111)!important} .bg-\\[\\#3F5A43\\]{background-color:var(--tj-ink,#111)!important} .ed-nav-identity-handle{filter:blur(4px)} .ed-admin > .ed-sale-head ~ div{display:none!important} #email{color:transparent!important;text-shadow:0 0 10px rgba(17,17,17,.9)!important;caret-color:#111} #email::placeholder{color:transparent!important;text-shadow:none!important} [data-onboarding-step=\"signature\"] .ed-start-fields > .space-y-2{min-height:181.5px} {{SELECT_MENU_CSS}} [data-money-receipt] > .ed-money-line:nth-child(4) > dd{filter:blur(5px)}",
+   "actions": [
+    {
+     "t": -0.6,
+     "type": "eval",
+     "js": "{{SELECT_MENU_JS}}",
+     "why": "the native <select> popup is not painted headless: a stand-in menu drawn where the OS menu opens (mousedown on the select is intercepted)"
+    },
+    {
+     "t": 0.45,
+     "type": "hover",
+     "selector": "button.ed-pick",
+     "contains": "Camry",
+     "anchor": [
+      0.42,
+      0.5
+     ],
+     "durationSec": 1,
+     "why": "L07 'Pick the car off your lot'"
+    },
+    {
+     "t": 5,
+     "type": "click",
+     "selector": "button.ed-pick",
+     "contains": "Camry",
+     "anchor": [
+      0.42,
+      0.5
+     ],
+     "durationSec": 0.25,
+     "why": "L07 'Nobody types them'"
+    },
+    {
+     "t": 6.2,
+     "type": "hover",
+     "selector": "input[name=mileage]",
+     "anchor": [
+      0.3,
+      0.5
+     ],
+     "durationSec": 0.9,
+     "why": "L08 'Miles change' / 'brings in the number from inventory'"
+    },
+    {
+     "t": 11.55,
+     "type": "click",
+     "selector": "input[name=mileage]",
+     "anchor": [
+      0.3,
+      0.5
+     ],
+     "durationSec": 0.35,
+     "why": "L08 'lets you correct it'"
+    },
+    {
+     "t": 12.05,
+     "type": "press",
+     "key": "Backspace"
+    },
+    {
+     "t": 12.2,
+     "type": "press",
+     "key": "Backspace"
+    },
+    {
+     "t": 12.35,
+     "type": "press",
+     "key": "Backspace"
+    },
+    {
+     "t": 12.6,
+     "type": "type",
+     "text": "517",
+     "perCharSec": 0.17,
+     "why": "L08 'to what the dash says today': 89432 -> 89517"
+    },
+    {
+     "t": 17.4,
+     "type": "hover",
+     "selector": "select[name=language]",
+     "anchor": [
+      0.28,
+      0.5
+     ],
+     "durationSec": 0.8,
+     "why": "L09 'more comfortable in Spanish'"
+    },
+    {
+     "t": 21,
+     "type": "click",
+     "selector": "select[name=language]",
+     "anchor": [
+      0.28,
+      0.5
+     ],
+     "durationSec": 0.3,
+     "why": "opens the menu"
+    },
+    {
+     "t": 21.6,
+     "type": "click",
+     "selector": ".vid-opt[data-v=es]",
+     "anchor": [
+      0.25,
+      0.5
+     ],
+     "durationSec": 0.45,
+     "why": "L09 'Mark the sale Spanish'"
+    },
+    {
+     "t": 27.3,
+     "type": "click",
+     "selector": "select[name=language]",
+     "anchor": [
+      0.28,
+      0.5
+     ],
+     "durationSec": 0.4,
+     "why": "L09 'English-speaking buyer?'"
+    },
+    {
+     "t": 29,
+     "type": "click",
+     "selector": ".vid-opt[data-v=en]",
+     "anchor": [
+      0.25,
+      0.5
+     ],
+     "durationSec": 0.5,
+     "why": "L09 'Leave it in English'"
+    },
+    {
+     "t": 30.3,
+     "type": "click",
+     "selector": "button.tj-action-primary",
+     "contains": "Next",
+     "durationSec": 0.45,
+     "why": "L09 'and keep moving'"
+    },
+    {
+     "t": 31.35,
+     "type": "click",
+     "selector": "label.ed-title-kind",
+     "contains": "Clean title",
+     "anchor": [
+      0.3,
+      0.35
+     ],
+     "durationSec": 0.5
+    },
+    {
+     "t": 32.05,
+     "type": "scrollTo",
+     "selector": "button.tj-action-primary",
+     "contains": "Next",
+     "align": "end",
+     "offset": -40,
+     "durationSec": 0.6
+    },
+    {
+     "t": 32.75,
+     "type": "click",
+     "selector": "button.tj-action-primary",
+     "contains": "Next",
+     "durationSec": 0.45
+    }
+   ],
+   "zooms": [
+    {
+     "at": 0.6,
+     "until": 4.75,
+     "depth": 2,
+     "focus": {
+      "x": 1076,
+      "y": 713
+     },
+     "follow": false,
+     "why": "the Camry tile: year, make, model, miles, VIN tail"
+    },
+    {
+     "at": 5.9,
+     "until": 16.9,
+     "depth": 2,
+     "focus": {
+      "x": 720,
+      "y": 455
+     },
+     "follow": false,
+     "why": "odometer (and the car line above it)"
+    },
+    {
+     "at": 15.6,
+     "until": 30.2,
+     "depth": 2.1,
+     "focus": {
+      "x": 720,
+      "y": 560
+     },
+     "follow": false,
+     "why": "pan: odometer, language and Next"
+    }
+   ],
+   "cutWhy": "ends after the title step's Next (the step changes on the click)"
+  },
+  {
+   "id": "21-buyer",
+   "part": "narrated",
+   "url": "/admin/sales/new",
+   "viewport": {
+    "width": 1440,
+    "height": 900,
+    "deviceScaleFactor": 2
+   },
+   "cookies": [
+    {
+     "name": "tj-local-admin-preview",
+     "value": "{{DESK_COOKIE}}"
+    }
+   ],
+   "prerollSec": 3.4,
+   "readySelector": "button.ed-pick",
+   "durationSec": 29.6,
+   "cursor": {
+    "kind": "pointer",
+    "start": {
+     "fromShot": "20-car",
+     "x": 720,
+     "y": 700
+    }
+   },
+   "css": "nextjs-portal{display:none!important} .text-\\[\\#3F5A43\\]{color:var(--tj-ink,#111)!important} .bg-\\[\\#3F5A43\\]{background-color:var(--tj-ink,#111)!important} .ed-nav-identity-handle{filter:blur(4px)} .ed-admin > .ed-sale-head ~ div{display:none!important} #email{color:transparent!important;text-shadow:0 0 10px rgba(17,17,17,.9)!important;caret-color:#111} #email::placeholder{color:transparent!important;text-shadow:none!important} [data-onboarding-step=\"signature\"] .ed-start-fields > .space-y-2{min-height:181.5px} {{SELECT_MENU_CSS}} [data-money-receipt] > .ed-money-line:nth-child(4) > dd{filter:blur(5px)}",
+   "actions": [
+    {
+     "t": -3,
+     "type": "domClick",
+     "selector": "button.ed-pick",
+     "contains": "Camry"
+    },
+    {
+     "t": -2.85,
+     "type": "fill",
+     "selector": "input[name=mileage]",
+     "value": "89517"
+    },
+    {
+     "t": -2.7,
+     "type": "fill",
+     "selector": "select[name=language]",
+     "value": "en"
+    },
+    {
+     "t": -2.55,
+     "type": "domClick",
+     "selector": "button.tj-action-primary",
+     "contains": "Next"
+    },
+    {
+     "t": -2.4,
+     "type": "domClick",
+     "selector": "label.ed-title-kind",
+     "contains": "Clean title"
+    },
+    {
+     "t": -2.25,
+     "type": "domClick",
+     "selector": "button.tj-action-primary",
+     "contains": "Next"
+    },
+    {
+     "t": -2.1,
+     "type": "fill",
+     "selector": "input[name=buyerFirstName]",
+     "value": "James"
+    },
+    {
+     "t": -1.95,
+     "type": "fill",
+     "selector": "input[name=buyerLastName]",
+     "value": "Carter"
+    },
+    {
+     "t": -1.8,
+     "type": "domClick",
+     "selector": "button.tj-action-primary",
+     "contains": "Next"
+    },
+    {
+     "t": -1.65,
+     "type": "fill",
+     "selector": "input[name=buyerPhone]",
+     "value": "{{DEMO_PHONE}}"
+    },
+    {
+     "t": -1.5,
+     "type": "domClick",
+     "selector": "button.tj-action-primary",
+     "contains": "Next"
+    },
+    {
+     "t": -1.2,
+     "type": "eval",
+     "js": "{{CAMERA_FEED_JS}}",
+     "why": "test camera feed: getUserMedia returns a canvas stream of the DEMO card (front, then back); the desk's own scanner decodes the PDF417"
+    },
+    {
+     "t": 0.05,
+     "type": "click",
+     "selector": "button",
+     "contains": "Scan ID",
+     "durationSec": 0.55,
+     "why": "L10 'Scan'"
+    },
+    {
+     "t": 1.05,
+     "type": "click",
+     "selector": "button[aria-label=\"Take the picture now\"]",
+     "durationSec": 0.45,
+     "why": "the front: the shutter"
+    },
+    {
+     "t": 1.95,
+     "type": "eval",
+     "js": "window.__cam.side = 'back'"
+    },
+    {
+     "t": 1.75,
+     "type": "click",
+     "selector": "button",
+     "contains": "Use It, Turn It Over",
+     "durationSec": 0.35,
+     "why": "L10 'the back of the license'"
+    },
+    {
+     "t": 2.55,
+     "type": "click",
+     "selector": "button",
+     "contains": "Use It",
+     "durationSec": 0.4,
+     "why": "barcode read: 'the name and number fill in'"
+    },
+    {
+     "t": 4.15,
+     "type": "hover",
+     "selector": "main img",
+     "anchor": [
+      0.5,
+      0.55
+     ],
+     "durationSec": 0.7,
+     "why": "L10 'You check them against the card'"
+    },
+    {
+     "t": 6.35,
+     "type": "scrollBy",
+     "y": 89,
+     "durationSec": 0.6,
+     "cursor": "keep"
+    },
+    {
+     "t": 6.95,
+     "type": "click",
+     "selector": "button.tj-action-primary",
+     "contains": "Next",
+     "anchor": [
+      0.5,
+      0.5
+     ],
+     "durationSec": 0.6,
+     "why": "L10 'Only what you confirm goes on paper'"
+    },
+    {
+     "t": 8.45,
+     "type": "click",
+     "selector": "input[name=buyerStreet]",
+     "anchor": [
+      0.12,
+      0.5
+     ],
+     "durationSec": 0.6
+    },
+    {
+     "t": 9.35,
+     "type": "type",
+     "text": "{{DEMO_N_STREET}}",
+     "perCharSec": 0.07,
+     "why": "L11 'Type the street' (the Census lookup fills city, ZIP and county)"
+    },
+    {
+     "t": 14.4,
+     "type": "hover",
+     "selector": "input[name=buyerCounty]",
+     "anchor": [
+      0.2,
+      0.5
+     ],
+     "durationSec": 0.7,
+     "why": "L12 'Remember that county'"
+    },
+    {
+     "t": 21.9,
+     "type": "click",
+     "selector": "button",
+     "contains": "Start Sale",
+     "durationSec": 0.7,
+     "why": "L13 'read the mailing address back to them'"
+    },
+    {
+     "t": 25.05,
+     "type": "hold",
+     "selector": "[data-confirm-hold]",
+     "anchor": [
+      0.5,
+      0.5
+     ],
+     "durationSec": 0.6,
+     "holdSec": 3.5,
+     "why": "L13 'and hold to confirm'; released at 'the first time'"
+    }
+   ],
+   "zooms": [
+    {
+     "at": 3,
+     "until": 6.3,
+     "depth": 1.6,
+     "focus": {
+      "x": 720,
+      "y": 571
+     },
+     "follow": false,
+     "why": "the photos, the note and the number"
+    },
+    {
+     "at": 8.6,
+     "until": 14.2,
+     "depth": 1.5,
+     "focus": {
+      "x": 720,
+      "y": 550
+     },
+     "follow": false,
+     "why": "street to Start Sale"
+    },
+    {
+     "at": 13.9,
+     "until": 18.3,
+     "depth": 2.2,
+     "focus": {
+      "x": 720,
+      "y": 600
+     },
+     "follow": false,
+     "why": "the county"
+    },
+    {
+     "at": 22.75,
+     "until": null,
+     "depth": 2,
+     "focus": {
+      "x": 720,
+      "y": 450
+     },
+     "follow": false,
+     "why": "the read-back card while the button fills"
+    }
+   ],
+   "cutWhy": "ends just after the hold's release (the dialog closes and the guide opens the licence review, confirmed off camera)"
+  },
+  {
+   "id": "22-money",
+   "part": "narrated",
+   "url": "/admin/sales/{deal}/guide/funding",
+   "viewport": {
+    "width": 1440,
+    "height": 900,
+    "deviceScaleFactor": 2
+   },
+   "cookies": [
+    {
+     "name": "tj-local-admin-preview",
+     "value": "{{DESK_COOKIE}}"
+    }
+   ],
+   "prerollSec": 0.8,
+   "readySelector": "main button",
+   "durationSec": 28.7,
+   "cursor": {
+    "kind": "pointer",
+    "start": {
+     "fromShot": "21-buyer",
+     "x": 815,
+     "y": 537
+    }
+   },
+   "css": "nextjs-portal{display:none!important} .text-\\[\\#3F5A43\\]{color:var(--tj-ink,#111)!important} .bg-\\[\\#3F5A43\\]{background-color:var(--tj-ink,#111)!important} .ed-nav-identity-handle{filter:blur(4px)} .ed-admin > .ed-sale-head ~ div{display:none!important} #email{color:transparent!important;text-shadow:0 0 10px rgba(17,17,17,.9)!important;caret-color:#111} #email::placeholder{color:transparent!important;text-shadow:none!important} [data-onboarding-step=\"signature\"] .ed-start-fields > .space-y-2{min-height:181.5px} {{SELECT_MENU_CSS}} [data-money-receipt] > .ed-money-line:nth-child(4) > dd{filter:blur(5px)}",
+   "actions": [
+    {
+     "t": 0.7,
+     "type": "hover",
+     "selector": "main button",
+     "contains": "Cash",
+     "anchor": [
+      0.5,
+      0.5
+     ],
+     "durationSec": 1.1
+    },
+    {
+     "t": 4.15,
+     "type": "click",
+     "selector": "main button",
+     "contains": "Cash",
+     "anchor": [
+      0.5,
+      0.5
+     ],
+     "durationSec": 0.4
+    },
+    {
+     "t": 8.9,
+     "type": "hover",
+     "selector": "main input",
+     "anchor": [
+      0.62,
+      0.5
+     ],
+     "durationSec": 0.8
+    },
+    {
+     "t": 12.45,
+     "type": "click",
+     "selector": "main input",
+     "anchor": [
+      0.62,
+      0.5
+     ],
+     "durationSec": 0.4,
+     "why": "L15 'Type the number you shook hands on'"
+    },
+    {
+     "t": 13,
+     "type": "type",
+     "text": "9500",
+     "perCharSec": 0.14
+    },
+    {
+     "t": 13.9,
+     "type": "click",
+     "selector": "main button",
+     "contains": "Next",
+     "durationSec": 0.5
+    },
+    {
+     "t": 14.85,
+     "type": "hover",
+     "selector": "main button",
+     "contains": "whole price",
+     "anchor": [
+      0.5,
+      0.45
+     ],
+     "durationSec": 0.6
+    },
+    {
+     "t": 16,
+     "type": "click",
+     "selector": "main button",
+     "contains": "go on top",
+     "anchor": [
+      0.5,
+      0.45
+     ],
+     "durationSec": 0.55,
+     "why": "L15 'and tap whether tax and fees were inside it'"
+    },
+    {
+     "t": 17.2,
+     "type": "moveTo",
+     "x": 1130,
+     "y": 520,
+     "durationSec": 0.9,
+     "why": "off the receipt while it is read"
+    },
+    {
+     "t": 21.3,
+     "type": "click",
+     "selector": ".ed-money-adjust",
+     "anchor": [
+      0.5,
+      0.5
+     ],
+     "durationSec": 0.6,
+     "why": "L15 'and shows you exactly what's still owed'"
+    },
+    {
+     "t": 22.25,
+     "type": "click",
+     "selector": ".ed-money-adjust-field input",
+     "anchor": [
+      0.5,
+      0.5
+     ],
+     "durationSec": 0.3
+    },
+    {
+     "t": 22.6,
+     "type": "type",
+     "text": "6000",
+     "perCharSec": 0.12
+    },
+    {
+     "t": 23.6,
+     "type": "moveTo",
+     "x": 1130,
+     "y": 640,
+     "durationSec": 0.9
+    },
+    {
+     "t": 27.75,
+     "type": "click",
+     "selector": "button.ed-money-next",
+     "anchor": [
+      0.5,
+      0.3
+     ],
+     "durationSec": 0.6
+    }
+   ],
+   "zooms": [
+    {
+     "at": 5.4,
+     "until": 16.6,
+     "depth": 1.8,
+     "focus": {
+      "x": 720,
+      "y": 445
+     },
+     "follow": false,
+     "why": "the price question, then Yes / No"
+    },
+    {
+     "at": 16.4,
+     "until": 20.4,
+     "depth": 2,
+     "focus": {
+      "x": 720,
+      "y": 420
+     },
+     "follow": false,
+     "why": "the receipt lines"
+    },
+    {
+     "at": 19,
+     "until": 27,
+     "depth": 2.1,
+     "focus": {
+      "x": 720,
+      "y": 618
+     },
+     "follow": false,
+     "why": "pan: total, paying today, balance owed, the note and the box"
+    }
+   ],
+   "vars": {}
+  },
+  {
+   "id": "23-plan",
+   "part": "narrated",
+   "url": "/admin/sales/{deal}/guide/plan:registration",
+   "viewport": {
+    "width": 1440,
+    "height": 900,
+    "deviceScaleFactor": 2
+   },
+   "cookies": [
+    {
+     "name": "tj-local-admin-preview",
+     "value": "{{DESK_COOKIE}}"
+    }
+   ],
+   "prerollSec": 0.8,
+   "readySelector": "main button",
+   "durationSec": 22.6,
+   "cursor": {
+    "kind": "pointer",
+    "start": {
+     "fromShot": "22-money",
+     "x": 754,
+     "y": 863
+    }
+   },
+   "css": "nextjs-portal{display:none!important} .text-\\[\\#3F5A43\\]{color:var(--tj-ink,#111)!important} .bg-\\[\\#3F5A43\\]{background-color:var(--tj-ink,#111)!important} .ed-nav-identity-handle{filter:blur(4px)} .ed-admin > .ed-sale-head ~ div{display:none!important} #email{color:transparent!important;text-shadow:0 0 10px rgba(17,17,17,.9)!important;caret-color:#111} #email::placeholder{color:transparent!important;text-shadow:none!important} [data-onboarding-step=\"signature\"] .ed-start-fields > .space-y-2{min-height:181.5px} {{SELECT_MENU_CSS}} [data-money-receipt] > .ed-money-line:nth-child(4) > dd{filter:blur(5px)}",
+   "actions": [
+    {
+     "t": 1.35,
+     "type": "hover",
+     "selector": "main button",
+     "contains": "We do",
+     "anchor": [
+      0.5,
+      0.45
+     ],
+     "durationSec": 0.9,
+     "why": "L17 'One tap'"
+    },
+    {
+     "t": 7.25,
+     "type": "hover",
+     "selector": "main button",
+     "contains": "customer does",
+     "anchor": [
+      0.5,
+      0.45
+     ],
+     "durationSec": 0.6,
+     "why": "L17 'the responsibility form when they do'"
+    },
+    {
+     "t": 8.85,
+     "type": "click",
+     "selector": "main button",
+     "contains": "We do",
+     "anchor": [
+      0.5,
+      0.45
+     ],
+     "durationSec": 0.6
+    },
+    {
+     "t": 10.25,
+     "type": "click",
+     "selector": "main button",
+     "contains": "No plate yet",
+     "anchor": [
+      0.5,
+      0.5
+     ],
+     "durationSec": 0.6
+    },
+    {
+     "t": 11.45,
+     "type": "click",
+     "selector": "main button",
+     "contains": "here today",
+     "anchor": [
+      0.5,
+      0.45
+     ],
+     "durationSec": 0.6
+    },
+    {
+     "t": 16.75,
+     "type": "hover",
+     "selector": "main button",
+     "contains": "Already Passed",
+     "anchor": [
+      0.5,
+      0.5
+     ],
+     "durationSec": 0.6,
+     "why": "L18 'done'"
+    },
+    {
+     "t": 17.45,
+     "type": "hover",
+     "selector": "main button",
+     "contains": "We Are Doing It",
+     "anchor": [
+      0.5,
+      0.5
+     ],
+     "durationSec": 0.45,
+     "why": "L18 'yours'"
+    },
+    {
+     "t": 18.05,
+     "type": "hover",
+     "selector": "main button",
+     "contains": "The Customer Will",
+     "anchor": [
+      0.5,
+      0.5
+     ],
+     "durationSec": 0.5,
+     "why": "L18 'or theirs'"
+    },
+    {
+     "t": 20.45,
+     "type": "click",
+     "selector": "main button",
+     "contains": "Already Passed",
+     "anchor": [
+      0.5,
+      0.5
+     ],
+     "durationSec": 0.6
+    },
+    {
+     "t": 21.55,
+     "type": "click",
+     "selector": "main button",
+     "contains": "shown today",
+     "anchor": [
+      0.5,
+      0.45
+     ],
+     "durationSec": 0.55
+    }
+   ],
+   "zooms": [
+    {
+     "at": 0.3,
+     "until": null,
+     "depth": 1.45,
+     "focus": {
+      "x": 720,
+      "y": 470
+     },
+     "follow": false,
+     "why": "each plan question and its answers"
+    }
+   ]
+  },
+  {
+   "id": "24-desk-qr",
+   "part": "narrated",
+   "url": "/admin/sales/{deal}/packet",
+   "viewport": {
+    "width": 1440,
+    "height": 900,
+    "deviceScaleFactor": 2
+   },
+   "cookies": [
+    {
+     "name": "tj-local-admin-preview",
+     "value": "{{DESK_COOKIE}}"
+    }
+   ],
+   "prerollSec": 1,
+   "readySelector": ".packet-progress",
+   "durationSec": 4,
+   "cursor": {
+    "kind": "pointer",
+    "start": {
+     "x": 1010,
+     "y": 560
+    }
+   },
+   "css": "nextjs-portal{display:none!important} .text-\\[\\#3F5A43\\]{color:var(--tj-ink,#111)!important} .bg-\\[\\#3F5A43\\]{background-color:var(--tj-ink,#111)!important} .ed-nav-identity-handle{filter:blur(4px)} .ed-admin > .ed-sale-head ~ div{display:none!important} #email{color:transparent!important;text-shadow:0 0 10px rgba(17,17,17,.9)!important;caret-color:#111} #email::placeholder{color:transparent!important;text-shadow:none!important} [data-onboarding-step=\"signature\"] .ed-start-fields > .space-y-2{min-height:181.5px} {{SELECT_MENU_CSS}} [data-money-receipt] > .ed-money-line:nth-child(4) > dd{filter:blur(5px)}",
+   "actions": [
+    {
+     "t": 0.4,
+     "type": "moveTo",
+     "x": 905,
+     "y": 548,
+     "durationSec": 1,
+     "why": "rests beside the code"
+    }
+   ],
+   "zooms": [
+    {
+     "at": 0.15,
+     "until": null,
+     "depth": 2.2,
+     "focus": {
+      "x": 620,
+      "y": 515
+     },
+     "follow": false,
+     "why": "L22 'The buyer scans a code'"
+    }
+   ]
+  },
+  {
+   "id": "26-phone-sign",
+   "part": "narrated",
+   "url": "{sign}",
+   "viewport": {
+    "width": 390,
+    "height": 797,
+    "deviceScaleFactor": 2
+   },
+   "mobile": true,
+   "cookies": [],
+   "prerollSec": 0.6,
+   "readySelector": "h1",
+   "durationSec": 11.6,
+   "cursor": {
+    "kind": "pointer",
+    "start": {
+     "x": 300,
+     "y": 700
+    }
+   },
+   "css": "nextjs-portal{display:none!important}",
+   "actions": [
+    {
+     "t": 0.55,
+     "type": "click",
+     "selector": "button",
+     "contains": "Begin",
+     "durationSec": 0.25,
+     "why": "Begin"
+    },
+    {
+     "t": 1.45,
+     "type": "eval",
+     "js": "(() => { const e = document.querySelector('.ed-sign-sheet'); if (!e) return; const from = e.scrollTop, to = e.scrollHeight - e.clientHeight; const t0 = performance.now(), D = 1300; const ease = (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; const step = () => { const p = Math.min(1, (performance.now() - t0) / D); e.scrollTop = from + (to - from) * ease(p); if (p < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); })()",
+     "why": "the finger reads the bill of sale to its end (the sheet is an inner scroller; the composition draws the finger)"
+    },
+    {
+     "t": 3,
+     "type": "scrollTo",
+     "selector": "button",
+     "contains": "Sign And Continue",
+     "align": "end",
+     "offset": -24,
+     "durationSec": 0.6,
+     "touch": {
+      "x": 200,
+      "y": 560
+     },
+     "why": "swipe up to the pad"
+    },
+    {
+     "t": 3.8,
+     "type": "draw",
+     "selector": "canvas",
+     "units": "px",
+     "strokes": [
+      [
+       [
+        22.2,
+        42.8
+       ],
+       [
+        30.3,
+        39.8
+       ],
+       [
+        40.4,
+        37.8
+       ],
+       [
+        45.4,
+        38.8
+       ],
+       [
+        41.4,
+        40.8
+       ],
+       [
+        38.4,
+        49.9
+       ],
+       [
+        35.8,
+        65
+       ],
+       [
+        32.8,
+        79.2
+       ],
+       [
+        28.8,
+        86.2
+       ],
+       [
+        23.2,
+        84.7
+       ],
+       [
+        23.2,
+        79.2
+       ],
+       [
+        30.3,
+        73.1
+       ],
+       [
+        40.4,
+        68.1
+       ],
+       [
+        46.4,
+        66.1
+       ]
+      ],
+      [
+       [
+        67.6,
+        46.9
+       ],
+       [
+        62.6,
+        41.8
+       ],
+       [
+        55.5,
+        43.8
+       ],
+       [
+        50,
+        52.9
+       ],
+       [
+        49.5,
+        65
+       ],
+       [
+        53.5,
+        73.1
+       ],
+       [
+        60.6,
+        74.1
+       ],
+       [
+        66.6,
+        69.1
+       ],
+       [
+        68.6,
+        65
+       ],
+       [
+        64.6,
+        62
+       ],
+       [
+        60.6,
+        65
+       ],
+       [
+        60.6,
+        71.1
+       ],
+       [
+        64.6,
+        73.1
+       ],
+       [
+        68.6,
+        68.1
+       ],
+       [
+        69.6,
+        63
+       ],
+       [
+        70.2,
+        70.1
+       ],
+       [
+        72.2,
+        74.1
+       ],
+       [
+        75.2,
+        69.1
+       ],
+       [
+        77.2,
+        62
+       ],
+       [
+        79.2,
+        64.5
+       ],
+       [
+        82.3,
+        62
+       ],
+       [
+        83.3,
+        67.1
+       ],
+       [
+        84.3,
+        73.6
+       ],
+       [
+        87.3,
+        68.1
+       ],
+       [
+        89.8,
+        52.9
+       ],
+       [
+        89.8,
+        65
+       ],
+       [
+        91.4,
+        72.6
+       ],
+       [
+        94.4,
+        74.1
+       ],
+       [
+        98.4,
+        70.1
+       ],
+       [
+        103.5,
+        65
+       ],
+       [
+        101.4,
+        61
+       ],
+       [
+        97.4,
+        64
+       ],
+       [
+        97.4,
+        71.1
+       ],
+       [
+        101.9,
+        74.1
+       ],
+       [
+        106.5,
+        71.1
+       ],
+       [
+        108.5,
+        65
+       ],
+       [
+        110.5,
+        61
+       ],
+       [
+        112.5,
+        63.5
+       ],
+       [
+        115.6,
+        61
+       ],
+       [
+        116.6,
+        66.6
+       ],
+       [
+        117.6,
+        73.1
+       ],
+       [
+        123.7,
+        72.1
+       ],
+       [
+        134.3,
+        66.1
+       ]
+      ],
+      [
+       [
+        83.8,
+        58
+       ],
+       [
+        97.9,
+        55.5
+       ]
+      ]
+     ],
+     "inkSec": 1.2,
+     "liftSec": 0.12,
+     "approachSec": 0.25,
+     "timeScale": 3,
+     "subSteps": 2,
+     "why": "the buyer signs 'J Carter' (partb sig/buyer-v1, scaled to the 322x120 pad)"
+    },
+    {
+     "t": 5.75,
+     "type": "click",
+     "selector": "button",
+     "contains": "Sign And Continue",
+     "durationSec": 0.25
+    },
+    {
+     "t": 6.6,
+     "type": "eval",
+     "js": "(() => { const e = document.querySelector('.ed-sign-sheet'); if (!e) return; const from = e.scrollTop, to = e.scrollHeight - e.clientHeight; const t0 = performance.now(), D = 1000; const ease = (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; const step = () => { const p = Math.min(1, (performance.now() - t0) / D); e.scrollTop = from + (to - from) * ease(p); if (p < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); })()",
+     "why": "reads the 130-U to its end"
+    },
+    {
+     "t": 7.8,
+     "type": "scrollTo",
+     "selector": "button",
+     "contains": "Sign And Finish",
+     "align": "end",
+     "offset": -24,
+     "durationSec": 0.6,
+     "touch": {
+      "x": 200,
+      "y": 560
+     }
+    },
+    {
+     "t": 8.5,
+     "type": "click",
+     "selector": "button",
+     "contains": "Use my signature",
+     "durationSec": 0.25,
+     "why": "reuse the signature drawn on the bill of sale"
+    },
+    {
+     "t": 9.15,
+     "type": "click",
+     "selector": "[data-sign-consent]",
+     "anchor": [
+      0.06,
+      0.3
+     ],
+     "durationSec": 0.25,
+     "why": "the consent tick"
+    },
+    {
+     "t": 9.45,
+     "type": "scrollTo",
+     "selector": "button",
+     "contains": "Sign And Finish",
+     "align": "end",
+     "offset": -24,
+     "durationSec": 0.3,
+     "touch": {
+      "x": 200,
+      "y": 560
+     }
+    },
+    {
+     "t": 9.8,
+     "type": "click",
+     "selector": "button",
+     "contains": "Sign And Finish",
+     "durationSec": 0.25,
+     "why": "Sign And Finish"
+    }
+   ],
+   "zooms": []
+  },
+  {
+   "id": "26b-phone-sign",
+   "part": "narrated",
+   "url": "{sign2}",
+   "viewport": {
+    "width": 390,
+    "height": 797,
+    "deviceScaleFactor": 2
+   },
+   "mobile": true,
+   "cookies": [],
+   "prerollSec": 0.6,
+   "readySelector": "h1",
+   "durationSec": 8.3,
+   "cursor": {
+    "kind": "pointer",
+    "start": {
+     "x": 300,
+     "y": 700
+    }
+   },
+   "css": "nextjs-portal{display:none!important}",
+   "actions": [
+    {
+     "t": 0.3,
+     "type": "click",
+     "selector": "button",
+     "contains": "Begin",
+     "durationSec": 0.25,
+     "why": "(cut: the film joins this at the 130-U's first painted frame)"
+    },
+    {
+     "t": 1.7,
+     "type": "eval",
+     "js": "(() => { const e = document.querySelector('.ed-sign-sheet'); if (!e) return; const from = e.scrollTop, to = e.scrollHeight - e.clientHeight; const t0 = performance.now(), D = 1000; const ease = (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; const step = () => { const p = Math.min(1, (performance.now() - t0) / D); e.scrollTop = from + (to - from) * ease(p); if (p < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); })()",
+     "why": "reads the 130-U to its end"
+    },
+    {
+     "t": 3,
+     "type": "scrollTo",
+     "selector": "button",
+     "contains": "Sign And Finish",
+     "align": "end",
+     "offset": -24,
+     "durationSec": 0.6,
+     "touch": {
+      "x": 200,
+      "y": 560
+     }
+    },
+    {
+     "t": 3.8,
+     "type": "draw",
+     "selector": "canvas",
+     "units": "px",
+     "strokes": [
+      [
+       [
+        30.1,
+        44.7
+       ],
+       [
+        37.8,
+        41.8
+       ],
+       [
+        47.4,
+        39.9
+       ],
+       [
+        52.1,
+        40.9
+       ],
+       [
+        48.3,
+        42.8
+       ],
+       [
+        45.5,
+        51.4
+       ],
+       [
+        43,
+        65.8
+       ],
+       [
+        40.2,
+        79.2
+       ],
+       [
+        36.4,
+        85.9
+       ],
+       [
+        31,
+        84.5
+       ],
+       [
+        31,
+        79.2
+       ],
+       [
+        37.8,
+        73.4
+       ],
+       [
+        47.4,
+        68.7
+       ],
+       [
+        53.1,
+        66.8
+       ]
+      ],
+      [
+       [
+        73.2,
+        48.6
+       ],
+       [
+        68.5,
+        43.7
+       ],
+       [
+        61.7,
+        45.6
+       ],
+       [
+        56.5,
+        54.3
+       ],
+       [
+        56,
+        65.8
+       ],
+       [
+        59.8,
+        73.4
+       ],
+       [
+        66.6,
+        74.4
+       ],
+       [
+        72.3,
+        69.6
+       ],
+       [
+        74.2,
+        65.8
+       ],
+       [
+        70.4,
+        62.9
+       ],
+       [
+        66.6,
+        65.8
+       ],
+       [
+        66.6,
+        71.5
+       ],
+       [
+        70.4,
+        73.4
+       ],
+       [
+        74.2,
+        68.7
+       ],
+       [
+        75.1,
+        63.8
+       ],
+       [
+        75.7,
+        70.6
+       ],
+       [
+        77.6,
+        74.4
+       ],
+       [
+        80.4,
+        69.6
+       ],
+       [
+        82.3,
+        62.9
+       ],
+       [
+        84.2,
+        65.3
+       ],
+       [
+        87.2,
+        62.9
+       ],
+       [
+        88.1,
+        67.7
+       ],
+       [
+        89.1,
+        73.9
+       ],
+       [
+        91.9,
+        68.7
+       ],
+       [
+        94.3,
+        54.3
+       ],
+       [
+        94.3,
+        65.8
+       ],
+       [
+        95.8,
+        73
+       ],
+       [
+        98.7,
+        74.4
+       ],
+       [
+        102.5,
+        70.6
+       ],
+       [
+        107.3,
+        65.8
+       ],
+       [
+        105.3,
+        61.9
+       ],
+       [
+        101.5,
+        64.8
+       ],
+       [
+        101.5,
+        71.5
+       ],
+       [
+        105.8,
+        74.4
+       ],
+       [
+        110.2,
+        71.5
+       ],
+       [
+        112.1,
+        65.8
+       ],
+       [
+        114,
+        61.9
+       ],
+       [
+        115.9,
+        64.3
+       ],
+       [
+        118.8,
+        61.9
+       ],
+       [
+        119.8,
+        67.3
+       ],
+       [
+        120.7,
+        73.4
+       ],
+       [
+        126.5,
+        72.5
+       ],
+       [
+        136.6,
+        66.8
+       ]
+      ],
+      [
+       [
+        88.6,
+        59.1
+       ],
+       [
+        102,
+        56.7
+       ]
+      ]
+     ],
+     "inkSec": 1.2,
+     "liftSec": 0.12,
+     "approachSec": 0.25,
+     "timeScale": 3,
+     "subSteps": 2,
+     "why": "the buyer signs again by hand (a stroke pixel-identical to the bill of sale's is refused as an unconsented reuse, so this one is drawn 5% smaller)"
+    },
+    {
+     "t": 5.75,
+     "type": "click",
+     "selector": "button",
+     "contains": "Sign And Finish",
+     "durationSec": 0.25,
+     "why": "Sign And Finish"
+    }
+   ],
+   "zooms": [],
+   "why": "a second session on the same signing link: the bill of sale was signed in 26-phone-sign; the 130-U is signed here (a fresh session offers no earlier stroke to reuse, so the buyer signs again) and the ceremony ends on 'All Signed.'"
+  },
+  {
+   "id": "27-desk-stored",
+   "part": "narrated",
+   "url": "/admin/sales/{deal}/packet",
+   "viewport": {
+    "width": 1440,
+    "height": 900,
+    "deviceScaleFactor": 2
+   },
+   "cookies": [
+    {
+     "name": "tj-local-admin-preview",
+     "value": "{{DESK_COOKIE}}"
+    }
+   ],
+   "prerollSec": 1,
+   "readySelector": ".packet-progress",
+   "durationSec": 11.8,
+   "cursor": {
+    "kind": "pointer",
+    "start": {
+     "x": 1180,
+     "y": 560
+    }
+   },
+   "css": "nextjs-portal{display:none!important} .text-\\[\\#3F5A43\\]{color:var(--tj-ink,#111)!important} .bg-\\[\\#3F5A43\\]{background-color:var(--tj-ink,#111)!important} .ed-nav-identity-handle{filter:blur(4px)} .ed-admin > .ed-sale-head ~ div{display:none!important} #email{color:transparent!important;text-shadow:0 0 10px rgba(17,17,17,.9)!important;caret-color:#111} #email::placeholder{color:transparent!important;text-shadow:none!important} [data-onboarding-step=\"signature\"] .ed-start-fields > .space-y-2{min-height:181.5px} {{SELECT_MENU_CSS}} [data-money-receipt] > .ed-money-line:nth-child(4) > dd{filter:blur(5px)}",
+   "actions": [
+    {
+     "t": -0.9,
+     "type": "eval",
+     "js": "document.addEventListener('click', (e) => { const a = e.target.closest && e.target.closest('a[target=_blank]'); if (a) e.preventDefault(); }, true)",
+     "why": "Open / Print is the cut to the PDF (drawn in Remotion): no new tab in the capture"
+    },
+    {
+     "t": 0.25,
+     "type": "hover",
+     "selector": ".packet-progress",
+     "anchor": [
+      0.62,
+      0.62
+     ],
+     "durationSec": 0.8,
+     "why": "L23 'every signed document stays with the sale'"
+    },
+    {
+     "t": 2.7,
+     "type": "click",
+     "selector": "a",
+     "contains": "Finish",
+     "durationSec": 0.6
+    },
+    {
+     "t": 4.6,
+     "type": "click",
+     "selector": "a[href=\"/admin/sales/past\"]",
+     "durationSec": 0.8,
+     "why": "L23 'months from now': Past Sales"
+    },
+    {
+     "t": 7.15,
+     "type": "click",
+     "selector": "input[type=search]",
+     "anchor": [
+      0.3,
+      0.5
+     ],
+     "durationSec": 0.6
+    },
+    {
+     "t": 7.95,
+     "type": "type",
+     "text": "Carter",
+     "perCharSec": 0.1,
+     "why": "L23 'search their name'"
+    },
+    {
+     "t": 9.2,
+     "type": "click",
+     "selector": "a.ed-past-link",
+     "durationSec": 0.6,
+     "anchor": [
+      0.3,
+      0.5
+     ],
+     "why": "L23 'pull up the paperwork'"
+    },
+    {
+     "t": 10.4,
+     "type": "eval",
+     "js": "document.addEventListener('click', (e) => { const a = e.target.closest && e.target.closest('a[target=_blank]'); if (a) e.preventDefault(); }, true)"
+    },
+    {
+     "t": 10.75,
+     "type": "click",
+     "selector": "a.ed-packet-action[target=_blank]",
+     "nth": 0,
+     "durationSec": 0.7,
+     "why": "Bill Of Sale: Open / Print"
+    }
+   ],
+   "zooms": [
+    {
+     "at": 0.1,
+     "until": 1.9,
+     "depth": 1.62,
+     "focus": {
+      "x": 720,
+      "y": 356
+     },
+     "follow": false,
+     "why": "PACKET: Ready To Print 2 / 2 signed"
+    },
+    {
+     "at": 5.9,
+     "until": 9.4,
+     "depth": 1.4,
+     "focus": {
+      "x": 810,
+      "y": 330
+     },
+     "follow": false,
+     "why": "Past Sales: search and rows"
+    }
+   ]
+  }
+ ],
+ "notes": [
+  "The narrated cut (composition Narrated, src/narrated/plan.ts) reuses part A's 1-4 and part B's 6, 7 and 8a from .claude/skills/recordly-demo/examples/discount-used-cars/storyboard.json; these are the shots captured for it.",
+  "Desk on :5190 only, next dev with DESK_PREVIEW_MEMBER=fresh, DESK_ALLOW_UNSET_FACTS=true and NODE_USE_ENV_PROXY=1 (the address step's Census lookup goes out through the proxy; without it the city, ZIP and county never fill). Clock 2026-10-02 14:00 CDT.",
+  "Order on ONE fresh server: onboard Maria Lopez (7-desk-onboard into scratch, or capture/onboard step), 20-car, 21-buyer (its Start Sale makes the deal; note the deal path, e.g. /admin/sales/<deal>), the licence review confirmed off camera (Check What The Card Says, to the funding step), 22-money and 23-plan with --var deal=<id>, the rest of the guide answered off camera from capture/carter-balance.json, 24-desk-qr, then the packet's signing link (Open here) into 26-phone-sign's url and a second session's link into 26b-phone-sign, then Mark Sold And Close off camera, then 27-desk-stored.",
+  "The documents (public/docs/narr-bos-p2.png, narr-130u-p1.png, narr-bos-p4-signed.png) are pdftoppm -r 300 renders of that deal's own PDFs (the bill of sale and the 130-U before signing, the bill of sale's page 4 after).",
+  "21-buyer's licence scan uses a test camera feed: getUserMedia returns a canvas stream of a card marked DEMO CARD with a PDF417 (AAMVA) barcode made for James Carter; the desk decodes it for real. 20-car's language menu is a stand-in drawn where the OS select popup opens (headless Chromium does not paint native popups); the value is set on the real select.",
+  "The second phone session (26b) cannot reuse the first session's stroke and refuses a pixel-identical one: its drawing is the same hand, scaled 0.95 and shifted (+9,+4)."
+ ],
+ "segments": {
+  "20-car": "20 [0,999): Pick the car (07), the odometer corrected (08), Español then English (09)",
+  "21-buyer": "21a [0,92) Scan ID; 21b [97,230) the card read; 21c [234,875) street, autofill, county, read-back, Hold To Confirm (10-13)",
+  "22-money": "22a [0,142) Cash; 22b [146,500) the price, No; 22c [503,856) the receipt, the amount handed over, the balance; 22h holds under doc A (14-16)",
+  "23-plan": "23a-23e: We Do, No plate yet, The Buyer Here Today, Already Passed, Yes Shown Today; 23h holds under doc B (17-21)",
+  "24-desk-qr": "24 [0,62) Scan To Sign zoomed; 24h holds under the phone (22)",
+  "26-phone-sign": "the phone: Begin, the bill of sale read and signed (parts 10-30, 36-54, 80-112, 117-186)",
+  "26b-phone-sign": "the phone: the 130-U signed, Sign And Finish, All Signed. (part 178-198)",
+  "27-desk-stored": "27a-27d: 2/2 signed, Finish, Past Sales, Carter searched, the sale opened, Open / Print; 27h holds under doc C (23)"
+ },
+ "template": "recordly-demo assets/storyboard-long.template.json: the narrated cut's desk captures as shipped for Discount (examples/discount-used-cars/storyboard-long.json), with the client's values as double-brace placeholders and the run's values as capture vars: {deal} (the deal path's last part: --var deal=$(basename $(cat $SCRATCH/n-deal.txt))), {sign} and {sign2} (signing-link.cjs, one session each). fill-client.cjs long-storyboard fills it and injects assets/narrated/{select-menu.js,select-menu.css,camera-feed.js} (the camera feed with this client's demo card from make-demo-card.mjs).",
+ "deskCommit": "2b7bb85"
+}

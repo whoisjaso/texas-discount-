@@ -7236,6 +7236,17 @@ html[data-tj-route-phase="leaving"] .ed-route-loader {
     page-break-inside: avoid;
   }
 
+  /*
+    A reckoning stays with its lines. The wrapper also carries
+    print-section, and the flowing-sections rule above (0,6,0) outranked
+    the plain avoid (0,2,0): the Vehicle Responsibility total printed alone
+    at the top of page 2, away from the two figures it adds up.
+  */
+  .bos-print.doc-sheet .bos-reckoning-wrap.print-section:not(.bos-notice):not(.bos-odometer):not(.bos-lien):not(.bos-obligations) {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
   .bos-print .bos-section-heading,
   .bos-print .bos-major-heading {
     break-after: avoid;
@@ -14053,4 +14064,121 @@ html[data-walk-dir="back"]::view-transition-new(walk-stage) {
   --tj-plane: #ffffff;
   --tj-surface: #ffffff;
   color: #111111;
+}
+
+/*
+  The page-by-page paperwork (field-maps/): a long list as taps, several
+  taps then Done, the "another ..." box under a choice, and the review's
+  read-back of the page as it will print. Full width at 390, 16px gutters
+  from the corridor, nothing wider than the screen.
+*/
+.ed-list-pick {
+  display: grid;
+  gap: 12px;
+}
+
+.ed-list-likely {
+  min-height: 96px;
+}
+
+.ed-list-rows {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  gap: 8px;
+  max-height: 46vh;
+  overflow-y: auto;
+}
+
+.ed-list-row {
+  min-height: 52px;
+  padding: 12px 14px;
+  text-align: left;
+  background: var(--tj-plane);
+  border: 1px solid var(--tj-line);
+  border-radius: var(--radius-card);
+  color: var(--tj-ink);
+  font-size: var(--tj-corridor-helper, 15px);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.ed-list-row[data-active="true"] {
+  border-color: var(--tj-ink);
+  background: var(--tj-surface);
+}
+
+.ed-list-row:disabled {
+  opacity: 0.5;
+}
+
+.ed-multi-pick {
+  display: grid;
+  gap: 16px;
+}
+
+.ed-multi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr));
+  gap: 8px;
+}
+
+.ed-paper-other {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.ed-readback {
+  display: grid;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.ed-readback-what {
+  margin: 0;
+}
+
+.ed-readback-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--tj-ink);
+}
+
+.ed-readback-title {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--tj-muted);
+}
+
+.ed-readback-row dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.ed-readback-chip {
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--tj-muted);
+}
+
+.ed-readback-blank {
+  color: var(--tj-muted);
+}
+
+.ed-readback-missing {
+  color: var(--tj-copper);
+  font-weight: 600;
+}
+
+.ed-readback-row[data-status="missing"] dt {
+  color: var(--tj-copper);
 }

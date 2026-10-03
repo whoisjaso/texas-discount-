@@ -70,3 +70,16 @@ export function phoneToE164(value: string): string | null {
   const digits = phoneDigits(value);
   return digits.length === NATIONAL_DIGITS ? `+1${digits}` : null;
 }
+
+/**
+ * A phone number the way a person writes one, for paper.
+ *
+ * The record stores E.164 ("+17135550190"), which is right for dialling and
+ * wrong for a document. A US number prints as (713) 555-0190; anything else
+ * prints as stored. Every document that prints a phone reads this one rule.
+ */
+export function printedPhone(value: string | null | undefined): string {
+  const raw = (value ?? "").trim();
+  const match = raw.match(/^\+?1?[\s.-]?\(?(\d{3})\)?[\s.-]?(\d{3})[\s.-]?(\d{4})$/);
+  return match ? `(${match[1]}) ${match[2]}-${match[3]}` : raw;
+}

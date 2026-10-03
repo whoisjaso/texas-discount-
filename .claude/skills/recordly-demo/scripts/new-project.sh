@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# new-project.sh <client-inputs.json> [dest-dir] [--no-install] [--force]
+# new-project.sh <client-inputs.json> [dest-dir] [--no-install] [--force] [--narrated]        (runbook A4; long: bg.sh)
 #
 # Instantiates the house demo for one dealer (run from the repo root):
 #   template/  → <dest>  (the approved film's code, unchanged)
@@ -9,7 +9,12 @@
 #                      → <dest>/src/project.ts, <dest>/storyboard.json, <dest>/README.md (scripts/fill-client.cjs)
 #   theme.outro.logoWidth = inputs.logoWidth, or when that is null min(760, round(300 × logo width / height)),
 #                           written back into <dest>/client-inputs.json so the README and a refill see it
-#   npm ci (the template's lockfile pins the exact Remotion 4.0.532 tree), under nice
+#   npm ci (the template's lockfile pins the exact Remotion 4.0.532 tree), under nice. A failed npm ci stops here with
+#     its error: there is no `npm install` fallback (it would drift the pinned tree). Remotion renders with Playwright's
+#     headless shell ($PLAYWRIGHT_BROWSERS_PATH, default /opt/pw-browsers); on a machine without one, run
+#     `npx remotion browser ensure` in the project once (it downloads Remotion's own Chrome; only with the user's OK).
+#   --narrated also makes narration/, public/vo and public/narrated for the narrated cut (src/narrated/ is always
+#     there: the template's empty plan.ts keeps the Narrated composition unregistered until it is written).
 #
 # The default dest is clients/<slug>-demo. The runbook keeps the inputs there from the start
 # (clients/<slug>-demo/client-inputs.json): a dest holding only that file counts as empty.
@@ -21,11 +26,12 @@
 # `overrides` and `zoomCopy` the README is filled from), public/sfx, fonts and brand. It never deletes public/shots.
 set -euo pipefail
 SKILL="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-INSTALL=1; FORCE=0; POS=()
+INSTALL=1; FORCE=0; NARRATED=0; POS=()
 for a in "$@"; do
   case "$a" in
     --no-install) INSTALL=0 ;;
     --force) FORCE=1 ;;
+    --narrated) NARRATED=1 ;;
     *) POS+=("$a") ;;
   esac
 done
@@ -100,8 +106,13 @@ if [ "$LW" != 760 ]; then
   echo "NOTE theme.outro.logoWidth = $LW (the logo is squarer than 2.53:1); the README lists it"
 fi
 
+if [ "$NARRATED" = 1 ]; then mkdir -p "$DEST/narration" "$DEST/public/vo" "$DEST/public/narrated"; fi
+
 if [ "$INSTALL" = 1 ]; then
-  (cd "$DEST" && { nice -n 15 npm ci --no-audit --no-fund || nice -n 15 npm install --no-audit --no-fund; })
+  if ! (cd "$DEST" && nice -n 15 npm ci --no-audit --no-fund); then
+    echo "npm ci FAILED in $DEST (see above). Do not run npm install (it drifts the pinned Remotion tree): fix the cause (registry, proxy, disk) and re-run with --force." >&2
+    exit 1
+  fi
 fi
 
 cat <<EOF
@@ -112,5 +123,6 @@ Created $DEST
   storyboard.json    the house storyboard for this site$( [ "$SB" = 3 ] && echo ": STILL HAS PLACEHOLDERS, measure them in step 6 (measure-site.cjs --storyboard … --rects --into …)" )
   README.md          running order, re-capture commands, owner decisions
   public/sfx, fonts  the bundled kit and Barlow Semi Condensed (OFL)
-Next (SKILL.md runbook): step 6, adapt and preflight the storyboard on the served site; then capture in order.
+Next (runbook A5): adapt and preflight the storyboard on the served site; then capture in order.
+PROJECT READY
 EOF

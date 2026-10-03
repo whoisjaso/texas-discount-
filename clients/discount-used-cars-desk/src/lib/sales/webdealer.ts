@@ -24,7 +24,7 @@
 
 import { feeLinesOf, type DealFeeLines } from "@/lib/sales/fee-schedule";
 import type { SaleDetail } from "@/lib/admin/sale-desk";
-import { readBuyerId } from "@/lib/sales/buyer-id";
+import { readBuyerId, settled } from "@/lib/sales/buyer-id";
 import { readMoney, saleMoney } from "@/lib/sales/money";
 import { lenderNameFor } from "@/lib/sales/corridor-link";
 import { dealership, factOr } from "@/lib/dealership-config";
@@ -150,8 +150,17 @@ export function buildHandoffFields(
   const buyerHref = `/admin/sales/${encodeURIComponent(sale.id)}`;
   // The confirmed mailing record, which holds the address in the four parts
   // webDEALER wants rather than the one line the customer row keeps.
-  const mailing = readBuyerId(sale.stepData).mailing;
+  const held = readBuyerId(sale.stepData);
+  const mailing = held.mailing;
   const zip = splitHandoffZip(mailing.postal);
+  /*
+    The name and the number as the licence step confirmed them, the values
+    every document prints; the intake row only when nothing was confirmed.
+    A correction on "Check What The Card Says" reached the paper and not
+    this copy list.
+  */
+  const confirmedName = settled(held.name);
+  const confirmedNumber = settled(held.licenseNumber);
 
   const yearMakeModel = [vehicle?.year, vehicle?.make, vehicle?.model]
     .filter((part) => part !== null && part !== undefined && `${part}`.length > 0)
@@ -180,7 +189,7 @@ export function buildHandoffFields(
     {
       key: "buyerName",
       label: "Name 1",
-      value: cleanText(buyer?.name),
+      value: cleanText(confirmedName ?? buyer?.name),
       fixHref: buyerHref,
       fixLabel: "Add on the sale",
     },
@@ -239,7 +248,7 @@ export function buildHandoffFields(
     {
       key: "buyerIdNumber",
       label: "Buyer ID number",
-      value: cleanText(buyer?.idNumber),
+      value: cleanText(confirmedNumber ?? buyer?.idNumber),
       fixHref: buyerHref,
       fixLabel: "Add on the sale",
     },

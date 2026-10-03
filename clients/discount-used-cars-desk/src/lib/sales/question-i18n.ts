@@ -16,7 +16,18 @@ type QuestionOverlay = {
   question?: string;
   note?: string;
   options?: Record<string, { label?: string; gloss?: string }>;
+  /** The "another ..." card of a choice that can be typed. */
+  other?: { label?: string };
 };
+
+/** Labels worked out from the deal (a date, the house rate), by template name. */
+function templateText(strings: FunnelStrings, name: string | undefined): string | undefined {
+  if (!name) return undefined;
+  const templates = (strings.paperwork as Record<string, unknown>).templates;
+  if (!templates || typeof templates !== "object") return undefined;
+  const value = (templates as Record<string, unknown>)[name];
+  return typeof value === "string" ? value : undefined;
+}
 
 function overlayFor(
   strings: FunnelStrings,
@@ -36,25 +47,20 @@ export function localizeQuestion(
   documentType: string,
   question: AskedQuestion,
 ): AskedQuestion {
-  const overlay = overlayFor(strings, documentType, question.key);
-  if (!overlay) return question;
+  const overlay = overlayFor(strings, documentType, question.key) ?? {};
 
   return {
     ...question,
     question: overlay.question ?? question.question,
     ...(question.note ? { note: overlay.note ?? question.note } : {}),
+    ...(question.other ? { other: { ...question.other, label: overlay.other?.label ?? question.other.label } } : {}),
     ...(question.options
       ? {
           options: question.options.map((option) => {
             const swap = overlay.options?.[option.value];
-            if (!swap) return option;
-            return {
-              ...option,
-              label: swap.label ?? option.label,
-              ...(option.gloss || swap.gloss
-                ? { gloss: swap.gloss ?? option.gloss }
-                : {}),
-            };
+            const label = templateText(strings, option.template) ?? swap?.label ?? option.label;
+            const gloss = templateText(strings, option.glossTemplate) ?? swap?.gloss ?? option.gloss;
+            return { ...option, label, ...(gloss ? { gloss } : {}) };
           }),
         }
       : {}),

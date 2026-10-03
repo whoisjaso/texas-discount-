@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { PDFDocument, StandardFonts, rgb } from "@cantoo/pdf-lib";
+import { fontFor } from "@/lib/pdf/unicode-text";
 import * as normalise from "@/lib/documents/normalize";
 import { dealership } from "@/lib/dealership-config";
 import { placeColumns, type MultiBoxField } from "@/lib/forms/box-columns";
@@ -110,7 +111,9 @@ function granteeBlock() {
   return {
     // An entity goes in the box the form labels "First Name (or Entity
     // Name)"; the remaining name boxes are for a person and stay empty.
-    name: { first: dealership.name } satisfies NameParts,
+    // The licensed entity, the name on the GDN record and on every other
+    // document; the public trade name only when no legal name is set.
+    name: { first: dealership.legalName ?? dealership.name } satisfies NameParts,
     street: address.street,
     // The county on the dealer licence record, from the config like the
     // rest of the address.
@@ -166,7 +169,17 @@ export async function fillPowerOfAttorney(
     that names it, from the map in `vtr-271-columns.ts`, whose numbers come
     off the template itself.
   */
-  const helvetica = await pdf.embedFont(StandardFonts.Helvetica);
+  // Helvetica, unless the grantor's name or address has a letter it cannot print.
+  const { font: helvetica, unicode } = await fontFor(pdf, await pdf.embedFont(StandardFonts.Helvetica), [
+    fields.grantorName,
+    fields.grantorAddress,
+    fields.grantorCity,
+    fields.grantorCounty,
+    fields.grantorNameParts?.first,
+    fields.grantorNameParts?.middle,
+    fields.grantorNameParts?.last,
+    fields.grantorNameParts?.suffix,
+  ], { subset: false });
   const measure = (text: string, size: number) =>
     helvetica.widthOfTextAtSize(text, size);
 
@@ -258,6 +271,8 @@ export async function fillPowerOfAttorney(
   set(FIELD.date, fields.executedDate);
   // "Printed Name (Same as Signature)" — the grantor signs in ink.
   set(FIELD.printedName, name);
+
+  if (unicode) form.updateFieldAppearances(helvetica);
 
   // Left unflattened on purpose: the county sometimes needs to correct a
   // field, and the form says no alterations, which a typed correction is not.

@@ -19,6 +19,7 @@ IDs in "Source": F1–F20 are critic LOOK round 2, F21–F34 critic RULES round 
 - [Operations](#operations) (O1–O2)
 - [Part B: the desk](#part-b-the-desk) (B1–B13)
 - [The narrated long cut](#the-narrated-long-cut) (N1–N12)
+- [Running it under any model](#running-it-under-any-model) (M1–M5)
 - [Decisions kept: do not "fix" these](#decisions-kept-do-not-fix-these)
 - [Open items](#open-items)
 
@@ -393,6 +394,9 @@ pages and on black bands (F22).
   still against the previous render.
 - *Why:* One critic missed what the other caught (only RULES caught the invisible ring; only LOOK caught the tick), and
   explicit rejections become decisions to keep.
+- *Scope:* Used to build the house recipe; not required per client. A client film reproduces the recipe, so its gates
+  are the scripted ones plus the recorded by-eye / by-ear looks (references/verification.md). Run two critics again only
+  when the recipe itself changes (a new shot, a new composition).
 
 ## Operations
 
@@ -400,10 +404,9 @@ pages and on black bands (F22).
 - *Rule:* Run renders with `nice -n 15` (about 11–12 min for about 1500 frames at concurrency 3). Run the typecheck in
   the foreground BEFORE backgrounding a render. Capture with `--clean`, since a 15 s DSF 2 shot is about 2.5 GB of PNG.
   Delete the `/tmp/remotion-webpack-bundle-*` your runs created. Never run `playwright install`.
-- *Rule:* Serve the demo build on its own port (5183) with `./node_modules/.bin/vite preview`, started through `exec`
-  after writing `$BASHPID` (in a subshell) to the pid file, so the PID kept is vite's own, and kill it by that PID. An
-  `npx` wrapper's PID leaves vite running, and `$$` in a subshell is the parent's PID. Never touch other workflows'
-  ports.
+- *Rule:* Serve the demo build on its own port (5183) with `scripts/site-server.sh`: `./node_modules/.bin/vite
+  preview` detached in its own process group (setsid), stopped by that group. An `npx` wrapper's PID leaves vite
+  running, and `$$` in a subshell is the parent's PID. Never touch other workflows' ports.
 - *Symptom:* A backgrounded `tsc && render &` hid the typecheck result, and frame folders filled the disk.
 
 **O2. Write the browser path so bash expands it.**
@@ -565,6 +568,33 @@ plan that anchors each line's key word on its picture, then a stills pass and a 
   (`edit.addZooms`, negative `startFrame`) or shift the outgoing zoom (`zoomShift`); the check compares a moving camera
   with its next frame.
 - *Symptom:* A 2.0x read-back cut onto a 1.0x page: the pointer and the page jumped at the cut.
+
+## Running it under any model
+
+**M1. A gate a model cannot perceive is the user's.**
+- *Rule:* A model that cannot view images or hear audio never passes a by-eye or by-ear gate itself: it sends the
+  contact sheet, the stills or the film to the user and records their words (`runbook.cjs mark --by-user`).
+- *Why:* "Look at every still" and "watch it once with sound" were the gates that caught most part-A defects; a model
+  that self-certifies them ships what the gates exist to stop.
+
+**M2. Everything a step needs is in a file, not in the session.**
+- *Rule:* Variables in `$SCRATCH/demo.env`; the voice venv in `$HOME/.cache/recordly-demo`; scenarios, signatures, the
+  camera feed and the card in the skill's assets. Nothing a run depends on lives only in a session's scratch.
+- *Why:* The first narrated cut depended on two dozen scratch scripts and a scratch venv; the next session would have
+  had none of them.
+
+**M3. Long jobs are detached and polled.**
+- *Rule:* Anything over two minutes runs through `bg.sh` (setsid, a log, an exit-code file); poll with `bg.sh wait`.
+- *Why:* A harness that cuts a foreground call mid-capture leaves later shots reading a stale cursor; one that cuts a
+  render loses 30-80 minutes.
+
+**M4. The chat copy fits the chat.**
+- *Rule:* Every file sent in chat is ≤ 28 MB (the upload limit is 30 MB), made by `share.sh` (two-pass x264, the
+  master's frame count). The narrated cut's first "under 40 MB" copy (38.3 MB) could not be uploaded.
+
+**M5. Takes repeat in length, not in samples.**
+- *Rule:* Re-voicing a line gives the same words and length but not the same waveform; compare takes by transcript and
+  length, and re-run prepare-vo.py after any re-voice.
 
 ## Decisions kept: do not "fix" these
 

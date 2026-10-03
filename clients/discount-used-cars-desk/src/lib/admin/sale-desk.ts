@@ -61,6 +61,8 @@ export type SaleVehicle = {
   exteriorColor: string | null;
   /** Trim level, for the bill of sale's vehicle line. */
   trim: string | null;
+  /** The lot's stock number, printed on the bill of sale and the contract. */
+  stockNumber?: string | null;
   /**
    * Box 11 as a person confirmed it from a document, when the row holds one.
    *
@@ -160,7 +162,7 @@ export async function getSaleDetail(dealId: string): Promise<SaleDetail | null> 
   const { data, error } = await supabase
     .from("deals")
     .select(
-      "id, status, language, created_at, started_at, completed_at, step_data, customers(id, name, phone, email, profile_data), vehicles(id, year, make, model, vin, status, sale_price, body_style, title_status, mileage, exterior_color, trim, weight_lbs, weight_source, weight_reading_lbs, weight_rule, weight_confirmed_by_name, weight_confirmed_at, weight_note, weight_estimate, engine, drivetrain, fuel_type)",
+      "id, status, language, created_at, started_at, completed_at, step_data, customers(id, name, phone, email, profile_data), vehicles(id, year, make, model, vin, status, sale_price, body_style, title_status, mileage, exterior_color, trim, stock_number, weight_lbs, weight_source, weight_reading_lbs, weight_rule, weight_confirmed_by_name, weight_confirmed_at, weight_note, weight_estimate, engine, drivetrain, fuel_type)",
     )
     .eq("id", dealId)
     .maybeSingle();
@@ -196,6 +198,7 @@ export async function getSaleDetail(dealId: string): Promise<SaleDetail | null> 
       mileage: number | null;
       exterior_color: string | null;
       trim: string | null;
+      stock_number?: string | null;
       weight_lbs: number | null;
       weight_source?: string | null;
       weight_reading_lbs?: number | null;
@@ -320,6 +323,7 @@ export async function getSaleDetail(dealId: string): Promise<SaleDetail | null> 
           mileage: row.vehicles.mileage ?? null,
           exteriorColor: row.vehicles.exterior_color ?? null,
           trim: row.vehicles.trim ?? null,
+          stockNumber: row.vehicles.stock_number ?? null,
           weightLbs: row.vehicles.weight_lbs ?? null,
           weightSource: row.vehicles.weight_source ?? null,
           weightReadingLbs: row.vehicles.weight_reading_lbs ?? null,
@@ -497,6 +501,12 @@ export function documentStateFor(
 export function describeDocumentState(
   entry: SaleDocumentEntry,
   state: SaleDocumentState,
+  /**
+   * Whether this sale owes the document. A rebuilt car owes its disclosure
+   * first, and the row read "Not needed yet" until it was filed because the
+   * registry calls the disclosure optional for sales in general.
+   */
+  owed = false,
 ): string {
   if (!entry.documentType) return "Print when you need it";
   /*
@@ -512,7 +522,7 @@ export function describeDocumentState(
   if (state === "filed" || state === "finalized") return "Filed. No signature yet";
   if (state === "draft") return "Draft saved. Not signed yet";
   if (state === "voided") return "Voided. File it again";
-  return entry.optional ? "Not needed yet" : "Not started";
+  return entry.optional && !owed ? "Not needed yet" : "Not started";
 }
 
 /** Every document a sale must hold before it is safe to close. */
@@ -551,6 +561,26 @@ export function paperworkHref(
   // deal attached, and heals itself the day the corridor learns the type.
   if (!hasPaperwork(entry.documentType)) return null;
   return `/admin/sales/${encodeURIComponent(dealId)}/paperwork/${encodeURIComponent(entry.documentType)}/start`;
+}
+
+/**
+ * Where a sale's document row opens: the corridor when it asks the
+ * document, the Buyers Guide's own PDF (the window copy, marked from the
+ * sale) for the guide, and the packet for anything else. Never the
+ * templates section's /admin/documents pages, which this desk does not have:
+ * the guide's row linked there and answered 404.
+ */
+export function saleRowHref(entry: SaleDocumentEntry, dealId: string, vehicleId: string | null | undefined): string {
+  const corridor = paperworkHref(entry, dealId);
+  if (corridor) return corridor;
+  if (entry.href === "/admin/documents/buyers-guide") {
+    const params = new URLSearchParams();
+    if (vehicleId) params.set("vehicleId", vehicleId);
+    params.set("dealId", dealId);
+    params.set("copy", "window");
+    return `/api/documents/buyers-guide?${params.toString()}`;
+  }
+  return `/admin/sales/${encodeURIComponent(dealId)}/packet`;
 }
 
 /** Build a document link that carries the sale with it. */

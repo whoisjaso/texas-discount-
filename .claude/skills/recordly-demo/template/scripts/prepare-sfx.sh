@@ -5,9 +5,11 @@
 #   whoosh_short_lo/_hi.wav  the same, pitched 1.5 semitones down / up, so repeated zooms do not repeat one sample
 #   open_ui.wav    cut to 0.6 s with a 50 ms fade: the kit's file ends (0.97 s) in a lone tick after 8 frames of
 #                  digital silence, which plays as a click with no click on screen
-# Usage: scripts/prepare-sfx.sh [KIT_DIR]   (run from the project root)
+# Usage: scripts/prepare-sfx.sh KIT_DIR   (run from the project root)
+# NOT part of making a film: new-project.sh already copies the processed kit (recordly-demo assets/sfx, SOURCES.md).
+# Only for swapping a sound, with the source kit's folder given explicitly (the original kit is not in this repo).
 set -euo pipefail
-KIT="${1:-/home/user/whoisjaso/VideoEdit/.claude/skills/jason-video-editor/assets/sfx}"
+KIT="${1:?give the source sound kit folder (only needed to swap a sound; the processed kit is already in public/sfx)}"
 OUT="public/sfx"
 mkdir -p "$OUT"
 for f in ios/ios_tink.wav ios/ios_note.wav ios/ios_received.wav ios/ios_success.wav ios/ios_key.wav \

@@ -12,6 +12,8 @@ import { FadeOut, Finish } from "./components/Overlays";
 import { ShotScene, ShotSceneProps } from "./scenes/ShotScene";
 import { PhoneScene, PhoneSceneProps } from "./scenes/PhoneScene";
 import { Demo, demoTimeline } from "./Demo";
+import { Narrated } from "./narrated/Narrated";
+import { narratedPlan } from "./narrated/plan";
 
 const { fps, width, height } = theme;
 const L = project.loader;
@@ -72,6 +74,10 @@ export const Root: React.FC = () => (
     <Composition id="Demo" component={Demo} durationInFrames={demoTimeline.total} fps={fps} width={width} height={height} />
     <Composition id="Intro" component={Intro} durationInFrames={toFrames(2, fps)} fps={fps} width={width} height={height} />
     <Composition id="Outro" component={Outro} durationInFrames={toFrames(3.8, fps)} fps={fps} width={width} height={height} />
+    {/* The narrated long cut (src/narrated/): registered once the client's plan.ts is filled (the template's is empty) */}
+    {narratedPlan.total > 0 ? (
+      <Composition id="Narrated" component={Narrated} durationInFrames={narratedPlan.total} fps={fps} width={width} height={height} />
+    ) : null}
     {/* Any capture in public/shots/<id>/ in the window: --props='{"shot":"<id>","url":"<domain>"}' */}
     <Composition
       id="ShotPreview"

@@ -61,8 +61,7 @@
    "text": "As-Is"
   },
   "countyOfResidence": {
-   "button": "Next",
-   "exact": true
+   "text": "Harris"
   },
   "applicationType": {
    "text": "Title And Registration"
@@ -97,6 +96,12 @@
   },
   "howLeaving": {
    "text": "Driving It"
+  },
+  "buyerLicenseState": {
+   "text": "Texas (TX)"
+  },
+  "renewalReminders": {
+   "text": "No"
   }
  }
 }

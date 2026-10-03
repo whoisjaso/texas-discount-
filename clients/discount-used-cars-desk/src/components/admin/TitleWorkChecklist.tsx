@@ -450,6 +450,21 @@ function Vtr61Form({
           />
         </label>
       </div>
+      {/* The shop's own address prints under the shop's name on the form;
+          the dealership's prints only when we rebuilt it. */}
+      {data.rebuilderName.trim() ? (
+        <label className="block mt-4">
+          <span className="ed-field-label">The shop&apos;s address</span>
+          <input
+            type="text"
+            className="ed-input"
+            name="rebuilderAddress"
+            placeholder="Street, city, state ZIP"
+            value={data.rebuilderAddress}
+            onChange={(event) => setData({ ...data, rebuilderAddress: event.target.value })}
+          />
+        </label>
+      ) : null}
       <label className="block mt-4">
         <span className="ed-field-label">What work was done</span>
         <textarea

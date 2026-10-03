@@ -276,11 +276,21 @@ export function billOfSaleStatement(
     tradeIn: salvage
       ? ""
       : bill.tradeIn === "yes"
-        ? `yes|${text(bill.tradeInDescription)}|${dollars(bill.tradeInAllowance)}`
+        ? `yes|${text(bill.tradeInDescription)}|${dollars(bill.tradeInAllowance)}${text(bill.tradeInVin) ? `|${text(bill.tradeInVin)}` : ""}`
         : "no",
     paymentMethod: cash ? text(answers.paymentMethod || "Cash") : "",
     odometer: text(answers.odometerStatus || "actual"),
-    warranty: salvage ? "" : condition === "warranty" ? `warranty|${text(answers.warrantyDuration)}` : condition,
+    warranty: salvage
+      ? ""
+      : condition === "warranty"
+        ? [
+            `warranty|${text(answers.warrantyDuration)}`,
+            // The Buyers Guide's boxes, held with the warranty they describe.
+            ...[answers.warrantyKind, answers.warrantyLaborPercent, answers.warrantyPartsPercent, answers.warrantySystems]
+              .map(text)
+              .filter(Boolean),
+          ].join("|")
+        : condition,
     howLeaving: salvage ? text(answers.howLeaving) : "",
     buyerName: buyer.name,
     buyerId: `${buyer.licence}|${text(answers.buyerLicenseState)}`,
@@ -351,7 +361,7 @@ export function idPrintedConflict(printedLicence: string | null | undefined, nex
  */
 export const BILL_OF_SALE_PRINTED_KEYS: Readonly<Record<string, string>> = {
   saleDate: "fixed:the filing date",
-  stockNumber: "fixed:printed empty",
+  stockNumber: "fixed:the vehicle row",
   outstanding: "frozen:registration,inspection,insurance",
   buyerName: "frozen:buyerName",
   applicantFirstName: "frozen:buyerName",
@@ -366,6 +376,7 @@ export const BILL_OF_SALE_PRINTED_KEYS: Readonly<Record<string, string>> = {
   buyerZip: "frozen:buyerAddress",
   buyerLicense: "frozen:buyerId",
   buyerIdNumber: "frozen:buyerId",
+  buyerIdIssuer: "frozen:buyerId",
   buyerIdKind: "fixed:the customer row, written at Start A Sale",
   buyerLicenseState: "fixed:the customer row, written at Start A Sale (the bill of sale's own licence-state answer is frozen with buyerId)",
   vehicleYear: "fixed:the vehicle row",
@@ -393,7 +404,7 @@ export const BILL_OF_SALE_PRINTED_KEYS: Readonly<Record<string, string>> = {
   salePrice: "frozen:price,priceBasis,funding,tradeIn",
   tradeInAllowance: "frozen:tradeIn",
   tradeInDescription: "frozen:tradeIn",
-  tradeInVin: "fixed:printed empty",
+  tradeInVin: "frozen:tradeIn",
   tradeInPayoff: "fixed:printed as zero; the desk never asks it",
   tax: "frozen:price,priceBasis,tradeIn",
   titleFee: "fixed:the deal's fee copy (step_data.fees), written at Start A Sale, or its government fees confirmed from webDEALER (step_data.governmentFees), which refuse a change while a bill of sale is filed",
@@ -408,10 +419,12 @@ export const BILL_OF_SALE_PRINTED_KEYS: Readonly<Record<string, string>> = {
   paymentMethodOther: "frozen:lender",
   conditionType: "frozen:warranty",
   warrantyDuration: "frozen:warranty",
-  warrantyDescription: "fixed:printed empty",
+  warrantyDescription: "frozen:warranty",
+  warrantyKind: "frozen:warranty",
   amountPaidToday: "frozen:price,priceBasis,funding (the down payment keeps its own refusal)",
   sellerLienEnabled: "frozen:price,priceBasis,funding,tradeIn",
   sellerLienAmount: "frozen:price,priceBasis,funding,tradeIn",
+  balanceOwed: "frozen:price,priceBasis,funding,tradeIn",
   sellerLienReason: "fixed:constant wording",
   sellerLienDate: "fixed:the filing date",
   sellerLienholderName: "fixed:dealer config",

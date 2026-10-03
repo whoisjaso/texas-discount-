@@ -94,6 +94,7 @@ export default function RebuiltDisclosureDocument({
     <div className="print-doc bos-print doc-sheet">
       <section className="bos-page" data-bos-page="rebuilt">
         <DocumentLetterhead
+          lang={language === "es" ? "es" : "en"}
           title={copy.heading}
           subtitle={copy.subtitle}
           reference={[

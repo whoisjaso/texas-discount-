@@ -201,6 +201,13 @@ tests; a build missing one is not done):
   Security).
 - **Automatic empty weight** for 130-U box 11 with its source (SOP, Empty
   weight).
+- **Document templates, page by page**: every document is a field map, each
+  box on each page naming its one source; the corridor asks only what the
+  pages leave open, once per sale, as taps unless the answer is free-form;
+  the review reads the page back; filing refuses a box the sale could fill
+  and left blank. Port `src/lib/documents/field-maps/*`,
+  `src/lib/sales/deal-facts.ts` and their tests with the rest of the desk
+  (SOP, Document templates, page by page).
 - **Dealer fees at owner onboarding, Texas limits enforced at save and at
   filing** (Your Fees; SOP, Fees; `references/texas-dealer-fees.md`). The
   fees are the dealer's, never code; the limits are the rulebook's, through
@@ -256,7 +263,12 @@ cuts from the verified site and the desk's preview, short first:
   owner's figure or one the user approved, labelled as a demo input. The
   house desk storyboard predates Your Fees (its onboarding shot ends on
   Done), so filming the step is a storyboard change: agree it with the user
-  before capture (recordly-demo, Part B).
+  before capture (recordly-demo, Part B). The paperwork screens changed with
+  the page-by-page templates too (the licence state, county, payment count,
+  rate and first payment date are taps; the review reads back the page): film
+  them from the shipped desk, never from an older storyboard, and use the
+  desk's `docs/verification/paperwork-pages/corridor-changes.md` to see which
+  shots moved.
 - **The narrated walkthrough** (about 4 min): the whole Handle A Sale corridor,
   unhurried, with a voice that tells the dealer what each step makes them or
   saves them. The script is the house script, already in money-made /
@@ -309,6 +321,13 @@ step 10) to the same PR.
   the question is asked as before. A failed decode is never stored, an
   unsourced weight is never filed or pasted into webDEALER, and filing writes
   box 11's source into `form_data` (SOP, Empty weight).
+- Paperwork is built page by page, not question by question: a desk that
+  asked "what somebody thought to ask" printed blank boxes on signed legal
+  records (the trade-in's VIN, the first payment date, the licence state,
+  the AS IS box on a warranty sale) until a title clerk found them. Every box
+  names its source in a field map, the review reads the page back, and the
+  filing refuses a box the sale could fill (SOP, Document templates, page by
+  page).
 - Demo videos come from the `recordly-demo` skill, exactly as the approved
   Discount film (Phase 7), not from a fresh edit. The dealer buys on money and
   time: a silent showcase is not enough on its own, so the narrated cut ships

@@ -9,13 +9,20 @@ window code (bundled with the project's esbuild) and from each capture's `cursor
 when timings change or part B goes in.
 
 ```bash
-S=.claude/skills/recordly-demo/scripts
-node $S/verify-film.cjs --project clients/<slug>-demo --plan                    # 0. the plan: timeline, stills, cuts, cues
-node $S/verify-film.cjs --project clients/<slug>-demo --cuts-only --out $SCRATCH/cuts   # 2. after capture, before rendering
-$S/verify.sh clients/<slug>-demo out/demo-v1.mp4 $SCRATCH/verify-v1             # 4. after rendering: every gate
+source $SCRATCH/demo.env
+node $S/scripts/verify-film.cjs --project $P --plan                              # 0. the plan: timeline, stills, cuts, cues
+node $S/scripts/verify-film.cjs --project $P --cuts-only --out $SCRATCH/cuts     # 2. after capture, before rendering
+bash $S/scripts/bg.sh start verify -- bash $S/scripts/verify.sh $P out/$SLUG-demo.mp4 $SCRATCH/verify   # 4. every gate
 ```
 
-`verify.sh` takes 2.5–4 minutes (more on a busy container): in Claude Code give the Bash call a 600000 ms timeout.
+`verify.sh` takes 2.5–4 minutes (more on a busy container): run it through `bg.sh` (references/harness.md).
+
+**Decisions are recorded, never assumed.** `$P/verify-decisions.md` (scripts/decisions.cjs) holds one row per
+by-eye or by-ear gate passed, per approval, and per allowance: step, kind, what, why, who (`user: "<their words>"` or
+`agent: <what was looked at>`), when. `runbook.cjs mark` writes the rows. A model that cannot view images or hear audio
+never passes a by-eye or by-ear gate itself: it sends the contact sheet, the named stills or the film to the user and
+records the user's words. `verify.sh` refuses an `--allow-*` without its row, and copies every allowance into
+`report.json → allowances` and the send note.
 
 `verify.sh` exits 0 only when every gate passes. Its output folder holds:
 
@@ -83,8 +90,9 @@ PSNR alone cannot see a 2 px caret. The diff image can, so look at it.
 | Onset map | Per-frame peak (1470-sample windows at 44.1 kHz). An onset is > −55 dB and rising > 9 dB over the previous 3 frames. Every onset must fall within −1…+12 frames of a cue the composition plays | A sound with nothing on screen (the `open_ui` tail tick). Discount: 30 onsets, all on 18 cues. |
 | Isolated blips | No frame > −60 dB with 4 frames < −80 dB on each side | Stray ticks in silence |
 
-When a spike or onset has been looked at and is explained by page content, allow it explicitly with
-`--allow-spikes 812` or `--allow-onsets 1450`, and say so in the report to the user.
+When a spike or onset has been looked at and is explained by page content, record it first
+(`runbook.cjs mark <step> --allow spike:812 --why "<what it is>" --by-agent "<the frames looked at>"`), then allow it
+with `--allow-spikes 812` or `--allow-onsets 1450`; the send note lists it.
 
 ## 5. After rendering: the stills to look at
 
@@ -120,6 +128,8 @@ Also look at these, by eye:
 - No frame shows an unconfirmed fact or class (a) text (house-recipe §14: a price, payment, rate or %, term length,
   rating or review count). Class (b) site copy is allowed but must be listed in the README.
 - Watch the whole MP4 once at speed, with sound.
+- Record each of these looks with `runbook.cjs mark` (what was looked at, by whom). No vision or hearing: the user
+  looks, and their words are recorded.
 
 ## 6. What to do with a failure
 
@@ -142,13 +152,16 @@ the intended frames changed.
 The same gates run on a film with a part B (`verify.sh` and `--cuts-only` handle it); these are added.
 
 **Measuring `partB.cuts` (after capture, before filling `client-inputs.json` → `partB`).** On the captures, not the
-film. `python3` + `ffmpeg -vf select=eq(n\,N)`: contact-sheet the frames and read them, then confirm with the gate.
+film: `node $S/scripts/measure-desk-cuts.cjs --project $P --into $I` (runbook B5). It computes the gate's own edge
+density per capture frame and prints each value with the densities around it; then the cut gate confirms. On
+Discount's captures it gives 11, [42, 55], [108, 134]; the shipped film used 12 for signinPainted (picked by eye:
+frames 11 and 12 read 14.2 and 14.3, both painted).
 
 | Value | Capture | Discount | Read |
 |---|---|---|---|
 | `signinPainted` | 6-desk-signin | 12 | the first frame the sign-in card is fully drawn (frames 0–3 blank, the card fades in over 4–12) |
 | `saleSkeleton` [a, b] | 8-desk-sale-start | [42, 55] | a = the first skeleton frame after the Start A Sale click (8a keeps frames up to a − 1, the click's ring 3 frames in); b = the first fully painted "Which Car Is It?" frame |
-| `readbackRelease` [a, b] | 10-desk-readback | [108, 134] | a = 0.4 s after the button first reads "Release To Confirm 100%" (about 95 in Discount); b = the first fully painted "How Are They Paying?" frame (the dialog closes and the page blanks between) |
+| `readbackRelease` [a, b] | 10-desk-readback | [108, 134] | a = the first frame reading "Release To Confirm 100%" (the hold's start + CONFIRM_HOLD_MS 1200 ms: 57 + 36 = 93 in Discount, the label change seen in the density) + 15 (the 0.5 s of 100% the film keeps); b = the first fully painted "How Are They Paying?" frame (the dialog closes and the page blanks between) |
 
 **Gates (`--cuts-only` and `verify.sh`).**
 
@@ -182,5 +195,7 @@ blurred; the bill of sale never shown. Desk data is demo data only.
 The gates are in `references/narration.md` §10. In short: `narrated-check.cjs` prints PLAN OK before rendering; after
 rendering the frame count equals the plan's total, the luma scan is clean, the mix reads about −16 LUFS integrated with
 a true peak ≤ −1.5 dBTP, every onset is a played cue or a line's start, the key-noun table lands, and the stills of
-every segment start, zoom, document key, the phone and the outro have been looked at. The share copy is under 40 MB.
+every segment start, zoom, document key, the phone and the outro have been looked at. The chat copy is ≤ 28 MB
+(`share.sh`; the chat's upload limit is 30 MB). Tolerances: the voice set −16 ± 0.5 LUFS, the mix −16 ± 1 LUFS, true
+peak ≤ −1.5 dBTP.
 Money may be shown on the long cut's documents when a line is about it (demo deal data); identity numbers stay blurred.

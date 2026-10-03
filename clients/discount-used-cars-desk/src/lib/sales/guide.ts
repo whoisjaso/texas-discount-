@@ -359,7 +359,13 @@ export function buildGuideSteps(sale: SaleDetail): GuideStep[] {
     step that says "File The Title And Get Plates" would be the exact
     promise this path exists to prevent. So it does not exist here.
   */
-  if (!towAway) {
+  /*
+    And not on a sale the buyer files: the dealership files nothing there,
+    no plate is ever recorded, and the step offered a 130-U the sale does
+    not owe and never finished. The buyer leaves with the paperwork; the
+    packet is the last step.
+  */
+  if (!towAway && plan.registrationBy !== "buyer") {
     steps.push({
       key: "title",
       question: "File The Title And Get Plates.",
@@ -383,10 +389,19 @@ export function buildGuideSteps(sale: SaleDetail): GuideStep[] {
    * would make every finished sale read as unfinished forever, and the desk
    * would keep offering it as the next thing to do on a deal from March.
    */
+  /*
+    Done once every document the sale owes is done, not once any one is:
+    a packet with only its bill of sale filed read as printed and finished.
+    A sale whose packet is not known yet (its plan unanswered) keeps the old
+    reading: done once something is there to print.
+  */
   steps.push({
     key: "packet",
     question: "Print Or Save The Paperwork.",
-    done: Object.values(sale.documents).some(isDocumentDone),
+    done:
+      requiredTypes.length > 0
+        ? requiredTypes.every((type) => isDocumentDone(sale.documents[type] ?? "none"))
+        : Object.values(sale.documents).some(isDocumentDone),
   });
 
   return steps;

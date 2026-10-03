@@ -77,27 +77,44 @@ The rules the house script was written to, for any change to it:
 
 ## 2. The voice
 
-- **Kokoro-82M**, voice `af_heart`, `speed=0.95`, `lang_code='a'`, 24 kHz, free and local on CPU (a venv with
-  `kokoro` 0.9.4, `soundfile` and CPU `torch`; pip brings `misaki` and `espeakng-loader`; `faster-whisper` 1.2.1 in
-  the same venv for §3). Chosen over `af_bella`, `af_nicole`, `af_sarah` and Chatterbox (exaggeration 0.5 / 0.7)
-  from samples of the same line; the client approved the samples, then the full set.
-- **Line by line:** one WAV per line (`narration/vo/<id>.wav`), so one line can be re-voiced without touching the
-  others. Kokoro is deterministic for a given text: to vary a take, change the punctuation or wording of `speak`.
+- **Kokoro-82M**, voice `af_heart`, `speed=0.95`, `lang_code='a'`, 24 kHz, free and local on CPU. Chosen over
+  `af_bella`, `af_nicole`, `af_sarah` and Chatterbox (exaggeration 0.5 / 0.7) from samples of the same line; the
+  client approved the samples, then the full set. Another voice or speed is a client decision recorded in
+  `client-inputs.json → voice {voice, speed, why}`; `voice.py` refuses anything else.
+- **The venv** (runbook S1): `bash $S/scripts/setup.sh --voice` builds `$VOICE_VENV` (default
+  `$HOME/.cache/recordly-demo/voice-venv`, outside any session) from `assets/voice/requirements.lock`, the frozen set
+  that voiced Discount: torch 2.14.1+cpu from the PyTorch CPU index first (from PyPI pip pulls the CUDA build), then
+  kokoro 0.9.4, misaki 0.9.4, espeakng-loader 0.2.4, spaCy 3.8.16 with en_core_web_sm 3.8.0 (a GitHub release wheel),
+  faster-whisper 1.2.1. It fetches hexgrad/Kokoro-82M and Systran/faster-whisper-small.en into `$HF_HOME`, voices one
+  sentence and transcribes it back. A system espeak-ng is not needed (misaki bundles espeakng-loader).
+- **Line by line** (runbook N3): one WAV per line, so one line can be re-voiced without touching the others.
 
-```python
-from kokoro import KPipeline
-import numpy as np, soundfile as sf
-p = KPipeline(lang_code='a')
-for l in lines:   # narration/lines.json: {id, text, speak?}
-    a = np.concatenate([x for _, _, x in p(l.get('speak', l['text']), voice='af_heart', speed=0.95)])
-    sf.write(f"vo/{l['id']}.wav", a, 24000)
+```bash
+$VOICE_VENV/bin/python $S/scripts/voice/voice.py --project $P            # all lines; --only 09-car-c re-voices one
+#   reads narration/lines.json; writes narration/vo/<id>.wav (from speak, else text), lines-timed.json
+#   ({id, seg, text, speak?, sec}) and narration/preview.mp3 (the set with 0.6 s gaps, -16 LUFS): send it (N5)
 ```
+
+- **Takes repeat in words and length, not in samples:** the same `speak` gives the same words and the same length to
+  the sample, but the waveform differs slightly run to run (Kokoro's vocoder noise; re-voicing Discount's lines 01-02
+  gave identical lengths, 8.20 s and 11.55 s). To change a take, change the punctuation or wording of `speak`.
 
 ## 3. The transcribe-back check
 
-- **faster-whisper** `small.en`, `compute_type='int8'`, `beam_size=5`, `word_timestamps=True`, on every line's WAV.
-  The words, normalised (lower case, no punctuation, hyphens as spaces), are compared with `speak`.
-- **A difference means listen**, not re-voice blindly. Whisper mishears too: in the Discount set it heard "walking
+```bash
+$VOICE_VENV/bin/python $S/scripts/voice/transcribe.py --project $P       # runbook N4; exit 2 = a difference with no decision
+```
+
+- **faster-whisper** `small.en`, `device='cpu'`, `compute_type='int8'`, `beam_size=5`, `language='en'`,
+  `word_timestamps=True`, on every line's WAV. The words, normalised (lower case, no punctuation, hyphens as spaces,
+  one-thirty-U = 130-U, L L C = LLC), are compared with `speak` (else `text`).
+- **Outputs:** `narration/words.json` `[{id, sec, text, speak?, heard, words: [{w, s, e}]}]` (seconds in the raw take:
+  the edit's anchors) and `narration/transcribe-diff.md` (every differing line, with its decision).
+- **A difference means listen**, not re-voice blindly. A model that cannot listen takes a second opinion:
+  `--model medium.en --only <ids>` (it never replaces words.json); if medium.en hears the line as written, record
+  `--accept <id> --by medium.en --why "…"`. If both models hear the same difference, change only the punctuation of
+  `speak` and re-voice that line (at most twice); else send the clip to the user and record their decision
+  (`--by user`). Decisions live in `narration/transcribe-decisions.json`; copy them into the narration README. Whisper mishears too: in the Discount set it heard "walking
   and knowing" for "walking in knowing" and "the sales Spanish" for "the sale Spanish"; "130U" is "one-thirty-U".
   Kokoro can also swallow a short opening word: line 20 is heard as "The seller line" (its "And" is not heard).
   Each difference is listed in the project's narration README with what was decided.
@@ -106,11 +123,15 @@ for l in lines:   # narration/lines.json: {id, text, speak?}
 
 ## 4. Levels and trimming
 
-`scripts/prepare-vo.py` in the worked example does all of this and writes `src/narrated/vo-lines.ts`:
+`python3 $S/scripts/voice/prepare-vo.py --project $P` (runbook N6) does all of this and writes
+`src/narrated/vo-lines.ts` and `public/vo/<id>.wav`:
 
-- **One gain for the whole set** (+10.1 dB for Discount), resampled to 48 kHz, then a brick-wall limiter
-  (`alimiter=limit=0.70:attack=2:release=50:level=disabled`). Check the set concatenated with
-  `ffmpeg -af ebur128=peak=true`: about **−16 LUFS integrated, true peak ≤ −1.5 dBTP** (Discount: −1.8 dBTP).
+- **One gain for the whole set, computed:** −16 minus the integrated loudness of the raw takes played back to back,
+  then corrected (at most three times) for what the limiter and the trim change, until the trimmed set reads −16.0
+  ± 0.1. Resampled to 48 kHz, then a brick-wall limiter (`alimiter=limit=0.70:attack=2:release=50:level=disabled`).
+  Discount's takes compute to +9.9 dB (its approved set was made at +10.1 dB by hand and reads −15.9 LUFS).
+- **Gate:** the trimmed set **−16 ± 0.5 LUFS integrated, true peak ≤ −1.5 dBTP**, else exit 1 and nothing is written.
+  `--gain-db X --why "…"` sets the gain by hand (printed into vo-lines.ts).
 - **Trim each line to its speech:** `silencedetect=n=-42dB:d=0.12` finds the edges; keep 60 ms before the first sound
   and 120 ms after the last, with a 20 ms fade in and an 80 ms fade out. The words are re-timed to the trimmed start.
   Gaps between lines are then set by the plan, never by the TTS's own leading silence.
@@ -123,10 +144,13 @@ Write the timing table first (line, length, key word, the picture wanted), then 
   theirs": the pointer rests on Already Passed, We Are Doing It, The Customer Will in turn), then the click comes at
   the end of the thought. Timing the actions from the line's word times saves re-captures.
 - **Only the new shots are captured;** part A and the desk's sign-in/onboarding are reused from the house storyboard.
-  The Discount long cut's new shots are in `narration/storyboard-long.json` (20-car … 27-desk-stored), with the order
-  and the off-camera set-up between them in its `notes`.
-- **One whole sale on one fresh desk server**, captured in order; the steps the film does not show are answered off
-  camera between captures (a scenario file for desk-walk's `sale.cjs`), and the deal id is passed with `--var deal=`.
+  The house long-cut shots are `assets/storyboard-long.template.json` (20-car … 27-desk-stored, Discount's shipped
+  shots with the client's values as placeholders and the run's as capture vars `{deal}`, `{sign}`, `{sign2}`):
+  `fill-client.cjs long-storyboard $I --into $P/narration/storyboard-long.json` fills it and injects the stand-in menu
+  (`assets/narrated/select-menu.{js,css}`, in the desk's font) and the camera feed carrying this client's demo card
+  (`make-demo-card.mjs`). Filled for Discount it reproduces the shipped shots exactly, apart from the card images.
+- **One whole sale on one fresh desk server**, captured in order by `scripts/capture-narrated.sh` (references/
+  desk-capture.md §6); the steps the film does not show are answered off camera between captures.
 
 ## 6. The plan
 
@@ -145,9 +169,21 @@ Write the timing table first (line, length, key word, the picture wanted), then 
   `{gap}` (after the previous line) or `{outro}`. Hold and overlay lengths are computed from the lines that play over
   them, so re-voicing a line re-times the film.
 
-`scripts/narrated-check.cjs` prints the running order, every line (start, end, gap, key word time, picture) and every
-cut's pointer and camera on both sides, and exits 1 on an overlap, a gap outside 0.35–3.0 s or a failed cut.
-`scripts/narrated-frames.cjs` lists the frames to look at (segment firsts, zooms at full depth, document keys landed).
+The template's `src/narrated/plan.ts` is an empty skeleton (types, `cap` / `hold` / `ringOn` / `word`, and a generic
+builder over SEGMENTS, LINES and OVERLAYS); `examples/discount-used-cars/plan.ts` is the worked one. Write this
+client's from this run's captures: never copy Discount's frame numbers.
+
+- `node $S/scripts/narrated-check.cjs --project $P` prints the running order, every line (start, end, gap, key word
+  time, picture) and every cut's pointer and camera on both sides, and exits 1 on an overlap, a gap outside the §7
+  rules or a failed cut.
+- `node $S/scripts/narrated-plan.cjs --project $P --write` is the lip-to-picture gate: each line's key word against
+  the action it names, from `client-inputs.json → narration.anchors` ({seg, event: click | type | hold | draw | scroll |
+  zoom, nth} for a capture event, {overlay, event: doc, doc, key} for a document push, {…, event: frame} for "in frame")
+  and the captures' own events; it writes `narration/lip-to-picture.md` and the README block, and fails a line outside
+  its window unless `narration.exceptions` gives the reason. Discount's anchors (in the example inputs) pass with three
+  recorded exceptions. It does not write plan.ts: plan.ts stays hand-written to the landing rules.
+- `node $S/scripts/narrated-frames.cjs --project $P [--csv]` lists the frames to look at (segment firsts, zooms at
+  full depth, document keys landed).
 
 ## 7. Landing rules and gaps
 
@@ -155,7 +191,10 @@ cut's pointer and camera on both sides, and exits 1 on an overlap, a gap outside
   that names it; an action before its word reads as early, one more than about 0.5 s after it reads as late. Measure
   against the capture's real event frames (`cursor.json` events), not the storyboard's planned seconds.
 - **Gaps:** 0.5–1.0 s between lines of one thought; 1–3 s where the picture has a beat of its own (taps shown in
-  silence, a page landing, the phone coming in). Lines never overlap, and no line is cut.
+  silence, a page landing, the phone coming in). Lines never overlap, and no line is cut. narrated-check enforces
+  0.5–3.0 s (0.35–0.5 s only for a line listed in `narration.exceptions`, two halves of one sentence).
+- **Landing windows** (narrated-plan.cjs): a pointer action 0 to +0.5 s after its word; a document push starts −0.6 to
+  +0.1 s around its word (the page lands on it); a zoom ±0.5 s; "in frame": the picture is on screen at the word.
 - **Frame the thing named.** Compute each zoom's view (viewport ÷ depth around the focus, clamped to the page) against
   the page's measured boxes: the usual misses are a sliver of a button at the bottom edge and a heading cut at the top.
   Check at full size: a contact-sheet thumbnail makes clean edges look cut.
@@ -188,16 +227,20 @@ All of `verification.md` §4–5 apply, with these changes:
 
 | Gate | Pass |
 |---|---|
-| Plan | `narrated-check.cjs` prints PLAN OK: gaps 0.35–3.0 s, no overlap, every cut's pointer ≤ 2 px (same capture) / 3.5 px, camera scale Δ ≤ 0.01, pan ≤ 3 px |
+| Plan | `narrated-check.cjs` prints PLAN OK: gaps 0.5–3.0 s (§7), no overlap, every cut's pointer ≤ 2 px (same capture) / 3.5 px, camera scale Δ ≤ 0.01, pan ≤ 3 px |
 | Frame count | Equals the plan's total; 1920×1080, 30 fps, h264, AAC |
 | Luma | No one-frame spike outside the planned cuts; the last frame black |
-| Loudness | Voice-led mix about −16 LUFS integrated, true peak ≤ −1.5 dBTP |
+| Loudness | The voice set −16 ± 0.5 LUFS integrated; the mix −16 ± 1 LUFS; true peak ≤ −1.5 dBTP (`narrated-verify.cjs`) |
 | Onset map | Every onset is a cue the composition plays or a line's start (speech onsets inside a line are expected) |
-| Lip to picture | The key-noun table (word, film second, what is on screen) is written in the narration README, and every row lands |
+| Lip to picture | `narrated-plan.cjs` prints LIP-TO-PICTURE OK: every anchored line lands in its window or has a recorded exception |
 | Stills | Every segment's first frame, every zoom at full depth, every document key landed, the phone's parts, the outro, the last frame |
-| Share copy | Under 40 MB, +faststart |
+| Chat copy | `share.sh`: ≤ 28 MB (the chat's upload limit is 30 MB), +faststart, the master's frame count. A 3:50 film comes to ~26 MB at ~830 kb/s video + AAC 128k |
 
 ## 11. Files in the worked example
+
+The skill ships every script the worked example used: `scripts/voice/{voice,transcribe,prepare-vo}.py`,
+`scripts/narrated-{check,frames,verify,plan}.cjs` (all `--project`), `scripts/capture-narrated.sh`,
+`scripts/desk/*.cjs`, `scripts/make-demo-card.mjs`, and the template's `src/narrated/`. In the Discount project:
 
 ```
 narration/script-v1.md          the script with its on-screen cues and the fact-check date

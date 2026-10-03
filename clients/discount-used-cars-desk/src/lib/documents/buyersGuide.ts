@@ -147,10 +147,114 @@ export interface BuyersGuideDealerInput {
   contact?: string | null;
 }
 
+/**
+ * The warranty the sale recorded (the bill of sale's answers), when the
+ * guide is printed for a sale. Absent: AS IS, exactly as before.
+ */
+export interface BuyersGuideWarrantyInput {
+  /** "as_is" marks AS IS; "warranty" marks DEALER WARRANTY. */
+  conditionType: "as_is" | "warranty";
+  /** FULL or LIMITED under DEALER WARRANTY. */
+  kind?: "full" | "limited" | null;
+  laborPercent?: string | null;
+  partsPercent?: string | null;
+  /** The systems covered, in the form's own words. */
+  systems?: string[];
+  duration?: string | null;
+}
+
 export interface BuyersGuideInput {
   vehicle: BuyersGuideVehicleInput;
   dealer?: BuyersGuideDealerInput;
   language?: BuyersGuideLanguage;
+  warranty?: BuyersGuideWarrantyInput | null;
+}
+
+/*
+  The DEALER WARRANTY block on page 1, measured off each official form
+  (PDF points, origin bottom-left): the 22pt box, the FULL and LIMITED 8pt
+  boxes, the labor and parts blanks, and where SYSTEMS COVERED and DURATION
+  start. The marks are the AS IS mark's: a clean X inset from the outline.
+*/
+export const BUYERS_GUIDE_WARRANTY_LAYOUT = {
+  en: {
+    dealerWarranty: { x: 81, y: 524, width: 22, height: 22 },
+    full: { x: 94.8, y: 506, width: 8, height: 8 },
+    limited: { x: 94.8, y: 488, width: 8, height: 8 },
+    labor: { x: 278, y: 487, maxWidth: 25 },
+    parts: { x: 366, y: 487, maxWidth: 25 },
+    systems: { x: 81, y: 418, maxWidth: 220, bottom: 342 },
+    duration: { x: 312.7, y: 418, maxWidth: 220, bottom: 342 },
+  },
+  es: {
+    dealerWarranty: { x: 81.3, y: 496, width: 22, height: 22 },
+    full: { x: 95.1, y: 478, width: 8, height: 8 },
+    limited: { x: 95.1, y: 460, width: 8, height: 8 },
+    labor: { x: 312, y: 459, maxWidth: 36 },
+    parts: { x: 446, y: 459, maxWidth: 32 },
+    systems: { x: 81, y: 383, maxWidth: 220, bottom: 329 },
+    duration: { x: 313, y: 383, maxWidth: 220, bottom: 329 },
+  },
+} as const;
+
+function drawBoxMark(page: PDFPage, box: { x: number; y: number; width: number; height: number }, thickness: number) {
+  const inset = box.width > 12 ? BUYERS_GUIDE_AS_IS_MARK_INSET : 1;
+  const left = box.x + inset;
+  const right = box.x + box.width - inset;
+  const bottom = box.y + inset;
+  const top = box.y + box.height - inset;
+  for (const line of [
+    { start: { x: left, y: bottom }, end: { x: right, y: top } },
+    { start: { x: left, y: top }, end: { x: right, y: bottom } },
+  ]) {
+    page.drawLine({ ...line, thickness, color: BLACK, lineCap: LineCapStyle.Round });
+  }
+}
+
+/** Words wrapped into the lines that fit a width at a size. */
+function wrapWords(font: PDFFont, text: string, size: number, maxWidth: number): string[] {
+  const lines: string[] = [];
+  let line = "";
+  for (const word of clean(text).split(" ").filter(Boolean)) {
+    const next = line ? `${line} ${word}` : word;
+    if (font.widthOfTextAtSize(next, size) <= maxWidth || !line) line = next;
+    else {
+      lines.push(line);
+      line = word;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+function drawBlock(
+  page: PDFPage,
+  font: PDFFont,
+  text: string,
+  spot: { x: number; y: number; maxWidth: number; bottom: number },
+) {
+  let size = 10;
+  let lines = wrapWords(font, text, size, spot.maxWidth);
+  while (size > 6.5 && spot.y - (lines.length - 1) * (size + 2) < spot.bottom) {
+    size -= 0.5;
+    lines = wrapWords(font, text, size, spot.maxWidth);
+  }
+  lines.forEach((line, index) => {
+    page.drawText(line, { x: spot.x, y: spot.y - index * (size + 2), size, font, color: BLACK });
+  });
+}
+
+function drawWarranty(page: PDFPage, font: PDFFont, warranty: BuyersGuideWarrantyInput, language: BuyersGuideLanguage) {
+  const layout = BUYERS_GUIDE_WARRANTY_LAYOUT[language];
+  drawBoxMark(page, layout.dealerWarranty, 2);
+  if (warranty.kind === "full") drawBoxMark(page, layout.full, 1.2);
+  if (warranty.kind === "limited") {
+    drawBoxMark(page, layout.limited, 1.2);
+    drawFitText({ page, font, text: clean(warranty.laborPercent), spot: { ...layout.labor, size: 9 } });
+    drawFitText({ page, font, text: clean(warranty.partsPercent), spot: { ...layout.parts, size: 9 } });
+  }
+  if (warranty.systems?.length) drawBlock(page, font, warranty.systems.join(", "), layout.systems);
+  if (clean(warranty.duration)) drawBlock(page, font, clean(warranty.duration), layout.duration);
 }
 
 const BLACK = rgb(0, 0, 0);
@@ -243,11 +347,33 @@ export async function generateBuyersGuidePdf(input: BuyersGuideInput): Promise<U
     );
   }
 
-  drawAsIsSelection(pages[BUYERS_GUIDE_AS_IS_PAGE_INDEX], language);
+  // AS IS unless the sale recorded a dealer warranty: the guide is part of
+  // the contract, and it may not say AS IS beside a bill of sale that sold
+  // the car with a warranty.
+  if (input.warranty?.conditionType === "warranty") {
+    drawWarranty(pages[BUYERS_GUIDE_AS_IS_PAGE_INDEX], font, input.warranty, language);
+  } else {
+    drawAsIsSelection(pages[BUYERS_GUIDE_AS_IS_PAGE_INDEX], language);
+  }
   drawPageOneVehicle(pages[BUYERS_GUIDE_PREFILL_PAGE_INDEXES[0]], font, input.vehicle, layout);
   drawPageThreeDealer(pages[BUYERS_GUIDE_PREFILL_PAGE_INDEXES[1]], font, input.dealer ?? {}, layout);
 
   return pdf.save();
+}
+
+/**
+ * The copy that hangs in the window: the filled front (page 1) and the back
+ * (page 3). Page 2 is the FTC's alternate "Implied Warranties Only" front,
+ * which this desk never sells under, so it stays in the three-page PDF and
+ * out of the window.
+ */
+export async function windowCopyOf(bytes: Uint8Array): Promise<Uint8Array> {
+  const source = await PDFDocument.load(bytes);
+  const out = await PDFDocument.create();
+  const [front, back] = await out.copyPages(source, [0, 2]);
+  out.addPage(front);
+  out.addPage(back);
+  return out.save();
 }
 
 export function buildBuyersGuideFilename(

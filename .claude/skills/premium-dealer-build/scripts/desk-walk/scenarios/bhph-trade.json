@@ -61,8 +61,7 @@
    "text": "As-Is"
   },
   "countyOfResidence": {
-   "button": "Next",
-   "exact": true
+   "text": "Harris"
   },
   "applicationType": {
    "text": "Title And Registration"
@@ -124,19 +123,15 @@
     "exact": true
    }
   ],
-  "numberOfPayments": [
-   {
-    "fill": "main input",
-    "value": "36"
-   },
-   {
-    "button": "Next",
-    "exact": true
-   }
-  ],
+  "numberOfPayments": {
+   "text": "36 Payments"
+  },
   "apr": [
    {
-    "fill": "main input",
+    "text": "Another Rate"
+   },
+   {
+    "fill": ".ed-paper-other input",
     "value": "18"
    },
    {
@@ -155,8 +150,23 @@
    }
   ],
   "firstPaymentDate": {
-   "button": "Next",
-   "exact": true
+   "text": "In One Month"
+  },
+  "tradeInVin": [
+   {
+    "fill": "main input",
+    "value": "1HGCM82633A004352"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "buyerLicenseState": {
+   "text": "Texas (TX)"
+  },
+  "renewalReminders": {
+   "text": "No"
   }
  }
 }

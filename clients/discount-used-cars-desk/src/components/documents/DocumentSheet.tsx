@@ -13,12 +13,14 @@ import SalvageSaleDocument from '@/components/documents/SalvageSaleDocument';
 import { TEXAS_TAX_RATE, type BillOfSaleData } from '@/lib/documents/billOfSale';
 import { dealership } from '@/lib/dealership-config';
 import { linkSignerName } from '@/lib/documents/dealer-signer';
+import { printedPhone } from '@/lib/forms/phone';
 import type { ContractData } from '@/lib/documents/finance';
 import type { Form130UData } from '@/lib/documents/form130U';
 import type { RentalData } from '@/lib/documents/rental';
 import type { SignatureData } from '@/lib/documents/shared';
 import {
   idDocumentType,
+  idNumberLine,
   passportIssuerName,
   readIdKind,
   type IdDocumentKind,
@@ -173,6 +175,8 @@ export function DocumentSheet({
           data={{
             ...ack.data,
             quotedRegistrationAmount: Number(docData.quotedRegistrationAmount) || 0,
+            // Stamped at filing on copies filed since; absent, the dealer's figure.
+            ...(typeof docData.lateHandlingFee === 'number' ? { lateHandlingFee: docData.lateHandlingFee } : {}),
           }}
           buyerSignature={signatures.buyerSignature || null}
           buyerSignatureDate={signatures.buyerSignatureDate || null}
@@ -239,6 +243,8 @@ export function DocumentSheet({
             total: num(docData.total),
             amountPaidToday: num(docData.amountPaidToday),
             paymentMethod: text(docData.paymentMethod),
+            ...(text(docData.paymentMethodOther) ? { paymentMethodOther: text(docData.paymentMethodOther) } : {}),
+            ...(num(docData.balanceOwed) > 0 ? { balanceOwed: num(docData.balanceOwed) } : {}),
             howLeaving: leaving === 'towTruck' || leaving === 'trailer' || leaving === 'flatbed' ? leaving : '',
             salvageLicense: text(docData.salvageLicense),
             titleOriginState: text(docData.titleOriginState),
@@ -327,18 +333,20 @@ function form130UFromPayload(docData: Record<string, unknown>): Record<string, u
  * and wrong for paper: the acknowledgment sheets printed it raw. A US
  * number prints as (713) 555-0190; anything else prints as stored.
  */
-function printedPhone(value: string): string {
-  const match = value.match(/^\+?1?(\d{3})(\d{3})(\d{4})$/);
-  return match ? `(${match[1]}) ${match[2]}-${match[3]}` : value;
-}
 
 function acknowledgmentFacts(docData: Record<string, unknown>) {
   const text = (value: unknown): string => (typeof value === 'string' ? value : '');
+  const language = (docData.language === 'es' ? 'es' : 'en') as 'en' | 'es';
   return {
-    language: (docData.language === 'es' ? 'es' : 'en') as 'en' | 'es',
+    language,
     data: {
       buyerName: text(docData.buyerName),
-      buyerIdNumber: text(docData.buyerIdNumber),
+      // With what the ID is and who issued it, on a copy filed since that was
+      // stamped; a copy filed before prints the number alone, as it did.
+      buyerIdNumber:
+        typeof docData.buyerIdKind === 'string'
+          ? idNumberLine(text(docData.buyerIdNumber), docData.buyerIdKind, text(docData.buyerIdIssuer), language)
+          : text(docData.buyerIdNumber),
       buyerPhone: printedPhone(text(docData.buyerPhone)),
       buyerAddress: text(docData.buyerAddress),
       vehicleDescription: text(docData.vehicleDescription),

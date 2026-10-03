@@ -150,6 +150,20 @@ export function buildAgreementData(
 
   const applicantType: AgreementData['applicant_type'] =
     (cd.applicantType as string)?.toLowerCase() === 'business' ? 'business' : 'individual';
+  /*
+    A business applicant is the business: its legal name in box 16 and its
+    FEIN in box 14, both asked on the 130-U. A payload from before those
+    were asked carries neither and prints as it did.
+  */
+  const entityName = applicantType === 'business' ? fieldCase((dd.businessName as string) || '') : '';
+  const fein = applicantType === 'business' ? ((dd.businessFein as string) || '').replace(/\s/g, '') : '';
+  /*
+    Box 27, the renewal eReminder, ticked only when the buyer said yes. A
+    payload from before the question keeps its old reading (an email on
+    file), so a filed copy re-renders as it was filed.
+  */
+  const reminders = typeof dd.renewalReminders === 'string' ? dd.renewalReminders === 'yes' : undefined;
+  const tradeInVin = vinCase((dd.tradeInVin as string) || '');
 
   return {
     vin,
@@ -173,6 +187,9 @@ export function buildAgreementData(
     buyer_first_name: buyerFirst,
     buyer_middle_name: buyerMiddle || undefined,
     buyer_last_name: buyerLast,
+    // The suffix the licence step recorded ("Jr"), into its own column.
+    buyer_suffix: fieldCase((cd.applicantSuffix as string) || '') || undefined,
+    buyer_entity_name: entityName || undefined,
     buyer_address: buyerAddress,
     buyer_city: buyerCity,
     buyer_state: buyerState,
@@ -180,7 +197,7 @@ export function buildAgreementData(
     buyer_county: buyerCounty,
     buyer_phone: (cd.buyerPhone as string) || (cd.renterPhone as string) || (cd.applicantPhone as string) || (agreement.buyer_phone as string) || undefined,
     buyer_email: (cd.buyerEmail as string) || (cd.renterEmail as string) || (cd.applicantEmail as string) || (agreement.buyer_email as string) || undefined,
-    buyer_dl_number: codeCase(buyerDl) || undefined,
+    buyer_dl_number: (applicantType === 'business' && fein ? fein : codeCase(buyerDl)) || undefined,
     buyer_dl_state: codeCase(buyerDlState) || undefined,
     buyer_id_kind: buyerIdKind,
     co_buyer_name: coBuyerName || undefined,
@@ -188,6 +205,8 @@ export function buildAgreementData(
     sale_date: saleDate || undefined,
     trade_in_amount: tradeInAmount || undefined,
     trade_in_description: tradeInDescription || undefined,
+    trade_in_vin: tradeInVin || undefined,
+    ...(reminders === undefined ? {} : { e_reminder: reminders }),
     rebate_amount: rebateAmount || undefined,
     applying_for: applyingFor,
     applicant_type: applicantType,

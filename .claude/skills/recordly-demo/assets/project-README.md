@@ -5,7 +5,7 @@ A Recordly / Screen Studio style demo of the public site ({{WWW}}), made with th
 site. The site sits in a macOS window on a charcoal wallpaper, with auto-zooms, a smoothed macOS cursor, an iPhone cut
 and iOS sounds. Recordly's code is AGPL and is not used; only its tuning numbers are.
 
-- **Output:** `out/demo-v1.mp4` (1920×1080, 30 fps, h264 CRF 16 + AAC) and `out/demo-v1-share.mp4` (≤ 24 MB, for chat).
+- **Output:** `out/demo-v1.mp4` (1920×1080, 30 fps, h264 CRF 16 + AAC) and `out/demo-v1-chat.mp4` (≤ 28 MB, for chat; `scripts/share.sh`). With the desk the film is `out/{{SLUG}}-demo.mp4`.
 - **Inputs:** `client-inputs.json` → `src/project.ts`, `storyboard.json` and this README (scripts/fill-client.cjs).
   Edit the JSON and refill; do not hand-edit the generated files.
 - **On-screen facts:** {{FACTS_LINE}}. No prices, no claims.
@@ -24,37 +24,31 @@ and iOS sounds. Recordly's code is AGPL and is not used; only its tuning numbers
 
 Seconds hold while part B is empty; part B moves everything after the cut point back by its length.
 
-## Re-capture
+## Re-capture, render, verify
 
-Run from the repo root with `SCRATCH` set to an absolute path. Never run `playwright install`; never use another
-workflow's ports. Re-capturing shot N means re-capturing every later shot too, in order (each starts from the previous
-capture's cursor).
-
-```bash
-S=.claude/skills/recordly-demo; P=clients/{{SLUG}}-demo
-(cd {{SITE_DIR}} && VITE_DESK_URL={{DESK_URL}} npm run build -- --outDir $SCRATCH/dist-demo --emptyOutDir)
-# serve it (in Claude Code: run_in_background), keeping vite's own PID ($BASHPID: exec turns the subshell into vite)
-(cd {{SITE_DIR}} && echo $BASHPID > $SCRATCH/preview.pid && exec ./node_modules/.bin/vite preview --outDir $SCRATCH/dist-demo --port 5183 --strictPort)
-node $S/scripts/measure-site.cjs --storyboard $P/storyboard.json --rects       # must print PREFLIGHT CLEAN
-for id in 1-hero 2-scroll 3-buy 4-menu 5-phone; do
-  node $S/scripts/capture.cjs --storyboard $P/storyboard.json --shot $id \
-    --out $SCRATCH/captures/$id --publish $P/public/shots --clean || break
-done
-node $S/scripts/verify-film.cjs --project $P --cuts-only --out $SCRATCH/cuts && kill "$(cat $SCRATCH/preview.pid)"
-```
-
-## Render and verify
+The recordly-demo runbook does all of it, step by step, under any agent: `node <skill>/scripts/runbook.cjs next`
+(after `bash <skill>/scripts/env.sh --slug {{SLUG}} --scratch <absolute scratch dir>` and `source <scratch>/demo.env`).
+The commands it runs, in short:
 
 ```bash
-.claude/skills/recordly-demo/scripts/render.sh clients/{{SLUG}}-demo demo-v1 --check   # foreground: preflight + typecheck
-.claude/skills/recordly-demo/scripts/render.sh clients/{{SLUG}}-demo demo-v1           # ~12 min under nice (background it)
-.claude/skills/recordly-demo/scripts/verify.sh clients/{{SLUG}}-demo out/demo-v1.mp4 $SCRATCH/verify-v1
+source $SCRATCH/demo.env
+bash $S/scripts/site-server.sh build-start                                   # :5183 only, own process group
+node $S/scripts/measure-site.cjs --storyboard $P/storyboard.json --rects     # must print PREFLIGHT CLEAN
+bash $S/scripts/bg.sh start capture -- bash $S/scripts/capture-all.sh $P/storyboard.json 1-hero 2-scroll 3-buy 4-menu 5-phone
+node $S/scripts/verify-film.cjs --project $P --cuts-only --out $SCRATCH/cuts && bash $S/scripts/site-server.sh stop
+bash $S/scripts/render.sh $P {{SLUG}}-demo --check                             # preflight + typecheck
+bash $S/scripts/bg.sh start render -- bash $S/scripts/render.sh $P {{SLUG}}-demo   # master + the <= 28 MB chat copy
+bash $S/scripts/bg.sh start verify -- bash $S/scripts/verify.sh $P out/{{SLUG}}-demo.mp4 $SCRATCH/verify
 ```
+
+Re-capturing shot N means re-capturing every later shot too, in order (each starts from the previous capture's
+cursor); `capture-all.sh … --from <id>` refuses otherwise. Never run `playwright install`; never use another port.
+Every by-eye look, approval and allowance is recorded in `verify-decisions.md` (`runbook.cjs mark`).
 
 ## Part B (the sale desk)
 
-Empty. It goes in at `demoTimeline.cutPoint` (`partBSegments` in `src/demo/timeline.ts`); see the skill's SKILL.md,
-"Part B slot". The URL pill keeps `{{DOMAIN}}` until the owner confirms the desk host may be shown.
+It goes in at `demoTimeline.cutPoint` (`partBSegments` in `src/demo/timeline.ts`) once captured (the skill's runbook
+B0-B7, references/desk-capture.md). The URL pill keeps `{{DOMAIN}}` until the owner confirms the desk host may be shown.
 
 ## Decisions to confirm with the owner
 

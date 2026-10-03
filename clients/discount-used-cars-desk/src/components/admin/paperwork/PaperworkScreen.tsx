@@ -17,6 +17,7 @@ import {
 import type { AskedQuestion, PaperworkMoney } from "@/lib/sales/paperwork";
 import HeldByBillOfSale, { FreezeProvider } from "@/components/admin/guide/HeldByBillOfSale";
 import type { WeightPrompt } from "@/lib/vehicles/empty-weight/on-the-sale";
+import type { ReadBackPage } from "@/lib/documents/field-maps/resolve";
 
 /**
  * The paperwork corridor's chrome, on the client so the toggle can swap
@@ -47,6 +48,8 @@ export default function PaperworkScreen({
   freeze = null,
   weightPrompt = null,
   suggestionNote = null,
+  pages = [],
+  sworn = [],
 }: {
   /**
    * Whether the filed bill of sale holds this answer, and whether this viewer
@@ -83,6 +86,10 @@ export default function PaperworkScreen({
   weightPrompt?: WeightPrompt | null;
   /** Where the starting value came from, when the page offers one (carrying capacity). */
   suggestionNote?: "capacityMinimum" | null;
+  /** The document's pages as they will print, on the review. */
+  pages?: ReadBackPage[];
+  /** The sworn statements nobody has answered, on the review. */
+  sworn?: Array<{ key: string; question: string; href: string }>;
 }) {
   const { t } = useFunnel();
   const [previewPending, startPreview] = useTransition();
@@ -155,6 +162,8 @@ export default function PaperworkScreen({
               quotedRegistrationAmount={quotedRegistrationAmount}
               doneHref={guideHref}
               poa={poa}
+              pages={pages}
+              sworn={sworn}
             />
           ) : question && question.key === "emptyWeight" && weightPrompt ? (
             <EmptyWeightStep

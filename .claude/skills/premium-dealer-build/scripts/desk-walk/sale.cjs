@@ -145,7 +145,16 @@ const failures = [];
     }
     if (step.endsWith('/review')) {
       if (sc.signAtDesk) { /* signatures happen in the ceremony */ }
-      await btn(/^File The /).click();
+      // The review names what the page would print blank or what a sworn
+      // statement still needs; File stays disabled until it is fixed.
+      const fileBtn = btn(/^File The /);
+      if (await fileBtn.isDisabled().catch(() => false)) {
+        const why = ((await p.locator('[role=alert]:not(#__next-route-announcer__)').allInnerTexts().catch(() => [])) || []).join(' | ').replace(/\s+/g, ' ');
+        log('FILE BLOCKED', step, JSON.stringify(why));
+        failures.push(`${step}: File blocked: ${why}`);
+        break;
+      }
+      await fileBtn.click();
       await p.waitForURL((u) => u.href !== url, { timeout: 90000 }).catch(() => {});
       await settle(); continue;
     }

@@ -12,6 +12,9 @@ import { codeCase, fieldCase, vinCase } from "@/lib/documents/presentation-case"
 import { readTitleOrigin } from "@/lib/vehicles/title-kinds";
 import type { SaleDetail } from "@/lib/admin/sale-desk";
 import { DOC_FEE_NOTICE_VERSION } from "@/lib/legal/doc-fee-notice";
+import { joinAddress } from "@/lib/sales/aamva";
+import { warrantySystemLabels } from "@/lib/sales/deal-facts";
+import { dealerFees } from "@/lib/dealership-config";
 
 /**
  * The corridor's filed document, assembled into something a printer can hold.
@@ -165,6 +168,28 @@ export function lenderNameFor(sale: SaleDetail): string | null {
   filled state form whose body style read "pickup": whatever the desk or the
   decoder typed, the documents print one way.
 */
+/*
+  Which state (or country) issued the ID: the intake's answer, then the
+  bill of sale's own question (asked only when intake did not say), and
+  only then the old default for a record from before either existed. The
+  bill's answer used to be stored and dropped: the paper printed "TX"
+  whatever had been answered.
+*/
+function licenceIssuer(sale: SaleDetail, needsState: boolean): string {
+  const intake = codeCase(sale.buyer?.idState);
+  if (intake) return intake;
+  const answered =
+    codeCase(readPaperwork(sale.stepData, "billOfSale").buyerLicenseState) ||
+    codeCase(readPaperwork(sale.stepData, "salvageBillOfSale").buyerLicenseState);
+  if (answered) return answered;
+  return needsState ? "TX" : "";
+}
+
+/** One line of an address the way people write one: "City, ST 12345". */
+export function oneLineAddress(street: string, city: string, state: string, zip: string): string {
+  return joinAddress({ street: street || null, city: city || null, state: state || null, postal: zip || null, county: null }) ?? "";
+}
+
 function baseFacts(sale: SaleDetail) {
   const held = readBuyerId(sale.stepData);
   const mailing = held.mailing;
@@ -185,7 +210,9 @@ function baseFacts(sale: SaleDetail) {
     buyerEmail: sale.buyer?.email ?? "",
     buyerAddress: fieldCase(mailing.street ?? sale.buyer?.address ?? ""),
     buyerCity: fieldCase(mailing.city),
-    buyerState: codeCase(mailing.state) || "TX",
+    // No state is added to an address that has none: a blank state is a
+    // missing box the filing names, never a "TX" nobody said.
+    buyerState: codeCase(mailing.state),
     buyerZip: mailing.postal ?? "",
     buyerLicense: codeCase(settled(held.licenseNumber) ?? sale.buyer?.idNumber ?? ""),
     /*
@@ -196,7 +223,7 @@ function baseFacts(sale: SaleDetail) {
       beside a Mexican passport number is a wrong box, not a blank one.
     */
     buyerIdKind: idKind,
-    buyerLicenseState: codeCase(sale.buyer?.idState) || (idDocumentType(idKind).needsState ? "TX" : ""),
+    buyerLicenseState: licenceIssuer(sale, idDocumentType(idKind).needsState),
     vehicleYear: text(sale.vehicle?.year),
     vehicleMake: fieldCase(sale.vehicle?.make),
     vehicleModel: fieldCase(sale.vehicle?.model),
@@ -244,8 +271,13 @@ export function corridorCompletedLink(
      */
     dealerSignerName?: string | null;
   } = {},
+  options: {
+    /** The current filed bill of sale's date of sale (`saleDateFor`), when known. */
+    saleDate?: string | null;
+  } = {},
 ): string | null {
   const facts = baseFacts(sale);
+  const billAnswers = readPaperwork(sale.stepData, "billOfSale");
   const funding = sale.funding.type;
   const lenderName = lenderNameFor(sale);
 
@@ -255,7 +287,7 @@ export function corridorCompletedLink(
           sellerLienEnabled: true,
           sellerLienAmount: num(formData.sellerLienAmount),
           sellerLienReason: text(formData.sellerLienReason) || BALANCE_OWED_REASON,
-          sellerLienDate: today(),
+          sellerLienDate: options.saleDate || today(),
           sellerLienholderName: factOr(dealership.legalName, "dealer legal name"),
           sellerLienholderAddress: dealership.address.street,
           sellerLienholderCity: dealership.address.locality,
@@ -274,7 +306,7 @@ export function corridorCompletedLink(
   */
   const lien = lienFor({
     funding,
-    saleDate: today(),
+    saleDate: options.saleDate || today(),
     balanceOwed: sellerLien.sellerLienEnabled ? sellerLien.sellerLienAmount : 0,
     reason: text(formData.sellerLienReason) || BALANCE_OWED_REASON,
     seller: sellerAsLienholder(dealership),
@@ -284,12 +316,22 @@ export function corridorCompletedLink(
 
   let section: DocumentSection;
   let data: Record<string, unknown>;
+  const tradeIn = text(formData.tradeIn) !== "no" && (text(formData.tradeIn) === "yes" || num(formData.tradeInAllowance) > 0 || text(formData.tradeInDescription) !== "");
+  const warranty = text(formData.conditionType) === "warranty";
+  /*
+    The date of sale: the current filed bill of sale's, when the filing that
+    calls this knows it (a document filed the next morning is still dated
+    the day the car was sold), else today at the desk.
+  */
+  const dated = options.saleDate || today();
+  const issuerKind = idDocumentType(facts.buyerIdKind);
 
   if (documentType === "billOfSale") {
     section = "billOfSale";
     data = {
-      saleDate: today(),
-      stockNumber: "",
+      saleDate: dated,
+      // The car's own stock number when the lot gave it one.
+      stockNumber: sale.vehicle?.stockNumber ?? "",
       outstanding: stillToDo(sale),
       ...facts,
       coBuyerName: "",
@@ -308,8 +350,10 @@ export function corridorCompletedLink(
       odometerStatus: text(formData.odometerStatus) || "actual",
       salePrice: num(formData.salePrice),
       tradeInAllowance: num(formData.tradeInAllowance),
-      tradeInDescription: text(formData.tradeInDescription),
-      tradeInVin: "",
+      // Only while the sale says there is a trade-in: an answer typed before
+      // the trade-in went back to No never prints a trade-in block.
+      tradeInDescription: tradeIn ? text(formData.tradeInDescription) : "",
+      tradeInVin: tradeIn ? vinCase(text(formData.tradeInVin)) : "",
       tradeInPayoff: 0,
       tax: num(formData.tax),
       titleFee: num(formData.titleFee),
@@ -329,8 +373,12 @@ export function corridorCompletedLink(
           : text(formData.paymentMethod) || "Cash",
       paymentMethodOther: funding === "lender" && lenderName ? lenderName : "",
       conditionType: text(formData.conditionType) || "as_is",
-      warrantyDuration: text(formData.warrantyDuration),
-      warrantyDescription: "",
+      warrantyDuration: warranty ? text(formData.warrantyDuration) : "",
+      // FULL or LIMITED, for the Buyers Guide's boxes; blank on an as-is sale.
+      warrantyKind: warranty ? text(formData.warrantyKind) : "",
+      // The systems covered, in the Buyers Guide's own words; a copy filed
+      // before they were asked keeps "As described in separate warranty document."
+      warrantyDescription: warranty ? warrantySystemLabels(text(formData.warrantySystems)).join(", ") : "",
       amountPaidToday: num(formData.paidToday),
       ...sellerLien,
       ...bankLienKeys(lien),
@@ -345,12 +393,10 @@ export function corridorCompletedLink(
     section = "financing";
     const cashPrice = num(formData.salePrice);
     data = {
-      contractDate: today(),
-      stockNumber: "",
+      contractDate: dated,
+      stockNumber: sale.vehicle?.stockNumber ?? "",
       buyerName: facts.buyerName,
-      buyerAddress: [facts.buyerAddress, facts.buyerCity, facts.buyerState, facts.buyerZip]
-        .filter(Boolean)
-        .join(", "),
+      buyerAddress: oneLineAddress(facts.buyerAddress, facts.buyerCity, facts.buyerState, facts.buyerZip),
       buyerPhone: facts.buyerPhone,
       buyerEmail: facts.buyerEmail,
       coBuyerName: "",
@@ -388,14 +434,21 @@ export function corridorCompletedLink(
       // one on a Spanish sale. Stamped at filing, as on the bill of sale.
       docFeeNotice: DOC_FEE_NOTICE_VERSION,
       docFeeNoticeSpanish: sale.language === "es",
+      // The bill of sale's as-is or warranty answer, carried so the contract
+      // can follow it once counsel words its warranty box (D-05).
+      conditionType: billAnswers.conditionType || "as_is",
+      warrantyDuration: billAnswers.conditionType === "warranty" ? billAnswers.warrantyDuration ?? "" : "",
     };
   } else if (documentType === "form130U") {
     section = "form130U";
     data = {
       ...facts,
-      saleDate: today(),
+      saleDate: dated,
       odometerReading: text(formData.odometerReading) || facts.vehicleMileage,
-      odometerStatus: text(formData.odometerStatus) || "actual",
+      // Box 10 states the bill of sale's mileage statement, never a default
+      // of its own: "actual" here beside a bill that says "not actual" was a
+      // state form contradicting the sale it titles.
+      odometerStatus: text(formData.odometerStatus) || billAnswers.odometerStatus || "actual",
       salesPrice: num(formData.salePrice),
       salePrice: num(formData.salePrice),
       tradeInAllowance: num(formData.tradeInAllowance),
@@ -407,6 +460,14 @@ export function corridorCompletedLink(
       countyOfResidence: text(formData.countyOfResidence),
       applicationType: text(formData.applicationType) || "titleAndRegistration",
       applicantType: text(formData.applicantType) || "Individual",
+      // A business applicant is named as the business (box 16) and
+      // identified by its FEIN (box 14), never by the person's licence.
+      ...(text(formData.applicantType) === "Business"
+        ? { businessName: text(formData.businessName), businessFein: text(formData.businessFein) }
+        : {}),
+      // Box 27 only when the buyer said yes; unasked is not enrolled.
+      renewalReminders: text(formData.renewalReminders) === "yes" ? "yes" : "no",
+      tradeInVin: billAnswers.tradeIn === "yes" ? vinCase(text(formData.tradeInVin) || billAnswers.tradeInVin || "") : "",
       emptyWeight: text(formData.emptyWeight),
       carryingCapacity: text(formData.carryingCapacity),
       // The seller-lien keys ride along only when the lien is the seller's:
@@ -432,10 +493,12 @@ export function corridorCompletedLink(
     data = {
       buyerName: facts.buyerName,
       buyerIdNumber: facts.buyerLicense,
+      // What the number is and who issued it, as the 130-U already prints:
+      // a passport number reads differently from a Texas licence number.
+      buyerIdKind: facts.buyerIdKind,
+      buyerIdIssuer: issuerKind.needsCountry || issuerKind.needsState ? facts.buyerLicenseState : "",
       buyerPhone: facts.buyerPhone,
-      buyerAddress: [facts.buyerAddress, facts.buyerCity, facts.buyerState, facts.buyerZip]
-        .filter(Boolean)
-        .join(", "),
+      buyerAddress: oneLineAddress(facts.buyerAddress, facts.buyerCity, facts.buyerState, facts.buyerZip),
       vehicleDescription: [facts.vehicleYear, facts.vehicleMake, facts.vehicleModel]
         .filter(Boolean)
         .join(" "),
@@ -445,10 +508,24 @@ export function corridorCompletedLink(
       vehicleMake: facts.vehicleMake,
       vehicleModel: facts.vehicleModel,
       vin: facts.vehicleVin,
-      saleDate: today(),
+      saleDate: dated,
       quotedRegistrationAmount: num(formData.quotedRegistrationAmount),
       language: sale.language === "es" ? "es" : "en",
       ...(documentType === "rebuiltDisclosure" ? { officialForm: "ENF-MV-RBLT-DSCLMR" } : {}),
+      // Who files the registration, stamped with the sheet, so a copy prints
+      // the branch it was signed on whatever the plan says later (D-03, D-05).
+      ...(documentType !== "rebuiltDisclosure" ? { registrationBy: readSalePlan(sale.stepData).registrationBy ?? "dealer" } : {}),
+      /*
+        The late-handling fee the buyer signs to, stamped at filing so a
+        signed copy never changes when the dealer's figure does. A copy filed
+        before the stamp reads the dealer's figure as it always did.
+      */
+      ...(documentType === "vehicleResponsibility" && dealerFees.lateHandlingFee !== null
+        ? {
+            lateHandlingFee: dealerFees.lateHandlingFee,
+            lateHandlingTotal: Math.round((num(formData.quotedRegistrationAmount) + dealerFees.lateHandlingFee) * 100) / 100,
+          }
+        : {}),
     };
   } else if (
     documentType === "salvageBillOfSale" ||
@@ -473,10 +550,10 @@ export function corridorCompletedLink(
     data = {
       buyerName: facts.buyerName,
       buyerIdNumber: facts.buyerLicense,
+      buyerIdKind: facts.buyerIdKind,
+      buyerIdIssuer: issuerKind.needsCountry || issuerKind.needsState ? facts.buyerLicenseState : "",
       buyerPhone: facts.buyerPhone,
-      buyerAddress: [facts.buyerAddress, facts.buyerCity, facts.buyerState, facts.buyerZip]
-        .filter(Boolean)
-        .join(", "),
+      buyerAddress: oneLineAddress(facts.buyerAddress, facts.buyerCity, facts.buyerState, facts.buyerZip),
       vehicleDescription: [facts.vehicleYear, facts.vehicleMake, facts.vehicleModel]
         .filter(Boolean)
         .join(" "),
@@ -486,21 +563,28 @@ export function corridorCompletedLink(
       vin: facts.vehicleVin,
       vehicleMileage: text(formData.odometerReading) || facts.vehicleMileage,
       odometerStatus: text(formData.odometerStatus) || text(bill.odometerStatus) || "actual",
-      saleDate: today(),
+      saleDate: dated,
       salePrice: price,
       tax,
       titleFee,
       docFee,
       total: Math.round((price + tax + titleFee + docFee) * 100) / 100,
       amountPaidToday: num(formData.paidToday),
+      // What is still owed after today, shown beside Paid Today (display only).
+      ...(num(formData.sellerLienAmount) > 0 && funding !== "lender"
+        ? { balanceOwed: num(formData.sellerLienAmount) }
+        : {}),
       paymentMethod:
         funding === "lender" || funding === "inHouse"
           ? "Financing"
           : text(formData.paymentMethod) || text(bill.paymentMethod) || "Cash",
+      ...(funding === "lender" && lenderName ? { paymentMethodOther: lenderName } : {}),
       // Answered on the salvage bill of sale, printed on the acknowledgment.
       howLeaving: text(formData.howLeaving) || text(bill.howLeaving),
       salvageLicense: dealership.salvageDealerLicense ?? "",
-      titleOriginState: readTitleOrigin(sale.stepData).state ?? "",
+      // No other state recorded means a Texas title, printed as TX: never
+      // the dealer's own address state, which is a different fact.
+      titleOriginState: readTitleOrigin(sale.stepData).state ?? "TX",
       language: sale.language === "es" ? "es" : "en",
       // The salvage bill of sale is the tow-away sale's buyer's order, so the
       // documentary fee notice prints beside its fee as on any bill of sale.

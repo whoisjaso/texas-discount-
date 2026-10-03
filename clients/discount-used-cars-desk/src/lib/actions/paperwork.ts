@@ -3,7 +3,15 @@
 import { revalidatePath } from "next/cache";
 import { requireAdminActionPermission } from "@/lib/admin/current-admin";
 import { createClient } from "@/lib/supabase/server";
-import { paperworkAnswers, paperworkMoney, readPaperwork, withDownPayment, writePaperwork } from "@/lib/sales/paperwork";
+import {
+  paperworkAnswers,
+  paperworkMoney,
+  questionFact,
+  readPaperwork,
+  unansweredSwornFacts,
+  withDownPayment,
+  writePaperwork,
+} from "@/lib/sales/paperwork";
 import { paperworkFilingContext } from "@/lib/sales/paperwork-filing-context";
 import { readMoney } from "@/lib/sales/money";
 import { currentCopy, readDealAgreements, readPrintedData } from "@/lib/sales/filed-documents";
@@ -16,7 +24,12 @@ import {
   replacedCopyId,
   rootFor,
   withServerAnswers,
+  type PageGateCode,
 } from "@/lib/sales/refile-gates";
+import { missingPrintedFields } from "@/lib/documents/field-maps/resolve";
+import { poaFieldsFromSale, poaProbe } from "@/lib/documents/poa-fields";
+import { isEligibleForPlainPoa } from "@/lib/documents/power-of-attorney-eligibility";
+import { saleDateFor } from "@/lib/sales/sale-date";
 import { casMergeStepData } from "@/lib/sales/step-data-write";
 import { corridorCompletedLink } from "@/lib/sales/corridor-link";
 import { getSaleDetail } from "@/lib/admin/sale-desk";
@@ -86,7 +99,10 @@ export type PaperworkState = {
     | DealerChargesProblem
     | "feeSettingsUnreadable"
     | GovernmentFeesFilingProblem
-    | "chapter345Vehicle";
+    | "chapter345Vehicle"
+    | PageGateCode;
+  /** On a fieldMissing or mustAnswer refusal: the boxes or questions, by name. */
+  missing?: string[];
   /** On a billOfSaleFrozen refusal: what the filed bill of sale states that this would change. */
   field?: FreezeField | "generic";
   /** On a feeOverLimit refusal over a filed OCCC maximum (rather than $225.00 with no filing). */
@@ -130,6 +146,20 @@ export async function savePaperworkAnswer(
     the contract's own, exactly as before, and a cash deal's balance and lien
     can never be moved through a document that is not in its packet.
   */
+  /*
+    The fact this question is, and the document it is stored with: its own
+    owner, so a fact another document prints and borrows here (the 130-U's
+    box 10 is the bill of sale's mileage statement) is still one answer in
+    one place. An empty answer is refused unless "not applicable" is a real
+    answer to the question: a date box submitted empty used to save as
+    answered and print as a blank on a signed contract.
+  */
+  const fact = questionFact(documentType, key);
+  const storeDoc = fact && fact.owner !== documentType && !fact.owner.startsWith("guide:") ? fact.owner : documentType;
+  if (fact && !fact.optional && typedValue.trim() === "") {
+    return { ok: false, error: "Answer this before going on." };
+  }
+
   const movesMoney = hasTeamPermission(access.role, "sales:manage");
   const isDownPayment = documentType === "financing" && key === "downPayment";
 
@@ -155,7 +185,7 @@ export async function savePaperworkAnswer(
       how a salvage car leaves on the salvage bill of sale. Looked up only
       for those two documents' answers.
     */
-    const billAnswer = (BILL_OF_SALE_TYPES as readonly string[]).includes(documentType);
+    const billAnswer = (BILL_OF_SALE_TYPES as readonly string[]).includes(storeDoc);
     const frozen = isDownPayment || billAnswer ? await filedBillOfSaleOn(dealId) : null;
     let refused: boolean = false;
     let frozenField: FreezeField | null = null;
@@ -181,8 +211,8 @@ export async function savePaperworkAnswer(
       ) {
         return withDownPayment(current, value);
       }
-      const answers = { ...readPaperwork(current, documentType), [key]: value };
-      const written = writePaperwork(current, documentType, answers);
+      const answers = { ...readPaperwork(current, storeDoc), [key]: value };
+      const written = writePaperwork(current, storeDoc, answers);
       frozenField = null;
       if (billAnswer && frozen !== null) {
         const context = { advertised: frozen.advertised, rootType: frozen.type, fees: frozen.printed?.fees ?? null };
@@ -532,6 +562,75 @@ export async function finalizePaperwork(
       if (government) return { ok: false, code: government, error: FILING_GATE_MESSAGES[government] };
     }
 
+    /*
+      The document's own pages, after every refusal above (SOP "Document
+      templates, page by page"). Each only refuses; none is lifted by
+      DESK_ALLOW_UNSET_FACTS.
+
+        mustAnswer              a sworn statement or a signed date files only
+                                from an answer: the mileage statement, how a
+                                salvage car leaves, the first payment date
+        termsUnsolved           a contract with no worked-out note
+        rebuiltDisclosureFirst  a rebuilt car's bill of sale waits for its
+                                disclosure, the order Texas wants
+        poaInstrument           the power of attorney's form is the server's
+                                own decision from the model year
+        fieldMissing            a box the sale should fill would print blank
+    */
+    let saleDate: string | null = null;
+    if (sale) {
+      const rows = await readDealAgreements(supabase, dealId);
+      saleDate = await saleDateFor(supabase, rows);
+      if (documentType !== "powerOfAttorney") {
+        const { context } = paperworkFilingContext(
+          sale,
+          documentType,
+          typeof input.formData.countyOfResidence === "string" ? input.formData.countyOfResidence : "",
+          feeLines,
+        );
+        const unanswered = unansweredSwornFacts(documentType, context);
+        if (unanswered.length > 0) {
+          const names = unanswered.map((fact) => fact.question);
+          return { ok: false, code: "mustAnswer", missing: names, error: `${FILING_GATE_MESSAGES.mustAnswer} ${names.join(" ")}` };
+        }
+        if (documentType === "financing" && paperworkAnswers(documentType, context)._termsSolved !== "yes") {
+          return { ok: false, code: "termsUnsolved", error: FILING_GATE_MESSAGES.termsUnsolved };
+        }
+      }
+      const owedNow = requiredDocumentTypes(sale.funding.type, settledPlan(sale.stepData), sale.vehicle?.titleStatus ?? null, salvagePath);
+      if (documentType === "billOfSale" && owedNow.includes("rebuiltDisclosure") && !currentCopy(rows, "rebuiltDisclosure")) {
+        return { ok: false, code: "rebuiltDisclosureFirst", error: FILING_GATE_MESSAGES.rebuiltDisclosureFirst };
+      }
+      if (documentType === "powerOfAttorney") {
+        /*
+          The instrument and the grantor are the server's, from the sale:
+          a posted "VTR-271" on a car too new for it, or on a car with no
+          model year, is refused rather than recorded.
+        */
+        const year = sale.vehicle?.year ?? null;
+        const eligible = isEligibleForPlainPoa(year, Number(businessDateToday().slice(0, 4)));
+        const instrument = eligible === null ? null : eligible ? "VTR-271" : "VTR-271-A";
+        if (!instrument || (typeof input.formData.instrument === "string" && input.formData.instrument !== instrument)) {
+          return { ok: false, code: "poaInstrument", error: FILING_GATE_MESSAGES.poaInstrument };
+        }
+        const fields = poaFieldsFromSale(sale);
+        input = {
+          ...input,
+          formData: {
+            ...input.formData,
+            instrument,
+            grantorName: fields.printedName,
+            // Every box the form printed, so a reprint states what was signed.
+            printed: poaProbe(fields),
+          },
+        };
+      }
+      const missing = missingPrintedFields(documentType, sale, input.formData, { saleDate });
+      if (missing.length > 0) {
+        return { ok: false, code: "fieldMissing", missing, error: `${FILING_GATE_MESSAGES.fieldMissing} ${missing.join(", ")}.` };
+      }
+    }
+
     // The filer's own stroke, and none once their signing is turned off.
     const staffSignature = held ? dealerStroke(held) : null;
     const dealerSignerName = held?.signerName ?? null;
@@ -552,7 +651,7 @@ export async function finalizePaperwork(
           dealerSignatureDate: staffSignature ? signedOn : null,
           // The name printed beside that stroke, on every dealer line.
           dealerSignerName,
-        })
+        }, { saleDate })
       : null;
 
     const { data, error } = await supabase

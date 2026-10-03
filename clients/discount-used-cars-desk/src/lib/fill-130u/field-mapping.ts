@@ -9,6 +9,7 @@ import { dealerSignerPrintedName, factOr } from "@/lib/dealership-config";
  */
 
 import { dealership } from '@/lib/dealership-config';
+import { printedPhone } from '@/lib/forms/phone';
 import {
   form130UIdBox,
   idDocumentType,
@@ -68,6 +69,11 @@ export interface AgreementData {
   trade_in_amount?: number;
   trade_in_description?: string;
   trade_in_vin?: string;
+  /**
+   * Box 27: whether the buyer asked for registration renewal reminders by
+   * email. Absent on payloads from before the question: an email on file.
+   */
+  e_reminder?: boolean;
   rebate_amount?: number;
   applying_for: 'title_and_registration' | 'title_only' | 'registration_only' | 'nontitle';
   applicant_type: 'individual' | 'business' | 'government' | 'trust' | 'non_profit';
@@ -398,7 +404,8 @@ export const FIELD_MAPPINGS: FieldMapping[] = [
   {
     fieldId: '25 Applicant Phone Number optional',
     type: 'text',
-    getValue: (d) => d.buyer_phone,
+    // As people write one, (713) 555-0188, not the stored +17135550188.
+    getValue: (d) => (d.buyer_phone ? printedPhone(d.buyer_phone) : undefined),
   },
   {
     fieldId: '26 Email optional',
@@ -408,7 +415,7 @@ export const FIELD_MAPPINGS: FieldMapping[] = [
   {
     fieldId: 'Yes Provide Email in 26',
     type: 'checkbox',
-    getValue: (d) => !!d.buyer_email,
+    getValue: (d) => !!d.buyer_email && (d.e_reminder ?? true),
   },
   {
     fieldId: '29 Vehicle Location Address if different City State Zip',
@@ -442,7 +449,8 @@ export const FIELD_MAPPINGS: FieldMapping[] = [
   {
     fieldId: 'Trade-in (if any)',
     type: 'checkbox',
-    getValue: (d) => (d.trade_in_amount ?? 0) > 0,
+    // Ticked whenever the sale has a trade-in, even one allowed at $0.
+    getValue: (d) => (d.trade_in_amount ?? 0) > 0 || !!d.trade_in_description || !!d.trade_in_vin,
   },
   {
     fieldId: '36 TradeIn if any Year Make Vehicle Identification Number',

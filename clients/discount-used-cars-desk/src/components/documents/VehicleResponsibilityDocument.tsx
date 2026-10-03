@@ -5,6 +5,7 @@ import {
   TRANSFER_WINDOW_DAYS,
   buildReturnClause,
   formatUsd,
+  LATE_HANDLING_FEE,
   lateFeeText,
   lateFeeTotalText,
   getLegalBody,
@@ -41,6 +42,11 @@ export type VehicleResponsibilityDocumentData = {
   /** ISO date, YYYY-MM-DD. */
   saleDate: string;
   quotedRegistrationAmount: number;
+  /**
+   * The late-handling fee the buyer signed to, stamped at filing. Absent on a
+   * copy filed before the stamp, which reads the dealer's figure as it did.
+   */
+  lateHandlingFee?: number | null;
 };
 
 type Props = {
@@ -86,7 +92,9 @@ export default function VehicleResponsibilityDocument({
   const es = language === "es";
   // The fee is the dealer's own fact, read from the config; while it is not
   // set, the clause, the fee row and the total print its visible marker.
-  const returnClause = buildReturnClause(language, data.quotedRegistrationAmount);
+  // The stamped fee when the copy carries one, the dealer's figure otherwise.
+  const lateFee = typeof data.lateHandlingFee === "number" ? data.lateHandlingFee : LATE_HANDLING_FEE;
+  const returnClause = buildReturnClause(language, data.quotedRegistrationAmount, lateFee);
 
   return (
     // `print-doc` is what the PDF generator waits for before it prints. This
@@ -97,6 +105,7 @@ export default function VehicleResponsibilityDocument({
         {/* The letterhead owns the title row, so this document's name and its
             reference data sit on the same grid as the bill of sale's. */}
         <DocumentLetterhead
+          lang={language === "es" ? "es" : "en"}
           title={body.heading}
           subtitle={
             es
@@ -208,12 +217,12 @@ export default function VehicleResponsibilityDocument({
               </div>
               <div className="doc-reckoning-row">
                 <dt>{body.feeLabel}</dt>
-                <dd>{lateFeeText()}</dd>
+                <dd>{lateFeeText(lateFee)}</dd>
               </div>
               <div className="doc-reckoning-total">
                 <dt>{body.owedTotalLabel}</dt>
                 <dd className="bos-live-figure">
-                  {lateFeeTotalText(data.quotedRegistrationAmount)}
+                  {lateFeeTotalText(data.quotedRegistrationAmount, lateFee)}
                 </dd>
               </div>
             </dl>
@@ -253,7 +262,7 @@ export default function VehicleResponsibilityDocument({
               number a buyer is agreeing to owe belongs in one place they can
               point at, not scattered down the page. */}
           <p className="bos-helper" style={{ marginTop: "0.75rem" }}>
-            {dealership.name} · {dealership.address.street}, {dealership.address.locality},{" "}
+            {brand.legal} · {dealership.address.street}, {dealership.address.locality},{" "}
             {dealership.address.region} {dealership.address.postalCode}
           </p>
         </section>

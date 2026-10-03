@@ -1,0 +1,92 @@
+{
+ "_note": "Part B's off-camera complete sale for 12-desk-signed and B6 (runbook B4): the whole corridor to the packet; then ceremony-hand.cjs signs it with assets/sig/buyer-j-carter.json and pdfs.cjs downloads the 130-U. The demo address must NOT exist (lesson B13). Filled by `fill-client.cjs scenario <client-inputs.json> <this file> --out $SCRATCH/<name>.json` ({{DEMO_*}} from client-inputs.json → demo). Read by premium-dealer-build scripts/desk-walk/sale.cjs (unknown keys like these notes are ignored). Before every run: `node $S/scripts/desk/validate-scenario.cjs <filled file>` refuses an answer key the desk no longer asks (the paperwork corridor changes; see the desk's docs/verification/paperwork-pages/corridor-changes.md).",
+ "deskCommit": "2b7bb85",
+ "walked": "2026-10-02 (part B run 2) and 2026-10-03 (narrated captures), Discount desk",
+ "car": "2019 Toyota Camry SE",
+ "language": "en",
+ "title": "Clean title",
+ "first": "James",
+ "last": "Carter",
+ "phone": "{{DEMO_PHONE}}",
+ "idNumber": "41927365",
+ "street": "{{DEMO_STREET}}",
+ "city": "{{DEMO_CITY}}",
+ "zip": "{{DEMO_ZIP}}",
+ "county": "{{DEMO_COUNTY}}",
+ "answers": {
+  "funding": {
+   "button": "Cash",
+   "exact": true
+  },
+  "paid": [
+   {
+    "fill": "main input",
+    "value": "4000"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "price": [
+   {
+    "button": "Yes"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "plan:registration": {
+   "button": "We Do"
+  },
+  "plate": {
+   "button": "No plate yet"
+  },
+  "plan:title-signer": {
+   "button": "The Buyer, Here Today"
+  },
+  "plan:inspection": {
+   "button": "Already Passed"
+  },
+  "plan:insurance": {
+   "button": "Yes, Shown Today"
+  },
+  "odometerStatus": {
+   "button": "Yes, That Is The Real Mileage"
+  },
+  "paymentMethod": {
+   "text": "Cash"
+  },
+  "tradeIn": {
+   "text": "No"
+  },
+  "conditionType": {
+   "text": "As-Is"
+  },
+  "countyOfResidence": {
+   "button": "Next",
+   "exact": true
+  },
+  "applicationType": {
+   "text": "Title And Registration"
+  },
+  "applicantType": {
+   "text": "A Person"
+  },
+  "emptyWeight": [
+   {
+    "fill": "main input",
+    "value": "3340"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "carryingCapacity": {
+   "button": "Next",
+   "exact": true
+  }
+ }
+}

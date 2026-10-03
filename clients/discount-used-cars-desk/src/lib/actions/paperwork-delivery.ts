@@ -1,5 +1,6 @@
 "use server";
 
+import { readSalvagePlan } from "@/lib/sales/salvage-plan";
 import { revalidatePath } from "next/cache";
 import { requireCurrentAdminPermission } from "@/lib/admin/current-admin";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -182,6 +183,8 @@ export async function sendPaperworkText(
     sale.language ?? "en",
     settledPlan(sale.stepData),
     sale.vehicle?.titleStatus ?? null,
+    // The tow-away path's own packet, as every other caller reads it.
+    readSalvagePlan(sale.stepData).path,
   );
   /**
    * Fail closed on ANY missing required document, not only on all of them:

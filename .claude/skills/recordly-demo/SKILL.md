@@ -5,37 +5,104 @@ description: >-
   Discount Used Cars films: the short Recordly / Screen Studio style macOS screen recording (intro
   match-cut onto the site's loader, one macOS window with pixel-matched cuts, auto-zooms, smoothed
   cursor, iPhone cut with iOS swipes, iOS sounds, facts-only outro) and the narrated long cut (a fact-
-  checked money-made / time-saved script voiced free with Kokoro). Ships the capture, measure, fill,
-  render and verify scripts and the Remotion template. Use it whenever the user wants a demo video for
-  a dealer, a screen recording or walkthrough of the site or desk, a narrated or voice-over
-  walkthrough, a product reel, promo or screen-recording ad, a dealer social video, says "do the video
-  for this client" or "like the Discount video", wants a Mac screen recording look, or mentions
-  Recordly or Screen Studio, even without the word demo. Use it instead of building a dealer video
-  from scratch with remotion-motion-graphics.
+  checked money-made / time-saved script voiced free with Kokoro). Ships the scripts, the Remotion
+  template and a runbook any agent or model can run. Use it
+  whenever the user wants a demo video for a dealer, a screen recording or walkthrough of the site or
+  desk, a narrated or voice-over walkthrough, a product reel, promo or screen-recording ad, a dealer
+  social video, says "do the video for this client" or "like the Discount video", wants a Mac screen
+  recording look, or mentions Recordly or Screen Studio, even without the word demo. Use it instead of
+  building a dealer video from scratch with remotion-motion-graphics.
 ---
 
 # The house demo video (Recordly style)
 
-This skill makes one film, the way the user approved it: Discount Used Cars, part A (approved as `demo-v1.mp4`; it is
-now frames 0–1092 of `clients/discount-used-cars-demo/out/discount-demo.mp4`, the site + desk film, unchanged). The
-film was approved with "exactly this way". So the job for a
-new dealer is to reproduce that film on their site. It is not a new edit:
+This skill makes the films the user approved for Discount Used Cars, "exactly this way", for a new dealer:
 
-- The code, timings, sounds and look are fixed. They live in `template/` and are documented with their reasons in
-  `references/house-recipe.md`.
-- Only the client's facts, logos, measured loader geometry and a few page-dependent framing points change. They all
-  live in one `client-inputs.json`, and the tools measure most of them.
+- **The house film** (the deliverable when the client has the sale desk, about 80 s): part A, the site (49.2 s in the
+  approved `demo-v1`, now frames 0–1092 of `clients/discount-used-cars-demo/out/discount-demo.mp4`); part B, the sale
+  desk in the same window (sign-in, first sign-in, a sale, the signed 130-U); the phone; the outro. `demo-v1` alone is
+  an internal checkpoint, never sent, unless the client has no desk.
+- **The narrated long cut** (on request, after the house film): the same window, cursor, documents, phone and sounds
+  against a voice-over that walks the owner through the site and one whole sale (Discount: 3:50, 24 lines).
 
-**Where this sits in a dealer build:** the last two steps of premium-dealer-build's sequence
-(`premium-dealer-build/SKILL.md`, "The sequence (every client, in this order)", steps 9 and 10, its Phase 7). It runs
-after the site is deployed and the desk verified: the short cut first, then the narrated walkthrough, whose filled
-script the user approves before it is voiced.
+It is not a new edit. The code, timings, sounds and look are fixed in `template/` and documented with their reasons in
+`references/house-recipe.md`. Only the client's facts, logos, measured geometry, a few framing points and the desk's
+demo inputs change, all in one `client-inputs.json`, and the tools measure most of them.
+
+**Where this sits in a dealer build:** the last two steps of premium-dealer-build's sequence (its Phase 7): after the
+site is deployed and the desk verified, the house film, then (on request) the narrated cut, whose script the user
+approves before it is voiced.
 
 Recordly (github.com/webadderallorg/Recordly) is AGPL-3.0 and cannot run headless. **None of its code is used.** Only
-its published tuning numbers are, as reference: zoom depths, 1.5 s / 1.0 s zoom timings, cursor smoothing, click
-bounce and motion blur. Our own capture (`scripts/capture.cjs`) and Remotion composition reproduce the look.
+its published tuning numbers are, as reference (zoom depths, zoom timings, cursor smoothing, click bounce, motion
+blur). Our own capture (`scripts/capture.cjs`) and Remotion composition reproduce the look.
 
-## The house cut (49.2 s at 30 fps, part B empty)
+## How to run it: under any agent or model
+
+Everything is a numbered step with one command, a PASS gate and a written rule for a FAIL
+(`assets/runbook.json`; the same as prose in `references/runbook.md`). `scripts/runbook.cjs` walks it:
+
+```bash
+bash <skill>/scripts/setup.sh --check                         # S0: the machine (each missing piece with its remedy)
+bash <skill>/scripts/env.sh --slug <slug> --scratch <absolute scratch dir> [--desk clients/<slug>-desk]   # S2
+source <scratch>/demo.env                                     # at the top of EVERY later command
+node $S/scripts/runbook.cjs next                              # the next step's card, variables resolved
+node $S/scripts/runbook.cjs run <id>                          # run and judge it (long steps detach through bg.sh)
+node $S/scripts/runbook.cjs check <id>                        # judge a long step once bg.sh says DONE
+node $S/scripts/runbook.cjs mark <id> --by-user "<their words>" | --by-agent "<what you looked at>"
+node $S/scripts/runbook.cjs status                            # where the run is
+```
+
+The rules that make it repeatable on any model (`references/harness.md`):
+
+1. **Variables live in `$SCRATCH/demo.env`,** sourced in every call; the voice venv and models live in
+   `$HOME/.cache` (durable), never in a session's scratch.
+2. **Anything over two minutes runs through `scripts/bg.sh`** (setsid, a log, an exit-code file) and is polled
+   (`bg.sh wait <name> 540`). Never hold a capture or a render in a foreground call a harness may cut off.
+3. **Two ports only:** the site on :5183 (`site-server.sh`), the desk on :5190 (`desk/desk-server.sh`), each in its
+   own process group, stopped by group. A taken port is waited for, never swapped. Never `npm install` in the desk.
+4. **Never self-certify what you cannot perceive.** A model that cannot view images or hear audio sends the contact
+   sheet, the stills or the film to the user and records their words (`mark --by-user`). Approvals (the onboarding
+   choice, the script, the voiced set) are always the user's.
+5. **Never force a gate.** An `--allow-*` needs its recorded row in `$P/verify-decisions.md` first; every allowance is
+   in the send note.
+6. **Never invent a fact or a figure.** On-screen facts come from owner- or TxDMV-sourced fields; the demo fee from
+   the owner or the user; an unconfirmed value is asked of the user.
+7. **Every file sent in chat is ≤ 28 MB** (the upload limit is 30 MB): `share.sh` makes it; the master is never sent.
+
+## The runbook at a glance
+
+| Step | What | Command (after `source demo.env`) |
+|---|---|---|
+| S0 | Check the machine | `bash $S/scripts/setup.sh --check` |
+| S1 | Voice venv (narrated only; long) | `bash $S/scripts/setup.sh --voice` |
+| S2 | Run variables | `bash $S/scripts/env.sh --slug … --scratch …` |
+| A1 | Facts → client-inputs.json | copy `assets/client-inputs.template.json`; `fill-client.cjs check $I --stage facts` |
+| A2 | Build the site with the Admin link, serve :5183 | `bash $S/scripts/site-server.sh build-start` |
+| A3 | Measure the site (loader, intro key, Open Now) | `node $S/scripts/measure-site.cjs --into $I` |
+| A3s | Capture self-test (new site or machine; long) | `node $S/scripts/capture.cjs --selftest --dsf 1,2 …` |
+| A4 | Create the project (npm ci; long) | `bash $S/scripts/new-project.sh $I $P [--narrated]` |
+| A5 | Adapt and preflight the storyboard (loop) | `measure-site.cjs --storyboard … --rects --into $I` → PREFLIGHT CLEAN |
+| A6 | Capture 1-hero … 5-phone in order (long) | `bash $S/scripts/capture-all.sh $P/storyboard.json 1-hero 2-scroll 3-buy 4-menu 5-phone` |
+| A7 | Cut gate; stop the site | `verify-film.cjs --cuts-only` → CUTS PASS; `site-server.sh stop` |
+| A8 | Part-A stills, looked at (by eye) | `stills.cjs` on the plan's frames; `mark A8` |
+| B0 | The user's onboarding choice, demo fee, desk clock, demo data | `fill-client.cjs check $I --stage desk`; `mark B0 --by-user` |
+| B1 | The desk on :5190 | `bash $S/scripts/desk/desk-server.sh start` |
+| B2 | Merge the desk shots | `fill-client.cjs desk-storyboard $I --into $P/storyboard.json` |
+| B3 | Desk theme + selector preflight, fresh desk | `desk/theme.cjs`, `measure-site.cjs --desk`, `desk-server.sh restart` |
+| B4 | Part B captures + off-camera sales (long) | `bash $S/scripts/capture-desk.sh` |
+| B5 | Measure the cuts, refill project.ts | `measure-desk-cuts.cjs --into $I`; `fill-client.cjs project` |
+| B6 / B6v | Every cut; every still (by eye) | `verify-film.cjs --cuts-only`; stills; `mark B6v` |
+| B7 | Stop the desk (next-env.d.ts restored) | `desk-server.sh stop` |
+| B8 | Render master + chat copy (long) | `CRF=17 AUDIO_BITRATE=192k render.sh $P $SLUG-demo` |
+| B9 / B9w | Verify; contact sheet + one full watch with sound | `verify.sh $P out/$SLUG-demo.mp4 $SCRATCH/verify`; `mark B9w` |
+| B10 / B11 | Chat copy ≤ 28 MB; send with the filled note | `share.sh`; `fill-client.cjs send-note`; `mark B11` |
+| N1-N14 | The narrated cut (on request) | script → approval → voice → transcribe-back → approval → levels → card → long storyboard → captures → plan → stills → render → verify → send |
+
+A site with no desk (rare: the house cut ends on the desk's Admin row, so ask the user first) runs S0-A8, then R1-R4
+(render, verify, watch, send `demo-v1`).
+
+## Part A: the site (the house cut, 49.2 s at 30 fps)
 
 | Film | Shot | What happens |
 |---|---|---|
@@ -44,325 +111,209 @@ bounce and motion blur. Our own capture (`scripts/capture.cjs`) and Remotion com
 | 7.9–24.9 s | 2-scroll | The lineup band; a 2.0× zoom on the featured card (hovered). The visit card at 1.8× ("Open Now"). The finder: click, type a model. |
 | 24.9–30.6 s | 3-buy | The service band; a 2.0× zoom on the middle tile (hovered). |
 | 30.6–36.6 s | 4-menu | Menu, the drawer opens, and the camera holds 1.8× on "Admin · Staff Sign-In To The Sale Desk" with the hand resting on it. |
-| 36.6 s | **CUT POINT** | Part B (the sale desk) goes here. See "Part B: the desk". |
+| 36.6 s | **CUT POINT** | Part B (the sale desk) goes here. |
 | 36.6–45.6 s | 5-phone | An iPhone slides in while the desktop recedes. Three iOS swipes down the lineup, then the phone drops away. |
 | 45.4–49.2 s | outro | Drawn under the phone: the logo, the URL, phone · address, and hours; a slow push; a fade to black. |
 
-Why it works:
+Why it works: it opens on the dealer's own brand moment and the product is visible by about 3 s; every cut inside the
+window is invisible (pixel-matched); the camera moves like Screen Studio (the whole window leans into each zoom);
+nothing is still for more than about 4 s; the sound is native and quiet; the only words the film adds are
+owner-confirmed facts.
 
-- It opens on the dealer's own brand moment, and the product is visible by about 3 s.
-- Every cut inside the window is invisible (pixel-matched).
-- The camera moves like Screen Studio: the whole window leans into each zoom.
-- Nothing is still for more than about 4 s.
-- The sound is native and quiet.
-- The only words the film adds are owner-confirmed facts.
+**Facts first (A1).** Take the on-screen facts only from the site's `business.ts` fields sourced OWNER or TXDMV: the
+web address (www. + domain), the phone as (000) 000-0000, street and city, and the short hours line exactly as the
+visit card prints it, without closed days. Copy every string character for character ("Gulf Fwy", not "Gulf
+Freeway"). No prices, ratings or claims. The clock is **Wednesday 2026-09-30T14:00 in the dealer's zone with that
+day's UTC offset** (the next open weekday at 14:00 if closed on Wednesdays). `brand.logoReverse` is the full-colour
+logo the site itself shows on dark; never recolour or invert a logo. `examples/discount-used-cars/client-inputs.json`
+is a complete one.
 
-## Requirements (outside the skill)
+**Capture notes.** Order matters: each shot starts its cursor where the previous capture ended, so re-capturing shot
+N means every later shot too (`capture-all.sh --from N` refuses otherwise). A failed cut means re-staging that shot's
+preroll (lessons C8–C10), not a dissolve; `--allow-cut` exists only for the site's own small looping animation
+(verification §6), with its recorded row. Re-rendering an existing client: symlink its `public/shots/<id>/` folders
+into the project instead of re-capturing; still run `--cuts-only` and `render.sh --check`.
 
-- **Node and Playwright:** Node 22 with npm registry access. Playwright 1.56.x comes from the global npm root, with
-  browsers in `/opt/pw-browsers`. Never run `playwright install`. Capture needs the Linux `chromium_headless_shell`,
-  for BeginFrameControl.
-- **Command-line tools:** system `ffmpeg`/`ffprobe` with libx264, and `python3` with PIL for the contact sheet.
-- **The client's site:** a premium-dealer-build site under `clients/<slug>-site` with its `npm ci` done, its real
-  inventory loaded (premium-dealer-build phase 3) and its `public/brand` logos. The house cut ends on the drawer's
-  Admin row, so it assumes the client has a sale desk: if not, ask the user before building anything.
-- **Remotion licence:** Remotion 4.0.532 is installed per project by `npm ci` from the template's lockfile (about
-  440 MB). Remotion is free for individuals and companies of up to 3 people; a bigger agency needs a company licence.
-- **Bundled in the skill:** the 15 processed sound files (`assets/sfx/`) and the Barlow Semi Condensed font
-  (`assets/fonts/`, OFL). The iOS sounds are cleared for showing the demo to the dealer, not for a paid ad
-  (`assets/sfx/SOURCES.md`).
+## Part B: the desk (when the client has the premium-dealer-build sale desk)
 
-## Agent shell notes (Claude Code)
+Shipped once in the Discount film (`out/discount-demo.mp4`, 82.5 s): part A unchanged to the cut point, then the desk in
+the SAME window, then B6 (the signed 130-U), then the phone and outro. House recipe too: shots in
+`assets/storyboard-desk.json`, segments in `template/src/demo/timeline.ts` (`partBSegments`, from
+`project.partB.cuts`), `DocScene` + `theme.doc`. Numbers: house-recipe §15; problems and fixes: lessons B1–B13; gates:
+verification §7; the capture recipe: `references/desk-capture.md`.
 
-- **Variables do not survive between Bash calls.** Write them once to a file and `source` it at the top of every
-  command block. `SCRATCH` must be absolute, because step 3 changes directory:
-  ```bash
-  SCRATCH=$(realpath -m <your scratchpad>/demo-<slug>); mkdir -p "$SCRATCH"
-  printf 'S=%s\nSCRATCH=%s\nSLUG=%s\nP=%s\nI=%s\n' "$PWD/.claude/skills/recordly-demo" "$SCRATCH" <slug> \
-    "$PWD/clients/<slug>-demo" "$PWD/clients/<slug>-demo/client-inputs.json" > "$SCRATCH/demo.env"
-  ```
-  Every block below starts with `source <that absolute path>/demo.env`.
-- **Long runs:** `npm ci` in step 5, the stills in step 7b and `verify.sh` (2.5–4 minutes) need a Bash timeout of
-  600000 ms. The capture loop (about 5 minutes, more on a busy container) and the render (about 12 minutes) can
-  outlast a foreground call: run them with `run_in_background` (or capture one shot per call) and poll the log. The
-  preview server also runs with `run_in_background`.
-- **Shared container:** heavy work runs under `nice -n 15`; never touch another workflow's ports (5181 and the sale
-  desk's 5190 are taken; check with `ss -ltn` or `/proc/net/tcp` before claiming one).
+| Film (Discount) | Segment | What |
+|---|---|---|
+| 36.4 s | (4-menu) | The Admin click drawn on the menu (ring + tink), 6 frames before the cut |
+| 36.6–40.4 s | 6-desk-signin | The painted sign-in card at shot 4's 1.8x, pulling back to the card; email under a privacy blur; Sign In |
+| 40.4–48.6 s | 7-desk-onboard | Name; the pen signs at 1.8x (felt-tip sound); Save → "You Are All Set"; the camera pulls out; Start Working |
+| (owner path) | 7b-desk-fees | Your Fees: the demo fee typed (partB.demoFee), the yes/no screens answered No, Save Fees, Done |
+| 48.6–51.4 s | 8a / 8b | Handle A Sale (wide) → Start A Sale (the skeleton cut out) → the car |
+| 51.4–54.4 s | 9-desk-buyer | The buyer's name |
+| 54.4–59.1 s | 10a / 10b | The address read-back at 2.0x, Hold To Confirm → (dialog close cut out) "How Are They Paying?" → Cash |
+| 59.1–62.5 s | 11-desk-guide | The guided sale |
+| 62.5–65.6 s | 12-desk-signed | The packet: push onto "2 / 2 signed", held; Open / Print on the 130-U |
+| 65.6–69.9 s | B6 | The 130-U in a Preview window; push onto the certification block; the member's printed name and drawn signature; identity and money blurred; "Signed Once. On Every Title Application." |
+| 69.9 s → | phone, outro | The desk and document dissolve to the wallpaper under the phone |
 
-## Runbook
+- **The onboarding choice is the user's (B0).** The storyboard predates the owner's Your Fees step; `fresh` is now an
+  owner who meets it. Ask: film the owner's first sign-in with Your Fees (then `partB.demoFee`, the owner's figure or
+  one the user approved, named as a demo input in the README and the send note, never on screen), or a salesperson's
+  (`fresh-sales`, no fees screen). `7b-desk-fees` is written but not yet captured, and its composition segment is
+  added and tuned on the first owner-fees run (`render.sh` refuses until then; references/desk-capture.md §3).
+- **The desk changes under the video.** Before every desk capture, the preflight (B3) replays every desk shot and the
+  scenarios are validated against the desk's questions; the runbook refuses the captures while the desk has moved since
+  the clean preflight. What changed is in the desk's `docs/verification/paperwork-pages/corridor-changes.md`.
+- **Off camera** (`capture-desk.sh`): the set-up deal for 11, the complete sale for 12 signed by the buyer's hand
+  (`desk/ceremony-hand.cjs`, never a sine wave: it prints on the paper), the PDFs, `docFileName`, and the 130-U page
+  rasterised by its text (`raster-docs.sh --find CERTIFICATION`). One automatic restart-and-retry, then stop.
 
-Run from the repo root.
+## Narrated long cut (a variant, on request)
 
-1. **Facts first.** Take the on-screen facts only from the site's `business.ts` fields sourced OWNER or TXDMV: the web
-   address (www. + domain), the phone as (000) 000-0000, street and city, and the short hours line exactly as the
-   visit card prints it, without closed days. Copy every string character for character from where the site prints
-   it ("Gulf Fwy", not "Gulf Freeway"). No prices, ratings or claims. If one is unconfirmed, ask the user. Do not guess.
+The same window, cursor, cameras, documents, phone and sounds, laid against a voice-over. The edit follows the voice:
+each line's picture shows what it says, the camera on the thing named as the word is said (Discount: composition
+`Narrated`, 3:50, 24 lines; `Demo` is untouched). The recipe is `references/narration.md`; lessons N1–N12.
 
-2. **Client inputs**, one copy, inside the project folder from the start:
-   `mkdir -p $P && cp $S/assets/client-inputs.template.json $I`. Fill every double-brace value: slug, client,
-   `siteDir`, domain, `deskUrl`, facts, `outroLines` (facts[0]; facts[1] · facts[2]; facts[3]), `brand.logoReverse`
-   (the full-colour logo the site itself shows on its black bands or footer; if it has none, ask the user; never
-   recolour or invert a logo), the timezone, and the clock: **Wednesday 2026-09-30T14:00 in the dealer's zone with
-   that day's UTC offset** (the next open weekday at 14:00 if closed on Wednesdays). Leave the null fields null:
-   `loader`, `word`, `introKey` and `brand.mark` are measured in step 4, `logoWidth` in step 5 and `SERVICE_FOCUS` in
-   step 6. `examples/discount-used-cars/client-inputs.json` is a complete one.
-
-3. **Build the site with the Admin link, and serve it on :5183.** `VITE_DESK_URL` makes the drawer's Admin row
-   render; it is never navigated in part A. Use the site's own build script (it type-checks first) when it ends in
-   `vite build`, and vite's own binary through `exec`, so the pid file holds vite's PID:
-   ```bash
-   (cd clients/$SLUG-site && VITE_DESK_URL=<deskUrl> npm run build -- --outDir $SCRATCH/dist-demo --emptyOutDir)
-   # run_in_background:
-   (cd clients/$SLUG-site && echo $BASHPID > $SCRATCH/preview.pid && exec ./node_modules/.bin/vite preview --outDir $SCRATCH/dist-demo --port 5183 --strictPort)
-   ```
-
-4. **Measure the site.** This writes the loader rects, word, intro key and `brand.mark` (the .png twin of the
-   loader's image) into the inputs and checks "Open Now" at the clock; then the inputs must check OK. On a new site or
-   machine, also run the capture self-test (about 70 s), which must PASS.
-   ```bash
-   node $S/scripts/measure-site.cjs --into $I && node $S/scripts/fill-client.cjs check $I
-   node $S/scripts/capture.cjs --selftest --dsf 1,2 --out $SCRATCH/selftest --clock <clock>
-   ```
-   Run the self-test on an idle machine; on a determinism FAIL under load, re-run once before investigating (lesson
-   B12).
-
-5. **Create the project.** This copies the template, sounds, fonts and logos, sets `theme.outro.logoWidth` from the
-   logo's shape (written back into `$I`), writes `src/project.ts`, `storyboard.json` and `README.md`, and runs
-   `npm ci` under nice (timeout 600000). `--force` re-creates an existing project and overwrites the README; keep
-   decisions in `$I`, never only in the README.
-   ```bash
-   bash $S/scripts/new-project.sh $I
-   ```
-
-6. **Adapt and preflight the storyboard.** The preflight replays every shot on the served site. It fails on:
-   - missing selectors and UNSET placeholders;
-   - zoom edges that cut text, and the zooms' `frame` rules;
-   - class (a) text (house-recipe §14) in a zoom;
-   - resting cursor points on glyphs;
-   - the phone's resting card.
-
-   With `--into` it writes the suggested focus for an UNSET placeholder (`SERVICE_FOCUS` always) and each zoom's
-   visible text for the README. For a set value that fails, copy the printed suggestion into `$I` → `storyboard`.
-   Refill and repeat until it prints `PREFLIGHT CLEAN` (`references/storyboard.md`, last section).
-   ```bash
-   node $S/scripts/measure-site.cjs --storyboard $P/storyboard.json --rects --into $I
-   node $S/scripts/fill-client.cjs storyboard $I $S/assets/storyboard-dealer-site.json --out $P/storyboard.json
-   node $S/scripts/fill-client.cjs readme $I $S/assets/project-README.md --out $P/README.md
-   ```
-   A timing the page forces (for example a longer query) goes in `$I` → `overrides`, with its reason. If facts or
-   logos change, refill `project.ts` too (`fill-client.cjs project $I --out $P/src/project.ts`).
-
-7. **Capture the five shots, in order**, then check the cuts; the server is killed only when they print CUTS PASS:
-   ```bash
-   for id in 1-hero 2-scroll 3-buy 4-menu 5-phone; do
-     node $S/scripts/capture.cjs --storyboard $P/storyboard.json --shot $id \
-       --out $SCRATCH/captures/$id --publish $P/public/shots --clean || { echo "capture $id failed"; break; }
-   done
-   node $S/scripts/verify-film.cjs --project $P --cuts-only --out $SCRATCH/cuts && kill "$(cat $SCRATCH/preview.pid)"
-   ```
-   - **Order matters.** Each shot starts its cursor where the previous capture ended, and shot 4's set-up jiggle
-     starts from shot 3's last point. Re-capturing shot N means re-capturing every later shot too.
-   - **A failed cut** means re-staging that shot's preroll (lessons C8–C10), not a dissolve. `--allow-cut <frame>`
-     exists only for the site's own small looping animation (verification.md §6).
-   - **Re-rendering an existing client:** copy or symlink its `public/shots/<id>/` folders (shot.mp4 + cursor.json)
-     into the project instead of re-capturing; Remotion follows symlinks in `public/`. Still run `--cuts-only` and
-     `render.sh --check`.
-
-   **7b. Spot-check stills before the full render** (3–5 minutes for the plan's 46 frames). Look at the zoom
-   stills at 100% (the hero anchor beside the headline, the framing), the cut stills and the outro:
-   ```bash
-   F=$(node $S/scripts/verify-film.cjs --project $P --plan | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).stills.map(x=>x.frame).join(",")))')
-   (cd $P && nice -n 15 node scripts/stills.cjs $SCRATCH/stills Demo:$F)
-   ```
-
-8. **Render** the master (h264 CRF 16 + AAC) and the share copy (≤ 24 MB, `+faststart`). Run the preflight and
-   typecheck in the foreground, then the render with `run_in_background` (about 12 minutes under nice):
-   ```bash
-   bash $S/scripts/render.sh $P demo-v1 --check
-   bash $S/scripts/render.sh $P demo-v1 > $SCRATCH/render.log 2>&1      # run_in_background; poll the log
-   ```
-
-9. **Verify.** Every scripted gate must pass (next section). Then open the contact sheet, look at every still, and view
-   the zoom stills at 100%. If the white-level gate prints INFO, it is by eye on the two stills it names.
-   ```bash
-   bash $S/scripts/verify.sh $P out/demo-v1.mp4 $SCRATCH/verify-v1      # timeout 600000
-   ```
-
-10. **Send it in chat.** Use `SendUserFile` with `out/demo-v1-share.mp4` (and the contact sheet if useful), plus a
-    short note:
-    - length and running order
-    - the master's path
-    - that every gate passed (and any `--allow-*` used, with the reason)
-    - the owner decisions from the project README: site copy in zooms, video-only CSS, hidden fine print, desk host
-    - the sounds: the iOS kit is cleared for showing the demo to the dealer. If the user says the film will run as a
-      paid ad, tell them the sounds need replacing first (`assets/sfx/SOURCES.md`); do not swap them without their
-      choice.
-
-    Do not describe a film you have not verified. Commit the project's `client-inputs.json`, `storyboard.json`,
-    `src/`, `public/sfx`, `public/fonts`, `public/brand` and README; never `public/shots/` or `out/` (gitignored).
+1. **Script (N1-N2):** the house script, filled: `fill-narration.cjs init / check / lines / script`
+   (`assets/narration/`). Every line is checked against this client's desk (`narration.checked`); a line the desk
+   cannot back is cut with its reason. `check --desk $DESK_DIR` refuses a check older than the desk's last corridor
+   change. The user approves `script.md` before anything is voiced.
+2. **Voice (N3-N5):** `voice/voice.py` (Kokoro-82M af_heart, speed 0.95, one WAV per line, `preview.mp3`);
+   `voice/transcribe.py` (faster-whisper small.en; every difference decided and recorded; medium.en is the second
+   opinion for a model that cannot listen). The user approves the voiced set.
+3. **Levels (N6):** `voice/prepare-vo.py`: one computed gain, a limiter at 0.70, trimmed lines; the set −16 ± 0.5
+   LUFS, true peak ≤ −1.5 dBTP. No music; the film's sounds duck 6 dB under the voice.
+4. **Captures (N7-N9):** the demo card (`make-demo-card.mjs`: a PDF417 the desk's scanner decodes), the long
+   storyboard (`fill-client.cjs long-storyboard`), its desk preflight, then `capture-narrated.sh` on one fresh desk.
+5. **Plan and gates (N10-N14):** `src/narrated/plan.ts` written from this run's captures (the template's is an empty
+   skeleton; `examples/discount-used-cars/plan.ts` is the worked one); `narrated-check.cjs` (PLAN OK);
+   `narrated-plan.cjs` (the lip-to-picture table and its gate, from `narration.anchors`); stills; the render
+   (`render.sh --composition Narrated`, ~80 min, through bg.sh); `verify.sh --composition Narrated`; the chat copy.
 
 ## Gates before sending
 
 `verify.sh` runs every scripted row and exits non-zero on any failure; the approved Discount film passes all of them.
-The last row is by eye. Details and what each catches are in `references/verification.md`.
+The last two rows are looked at and listened to, and recorded (`runbook.cjs mark`). Details: `references/verification.md`.
 
 | Gate | Pass |
 |---|---|
 | Placeholders | No double-brace value left in `src/project.ts` or `storyboard.json` |
 | Frame count | Equals `timeline.total`: 1920×1080, h264, 30 fps, AAC present |
 | Luma scan | No one-frame spike in the per-frame scan; the last frame is black |
-| In-window cuts | PSNR ≥ 45 dB (or `--allow-cut` for a ≤ 64×64 px site animation at ≥ 40 dB), with the same cursor point, pointer shape and scroll |
-| White level | A white page reads white at the window's edges (the recording is never graded); INFO means check the two named stills by eye |
+| In-window cuts | PSNR ≥ 45 dB (or a recorded `--allow-cut` for a ≤ 64×64 px site animation at ≥ 40 dB), same cursor point, pointer shape and scroll |
+| Part-B jump-cuts | Pointer ≤ 1.5 CSS px, camera scale Δ ≤ 0.01, pan ≤ 3 px; the first frame painted (edge density ≥ 11) |
+| White level | A white page reads white at the window's edges (never graded); INFO means the two named stills by eye |
 | Peak | True peak < −1 dBTP |
 | Onset map | Every onset sits on a cue the composition plays; no isolated blips |
-| Stills (by eye) | About 46 labelled stills looked at: one logo through the hand-off, zooms framed with no edge through text, rings visible, the phone opaque by frame 2, the outro under the phone, only facts on screen, a black last frame |
+| Stills (by eye, recorded) | About 46 labelled stills (and part B's): one logo through the hand-off, zooms framed with no edge through text, rings visible, the phone opaque by frame 2, the outro under the phone, only facts on screen, privacy blurs on the desk, a black last frame |
+| Watch (by ear, recorded) | The whole chat copy once at speed, with sound |
 
-## Part B: the desk (when the client has the premium-dealer-build sale desk)
+## What to send, and when
 
-Shipped once in the Discount film (`out/discount-demo.mp4`, 82.5 s): part A unchanged to the cut point, then the desk in
-the SAME window, then B6 (the signed 130-U), then the phone and outro. It is house recipe too: shots in
-`assets/storyboard-desk.json`, segments in `template/src/demo/timeline.ts` (`partBSegments`, built from
-`project.partB.cuts`), `DocScene` + `theme.doc`. Numbers: house-recipe §15; problems and fixes: lessons B1–B13; gates:
-verification §7.
+Attach with your harness's file-sending tool (SendUserFile in Claude Code). Never the master; every file ≤ 28 MB.
 
-| Film (Discount) | Segment | What |
+| When | Send | Then |
 |---|---|---|
-| 36.4 s | (4-menu) | The Admin click drawn on the menu (ring + tink), 6 frames before the cut |
-| 36.6–40.4 s | 6-desk-signin | The painted sign-in card at shot 4's 1.8x, pulling back to the card from the cut; email under a privacy blur; Sign In |
-| 40.4–48.6 s | 7-desk-onboard | Name; the pen signs at 1.8x (felt-tip sound); Save → "You Are All Set" (ios_success); the camera pulls out; Start Working |
-| 48.6–51.4 s | 8a / 8b | Handle A Sale (wide) → Start A Sale (the skeleton cut out) → the car |
-| 51.4–54.4 s | 9-desk-buyer | The buyer's name |
-| 54.4–59.1 s | 10a / 10b | The address read-back at 2.0x, Hold To Confirm (a rise under the fill, the hand off the label) → (dialog close cut out) "How Are They Paying?" → Cash |
-| 59.1–62.5 s | 11-desk-guide | The guided sale |
-| 62.5–65.6 s | 12-desk-signed | The packet: push onto "2 / 2 signed" (ios_success), held; Open / Print on the 130-U |
-| 65.6–69.9 s | B6 | The 130-U in a Preview window; push onto the centred certification block, spotlight; the member's printed name and drawn signature; identity and money blurred; "Signed Once. On Every Title Application." |
-| 69.9 s → | phone, outro | The desk and document dissolve to the wallpaper under the phone |
+| A by-eye or by-ear gate, and the model cannot see or hear | `contact-sheet.png`, the named stills, or the chat copy | wait for an explicit OK; `mark --by-user` |
+| B0 | the onboarding question, verbatim | record the answer and the fee's source |
+| The house film is done (B11) | `<slug>-demo-chat.mp4` + `contact-sheet.png` + the filled send note | done |
+| N2 | `narration/script.md` | wait for approval |
+| N5 | `narration/preview.mp3` + `transcribe-diff.md` | wait for approval |
+| The narrated cut is done (N14) | `<slug>-demo-narrated-chat.mp4` + contact sheet + `narration/lip-to-picture.md` + send note | done |
 
-**Desk runbook** (after part A's steps 1–7 pass):
-
-1. **Facts and data.** The owner confirms the desk host (`partBDomain`). Desk people and the deal are demo data
-   (Maria Lopez, James Carter, the mock lot's car); check the demo address does not exist (lesson B13).
-2. **Desk server** on :5190 only: `next dev` with `DESK_PREVIEW_MEMBER=fresh` (the preview mock is off in production;
-   the css hides the dev indicator). Restart it to reset the mock before re-capturing 6 or 7. Kill it by PID.
-   - **Your Fees:** this storyboard predates the owner's fee step (premium-dealer-build Phase 4). On a desk that has
-     it, `fresh` is an owner, so the corridor goes on into Your Fees after the signature and `7-desk-onboard` no
-     longer ends on Done. Before capture, agree with the user to film the step (a storyboard change; the fee typed is
-     the owner's figure or one the user approved, labelled as a demo input) or to capture as a salesperson cleared to
-     sign (`DESK_PREVIEW_MEMBER=fresh-sales` with a `sales:` preview cookie), who never sees it. Walk the choice first.
-3. **Storyboard.** `fill-client.cjs storyboard $I $S/assets/storyboard-desk.json` and merge the shots after 4-menu.
-4. **Capture in the storyboard's order** (`partB.notes`): 6, 7, 8, 9, the B4 set-up walk + 11 `--var deal=`, 10, the
-   off-camera complete sale (premium-dealer-build desk-walk `sale.cjs` + `ceremony.cjs`, scenario copies in scratch) +
-   12 `--var deal=`. `pdftoppm -r 300 -f 1 -l 1` the deal's 130-U into `public/docs/130u-p1.png`.
-5. **Measure `partB.cuts`** on the captures (verification §7), fill `client-inputs.json` → `partB` (cuts, docFileName,
-   clock), refill `src/project.ts` (`fill-client.cjs project`).
-6. **Cuts and stills.** `verify-film.cjs --cuts-only` must print CUTS PASS (part A's pixel cuts and part B's
-   jump-cut gates); render the plan's stills (step 7b) and look at every part-B one.
-7. **Render** `CRF=17 AUDIO_BITRATE=192k render.sh $P discount-demo` (about 30 min, background), then
-   `verify.sh` and the by-eye list in verification §7.
-
-## Narrated long cut (a variant, on request)
-
-When the user asks for a narrated, long or explainer version, make the house film's long cut: the same window, cursor,
-cameras, documents, phone and sounds, laid against a voice-over that walks the owner through the site and one whole
-sale (Discount: composition `Narrated`, 3:50, 24 lines; the `Demo` composition is untouched). The edit follows the
-voice: each line's picture shows what it says, the camera on the thing named as the word is said. The full recipe is
-`references/narration.md`; problems and fixes are lessons N1–N12. In a dealer build it is step 10 of
-premium-dealer-build's sequence, after the short cut.
-
-1. **Script: the house script, filled.** Every client gets the same 24 lines. Only the variables change: the dealer's
-   name, the road customers drive to, what the lot sells, the legal name as said ("L L C"), the demo people and deal,
-   and the optional lines (Spanish, the sell band, the seller lien). The script is `assets/narration/script-template.md`
-   (variables table, conditions, per-line desk checks, how to fill and fact-check) and `lines-template.json`.
-   ```bash
-   node $S/scripts/fill-narration.cjs init $I       # adds client-inputs.json → narration to fill
-   node $S/scripts/fill-narration.cjs check $I
-   node $S/scripts/fill-narration.cjs lines $I --out $P/narration/lines.json     # what Kokoro voices
-   node $S/scripts/fill-narration.cjs script $I --out $P/narration/script.md     # the owner reads it before voicing
-   ```
-   - Re-check every line against this client's desk before voicing, and list each feature seen working in
-     `narration.checked`. The fill refuses a line whose feature is not listed, so an unshipped feature is never
-     narrated.
-   - A line the desk cannot back is cut, with its reason (`narration.cut`), never softened.
-   - The paperwork on screen is the client's real dealership on a demo deal.
-   - Send `script.md` to the user and voice nothing until they approve it.
-   - A desk feature added since the template (the owner's Your Fees step, say) is narrated only as a template change
-     behind a flag, once it is walked on this client's desk. If the onboarding the capture walks gained a step,
-     re-check lines 05–06 (`script-template.md`, "How to fill and fact-check", rule 3).
-   - The fill also refuses: leftover `{{placeholders}}`, abbreviations in spoken values, half a setup/payoff pair, and
-     Discount's facts reused for another client.
-   - `fill-narration.cjs selftest` proves the template gives Discount's approved 24 lines exactly. A change to the
-     wording is a template change, never a per-client edit.
-2. **Voice** with Kokoro-82M `af_heart` at speed 0.95, one WAV per line; **transcribe back** with faster-whisper
-   (`small.en`, word timestamps) and listen to every difference; the word times are the edit's anchors.
-3. **Levels:** one gain for the set and a limiter at 0.70 (about −16 LUFS integrated, true peak ≤ −1.5 dBTP); each line
-   trimmed to its speech. The film's own sounds duck 6 dB under the voice. No music.
-4. **Storyboard against the voice** (timing table first), capture the new desk shots on one fresh server in order, then
-   build the plan: segments (holds under overlays), overlays (the deal's real PDF pages, the phone ceremony), and lines
-   anchored by key word, 0–0.3 s before the action they name; gaps 0.5–1 s within a thought, up to 3 s on a beat.
-5. **Gates:** the plan check (gaps, cut continuity), stills at every segment start, zoom and document key, the render
-   (h264 CRF 17, AAC 192k, +faststart) and a share copy under 40 MB, loudness, onsets, and a lip-to-picture table of
-   key nouns in the project's narration README, with anything shown another way than the line says.
+The send note (`fill-client.cjs send-note`) covers the length and running order, the master's path, every gate and
+every recorded allowance, the facts on screen, the onboarding filmed and the demo fee with its source, the timing
+overrides, and that the iOS sounds are cleared for showing the dealer, not for a paid ad (if the user says it will run
+as an ad, the sounds need replacing first: `assets/sfx/SOURCES.md`; do not swap them without their choice). Do not
+describe a film you have not verified. Commit the project's `client-inputs.json`, `storyboard.json`, `src/`,
+`public/sfx`, `public/fonts`, `public/brand`, `verify-decisions.md` and README; never `public/shots/` or `out/`.
 
 ## What may change per client, and what may not
 
 - **Per client** (all in `client-inputs.json`): domain, facts, outro lines, logos, the loader geometry, word and intro
-  key (measured), clock and timezone, the storyboard placeholders, and `logoWidth` (derived from the logo). For the
-  narrated cut, also the `narration` block: the script's variables, flags and desk checks. The wording itself is
-  house.
-- **House, never per client:** everything else in `template/`, including every timing, depth, ease, spring, colour,
-  sound level and cue rule, and the capture settings. If a site truly forces a timing change, put it in
-  `client-inputs.json` → `overrides` with its reason (the README lists it) and re-run every gate. Many of these numbers
-  fixed a defect a critic found, and `references/lessons.md` says which.
-- **Not a dealer site, no intro loader, or no sale desk:** the house cut does not apply as is (the intro is a match
-  cut onto the loader; shot 4 ends on the desk's Admin row). Tell the user, and agree the change before building.
+  key (measured), clock and timezone, the storyboard placeholders, `logoWidth` (derived from the logo), and with a
+  desk: the onboarding choice, the demo fee and its source, the desk clock, the demo phone and addresses, the measured
+  cuts. For the narrated cut: the `narration` block (the script's variables, flags, desk checks, anchors). The wording
+  itself is house.
+- **House, never per client:** everything else in `template/` and the storyboards, including every timing, depth,
+  ease, spring, colour, sound level and cue rule, and the capture settings. If a site truly forces a timing change, put
+  it in `client-inputs.json` → `overrides` with its reason (the README lists it) and re-run every gate. A desk change
+  that breaks a shot is a template change, said in the send note. Many of these numbers fixed a defect a critic
+  found; `references/lessons.md` says which.
+- **Not a dealer site, no intro loader, or no sale desk:** the house cut does not apply as is. Tell the user and agree
+  the change before building.
 
 When you change composition code, read the remotion-motion-graphics skill first. The template follows its rules,
 except one deliberate override: the grade and vignette sit under the window.
 
+## Requirements (setup.sh checks every one)
+
+- Node 22 and npm registry access; Playwright 1.56.x (`PWPATH`, default the global npm root) with Chromium and
+  chromium_headless_shell under `PLAYWRIGHT_BROWSERS_PATH` (default `/opt/pw-browsers`). Never `playwright install`
+  without the user's OK (`references/harness.md` §6 has the commands for another machine).
+- ffmpeg/ffprobe with libx264, aac, ebur128, silencedetect, alimiter, psnr and signalstats; python3 ≥ 3.10 with PIL and
+  numpy; poppler (pdftoppm, pdftotext); curl, openssl, setsid; ≥ 8 GB free (20 recommended).
+- The narrated cut: python3.11 (or 3.10 / 3.12) for the voice venv; ~2 GB for it and ~1 GB of models.
+- The client's site under `clients/<slug>-site` with its `npm ci` done, real inventory loaded and `public/brand`
+  logos; with a desk, `clients/<slug>-desk` with its own install (never `npm install` it from here).
+- Remotion 4.0.532 is installed per project by `npm ci` from the template's lockfile (about 440 MB). Remotion is free
+  for individuals and companies of up to 3 people; a bigger agency needs a company licence (ask the user).
+- Bundled: the 15 processed sounds (`assets/sfx/`, cleared for showing the dealer, not for a paid ad), Barlow Semi
+  Condensed (`assets/fonts/`, OFL), DejaVu Sans for the demo card (`assets/narrated/`, its licence beside it).
+
 ## References
 
-- `references/house-recipe.md`: every constant with its value and reason (the source of truth for "exactly this way"),
-  including the content classes (§14).
-- `references/lessons.md`: every rule as rule / why / symptom, the decisions kept (do not "fix" them), and open items.
-- `references/storyboard.md`: every storyboard and capture field, cursor.json, `DesktopSegment`, and adapting and
-  measuring the placeholders.
-- `references/verification.md`: the gates, the stills list, the thresholds, and what to do with a failure.
-- `references/narration.md`: the narrated long cut: the house script and its fill, Kokoro voice, transcribe-back,
-  levels, the plan of anchored lines, landing rules, ducking, truthful stand-ins, gates.
-- `examples/discount-used-cars/`: the approved film's `storyboard.json`, its `client-inputs.json` (with the narration
-  block), `narration-lines.json` (the shipped 24 lines the template reproduces), and `NOTES.md` (timeline, cut point
-  f1099, what was client-specific, the reproduction checks).
+- `references/runbook.md`: every step's card (generated from `assets/runbook.json`).
+- `references/harness.md`: long jobs, ports, demo.env, what a model must never decide alone, other machines, and the
+  Claude Code appendix.
+- `references/desk-capture.md`: the desk server, sessions, onboarding paths, clock, demo data, preflight, capture order,
+  signatures, documents, and what to do when the desk changes.
+- `references/house-recipe.md`: every constant with its value and reason (the source of truth for "exactly this way").
+- `references/lessons.md`: every rule as rule / why / symptom, the decisions kept, open items.
+- `references/storyboard.md`: every storyboard and capture field, cursor.json, `DesktopSegment`, adapting placeholders.
+- `references/verification.md`: the gates, the stills list, thresholds, the decisions record, what to do with a failure.
+- `references/narration.md`: the narrated cut: script, voice, transcribe-back, levels, the plan, landing rules, gates.
+- `examples/discount-used-cars/`: the approved film's `storyboard.json`, `client-inputs.json` (narration block with
+  anchors, demo data), `narration-lines.json`, `plan.ts`, `storyboard-long.json`, and `NOTES.md`.
 
 ## Files
 
 ```
-scripts/capture.cjs        storyboard shot → deterministic frames, shot.mp4, cursor.json (+ --selftest)
-scripts/measure-site.cjs   loader geometry, intro key, Open Now; storyboard preflight with framing suggestions
-                           (--storyboard, --rects, --into); read-only on the site
-scripts/fill-client.cjs    client-inputs.json → project.ts / storyboard.json / README.md (check refuses placeholders)
-scripts/fill-narration.cjs client-inputs.json → narration/lines.json + script.md from the house script (init, check,
-                           lines, script; selftest reproduces Discount's 24 lines and every refusal)
-scripts/new-project.sh     template + assets + filled files → clients/<slug>-demo, logoWidth, npm ci
-scripts/render.sh          preflight, typecheck, master (CRF 16) + share copy (≤ 24 MB); --check stops before rendering
-scripts/verify.sh          the gates (wraps verify-film.cjs; --plan and --cuts-only modes; --allow-* flags)
-template/                  the shipped film's Remotion project (parts A and B, DocScene): src identical to the shipped
-                           one except project.ts (placeholders, partB null) and theme.ts comments; lockfile pins
-                           Remotion 4.0.532
-template/scripts/stills.cjs     bundle once, render many stills (step 7b); deletes its own webpack bundle
-template/scripts/prepare-sfx.sh rebuilds the sound kit from its source pack; only needed to swap a sound
-assets/storyboard-dealer-site.json   the house storyboard with placeholders, `adapt` notes and `frame` / `rest` rules
-assets/storyboard-desk.json          part B: the seven desk shots (house values; fills DESK_CLOCK and TIMEZONE)
-assets/client-inputs.template.json   the one file filled per client
-assets/narration/          the narrated cut's house script: script-template.md (variables, conditions, desk checks,
-                           fill and fact-check) and lines-template.json (what fill-narration.cjs fills)
-assets/project-README.md   the per-project README
-assets/sfx/, assets/fonts/ the 17 sounds the film plays (SOURCES.md) and Barlow Semi Condensed (OFL.txt)
+scripts/setup.sh            S0 machine check; --voice builds the voice venv (idempotent)
+scripts/env.sh              S2: $SCRATCH/demo.env
+scripts/bg.sh               long jobs: start | status | wait | tail | stop | list (setsid, log, exit code)
+scripts/runbook.cjs         status | next | show | run | check | mark | doc | selftest
+scripts/decisions.cjs       $P/verify-decisions.md: by-eye / by-ear / approval rows and allowances
+scripts/site-server.sh      the site on :5183 (build-start | stop | status)
+scripts/capture.cjs         storyboard shot → deterministic frames, shot.mp4, cursor.json (+ --selftest)
+scripts/capture-all.sh      shots in order, restart-from-N rule
+scripts/capture-desk.sh     part B's captures and off-camera steps on one fresh desk
+scripts/capture-narrated.sh the narrated cut's captures and off-camera steps
+scripts/measure-site.cjs    loader, Open Now, storyboard preflight; --desk: the desk selector preflight + commit stamp
+scripts/measure-desk-cuts.cjs  partB.cuts from the desk captures' edge density
+scripts/fill-client.cjs     client-inputs.json → project.ts, storyboards (site, desk, long), scenarios, README, send note
+scripts/fill-narration.cjs  client-inputs.json → narration/lines.json + script.md (selftest: Discount's 24 lines)
+scripts/new-project.sh      template + assets + filled files → clients/<slug>-demo, npm ci (no install fallback)
+scripts/render.sh           preflight, typecheck, master (+faststart), chat copy; --composition, --frames, --concat
+scripts/share.sh            the chat copy: two-pass x264 to <= 28 MB, frames = the master's
+scripts/verify.sh           the gates (verify-film.cjs, or narrated-verify.cjs with --composition Narrated)
+scripts/raster-docs.sh      a deal PDF's page, chosen by its text, as the exact PNG the film reads
+scripts/make-demo-card.mjs  the demo licence (PDF417 decoded back) for the narrated scan
+scripts/narrated-{check,frames,verify,plan}.cjs   the narrated plan check, stills list, film gates, lip-to-picture gate
+scripts/voice/              voice.py, transcribe.py, prepare-vo.py, smoke.py, common.py
+scripts/desk/               desk-server.sh, theme.cjs, onboard.cjs, ceremony-hand.cjs, signing-link.cjs,
+                            review-confirm.cjs, close-sale.cjs, latest-deal.cjs, validate-scenario.cjs, lib.cjs
+scripts/card/demo-card.py   the demo card's front and back camera frames
+template/                   the shipped film's Remotion project (parts A and B, DocScene, src/narrated with an empty
+                            plan); lockfile pins Remotion 4.0.532
+assets/runbook.json         the runbook as data
+assets/storyboard-*.json    the site, desk and long-cut storyboards with placeholders
+assets/desk-scenarios/, assets/sig/, assets/narrated/   off-camera sales, signatures, the menu and camera feed
+assets/client-inputs.template.json, assets/send-note.md, assets/project-README.md, assets/narration/, assets/voice/
+assets/sfx/, assets/fonts/  the 15 sounds (SOURCES.md) and Barlow Semi Condensed (OFL.txt)
 ```
 
-**Housekeeping:**
-
-- Run heavy work under `nice -n 15`.
-- Capture with `--clean`, since a DSF 2 shot is about 2.5 GB of PNG.
-- Delete only the `/tmp/remotion-webpack-bundle-*` your runs created. `render.sh` and `stills.cjs` do this.
-- Kill your preview server by its PID, after the cuts pass.
-- Do not edit the client's site source: video-only fixes go in the storyboard's `captureCss`.
+**Housekeeping:** heavy work under `nice -n 15` (the scripts do it); capture with `--clean` (a DSF 2 shot is about
+2.5 GB of PNG); delete only the `/tmp/remotion-webpack-bundle-*` your runs created (render.sh and stills.cjs do);
+stop your servers by process group when their step is done; never edit the client's site or desk source: video-only
+fixes go in the storyboard's `captureCss`.

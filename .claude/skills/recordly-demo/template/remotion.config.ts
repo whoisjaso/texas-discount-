@@ -9,12 +9,15 @@ Config.setCrf(16); // masters: platforms re-compress, give headroom (and less ba
 // Shots are 2880x1800 videos: keep parallel tabs modest so frame extraction does not starve.
 Config.setConcurrency(3);
 
-// Cloud containers have no Chrome download: use Playwright's headless shell when it exists
-// (same as passing --browser-executable=/opt/pw-browsers/chromium_headless_shell-*/chrome-linux/headless_shell).
+// Use Playwright's headless shell when it exists: HEADLESS_SHELL, else the first chromium_headless_shell-* under
+// PLAYWRIGHT_BROWSERS_PATH (default /opt/pw-browsers). Without one, Remotion downloads its own Chrome on first use
+// (`npx remotion browser ensure`, only with the user's OK; recordly-demo scripts/setup.sh --check).
 const headlessShell = (() => {
+  if (process.env.HEADLESS_SHELL && fs.existsSync(process.env.HEADLESS_SHELL)) return process.env.HEADLESS_SHELL;
+  const root = process.env.PLAYWRIGHT_BROWSERS_PATH || "/opt/pw-browsers";
   try {
-    const dir = fs.readdirSync("/opt/pw-browsers").find((n) => n.startsWith("chromium_headless_shell-"));
-    return dir ? `/opt/pw-browsers/${dir}/chrome-linux/headless_shell` : null;
+    const dir = fs.readdirSync(root).find((n) => n.startsWith("chromium_headless_shell-"));
+    return dir ? `${root}/${dir}/chrome-linux/headless_shell` : null;
   } catch {
     return null;
   }

@@ -553,8 +553,9 @@ before `--clean`, and about 5 minutes for all five shots.
 | Browser | `/opt/pw-browsers/chromium_headless_shell-*/chrome-linux/headless_shell`, auto-detected in `remotion.config.ts` and also passed as `--browser-executable=$(ls -d …/chrome-linux)/headless_shell` | Bash does not expand a glob glued to `--flag=`, so wrap it in `$(ls -d …)` |
 | Priority | `nice -n 15`; about 11–12 min for 1477 frames | Shared container |
 
-The share copy is `ffmpeg -i <master> -c:v libx264 -preset slow -crf 23 -pix_fmt yuv420p -c:a aac -b:a 160k -movflags
-+faststart`. That gave 10.6 MB for Discount. `scripts/render.sh` raises the CRF in steps of 2 until the file is ≤ 24 MB.
+The master is remuxed `+faststart`. The chat copy is `scripts/share.sh`: two-pass libx264 `-preset slow`, yuv420p, at
+the bitrate that fills 28 MB (the chat's upload limit is 30 MB), AAC 128k, `+faststart`, the master's frame count
+(the first share copies were CRF 23 / 160k, 10.6 MB for part A; a CRF loop could not guarantee the cap).
 
 ## 14. Content rules
 

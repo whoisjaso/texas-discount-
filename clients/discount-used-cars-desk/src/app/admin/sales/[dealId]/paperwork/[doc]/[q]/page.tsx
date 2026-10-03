@@ -17,8 +17,17 @@ import {
   paperworkQuestions,
   questionPosition,
   readPaperwork,
+  unansweredSwornFacts,
 } from "@/lib/sales/paperwork";
+import { readBack, type ReadBackPage } from "@/lib/documents/field-maps/resolve";
+import { saleDateFor } from "@/lib/sales/sale-date";
+import { poaFieldsFromSale } from "@/lib/documents/poa-fields";
+import { oneLineAddress } from "@/lib/sales/corridor-link";
+import { businessDateToday } from "@/lib/documents/us-date";
+import { readDealAgreements } from "@/lib/sales/filed-documents";
+import { createClient } from "@/lib/supabase/server";
 import { readMoney } from "@/lib/sales/money";
+import { saleContextExtras } from "@/lib/sales/paperwork-filing-context";
 import { dealFeeLinesForSale } from "@/lib/dealership-fees";
 import { readBuyerId } from "@/lib/sales/buyer-id";
 import { resolveCounty } from "@/lib/documents/resolve";
@@ -63,7 +72,9 @@ const REVIEW = "review";
 export default async function PaperworkQuestionPage({ params, searchParams }: Props) {
   const { dealId, doc, q } = await params;
   const change = (await searchParams)?.change;
-  const reopen = change === "emptyWeight" ? "emptyWeight" : undefined;
+  // The review's Change link reopens a question the deal already answers
+  // (box 11, the county, the down payment) so it can be answered again.
+  const reopen = typeof change === "string" && /^[A-Za-z]+$/.test(change) ? change : undefined;
 
   const entry = SALE_DOCUMENTS.find((candidate) => candidate.documentType === doc);
   if (!entry?.documentType || !hasPaperwork(entry.documentType)) notFound();
@@ -137,6 +148,10 @@ export default async function PaperworkQuestionPage({ params, searchParams }: Pr
     vehicleYear: sale.vehicle?.year ?? null,
     saleYear: Number((sale.startedAt ?? sale.createdAt).slice(0, 4)) || undefined,
     answers,
+    // The intake's county, the ID kind, the email, the contract date and
+    // every document's answers: what makes a fact known, or another
+    // document's to ask (paperwork-filing-context.ts).
+    ...saleContextExtras(sale),
   };
   const questions = paperworkQuestions(entry.documentType, context);
 
@@ -193,6 +208,35 @@ export default async function PaperworkQuestionPage({ params, searchParams }: Pr
   const nextHref = reviewing ? stepHref(REVIEW) : stepHref(`after:${key}`);
 
   const question = reviewing ? null : questions[index];
+
+  /*
+    The review is the page: every box the document prints, read back with
+    its source, and the sworn statements nobody has answered, each with the
+    way back to its question. Built from what the review files, so what is
+    shown is what the filing checks.
+  */
+  let pages: ReadBackPage[] = [];
+  let sworn: Array<{ key: string; question: string; href: string }> = [];
+  if (reviewing) {
+    const reviewForm: Record<string, unknown> = {
+      ...filedAnswers,
+      ...money,
+      ...(entry.documentType === "vehicleResponsibility" ? { quotedRegistrationAmount: money.registrationCost } : {}),
+    };
+    let saleDate: string | null = null;
+    try {
+      const client = await createClient();
+      saleDate = await saleDateFor(client, await readDealAgreements(client, dealId));
+    } catch {
+      saleDate = null;
+    }
+    pages = readBack(entry.documentType, sale, reviewForm, { saleDate });
+    sworn = unansweredSwornFacts(entry.documentType, context).map((fact) => ({
+      key: fact.key,
+      question: fact.question,
+      href: `/admin/sales/${encodeURIComponent(dealId)}/paperwork/${encodeURIComponent(fact.owner)}/${encodeURIComponent(fact.key)}`,
+    }));
+  }
   const { lang, userId } = await resolveAdminLanguageWithUser();
 
   /*
@@ -214,14 +258,13 @@ export default async function PaperworkQuestionPage({ params, searchParams }: Pr
   let poa: { eligible: boolean | null; grantorName: string; grantorAddress: string } | null = null;
   if (entry.documentType === "powerOfAttorney") {
     const { isEligibleForPlainPoa } = await import("@/lib/documents/powerOfAttorneyForm");
-    const held = readBuyerId(sale.stepData);
-    const mailing = [held.mailing.street, held.mailing.city, held.mailing.state, held.mailing.postal]
-      .filter(Boolean)
-      .join(", ");
+    // The grantor as the form prints it: the licence's name and the mailing
+    // address, from the same builder the PDF and the filing use.
+    const fields = poaFieldsFromSale(sale);
     poa = {
-      eligible: isEligibleForPlainPoa(sale.vehicle?.year ?? null, new Date().getFullYear()),
-      grantorName: sale.buyer?.name ?? "",
-      grantorAddress: mailing || (sale.buyer?.address ?? ""),
+      eligible: isEligibleForPlainPoa(sale.vehicle?.year ?? null, Number(businessDateToday().slice(0, 4))),
+      grantorName: fields.printedName,
+      grantorAddress: oneLineAddress(fields.grantorAddress ?? "", fields.grantorCity ?? "", fields.grantorState ?? "", fields.grantorZip ?? ""),
     };
   }
 
@@ -258,7 +301,7 @@ export default async function PaperworkQuestionPage({ params, searchParams }: Pr
         // Stripped of its `applies` predicate: a function cannot cross into a
         // client component, and React answers that with a server render error
         // whose message is hidden in production.
-        question={question ? asked(question) : null}
+        question={question ? asked(question, context) : null}
         current={
           question
             ? (answers[question.key] ??
@@ -292,6 +335,8 @@ export default async function PaperworkQuestionPage({ params, searchParams }: Pr
           entry.documentType === "vehicleResponsibility" ? money.registrationCost : null
         }
         poa={poa}
+        pages={pages}
+        sworn={sworn}
       />
     </FunnelLocaleProvider>
   );

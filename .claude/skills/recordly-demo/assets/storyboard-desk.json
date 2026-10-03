@@ -3,10 +3,11 @@
  "title": "{{CLIENT}}: desk demo, part B (the premium-dealer-build sale desk)",
  "template": "recordly-demo assets/storyboard-desk.json: the house part B, as shipped in the Discount film (examples/discount-used-cars/storyboard.json, shots 6-12). Merge these shots into the project's storyboard.json after 4-menu (fill-client.cjs storyboard fills the double-brace values).",
  "notes": [
-  "The desk is the same premium-dealer-build app for every dealer, so the shots, actions, demo data and css are house values: change none of them per client. Only the clock (DESK_CLOCK: the day the off-camera deal's documents are signed, 14:00 local, = partB.clock in client-inputs.json, else clock) and the timezone are filled.",
-  "Running order and why: SKILL.md 'Part B: the desk'. Every constant: references/house-recipe.md §16. Problems and fixes: references/lessons.md, part B. Gates and stills: references/verification.md, part B.",
-  "Capture order on ONE fresh desk server (next dev on :5190, DESK_PREVIEW_MEMBER=fresh, nextjs-portal hidden by css): 6-desk-signin, 7-desk-onboard (onboards Maria Lopez on camera: her strokes are the saved signature on every later document), 8-desk-sale-start, 9-desk-buyer, then the B4 set-up deal (desk-walk sale.cjs with scenarios/james-carter-to-registration.json copy) and 11-desk-guide --var deal=<it>, then 10-desk-readback (makes its own deal), then the off-camera complete sale (sale.cjs james-carter.json + ceremony.cjs) and 12-desk-signed --var deal=<it>. Restart the server before re-capturing 6 or 7.",
-  "After capture, measure partB.cuts on the captures (verification.md, part B) and fill client-inputs.json → partB; pdftoppm -r 300 the deal's 130-U page 1 into public/docs/130u-p1.png."
+  "The desk is the same premium-dealer-build app for every dealer, so the shots, actions, demo people and css are house values. Filled per client by fill-client.cjs desk-storyboard: DESK_CLOCK (client-inputs.json → deskClock: the day the off-camera deal's documents are signed, today at 14:00 local, the date the server stamps; never the site's clock), TIMEZONE, DESK_COOKIE and DESK_EMAIL (partB.onboarding: owner-fees → owner@example.dev, sales → sales:sales@example.dev), DEMO_* (client-inputs.json → demo: a 555-01xx phone in the dealer's area code and a street that does NOT exist, lesson B13) and DEMO_FEE (partB.demoFee, owner-fees only).",
+  "Running order and why: SKILL.md and references/desk-capture.md. Every constant: references/house-recipe.md §15. Problems and fixes: references/lessons.md, part B. Gates and stills: references/verification.md §7.",
+  "Capture order on ONE fresh desk server (scripts/desk/desk-server.sh start --member fresh|fresh-sales; nextjs-portal hidden by css), all of it run by scripts/capture-desk.sh: 6-desk-signin, 7-desk-onboard (onboards Maria Lopez on camera: her strokes, assets/sig/member-maria-lopez.json, are the saved signature on every later document), [7b-desk-fees on the owner-fees path], 8-desk-sale-start, 9-desk-buyer, then the B4 set-up deal (desk-walk sale.cjs with the filled assets/desk-scenarios/james-carter-to-registration.json) and 11-desk-guide --var deal=<its last path part>, then 10-desk-readback (makes its own deal), then the off-camera complete sale (sale.cjs james-carter.json + scripts/desk/ceremony-hand.cjs) and 12-desk-signed --var deal=<it>. Restart the server before re-capturing 6 or 7.",
+  "After capture: scripts/measure-desk-cuts.cjs --into fills partB.cuts; desk-walk pdfs.cjs downloads the deal's PDFs (docFileName = the 130-U's downloaded name); scripts/raster-docs.sh <130-U pdf> public/docs/130u-p1.png --find CERTIFICATION.",
+  "deskCommit is the desk commit these shots were last captured on (Discount, 2026-10-02). measure-site.cjs --desk stamps storyboard.json → deskPreflight with the desk's current commit; runbook.cjs refuses B4 when the desk has moved since the last clean preflight."
  ],
  "shots": [
   {
@@ -44,7 +45,7 @@
      "why": "the Admin click from shot 4 lands on frame 0 (on the empty ground left of the leaf)"
     },
     {
-     "t": 0.0,
+     "t": 0,
      "type": "eval",
      "js": "document.documentElement.classList.add('b-enter')",
      "why": "starts the video-only fade-in on frame 0 (a CSS animation would otherwise run during the warm-up)"
@@ -62,7 +63,7 @@
     {
      "t": 1.25,
      "type": "type",
-     "text": "owner@example.dev",
+     "text": "{{DESK_EMAIL}}",
      "perCharSec": 0.058
     },
     {
@@ -140,7 +141,7 @@
    "cookies": [
     {
      "name": "tj-local-admin-preview",
-     "value": "owner@example.dev"
+     "value": "{{DESK_COOKIE}}"
     }
    ],
    "prerollSec": 0,
@@ -643,7 +644,7 @@
      "subSteps": 2
     },
     {
-     "t": 6.0,
+     "t": 6,
      "type": "click",
      "selector": "button.ed-btn-dark",
      "contains": "Save Signature",
@@ -685,6 +686,169 @@
    "cutFrames": 245,
    "cutWhy": "ends on frame 244 (Start Working pressed at 241, released at 244); frame 245 is the navigation to Handle A Sale: 8 opens there",
    "css": "nextjs-portal{display:none!important} .text-\\[\\#3F5A43\\]{color:var(--tj-ink,#111)!important} .bg-\\[\\#3F5A43\\]{background-color:var(--tj-ink,#111)!important} .ed-nav-identity-handle{filter:blur(4px)} .ed-admin > .ed-sale-head ~ div{display:none!important} #email{color:transparent!important;text-shadow:0 0 10px rgba(17,17,17,.9)!important;caret-color:#111} #email::placeholder{color:transparent!important;text-shadow:none!important} [data-onboarding-step=\"signature\"] .ed-start-fields > .space-y-2{min-height:181.5px}",
+   "cssWhy": "partB.captureCss, pasted (see partB.captureCss.why)",
+   "variants": {
+    "owner-fees": {
+     "verified": false,
+     "why": "An owner who has not set fees meets Your Fees after the signature (premium-dealer-build Phase 4): 7 ends on Save Signature's navigation to the fees step and 7b-desk-fees opens there. Applied by fill-client.cjs desk-storyboard when client-inputs.json → partB.onboarding is owner-fees. Not yet captured: the desk preflight (measure-site.cjs --desk), the cut gate and the part-B stills decide; then set verified true here.",
+     "durationSec": 6.6,
+     "dropActions": [
+      7
+     ],
+     "cutWhy": "ends 0.6 s after Save Signature (6.0 s); the next frame is the navigation to Your Fees: 7b opens there"
+    }
+   }
+  },
+  {
+   "id": "7b-desk-fees",
+   "part": "B",
+   "onlyFor": "owner-fees",
+   "verified": false,
+   "describe": "Your Fees at the owner's first sign-in: finance contracts No, the documentary fee typed (client-inputs.json → partB.demoFee: the owner's figure or one the user approved, named as a demo input in the README and the send note, never on screen), deputy / inventory tax / Ch. 345 No, Save Fees, You Are All Set, Start Working. Every yes/no is No: the film records no OCCC filing, deputy status or inventory tax it was not given.",
+   "url": "/admin/account/onboarding",
+   "base": "http://localhost:5190",
+   "clock": "{{DESK_CLOCK}}",
+   "timezone": "{{TIMEZONE}}",
+   "viewport": {
+    "width": 1440,
+    "height": 900,
+    "deviceScaleFactor": 2
+   },
+   "cookies": [
+    {
+     "name": "tj-local-admin-preview",
+     "value": "{{DESK_COOKIE}}"
+    }
+   ],
+   "prerollSec": 0,
+   "readySelector": "[data-fees-screen=\"finance\"]",
+   "durationSec": 14.5,
+   "cursor": {
+    "kind": "pointer",
+    "start": {
+     "fromShot": "7-desk-onboard",
+     "x": 720,
+     "y": 560
+    }
+   },
+   "actions": [
+    {
+     "t": 0.6,
+     "type": "hover",
+     "selector": ".ed-pay-choice",
+     "contains": "No",
+     "durationSec": 0.6
+    },
+    {
+     "t": 1.6,
+     "type": "click",
+     "selector": ".ed-pay-choice",
+     "contains": "No",
+     "durationSec": 0.4,
+     "why": "finance contracts: No (the walk records no OCCC filing it was not given)"
+    },
+    {
+     "t": 2.3,
+     "type": "click",
+     "selector": "[data-fees-next]",
+     "durationSec": 0.5
+    },
+    {
+     "t": 3.4,
+     "type": "click",
+     "selector": "input[name=docFee]",
+     "anchor": [
+      0.3,
+      0.5
+     ],
+     "durationSec": 0.5
+    },
+    {
+     "t": 4,
+     "type": "type",
+     "text": "{{DEMO_FEE}}",
+     "perCharSec": 0.16,
+     "why": "partB.demoFee (a demo input with its source)"
+    },
+    {
+     "t": 6.4,
+     "type": "click",
+     "selector": "[data-fees-next]",
+     "durationSec": 0.5
+    },
+    {
+     "t": 7.3,
+     "type": "click",
+     "selector": ".ed-pay-choice",
+     "contains": "No",
+     "durationSec": 0.4,
+     "why": "deputy: No"
+    },
+    {
+     "t": 7.9,
+     "type": "click",
+     "selector": "[data-fees-next]",
+     "durationSec": 0.4
+    },
+    {
+     "t": 8.6,
+     "type": "click",
+     "selector": ".ed-pay-choice",
+     "contains": "No",
+     "durationSec": 0.4,
+     "why": "inventory tax: No"
+    },
+    {
+     "t": 9.2,
+     "type": "click",
+     "selector": "[data-fees-next]",
+     "durationSec": 0.4
+    },
+    {
+     "t": 9.9,
+     "type": "click",
+     "selector": ".ed-pay-choice",
+     "contains": "No",
+     "durationSec": 0.4,
+     "why": "Ch. 345: No"
+    },
+    {
+     "t": 10.5,
+     "type": "click",
+     "selector": "[data-fees-next]",
+     "durationSec": 0.4
+    },
+    {
+     "t": 11.6,
+     "type": "click",
+     "selector": "button",
+     "contains": "Save Fees",
+     "durationSec": 0.5
+    },
+    {
+     "t": 13.9,
+     "type": "click",
+     "selector": "button.ed-btn-dark",
+     "contains": "Start Working",
+     "durationSec": 0.45
+    }
+   ],
+   "zooms": [
+    {
+     "at": -0.034,
+     "inSec": 0.034,
+     "until": 12.6,
+     "depth": 1.5,
+     "focus": {
+      "x": 720,
+      "y": 470
+     },
+     "follow": false,
+     "why": "continues 7's camera; the fee box and its notice in frame (check on the preflight's rects)"
+    }
+   ],
+   "cutWhy": "ends on Start Working's press; the next frame is the navigation to Handle A Sale: 8 opens there (as 7 does on a desk without Your Fees)",
+   "css": "nextjs-portal{display:none!important} .text-\\[\\#3F5A43\\]{color:var(--tj-ink,#111)!important} .bg-\\[\\#3F5A43\\]{background-color:var(--tj-ink,#111)!important} .ed-nav-identity-handle{filter:blur(4px)} .ed-admin > .ed-sale-head ~ div{display:none!important} #email{color:transparent!important;text-shadow:0 0 10px rgba(17,17,17,.9)!important;caret-color:#111} #email::placeholder{color:transparent!important;text-shadow:none!important} [data-onboarding-step=\"signature\"] .ed-start-fields > .space-y-2{min-height:181.5px}",
    "cssWhy": "partB.captureCss, pasted (see partB.captureCss.why)"
   },
   {
@@ -703,7 +867,7 @@
    "cookies": [
     {
      "name": "tj-local-admin-preview",
-     "value": "owner@example.dev"
+     "value": "{{DESK_COOKIE}}"
     }
    ],
    "prerollSec": 0.8,
@@ -759,7 +923,7 @@
      "at": -0.034,
      "inSec": 0.034,
      "until": 0.15,
-     "outSec": 1.0,
+     "outSec": 1,
      "depth": 1.5,
      "focus": {
       "x": 720,
@@ -802,10 +966,10 @@
    "cookies": [
     {
      "name": "tj-local-admin-preview",
-     "value": "owner@example.dev"
+     "value": "{{DESK_COOKIE}}"
     }
    ],
-   "prerollSec": 2.0,
+   "prerollSec": 2,
    "readySelector": "button.ed-pick",
    "durationSec": 3.2,
    "cursor": {
@@ -922,10 +1086,10 @@
    "cookies": [
     {
      "name": "tj-local-admin-preview",
-     "value": "owner@example.dev"
+     "value": "{{DESK_COOKIE}}"
     }
    ],
-   "prerollSec": 4.0,
+   "prerollSec": 4,
    "readySelector": "button.ed-pick",
    "durationSec": 5.8,
    "cursor": {
@@ -988,7 +1152,7 @@
     {
      "type": "fill",
      "selector": "input[name=buyerPhone]",
-     "value": "7135550142",
+     "value": "{{DEMO_PHONE}}",
      "t": -2.42
     },
     {
@@ -1024,25 +1188,25 @@
     {
      "type": "fill",
      "selector": "input[name=buyerStreet]",
-     "value": "1418 Belrose Dr",
+     "value": "{{DEMO_STREET}}",
      "t": -1.46
     },
     {
      "type": "fill",
      "selector": "input[name=buyerCity]",
-     "value": "Houston",
+     "value": "{{DEMO_CITY}}",
      "t": -1.3
     },
     {
      "type": "fill",
      "selector": "input[name=buyerZip]",
-     "value": "77034",
+     "value": "{{DEMO_ZIP}}",
      "t": -1.14
     },
     {
      "type": "fill",
      "selector": "input[name=buyerCounty]",
-     "value": "Harris",
+     "value": "{{DEMO_COUNTY}}",
      "t": -0.98
     },
     {
@@ -1086,11 +1250,11 @@
      "why": "B3b's last camera"
     },
     {
-     "at": 1.0,
-     "inSec": 1.0,
+     "at": 1,
+     "inSec": 1,
      "until": 4.15,
-     "outSec": 1.0,
-     "depth": 2.0,
+     "outSec": 1,
+     "depth": 2,
      "focus": {
       "x": 720,
       "y": 450
@@ -1122,7 +1286,7 @@
    "cookies": [
     {
      "name": "tj-local-admin-preview",
-     "value": "owner@example.dev"
+     "value": "{{DESK_COOKIE}}"
     }
    ],
    "prerollSec": 0.8,
@@ -1196,10 +1360,10 @@
    "cookies": [
     {
      "name": "tj-local-admin-preview",
-     "value": "owner@example.dev"
+     "value": "{{DESK_COOKIE}}"
     }
    ],
-   "prerollSec": 1.0,
+   "prerollSec": 1,
    "readySelector": ".packet-progress",
    "durationSec": 3.3667,
    "cursor": {
@@ -1245,7 +1409,7 @@
      "at": -0.034,
      "inSec": 0.034,
      "until": 0.1,
-     "outSec": 1.0,
+     "outSec": 1,
      "depth": 1.4,
      "focus": {
       "x": 720,
@@ -1258,7 +1422,7 @@
      "at": 0.1,
      "inSec": 1.2,
      "until": 2.4,
-     "outSec": 1.0,
+     "outSec": 1,
      "depth": 1.8,
      "focus": ".packet-progress",
      "follow": false,
@@ -1272,11 +1436,11 @@
   }
  ],
  "partB": {
-  "title": "Discount Used Cars and Trucks: desk demo, part B (the sale desk)",
+  "title": "{{CLIENT}}: desk demo, part B (the sale desk)",
   "notes": [
    "Part B (the sale desk). Same 1440x900 window at DSF 2 as part A; base http://localhost:5190 (the desk's dev server: the preview mock is off under NODE_ENV=production, so `next start` cannot run it; captureCss hides nextjs-portal, the dev indicator, checked in every frame).",
-   "Server: start-desk.sh (setsid, DESK_PREVIEW_MEMBER=fresh: a member with no name, no signature, onboarding not completed, NO temporary password, so onboarding opens on the name step). The mock's state lives in the server process: restart it before re-capturing 6 or 7.",
-   "Capture order on one fresh server (each shot's cursor starts where the previous capture ended): 6-desk-signin, 7-desk-onboard (this onboards Maria Lopez on camera; the same strokes are the member's saved signature for every later document), 8-desk-sale-start (before any walk-made deal exists; its css hides every row but Marcus Reed anyway), 9-desk-buyer, then the B4 set-up (sale.cjs with james-carter-to-registration.json → deal.txt) and 11-desk-guide --var deal=<that deal>, then 10-desk-readback (creates its own deal), then the off-camera complete sale (sale.cjs james-carter.json + ceremony-carter.cjs) and 12-desk-signed --var deal=<that deal>. Run 2 (2026-10-02): B4 set-up deal preview-deals-3, 10's deal preview-deals-4, off-camera deal preview-deals-5.",
+   "Server: scripts/desk/desk-server.sh start (setsid, DESK_PREVIEW_MEMBER=fresh: a member with no name, no signature, onboarding not completed, NO temporary password, so onboarding opens on the name step). The mock's state lives in the server process: restart it before re-capturing 6 or 7.",
+   "Capture order on one fresh server (each shot's cursor starts where the previous capture ended): 6-desk-signin, 7-desk-onboard (this onboards Maria Lopez on camera; the same strokes are the member's saved signature for every later document), 8-desk-sale-start (before any walk-made deal exists; its css hides every row but Marcus Reed anyway), 9-desk-buyer, then the B4 set-up (sale.cjs with james-carter-to-registration.json → deal.txt) and 11-desk-guide --var deal=<that deal>, then 10-desk-readback (creates its own deal), then the off-camera complete sale (sale.cjs james-carter.json + scripts/desk/ceremony-hand.cjs) and 12-desk-signed --var deal=<that deal>. Run 2 (2026-10-02): B4 set-up deal preview-deals-3, 10's deal preview-deals-4, off-camera deal preview-deals-5.",
    "Every shot ends on the frame before its click's navigation (cutFrames / cutWhy on each shot), and the next shot opens on the new page with the cursor at the same point: 6→7 (sign-in → onboarding entrance), 7→8 (onboarding done → Handle A Sale), 8→9, 9→10, 10→11, 11→12 are jump-cuts in time on a click; 12 ends on Open / Print for the 130-U (the cut to B6). The camera at every cut is static (follow false) so it cannot jump: 1.5x focus 720,470 for 6→7→8; 1.4x focus 720,490 for 8→12.",
    "Demo data: staff member Maria Lopez (fictional), buyer James Carter (fictional), 1418 Belrose Dr, Houston, TX 77034, Harris County, Texas licence 41927365, phone 713-555-0142, the mock lot's 2019 Toyota Camry SE (VIN 4T1B11HK5KU812345). No 'Example' and no '12345678' anywhere on screen: the sign-in email placeholder (you@example.com…) is hidden, the typed email and the nav identity handle are blurred, and shot 8 hides the six seeded 'Jordan Example' rows.",
    "B6 (Remotion, not a capture): the off-camera deal's 130-U page 1 at 300 dpi is clients/discount-used-cars-demo/public/docs/130u-p1.png (2550x3300, from 130-U_Carter_812345.pdf); the bill of sale page 1 is public/docs/bill-of-sale-p1.png. Boxes (px in those PNGs, x0,y0,x1,y1): 130-U seller signature image 402,2871,890,2962 (ink 429,2873,~780,2962); printed name 'Discount Used Cars And Trucks, LLC (Maria Lopez)' 1227,2889,2139,2943; seller date 2163,2884,2382,2944; seller band (signature + printed name + date + labels) 392,2860,2392,2992. Money on the 130-U: box 38(a) '$ 3663.06' 1046,2243,1194,2299 (blur it if the page is shown legibly). Bill of sale money column 1800,2590,2390,3020 ($3,663.06 / $0.00 / $336.94 / $4,000.00).",
@@ -1736,8 +1900,9 @@
    "timeScale": 3
   },
   "window": {
-   "url": "desk.discountusedcarsandtrucks.com",
+   "url": "{{PART_B_DOMAIN}}",
    "lights": "mono"
   }
- }
+ },
+ "deskCommit": "2b7bb85"
 }

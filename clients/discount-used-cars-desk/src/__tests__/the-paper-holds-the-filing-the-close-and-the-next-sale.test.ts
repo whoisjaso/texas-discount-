@@ -49,6 +49,7 @@ import { readMoney } from "@/lib/sales/money";
 import { answersDiffer, figuresDisagreeWithBillOfSale, withServerAnswers } from "@/lib/sales/refile-gates";
 import { refileTypes, type AgreementRecord } from "@/lib/sales/filed-documents";
 import { finalizePaperwork } from "@/lib/actions/paperwork";
+import { WALKED_BUYER_ID } from "./helpers/fee-filing";
 import { completeSale } from "@/lib/actions/complete-sale";
 import { startSale } from "@/lib/actions/start-sale";
 
@@ -60,9 +61,14 @@ const BHPH = {
   funding: { type: "inHouse", lenderId: null, lenderOther: null },
   money: { amount: "9000", priceBasis: "vehicleOnly", paidTodayAmount: "2000" },
   salePlan: { registrationBy: "dealer", titleSignedBy: "buyer", insuranceShown: true, inspectionBy: "done" },
+  // The licence step settled, as a walked sale holds it: the pages print it.
+  buyerId: WALKED_BUYER_ID,
   paperwork: {
-    billOfSale: { tradeIn: "yes", tradeInAllowance: "2000", tradeInDescription: "2012 Honda Civic LX" },
-    financing: { downPayment: "2000", paymentFrequency: "Monthly" },
+    // The mileage statement answered: a sworn statement files only from an answer.
+    billOfSale: { odometerStatus: "actual", tradeIn: "yes", tradeInAllowance: "2000", tradeInDescription: "2012 Honda Civic LX" },
+    // The note agreed and dated: a contract files only with its terms worked
+    // out and its first payment date answered.
+    financing: { downPayment: "2000", paymentFrequency: "Monthly", termsBy: "count", numberOfPayments: "36", firstPaymentDate: "2026-11-02" },
   },
 };
 const money: PaperworkMoney = paperworkMoney(9000, readPaperwork(BHPH, "billOfSale"), readMoney(BHPH), "inHouse");
@@ -96,7 +102,7 @@ async function seed(stepData: Row, documents: Row[]) {
     language: "en",
     step_data: stepData,
     customers: { id: "paper-buyer", name: "Andrea Salinas", phone: "7135550188", id_number: "12345678" },
-    vehicles: { id: "paper-car", year: 2017, make: "Ford", model: "Explorer", vin: "1FM5K8D80HGA00001", title_status: "clean", sale_price: 9000 },
+    vehicles: { id: "paper-car", year: 2017, make: "Ford", model: "Explorer", vin: "1FM5K8D80HGA00001", title_status: "clean", sale_price: 9000, mileage: 118340, body_style: "SUV", exterior_color: "White" },
   });
   if (documents.length) await client.from("document_agreements").insert(documents.map((row) => ({ deal_id: DEAL, ...row })));
 }

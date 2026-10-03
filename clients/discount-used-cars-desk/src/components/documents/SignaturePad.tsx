@@ -4,6 +4,9 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { ArrowsOut as Maximize2, X } from "@phosphor-icons/react";
 import SignaturePadLib from 'signature_pad';
 import { tapHaptic } from '@/lib/haptics';
+// The day at the dealership, as the paper dates the signature: a UTC date
+// read tomorrow after about 7 pm in Houston.
+import { chicagoDateKey } from '@/lib/customers/recurring-dates';
 
 interface Props {
   label: string;
@@ -50,7 +53,7 @@ export default function SignaturePad({ label, value, dateValue, onChange, onDate
     const data = pad.toDataURL('image/png');
     onChange(data);
     setIsEmpty(false);
-    if (!dateValue) onDateChange(new Date().toISOString().split('T')[0]);
+    if (!dateValue) onDateChange(chicagoDateKey());
     tapHaptic();
   }, [showModal, onChange, dateValue, onDateChange]);
 
@@ -64,7 +67,7 @@ export default function SignaturePad({ label, value, dateValue, onChange, onDate
       const data = pad.toDataURL('image/png');
       onChange(data);
       setIsEmpty(false);
-      if (!dateValue) onDateChange(new Date().toISOString().split('T')[0]);
+      if (!dateValue) onDateChange(chicagoDateKey());
     });
     if (value) setIsEmpty(false);
     padRef.current = pad;

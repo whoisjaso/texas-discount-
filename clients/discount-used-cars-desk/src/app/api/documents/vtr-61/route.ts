@@ -1,3 +1,4 @@
+import { usDate } from "@/lib/documents/us-date";
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { fillVtr61, vtr61DealerParties } from "@/lib/fill-vtr61/fill-pdf";
@@ -102,7 +103,17 @@ export async function GET(req: NextRequest) {
       model: text(vehicle.model),
       bodyStyle: text(vehicle.body_style) || text(vehicle.body_type) || text(vehicle.category),
       rebuilderName,
-      dateWorkCompleted: url.searchParams.get("completed") ?? record.dateWorkCompleted,
+      /*
+        The address row is the rebuilder's: a shop's own address when a shop
+        rebuilt it, the dealership's only when we did (left undefined, the
+        filler's default). A shop with no address on record prints a blank
+        row rather than our address under its name.
+      */
+      ...(rebuilderName && !vtr61DealerParties({ rebuilderName }).rebuilder
+        ? { rebuilderAddress: url.searchParams.get("rebuilderAddress") ?? record.rebuilderAddress }
+        : {}),
+      // MM/DD/YYYY, as the standalone form prints it; the record holds ISO.
+      dateWorkCompleted: usDate(url.searchParams.get("completed") ?? record.dateWorkCompleted),
       workPerformed: url.searchParams.get("work") ?? record.workPerformed,
       parts: record.noPartsUsed ? [] : record.parts,
       laborStatement: record.noPartsUsed ? record.laborStatement : "",

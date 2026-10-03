@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { decodeCompletedLinkFromUrl } from '@/lib/documents/customerPortal';
 import { fillOfficialRebuiltDisclosure, officialRebuiltDataFromLink } from '@/lib/documents/official-rebuilt-disclosure';
+import { readUnicodeFont } from '@/lib/pdf/unicode-text';
 
 // ============================================================
 // PDF Generator — Puppeteer renders HTML preview to PDF
@@ -160,7 +161,7 @@ export async function generatePdf({
     const fields = link && officialRebuiltDataFromLink(link, includeSignatures);
     if (fields) {
       const source = await readFile(join(process.cwd(), 'public/forms/ENF-MV-RBLT-DSCLMR.pdf'));
-      return Buffer.from(await fillOfficialRebuiltDisclosure(source, fields));
+      return Buffer.from(await fillOfficialRebuiltDisclosure(source, fields, readUnicodeFont));
     }
   }
   // No completed_link is no longer a dead stop: the render route falls back

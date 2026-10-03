@@ -250,10 +250,16 @@ the pacing rules (house-recipe §1), and run every gate.
 
 ## Part B: the desk storyboard
 
-`assets/storyboard-desk.json` holds the seven desk shots exactly as the Discount film shipped them. The desk is the same
-premium-dealer-build app for every dealer, so they are house values; `fill-client.cjs storyboard <inputs>
-assets/storyboard-desk.json` fills only `{{DESK_CLOCK}}` (`client-inputs.json` → `partB.clock`, else `clock`) and
-`{{TIMEZONE}}`, and the filled shots go after `4-menu` in the project's storyboard.
+`assets/storyboard-desk.json` holds the seven desk shots as the Discount film shipped them, plus `7b-desk-fees` (the
+owner's Your Fees, not yet captured). The desk is the same premium-dealer-build app for every dealer, so they are house
+values. `fill-client.cjs desk-storyboard <inputs> --into <project>/storyboard.json` (runbook B2) fills them and merges
+them after `4-menu` (idempotent): `{{DESK_CLOCK}}` (`client-inputs.json` → `deskClock`; the site's clock is refused),
+`{{TIMEZONE}}`, `{{DESK_COOKIE}}` / `{{DESK_EMAIL}}` (from `partB.onboarding`), `{{DEMO_*}}` (from `demo`) and
+`{{DEMO_FEE}}` (from `partB.demoFee`). Shot keys the fill reads and removes: `onlyFor` (a shot on one onboarding path
+only) and `variants` (`{ "<path>": { durationSec, dropActions, cutWhy, verified, why } }`, applied on that path; the
+filled shot keeps `variant` for the record). `verified: false` marks a shot never captured yet. `deskCommit` is the
+desk commit the shots were last captured on; `measure-site.cjs --desk` stamps `deskPreflight` when they all resolve
+on today's desk (references/desk-capture.md §5).
 
 | Shot | Opens on | Does | Ends before |
 |---|---|---|---|
@@ -271,6 +277,11 @@ Lopez's strokes), `notes` (server, capture order, deals). Demo data: staff Maria
 Dr, Houston, TX 77034 (checked not to exist), licence 41927365 and VIN 4T1B11HK5KU812345 (both blurred on the 130-U),
 phone 713-555-0142 (the 555-01xx fictional range); the mock lot's 2019 Toyota Camry SE.
 
-After capturing, measure `partB.cuts` for `client-inputs.json` from the captures (verification.md, part B), then refill
-`src/project.ts`.
+After capturing, `measure-desk-cuts.cjs --project <P> --into <inputs>` measures `partB.cuts` (verification.md §7),
+then refill `src/project.ts` (runbook B5).
+
+The narrated cut's desk shots are `assets/storyboard-long.template.json` (20-car … 27-desk-stored), filled by
+`fill-client.cjs long-storyboard` (references/narration.md §5): the same placeholders, plus `{{SELECT_MENU_JS}}`,
+`{{SELECT_MENU_CSS}}` and `{{CAMERA_FEED_JS}}` injected from `assets/narrated/`, and the capture vars `{deal}`,
+`{sign}`, `{sign2}` given at capture time.
 

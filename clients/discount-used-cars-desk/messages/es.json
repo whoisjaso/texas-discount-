@@ -226,7 +226,10 @@
       "smsConsentFrequency": "La frecuencia de los mensajes varía.",
       "smsConsentStop": "Responda STOP para cancelar en cualquier momento.",
       "smsConsentRates": "Pueden aplicar tarifas de mensajes y datos.",
-      "smsConsentNotRequired": "Este consentimiento no es una condición de compra, financiamiento o alquiler."
+      "smsConsentNotRequired": "Este consentimiento no es una condición de compra, financiamiento o alquiler.",
+      "idCard": "Identificación #",
+      "otherId": "Identificación #",
+      "dealerLicenceShort": "Licencia de concesionario"
     },
     "billOfSale": {
       "title": "Carta de Venta",
@@ -341,7 +344,17 @@
       "outstandingWeHandle": "Nosotros lo hacemos",
       "outstandingYours": "Le corresponde a usted",
       "outstandingOnFile": "Archivado",
-      "outstandingBringIt": "Tráiganoslo"
+      "outstandingBringIt": "Tráiganoslo",
+      "paidToday": "Pagado Hoy",
+      "balanceOwed": "Saldo Pendiente",
+      "payCash": "Efectivo",
+      "payZelle": "Zelle",
+      "payCashApp": "Cash App",
+      "payVenmo": "Venmo",
+      "payCard": "Tarjeta",
+      "payCheck": "Cheque",
+      "payFinancing": "Financiamiento",
+      "payOther": "Otro"
     },
     "contract": {
       "title": "Contrato de Venta a Plazos",
@@ -720,7 +733,12 @@
       "filed": "Archivado",
       "and": "y",
       "walkthroughNav": "Pasos de la venta",
-      "paperworkNav": "Papeles"
+      "paperworkNav": "Papeles",
+      "likelyAnswer": "La respuesta probable",
+      "search": "Buscar",
+      "useTyped": "Usar {value}",
+      "done": "Listo",
+      "another": "Otro"
     },
     "rail": {
       "home": "Inicio",
@@ -837,7 +855,7 @@
         },
         "buyerLicenseState": {
           "question": "¿Qué estado emitió su licencia?",
-          "note": "Dos letras, como aparece en la tarjeta."
+          "note": "Como aparece en la tarjeta."
         },
         "paymentMethod": {
           "question": "¿Cómo pagan hoy?",
@@ -894,7 +912,81 @@
         },
         "warrantyDuration": {
           "question": "¿Cuánto dura la garantía?",
-          "note": "Tal como está escrito en el formulario de la ventanilla."
+          "note": "Como se lee en el formulario de la ventanilla, por ejemplo 30 días o 1,000 millas."
+        },
+        "tradeInVin": {
+          "question": "¿Cuál es el VIN del carro que entregan?",
+          "note": "Diecisiete caracteres, del tablero o la puerta. Casilla 36 del 130-U."
+        },
+        "warrantyKind": {
+          "question": "¿Garantía completa o limitada?",
+          "options": {
+            "limited": {
+              "label": "Garantía limitada"
+            },
+            "full": {
+              "label": "Garantía completa"
+            }
+          }
+        },
+        "warrantyLaborPercent": {
+          "question": "¿Qué parte de la mano de obra pagamos?",
+          "note": "Un porcentaje. La Guía del Comprador lo imprime junto a GARANTÍA LIMITADA."
+        },
+        "warrantyPartsPercent": {
+          "question": "¿Qué parte de las partes pagamos?",
+          "note": "Un porcentaje. La Guía del Comprador lo imprime junto a GARANTÍA LIMITADA."
+        },
+        "warrantySystems": {
+          "question": "¿Qué sistemas cubre?",
+          "note": "Los sistemas que lista la Guía del Comprador. Toque cada uno cubierto y luego Listo.",
+          "options": {
+            "frameBody": {
+              "label": "Chasis y carrocería"
+            },
+            "engine": {
+              "label": "Motor"
+            },
+            "transmission": {
+              "label": "Transmisión y eje de transmisión"
+            },
+            "differential": {
+              "label": "Diferencial"
+            },
+            "cooling": {
+              "label": "Sistema de enfriamiento"
+            },
+            "electrical": {
+              "label": "Sistema eléctrico"
+            },
+            "fuel": {
+              "label": "Sistema de combustible"
+            },
+            "accessories": {
+              "label": "Accesorios"
+            },
+            "brakes": {
+              "label": "Sistema de frenos"
+            },
+            "airBags": {
+              "label": "Bolsas de aire"
+            },
+            "steering": {
+              "label": "Sistema de dirección"
+            },
+            "suspension": {
+              "label": "Sistema de suspensión"
+            },
+            "tires": {
+              "label": "Llantas"
+            },
+            "wheels": {
+              "label": "Rines"
+            },
+            "exhaust": {
+              "label": "Sistema de escape"
+            }
+          }
         }
       },
       "form130U": {
@@ -934,6 +1026,26 @@
         "carryingCapacity": {
           "question": "¿Cuál es la capacidad de carga?",
           "note": "Solo camionetas y vanes. El GVWR del marco de la puerta menos el peso vacío, o la cifra del propio comprador."
+        },
+        "businessName": {
+          "question": "¿Cuál es el nombre legal del negocio?",
+          "note": "Como está registrado. La casilla 16 lo imprime como solicitante."
+        },
+        "businessFein": {
+          "question": "¿Cuál es el FEIN del negocio?",
+          "note": "Nueve dígitos. La casilla 14 lo imprime en lugar de un número de licencia."
+        },
+        "renewalReminders": {
+          "question": "¿Les enviamos recordatorios de renovación por correo?",
+          "note": "Casilla 27 del formulario. El estado los envía al correo de la casilla 26.",
+          "options": {
+            "yes": {
+              "label": "Sí, enviar recordatorios"
+            },
+            "no": {
+              "label": "No"
+            }
+          }
         }
       },
       "financing": {
@@ -959,10 +1071,22 @@
         },
         "apr": {
           "question": "¿Cuál es la tasa?",
-          "note": "Ajustada al tope legal de este carro."
+          "note": "Ajustada al tope legal de este carro.",
+          "other": {
+            "label": "Otra tasa"
+          }
         },
         "numberOfPayments": {
-          "question": "¿Cuántos pagos?"
+          "question": "¿Cuántos pagos?",
+          "options": {
+            "36": {
+              "label": "36 pagos",
+              "gloss": "El plazo predeterminado"
+            }
+          },
+          "other": {
+            "label": "Otro número"
+          }
         },
         "paymentFrequency": {
           "question": "¿Cada cuánto pagan?",
@@ -979,7 +1103,77 @@
           }
         },
         "firstPaymentDate": {
-          "question": "¿Cuándo es el primer pago?"
+          "question": "¿Cuándo es el primer pago?",
+          "other": {
+            "label": "Otra fecha"
+          }
+        }
+      },
+      "templates": {
+        "inOneWeek": "En una semana",
+        "inTwoWeeks": "En dos semanas",
+        "inFourWeeks": "En cuatro semanas",
+        "inOneMonth": "En un mes",
+        "inTwoMonths": "En dos meses",
+        "startingRate": "La tasa inicial"
+      },
+      "salvageBillOfSale": {
+        "odometerStatus": {
+          "question": "¿Ese es el millaje real?",
+          "options": {
+            "actual": {
+              "label": "Sí, ese es el millaje real"
+            },
+            "exceeds": {
+              "label": "El medidor ya dio la vuelta",
+              "gloss": "Pasó el límite del medidor"
+            },
+            "not_actual": {
+              "label": "No, no es el millaje real",
+              "gloss": "Aviso de millaje incorrecto"
+            }
+          }
+        },
+        "buyerLicenseState": {
+          "question": "¿Qué estado emitió su licencia?",
+          "note": "Como aparece en la tarjeta."
+        },
+        "paymentMethod": {
+          "question": "¿Cómo pagan hoy?",
+          "options": {
+            "Cash": {
+              "label": "Efectivo"
+            },
+            "Zelle": {
+              "label": "Zelle"
+            },
+            "CashApp": {
+              "label": "Cash App"
+            },
+            "Venmo": {
+              "label": "Venmo"
+            },
+            "Card": {
+              "label": "Tarjeta"
+            },
+            "Check": {
+              "label": "Cheque"
+            }
+          }
+        },
+        "howLeaving": {
+          "question": "¿Cómo sale el carro del lote?",
+          "options": {
+            "towTruck": {
+              "label": "En grúa"
+            },
+            "trailer": {
+              "label": "En remolque"
+            },
+            "flatbed": {
+              "label": "En plataforma"
+            }
+          }
         }
       }
     },
@@ -1016,7 +1210,15 @@
         "paymentFrequency": "Se paga",
         "firstPaymentDate": "Primer pago",
         "quotedRegistrationAmount": "Impuestos y cargos",
-        "howLeaving": "Sale del lote"
+        "howLeaving": "Sale del lote",
+        "tradeInVin": "VIN del trade-in",
+        "warrantyKind": "Tipo de garantía",
+        "warrantyLaborPercent": "Mano de obra que pagamos",
+        "warrantyPartsPercent": "Partes que pagamos",
+        "warrantySystems": "Sistemas cubiertos",
+        "businessName": "Negocio",
+        "businessFein": "FEIN",
+        "renewalReminders": "Recordatorios de renovación"
       },
       "values": {
         "payment": "El monto del pago",
@@ -1034,7 +1236,11 @@
         "registrationOnly": "Solo el registro",
         "towTruck": "En grúa",
         "trailer": "En remolque",
-        "flatbed": "En plataforma"
+        "flatbed": "En plataforma",
+        "limited": "Garantía limitada",
+        "full": "Garantía completa",
+        "Individual": "Una persona",
+        "Business": "Un negocio"
       },
       "money": {
         "car": "Carro",
@@ -1099,7 +1305,39 @@
       "governmentFeesInvalid": "Los cargos del gobierno de esta venta no son cifras que registró el sistema. Regístrelos de nuevo desde webDEALER.",
       "governmentFeesCountyChanged": "El condado del comprador en este formulario no es el condado para el que se registraron los cargos del gobierno. Registre los cargos del gobierno de nuevo desde webDEALER para el condado del comprador.",
       "chapter345Vehicle": "Los documentos de Handle A Sale son para autos, camionetas, SUV y vans (Tex. Fin. Code cap. 348). Una motocicleta, moto, ATV, vehículo recreativo remolcable o embarcación se vende bajo el cap. 345, con un cargo documental de $200.00 como máximo que ninguna presentación aumenta, y su propio aviso (Fin. Code §345.251; 7 TAC §86.201). Haga los documentos de esta venta a mano.",
-      "recordGovernmentFees": "Registrar los cargos del gobierno"
+      "recordGovernmentFees": "Registrar los cargos del gobierno",
+      "page": {
+        "heading": "Página {n} de {total}",
+        "what": "Lo que imprimirá",
+        "missing": "Falta",
+        "fixIt": "Corregir",
+        "change": "Cambiar",
+        "blank": "En blanco",
+        "sources": {
+          "dealer": "De su concesionario",
+          "fees": "De sus cargos",
+          "vehicle": "Del carro",
+          "buyer": "De la licencia",
+          "coBuyer": "Del co-comprador",
+          "answer": "Usted respondió",
+          "computed": "Calculado",
+          "date": "Fecha de venta",
+          "signature": "Firma",
+          "static": "Impreso por el formulario",
+          "none": "No aplica a esta venta"
+        },
+        "statuses": {
+          "ink": "Para firmar con tinta",
+          "office": "Para la oficina de impuestos",
+          "marker": "Sin definir por el dueño",
+          "blankAllowed": "En blanco"
+        }
+      },
+      "mustAnswer": "Responda esto primero; es una declaración que el documento jura y nunca se llena por usted:",
+      "termsUnsolved": "Los términos del pagaré no están calculados. Responda el pago, el número de pagos o la tasa para que el contrato tenga calendario de pagos.",
+      "rebuiltDisclosureFirst": "Archive primero la Divulgación de Título Reconstruido. Texas la exige firmada antes de la carta de venta.",
+      "poaInstrument": "El poder notarial archivado debe ser el que permite el año del modelo de este carro. Revise el año del vehículo y abra la revisión de nuevo.",
+      "fieldMissing": "Este documento imprimiría en blanco donde la venta debe decir algo. Complete esto primero:"
     },
     "packet": {
       "title": "Los papeles.",

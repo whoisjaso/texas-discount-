@@ -18,6 +18,7 @@ import {
   type PDFImage,
   type PDFTextField,
 } from 'pdf-lib';
+import { fontFor, stringValues } from '@/lib/pdf/unicode-text';
 import { fillDealerPrintedName } from '@/lib/forms/dealer-printed-name-field';
 import { embedImageDataUrl, fitWithin } from '@/lib/documents/embed-image';
 import { readFile } from 'fs/promises';
@@ -426,7 +427,12 @@ export async function fill130U(
   const templateBytes = await readFile(PDF_PATH);
   const pdfDoc = await PDFDocument.load(templateBytes);
   const form = pdfDoc.getForm();
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  // Helvetica, unless a name or address has a letter it cannot print.
+  const { font, unicode } = await fontFor(
+    pdfDoc,
+    await pdfDoc.embedFont(StandardFonts.Helvetica),
+    stringValues(data as unknown as Record<string, unknown>),
+  );
 
   /*
     Existing direct callers use the filing sheet alone. Original-form
@@ -506,6 +512,8 @@ export async function fill130U(
   await drawApplicantSignature(pdfDoc, extras.buyerSignatureDataUrl);
   await appendIdPage(pdfDoc, font, extras.idPhotoDataUrl, data);
 
+  // Any field still waiting for an appearance is drawn in the same face.
+  if (unicode) form.updateFieldAppearances(font);
   const filledPdf = await pdfDoc.save();
   return filledPdf;
 }

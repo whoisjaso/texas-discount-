@@ -6,8 +6,7 @@ import {
   documentStateFor,
   isDocumentDone,
   hasRegistrationRecord,
-  paperworkHref,
-  saleDocumentHref,
+  saleRowHref,
   vehicleLabel,
   type SaleDetail,
   type SaleDocumentEntry,
@@ -88,11 +87,13 @@ function DocumentRow({
   entry,
   state,
   dealId,
+  vehicleId,
   required,
 }: {
   entry: SaleDocumentEntry;
   state: SaleDocumentState;
   dealId: string;
+  vehicleId: string | null;
   /** Owed on this sale, so the registry's "optional" is not this row's word. */
   required: boolean;
 }) {
@@ -104,7 +105,7 @@ function DocumentRow({
           holds the answers. The templates page is the fallback for the one
           document the corridor cannot ask for, and nothing else. */}
       <Link
-        href={paperworkHref(entry, dealId) ?? saleDocumentHref(entry, dealId)}
+        href={saleRowHref(entry, dealId, vehicleId)}
         className="ed-doc-row group"
       >
         <span className="ed-doc-mark" data-state={done ? "done" : "open"}>
@@ -121,7 +122,7 @@ function DocumentRow({
           <span className="ed-doc-gloss">{entry.gloss}</span>
         </span>
 
-        <span className="ed-doc-state">{describeDocumentState(entry, state)}</span>
+        <span className="ed-doc-state">{describeDocumentState(entry, state, required)}</span>
 
         <ArrowRight
           size={18}
@@ -331,6 +332,7 @@ export default function SaleDetailView({
               entry={entry}
               state={documentStateFor(entry, sale.documents)}
               dealId={sale.id}
+              vehicleId={sale.vehicle?.id ?? null}
               required={Boolean(entry.documentType && requiredTypes.includes(entry.documentType))}
             />
           ))}

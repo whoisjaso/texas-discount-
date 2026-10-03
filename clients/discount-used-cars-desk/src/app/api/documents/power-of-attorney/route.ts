@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getDocumentPrefill } from "@/lib/admin/document-prefill";
+import { getSaleDetail } from "@/lib/admin/sale-desk";
+import { poaFieldsFromSale, type PoaFields } from "@/lib/documents/poa-fields";
+import { businessDateToday } from "@/lib/documents/us-date";
 import type { AamvaAddress, StoredName } from "@/lib/sales/buyer-id";
 import {
   fillPowerOfAttorney,
@@ -81,7 +84,27 @@ export async function GET(req: NextRequest) {
   let prefillNameParts: StoredName | undefined;
   let prefillAddressParts: AamvaAddress | undefined;
 
-  if (dealId || customerId) {
+  /*
+    On a sale, every box comes from the one builder the review screen reads
+    (documents/poa-fields.ts): the sale's plate, the street alone in the
+    street box, the 130-U's county, the dealership's legal name as grantee,
+    and a printed name built from the same parts as the name boxes.
+  */
+  let fromSale: PoaFields | null = null;
+  if (dealId) {
+    try {
+      const sale = await getSaleDetail(dealId);
+      if (sale) fromSale = poaFieldsFromSale(sale);
+    } catch (error) {
+      console.error("[power-of-attorney] sale read failed:", error);
+      return NextResponse.json(
+        { error: "Could not load the deal for this power of attorney." },
+        { status: 502 },
+      );
+    }
+  }
+
+  if (!fromSale && (dealId || customerId)) {
     try {
       const prefill = await getDocumentPrefill({ dealId, customerId });
       const v = prefill.vehiclePrefill;
@@ -107,6 +130,30 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  if (fromSale) {
+    prefillVin = fromSale.vin || undefined;
+    prefillYear = fromSale.year || undefined;
+    prefillMake = fromSale.make || undefined;
+    prefillModel = fromSale.model || undefined;
+    prefillBody = fromSale.bodyStyle || undefined;
+    prefillPlate = fromSale.licensePlate || undefined;
+    prefillName = fromSale.grantorName || undefined;
+    prefillAddress = fromSale.grantorAddress || undefined;
+    prefillNameParts = {
+      first: fromSale.grantorNameParts.first ?? null,
+      middle: fromSale.grantorNameParts.middle ?? null,
+      last: fromSale.grantorNameParts.last ?? null,
+      suffix: fromSale.grantorNameParts.suffix ?? null,
+    };
+    prefillAddressParts = {
+      street: fromSale.grantorAddress || null,
+      city: fromSale.grantorCity || null,
+      state: fromSale.grantorState || null,
+      postal: fromSale.grantorZip || null,
+      county: fromSale.grantorCounty || null,
+    };
+  }
+
   const vin = param(req, "vin") ?? prefillVin;
   const grantorName = param(req, "grantorName") ?? prefillName;
 
@@ -119,9 +166,10 @@ export async function GET(req: NextRequest) {
     "Check This First" banner puts that judgment on a person.
   */
   const yearValue = Number(param(req, "year") ?? prefillYear);
+  // The age test runs on the dealership's calendar, as every date on paper does.
   const eligible = isEligibleForPlainPoa(
     Number.isFinite(yearValue) ? yearValue : null,
-    new Date().getFullYear(),
+    Number(businessDateToday().slice(0, 4)),
   );
   if (eligible === false) {
     return NextResponse.json({ error: VTR_271_RESTRICTION }, { status: 409 });

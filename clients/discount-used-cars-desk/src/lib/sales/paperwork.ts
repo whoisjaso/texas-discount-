@@ -26,6 +26,9 @@ import {
   affixedEmptyWeight,
   type EmptyWeightContext,
 } from "@/lib/vehicles/empty-weight/on-the-sale";
+import { factById, ownedFacts, texasCountyForCity, type DealFact } from "@/lib/sales/deal-facts";
+import { askOrderFor, fieldMapFor } from "@/lib/documents/field-maps";
+import { factsRead } from "@/lib/documents/field-maps/types";
 
 /**
  * The paperwork, asked one question at a time, on the sale.
@@ -53,13 +56,33 @@ import {
  */
 
 /** What kind of answer a question takes, which decides what is drawn. */
-export type PaperworkKind = "choice" | "money" | "number" | "text" | "date";
+export type PaperworkKind =
+  | "choice"
+  | "money"
+  | "number"
+  | "text"
+  | "date"
+  /** A searchable tap list: the states, the Texas counties. */
+  | "list"
+  /** Several taps, then Done; stored comma-separated. */
+  | "multi"
+  /** Dates worked out from the deal, as taps, with "Another Date" for the rest. */
+  | "dateChoice"
+  /** Seventeen characters read off a car. */
+  | "vin";
 
 export type PaperworkOption = {
   value: string;
   label: string;
   /** The one line under the label. Omitted when the label says it all. */
   gloss?: string;
+  /**
+   * A label worked out from the deal (a date, a rate) names its words here,
+   * so the Spanish screen says the same thing: funnel.paperwork.templates.
+   */
+  template?: string;
+  /** The same, for the gloss under the label (the house rate's "starting rate"). */
+  glossTemplate?: string;
 };
 
 export type PaperworkQuestion = {
@@ -70,6 +93,13 @@ export type PaperworkQuestion = {
   kind: PaperworkKind;
   /** Choices, for a choice question. */
   options?: PaperworkOption[];
+  /** The list a "list" question picks from. */
+  list?: "usStates" | "texasCounties" | "bodyStyles";
+  /**
+   * A choice question whose answer can also be something not on the list:
+   * the last card opens a box of this kind on the same screen.
+   */
+  other?: { label: string; kind: "number" | "money" | "text" | "date" };
   /**
    * One sentence, only when the question cannot be answered without it. Most
    * questions here do not have one, and that is the target.
@@ -86,12 +116,8 @@ export type PaperworkQuestion = {
   /**
    * Whether "not applicable" is a real answer here.
    *
-   * Most questions have an answer on every deal they appear on. A few are
-   * asked of a class of vehicle and still do not apply to every member of
-   * it: a carrying capacity is on the door jamb of a work truck and on no
-   * door of a family SUV that decodes as a truck. The owner asked for the
-   * way out. Answering "not applicable" stores an empty answer, which the
-   * document prints as a blank box, which is what the state form expects.
+   * Answering "not applicable" stores an empty answer, which the document
+   * prints as a blank box, which is what the state form expects.
    */
   optional?: boolean;
 };
@@ -101,23 +127,27 @@ export type PaperworkQuestion = {
  *
  * `applies` is a function, and a function cannot cross into a client
  * component: React refuses to serialise it and the screen becomes a server
- * render error with the message hidden in production. That is not a
- * hypothetical. Every conditional question in this file crashed its own screen
- * until this existed, and the first one anybody reached was the 130-U's
- * carrying capacity, on a truck.
+ * render error with the message hidden in production. Every conditional
+ * question in this file crashed its own screen until this existed.
  *
- * Deciding which questions exist is the server's job and is already done by
- * the time one is rendered, so the client never needs the predicate.
+ * Deciding which questions exist, and which options a worked-out choice
+ * offers (a date, the house rate), is the server's job and is done by the
+ * time one is rendered, so the client never needs a predicate.
  */
 export type AskedQuestion = Omit<PaperworkQuestion, "applies">;
 
-/** Drop the parts that only the server can use. */
-export function asked(question: PaperworkQuestion): AskedQuestion {
+/** Drop the parts that only the server can use, resolving worked-out options. */
+export function asked(question: PaperworkQuestion, context?: PaperworkContext): AskedQuestion {
+  const fact = question as Partial<DealFact>;
+  const options =
+    fact.dynamicOptions && context ? fact.dynamicOptions(context) : question.options;
   return {
     key: question.key,
     question: question.question,
     kind: question.kind,
-    ...(question.options ? { options: question.options } : {}),
+    ...(options ? { options } : {}),
+    ...(question.list ? { list: question.list } : {}),
+    ...(question.other ? { other: question.other } : {}),
     ...(question.note ? { note: question.note } : {}),
     ...(question.optional ? { optional: true } : {}),
   };
@@ -129,61 +159,41 @@ export type PaperworkContext = {
   /** Body style off the vehicle row, lowercased. Empty when unknown. */
   bodyStyle: string;
   /**
-   * The two letters the intake screen already captured, when it did.
-   *
-   * A question whose answer the deal already holds is not a question. This is
-   * the one that proved it: the picker on the intake screen collected it and
-   * the bill of sale asked for it again one screen later.
+   * The issuing state the intake screen already captured, when it did. A
+   * question whose answer the deal already holds is not a question.
    */
   licenceState: string;
+  /** The kind of photo ID the intake recorded; null on older records (a licence). */
+  idKind?: string | null;
   /**
    * What the money step recorded as crossing the desk today, in dollars.
-   *
    * Null when the money step has not been answered. On a buy-here-pay-here
-   * deal this figure and the financing contract's down payment are the same
-   * dollars, and the walkthrough caught them being asked twice and stored
-   * twice: the guide asked what the buyer is paying, then the contract asked
-   * how much they are putting down, and nothing connected the answers.
+   * deal this is the financing contract's down payment: one fact, asked once.
    */
   paidToday: number | null;
-  /**
-   * The buyer's confirmed mailing city, for the county question.
-   *
-   * Nearly every Texas deal's county is a lookup away from the city the
-   * mailing address already confirmed, and the 130-U was asking it cold.
-   */
+  /** The buyer's confirmed mailing city, for the county's starting value. */
   buyerCity: string;
   /**
-   * The county the operator typed at intake, when they typed one.
-   *
-   * This exists because guessing was wrong. Intake asks for the county, and
-   * the answer used to be dropped when the mailing address was read back, so
-   * the 130-U fell through to deriving it from the city. A buyer who lives
-   * over a county line from their post town got the wrong box filled from an
-   * answer they had already given correctly.
+   * The county this document starts at: the intake's, or one looked up from
+   * the mailing address (`resolveCounty`). A starting value, not an answer.
    */
   buyerCounty: string;
   /**
-   * The vehicle row's `weight_lbs`, as callers have always passed it.
-   *
-   * Read by nothing that decides box 11 any more: a weight with no recorded
-   * source is shown on the empty-weight screen and never defaulted, because
-   * a default is filed unseen. `emptyWeight` below is what decides.
+   * The county the operator typed at intake, when they typed one. The 130-U
+   * does not ask it again: the review reads it back with Change.
    */
+  intakeCounty?: string;
+  /** The buyer's email, for the 130-U box 27 question (asked only with one). */
+  buyerEmail?: string;
+  /** The contract's date (the business date), for the first-payment taps. */
+  contractDate?: string;
+  /** The vehicle row's `weight_lbs`, as callers have always passed it. */
   vehicleWeight?: number | null;
-  /**
-   * Box 11 on this sale: a document figure on the vehicle, an estimate with
-   * its source, or a legacy figure (empty-weight/on-the-sale.ts). A document
-   * on file skips the question and is affixed with its source; an estimate
-   * is only ever an answer once a person confirms it.
-   */
+  /** Box 11 on this sale (empty-weight/on-the-sale.ts). */
   emptyWeight?: EmptyWeightContext | null;
   /** A question the review's Change link reopened, e.g. "emptyWeight". */
   reopen?: string;
-  /**
-   * The whole deal in dollars, off the money step, for the note's principal.
-   * Null until the money step is answered.
-   */
+  /** The whole deal in dollars, off the money step, for the note's principal. */
   dealTotal?: number | null;
   /** The car's model year, for the rate ceiling's vehicle class. */
   vehicleYear?: number | null;
@@ -191,244 +201,14 @@ export type PaperworkContext = {
   saleYear?: number;
   /** Answers already given on this document. */
   answers: Record<string, string>;
+  /**
+   * Every document's answers on the deal (`step_data.paperwork`), so a page
+   * that prints another document's fact (the 130-U's box 10 is the bill of
+   * sale's mileage statement) reads that answer instead of asking again.
+   * Absent: only this document's own facts are resolved.
+   */
+  allAnswers?: Record<string, Record<string, string>>;
 };
-
-/**
- * How the odometer reading is qualified.
- *
- * Federal law requires this on transfer and there are exactly three answers.
- * It is asked first because it is the only one that cannot be inferred from
- * anything: the number is on the dash, but whether it is the true mileage is
- * a judgement about the car's history.
- */
-const ODOMETER: PaperworkOption[] = [
-  { value: "actual", label: "Yes, That Is The Real Mileage" },
-  { value: "exceeds", label: "It Has Rolled Over", gloss: "Past the meter's limit" },
-  { value: "not_actual", label: "No, Not The Real Mileage", gloss: "Warranty of odometer discrepancy" },
-];
-
-/**
- * Where post goes is a state; where the licence came from is another.
- *
- * Asked only when the intake screen did not already answer it. It has a picker
- * for exactly this, and the answer was being collected there and then dropped
- * before it reached the deal, so this screen asked a second time one screen
- * later. The barcode cannot supply it either: AAMVA has no issuing-state
- * element, which is why every licence was otherwise filed as Texas and looked
- * right on the form.
- */
-const LICENCE_STATE: PaperworkQuestion = {
-  key: "buyerLicenseState",
-  question: "Which State Issued Their Licence?",
-  kind: "text",
-  note: "Two letters, from the card itself.",
-  applies: ({ licenceState }) => !licenceState,
-};
-
-/**
- * How the money actually arrived.
- *
- * Financing is not here. By the time this is asked the funding question has
- * already been answered, so offering it again invites an answer that
- * contradicts the deal. What is left is the ways cash actually turns up at a
- * desk in this business.
- */
-const PAYMENT: PaperworkOption[] = [
-  { value: "Cash", label: "Cash" },
-  { value: "Zelle", label: "Zelle" },
-  { value: "CashApp", label: "Cash App" },
-  { value: "Venmo", label: "Venmo" },
-  { value: "Card", label: "Card" },
-  { value: "Check", label: "Check" },
-];
-
-const BILL_OF_SALE: PaperworkQuestion[] = [
-  {
-    key: "odometerStatus",
-    question: "Is That The Real Mileage?",
-    kind: "choice",
-    options: ODOMETER,
-  },
-  LICENCE_STATE,
-  {
-    key: "paymentMethod",
-    question: "How Are They Paying Today?",
-    kind: "choice",
-    options: PAYMENT,
-    /*
-      Only a cash deal asks how the money arrived. On buy here pay here the
-      answer is the financing contract, already given. On a bank deal the
-      money arrives from the lender, and offering Cash or Venmo here is how a
-      lender-funded bill of sale printed "Paying With: Cash": the walkthrough
-      persona picked the least-wrong option because every option was wrong.
-      Both those deals write their method from the funding answer instead.
-    */
-    applies: ({ funding }) => funding !== "inHouse" && funding !== "lender",
-  },
-  {
-    key: "tradeIn",
-    question: "Is There A Trade-In?",
-    kind: "choice",
-    options: [
-      { value: "no", label: "No" },
-      { value: "yes", label: "Yes" },
-    ],
-  },
-  {
-    key: "tradeInDescription",
-    question: "What Are They Trading In?",
-    kind: "text",
-    note: "Year, make and model.",
-    applies: ({ answers }) => answers.tradeIn === "yes",
-  },
-  {
-    key: "tradeInAllowance",
-    question: "What Are We Allowing For It?",
-    kind: "money",
-    applies: ({ answers }) => answers.tradeIn === "yes",
-  },
-  {
-    key: "conditionType",
-    question: "Sold As-Is Or With A Warranty?",
-    kind: "choice",
-    options: [
-      { value: "as_is", label: "As-Is", gloss: "No dealer warranty" },
-      { value: "warranty", label: "With A Warranty" },
-    ],
-  },
-  {
-    key: "warrantyDuration",
-    question: "How Long Is The Warranty?",
-    kind: "text",
-    note: "However it is written on the window form.",
-    applies: ({ answers }) => answers.conditionType === "warranty",
-  },
-];
-
-const FORM_130U: PaperworkQuestion[] = [
-  {
-    key: "countyOfResidence",
-    question: "Which County Do They Live In?",
-    kind: "text",
-    // This has exactly one automatic source, the address autocomplete, and it
-    // vanishes the moment somebody types the address instead of picking a
-    // suggestion. Nothing on any screen looks wrong when it is blank.
-    note: "Field 19 on the form.",
-  },
-  {
-    key: "applicationType",
-    question: "What Are We Applying For?",
-    kind: "choice",
-    options: [
-      { value: "titleAndRegistration", label: "Title And Registration" },
-      { value: "titleOnly", label: "Title Only" },
-      { value: "registrationOnly", label: "Registration Only" },
-    ],
-  },
-  {
-    key: "applicantType",
-    question: "Is The Buyer A Person Or A Business?",
-    kind: "choice",
-    options: [
-      { value: "Individual", label: "A Person" },
-      { value: "Business", label: "A Business" },
-    ],
-  },
-  {
-    key: "emptyWeight",
-    question: "What Is The Empty Weight?",
-    kind: "number",
-    /*
-      Box 11. The state classes the registration fee by it, and the county
-      sends an application back without it. It is on the Texas title (WEIGHT)
-      and on the out-of-state title; the door jamb sticker carries the GVWR,
-      which is a different figure.
-
-      Skipped when the vehicle already holds a document figure (a title, an
-      MCO, a weight certificate, KBB or JD Power), which is affixed with its
-      source. Otherwise the screen offers a sourced estimate for one tap, or
-      asks for the figure and the document it came from. Never a silent
-      default: an estimate is an answer only once a person confirms it, and
-      "Change" on the review reopens this question.
-    */
-    note: "In pounds. Box 11; it is on the Texas title (WEIGHT) or the out-of-state title. The door jamb shows GVWR, not the empty weight.",
-    applies: (c) => !c.emptyWeight?.onFile || c.answers.emptyWeight !== undefined || c.reopen === "emptyWeight",
-  },
-  {
-    key: "carryingCapacity",
-    question: "What Is The Carrying Capacity?",
-    kind: "text",
-    // A truck starts at the TxDMV minimum for its box 11 (Registration Manual
-    // Table 2-1), labelled as that, on the screen only (the page passes it);
-    // never through paperworkDefault, so it is never filed unseen.
-    note: "Trucks and vans only. The GVWR on the door jamb less the empty weight, or the buyer's own figure.",
-    // No source anywhere in the product, and it only matters for one class of
-    // vehicle, so it is asked only of that class rather than of everybody.
-    applies: ({ bodyStyle }) =>
-      /truck|van|pickup|cab/.test(bodyStyle),
-    // And not every member of that class has one to give: a crossover that
-    // decodes as a truck has no rated capacity on any door.
-    optional: true,
-  },
-];
-
-/**
- * The note, as it is actually agreed at a desk.
- *
- * A dealer and a buyer settle on two of three things: the payment, how many
- * payments, or the rate. This used to ask for the rate and the count and
- * derive the payment, which is the one order nobody at a desk talks in.
- * "Four-twenty a month" is what gets said; "18.00% over 30" is what gets
- * printed. So it asks what was agreed and works out the rest, with the rate
- * held to the ceiling Texas puts on a note for this car (`terms.ts`).
- */
-const FINANCING: PaperworkQuestion[] = [
-  { key: "downPayment", question: "How Much Are They Putting Down?", kind: "money" },
-  {
-    key: "paymentFrequency",
-    question: "How Often Do They Pay?",
-    kind: "choice",
-    options: [
-      { value: "Weekly", label: "Weekly" },
-      { value: "Bi-weekly", label: "Every Two Weeks" },
-      { value: "Monthly", label: "Monthly" },
-    ],
-  },
-  {
-    key: "termsBy",
-    question: "What Did You Agree On?",
-    kind: "choice",
-    // Each option names the figure itself. "The Payment" read as a verb on
-    // the screen; a button is chosen for what it is, not what it does.
-    options: [
-      { value: "payment", label: "The Payment Amount" },
-      { value: "count", label: "The Number Of Payments" },
-      { value: "both", label: "Both Of Those" },
-    ],
-  },
-  {
-    key: "paymentAmount",
-    question: "How Much Each Payment?",
-    kind: "money",
-    applies: ({ answers }) => answers.termsBy === "payment" || answers.termsBy === "both",
-  },
-  {
-    key: "numberOfPayments",
-    question: "How Many Payments?",
-    kind: "number",
-    applies: ({ answers }) => answers.termsBy === "count" || answers.termsBy === "both",
-  },
-  {
-    key: "apr",
-    question: "What Is The Rate?",
-    kind: "number",
-    note: "Held to this car's legal ceiling.",
-    // When both the payment and the count were agreed, the rate is what they
-    // imply, and asking for a third figure would invite a contradiction.
-    applies: ({ answers }) => answers.termsBy !== "both",
-  },
-  { key: "firstPaymentDate", question: "When Is The First Payment Due?", kind: "date" },
-];
 
 function frequencyOf(value: string | undefined): Frequency {
   return value === "Weekly" || value === "Bi-weekly" ? value : "Monthly";
@@ -479,116 +259,113 @@ export function financingTerms(
 }
 
 /**
- * Nothing, and that is the point.
- *
- * This form used to ask what we quoted the buyer for registration, typed in by
- * hand. It is the one number on the form the buyer is agreeing to pay if the
- * filing comes back to us, and it was the one number nothing checked: a figure
- * typed here could disagree with the bill of sale sitting next to it on the
- * same desk, and the higher of the two is the one somebody would argue about.
- *
- * It is not a quote. It is tax, title, registration and the doc fee, which the
- * money step has already worked out from the price on the car, so it is filled
- * in rather than asked.
- */
-const VEHICLE_RESPONSIBILITY: PaperworkQuestion[] = [];
-
-/**
- * The questions, by `document_agreements` type name.
- *
- * Keyed on the stored type rather than on a slug, so the packet, the guide and
- * this file cannot drift into disagreeing about what a document is called.
- */
-/**
- * The salvage bill of sale asks less than the ordinary one.
- *
- * The odometer question stays: federal disclosure is on transfer, salvage
- * or not. How the money arrived stays on a cash deal. Nothing about a
- * warranty: a salvage vehicle sold to be towed away is sold as is by its
- * nature, and offering "with a warranty" would be offering to warrant a
- * car we are telling the buyer cannot be driven. Nothing about a trade-in
- * either; a buyer towing a salvage car home is not trading one in.
- */
-const SALVAGE_BILL_OF_SALE: PaperworkQuestion[] = [
-  {
-    key: "odometerStatus",
-    question: "Is That The Real Mileage?",
-    kind: "choice",
-    options: ODOMETER,
-  },
-  LICENCE_STATE,
-  {
-    key: "paymentMethod",
-    question: "How Are They Paying Today?",
-    kind: "choice",
-    options: PAYMENT,
-    applies: ({ funding }) => funding !== "inHouse" && funding !== "lender",
-  },
-  {
-    key: "howLeaving",
-    question: "How Is The Car Leaving The Lot?",
-    kind: "choice",
-    // Asked, not assumed, because the tow-away acknowledgment prints it and
-    // because "the buyer drove it off" is the one answer this path cannot
-    // accept: a salvage car on a public road is the promise of plates made
-    // with the keys instead of with words.
-    options: [
-      { value: "towTruck", label: "On A Tow Truck" },
-      { value: "trailer", label: "On A Trailer" },
-      { value: "flatbed", label: "On A Flatbed" },
-    ],
-  },
-];
-
-const QUESTIONS: Record<string, PaperworkQuestion[]> = {
-  billOfSale: BILL_OF_SALE,
-  form130U: FORM_130U,
-  financing: FINANCING,
-  vehicleResponsibility: VEHICLE_RESPONSIBILITY,
-  salvageBillOfSale: SALVAGE_BILL_OF_SALE,
-};
-
-/**
  * Documents the corridor carries with NO questions of their own.
  *
- * The power of attorney is the proof case: every field the VTR-271 needs —
- * grantor name, address, vehicle, VIN — is already on the deal, so the
- * corridor owes it a review screen and a filing, not a single question.
- * The owner's walkthrough said it plainly: don't send me to a separate
- * form page for facts the sale already holds.
+ * Every box on these is filled from the sale, so the corridor owes each a
+ * read-back of its page, a pad and a filing, and not a single question.
  */
-const REVIEW_ONLY = new Set([
+const REVIEW_ONLY_TYPES = new Set([
   "powerOfAttorney",
-  // Both acknowledgments are drawn entirely from the sale: the buyer, the
-  // vehicle, and the prescreen answer or the title status that put them in
-  // the packet. The corridor owes each a read-back, a pad and a filing.
   "insuranceAcknowledgment",
   "rebuiltDisclosure",
-  // The two tow-away sheets after the salvage bill of sale: everything on
-  // them is the sale's own facts and the bill's own answers.
   "towAwayAcknowledgment",
   "buyerResponsibilityStatement",
+  "vehicleResponsibility",
 ]);
+
+/** The documents whose questions this corridor asks, by `document_agreements` type. */
+const WALKED_TYPES = ["billOfSale", "form130U", "financing", "vehicleResponsibility", "salvageBillOfSale"];
 
 /** Whether this flow knows how to ask for (or review) a document at all. */
 export function hasPaperwork(documentType: string | undefined): boolean {
-  return Boolean(documentType && (QUESTIONS[documentType] || REVIEW_ONLY.has(documentType)));
+  return Boolean(
+    documentType && (WALKED_TYPES.includes(documentType) || REVIEW_ONLY_TYPES.has(documentType)),
+  );
+}
+
+/** The answers of another document on the deal, from the context. */
+function answersOf(context: PaperworkContext, owner: string): Record<string, string> {
+  return context.allAnswers?.[owner] ?? {};
+}
+
+/** A fact's own context: its owner's answers, whichever document asks it. */
+function contextFor(fact: DealFact, documentType: string, context: PaperworkContext): PaperworkContext {
+  if (fact.owner === documentType) return context;
+  return { ...context, answers: { ...answersOf(context, fact.owner), ...pick(context.answers, fact.key) } };
+}
+
+function pick(answers: Record<string, string>, key: string): Record<string, string> {
+  return answers[key] === undefined ? {} : { [key]: answers[key] };
+}
+
+/** Whether a fact exists on this deal, read in its owner's answers. */
+function factApplies(fact: DealFact, documentType: string, context: PaperworkContext): boolean {
+  return !fact.applies || fact.applies(contextFor(fact, documentType, context));
+}
+
+/** The value the deal already holds for a fact, when it holds one (never asked). */
+function knownValue(fact: DealFact, documentType: string, context: PaperworkContext): string | undefined {
+  if (!fact.known) return undefined;
+  if (context.reopen === fact.key) return undefined;
+  const value = fact.known(contextFor(fact, documentType, context));
+  return value === undefined || value === "" ? undefined : value;
+}
+
+/**
+ * The facts another document owns that this one's pages print and nobody
+ * has answered yet, with no starting value to fall back on (or one that may
+ * never be filed unseen). They are asked here, stored with their owner, and
+ * drop out of this list once answered: a fact is still asked once.
+ */
+function borrowedFacts(documentType: string, context: PaperworkContext): DealFact[] {
+  if (!context.allAnswers) return [];
+  const map = fieldMapFor(documentType);
+  if (!map) return [];
+  const out: DealFact[] = [];
+  for (const id of factsRead(map)) {
+    const fact = factById(id);
+    if (!fact || fact.owner === documentType || fact.owner.startsWith("guide:")) continue;
+    if (!factApplies(fact, documentType, context)) continue;
+    if (knownValue(fact, documentType, context) !== undefined) continue;
+    if (answersOf(context, fact.owner)[fact.key] !== undefined) continue;
+    if (fact.start && !fact.mustAnswer) continue;
+    out.push(fact);
+  }
+  return out;
 }
 
 /**
  * The questions this document asks on this deal, in order.
  *
- * Recomputed from the answers each time rather than fixed at the start, so a
- * Yes to "is there a trade-in" grows the follow-on questions in place and a
- * No never shows them. That means the count on screen moves when an answer
- * changes, which is honest: the work really did change.
+ * Derived from its pages: the facts it owns, in its map's ask order, that
+ * apply to this deal and that the deal does not already hold; then the
+ * facts its pages print that another document owns and nobody has answered.
+ * Recomputed from the answers each time, so a Yes to "is there a trade-in"
+ * grows the follow-on questions in place and a No never shows them.
  */
 export function paperworkQuestions(
   documentType: string,
   context: PaperworkContext,
 ): PaperworkQuestion[] {
-  const all = QUESTIONS[documentType] ?? [];
-  return all.filter((question) => !question.applies || question.applies(context));
+  const owned = askOrderFor(documentType)
+    .map((id) => factById(id))
+    .filter((fact): fact is DealFact => Boolean(fact) && fact!.owner === documentType)
+    .filter((fact) => factApplies(fact, documentType, context))
+    .filter((fact) => knownValue(fact, documentType, context) === undefined);
+  return [...owned, ...borrowedFacts(documentType, context)];
+}
+
+/** The fact a document's question key names: its own, or one it borrows. */
+export function questionFact(documentType: string, key: string): DealFact | undefined {
+  const own = ownedFacts(documentType).find((fact) => fact.key === key);
+  if (own) return own;
+  const map = fieldMapFor(documentType);
+  if (!map) return undefined;
+  for (const id of factsRead(map)) {
+    const fact = factById(id);
+    if (fact && fact.key === key && !fact.owner.startsWith("guide:")) return fact;
+  }
+  return undefined;
 }
 
 /** Where in the list a question sits, or -1 when it does not apply here. */
@@ -616,115 +393,91 @@ export function nextOpenQuestion(
 /**
  * What each question starts at, so most of them are a confirmation.
  *
- * These are not invented. The fee figures are the constants this codebase
- * already carries for Texas, and the rest are either the commonest answer or
- * a value read off the deal by the caller and passed in here.
- *
- * Worth knowing about the fees: those three constants existed but were only
- * ever reachable through the out-the-door calculator, so an ordinary bill of
- * sale printed a real Texas tax figure next to three fee lines of zero.
- * Offering them as the starting answer is what puts them on the paperwork.
+ * The fact's own starting value (`deal-facts.ts`): the commonest answer, or
+ * a value read off the deal. Kept as a function for the screens and the
+ * tests that have always asked it.
  */
 export function paperworkDefault(
   documentType: string,
   key: string,
   context: PaperworkContext,
 ): string | undefined {
-  if (documentType === "billOfSale") {
-    if (key === "odometerStatus") return "actual";
-    if (key === "conditionType") return "as_is";
-    if (key === "tradeIn") return "no";
-    if (key === "paymentMethod") return context.funding === "cash" ? "Cash" : undefined;
-  }
-  if (documentType === "salvageBillOfSale") {
-    if (key === "odometerStatus") return "actual";
-    if (key === "paymentMethod") return context.funding === "cash" ? "Cash" : undefined;
-    // No default for how it leaves: the desk says it, every time.
-  }
-  if (documentType === "form130U") {
-    if (key === "applicationType") return "titleAndRegistration";
-    if (key === "applicantType") return "Individual";
-    /*
-      The county, worked out from the city the mailing address already
-      confirmed. A default and not an answer: the screen still shows it and
-      the operator can change it, which covers the buyer who lives over a
-      county line from their post town. Cold-asking it was the 130-U's one
-      question with no starting point, on the deal's least famous fact.
-    */
-    if (key === "countyOfResidence") {
-      // What they said, then what the city implies. Never the other way round.
-      return context.buyerCounty.trim() || texasCountyForCity(context.buyerCity);
-    }
-    /*
-      Box 11 only from a document on file (a title, an MCO, a weight
-      certificate, KBB or JD Power), which already carries its source. An
-      estimate, or a weight on the row nobody recorded the source of, is
-      never a default: a default is filed unseen, and an estimate is filed
-      only once a person confirms it on the empty-weight screen.
-    */
-    if (key === "emptyWeight" && context.emptyWeight?.onFile) {
-      return String(context.emptyWeight.onFile.box11);
-    }
-  }
-  if (documentType === "financing") {
-    if (key === "numberOfPayments") return "36";
-    if (key === "paymentFrequency") return "Monthly";
-    // The house rate, which the solver holds to the car's ceiling.
-    if (key === "apr") return String(dealership.financing.defaultApr);
-    /*
-      The down payment is the money step's paid-today figure, already given.
-      The novice persona's walkthrough caught the same dollars being asked
-      twice and stored twice, with nothing connecting the answers: a $2,000
-      down payment typed on the money screen met an empty box here.
-    */
-    if (key === "downPayment" && context.paidToday !== null) {
-      return String(context.paidToday);
-    }
-  }
-  return undefined;
+  const fact = questionFact(documentType, key);
+  if (!fact) return undefined;
+  const known = knownValue(fact, documentType, context);
+  if (known !== undefined) return known;
+  return fact.start ? fact.start(contextFor(fact, documentType, context)) : undefined;
 }
 
 /**
- * What this document would file right now: the answers given, plus the
- * default for every question nobody has reached yet.
+ * What this document would file right now: the answers given, then what the
+ * deal already holds, then the starting value of every question nobody has
+ * reached yet, for every fact its pages print.
  *
- * `paperworkDefault` used to be read in exactly one place, as the starting
- * value of an input box, which made a default a thing the SCREEN knew and the
- * RECORD did not. Walk the corridor and it becomes an answer; preview or file
- * without walking it and the box on the paper is blank. The 130-U's county
- * was the visible casualty: intake asks for it, the deal stores it, the
- * default resolves it, and the printed form still had an empty county because
- * nobody had opened that one screen.
+ * The resolution happens once, here, and the review screen, the preview and
+ * the filing all read the same answer. A stored answer always wins, an empty
+ * string counts as unanswered (a box somebody cleared, not a choice), and:
  *
- * So the resolution happens once, here, and the review screen, the preview
- * and the filing all read the same answer. A stored answer always wins, an
- * empty string counts as unanswered (that is a box somebody cleared, not a
- * choice), and a question this deal does not ask contributes nothing.
+ *   - a fact that does not apply to this deal contributes nothing, and a
+ *     stored answer to it is dropped. A trade-in described before the
+ *     trade-in was answered No no longer prints a trade-in block;
+ *   - a mustAnswer fact (a sworn mileage statement, how a salvage car
+ *     leaves, the first payment date) is never filled from its start: it
+ *     files only from an answer, and the filing refuses without one.
  *
  * Deliberately NOT used for navigation. `nextOpenQuestion` still reads the
- * raw answers, because a question whose default is filled in is a question
- * still worth showing somebody: the default is a starting point they can
- * change, and skipping to Review past four unasked questions would be the
- * corridor deciding it knows the deal better than the person selling the car.
+ * raw answers, because a question whose start is filled in is a question
+ * still worth showing somebody.
  */
 export function paperworkAnswers(
   documentType: string,
   context: PaperworkContext,
 ): Record<string, string> {
   const resolved: Record<string, string> = { ...context.answers };
-  for (const question of paperworkQuestions(documentType, context)) {
-    if ((resolved[question.key] ?? "").trim() !== "") continue;
-    const fallback = paperworkDefault(documentType, question.key, context);
-    if (fallback !== undefined && fallback !== "") resolved[question.key] = fallback;
+  const owned = ownedFacts(documentType);
+  for (const fact of owned) {
+    if (!factApplies(fact, documentType, context)) {
+      // A stale answer to a question this deal no longer asks never prints.
+      delete resolved[fact.key];
+      continue;
+    }
+    if ((resolved[fact.key] ?? "").trim() !== "") continue;
+    if (resolved[fact.key] === "" && fact.optional) continue;
+    const known = knownValue(fact, documentType, context);
+    if (known !== undefined) {
+      resolved[fact.key] = known;
+      continue;
+    }
+    if (fact.mustAnswer || !fact.start) continue;
+    const fallback = fact.start(context);
+    if (fallback !== undefined && fallback !== "") resolved[fact.key] = fallback;
   }
-  /*
-    The note's solved figures, filed as answers.
-
-    The contract prints a rate and a count and derives the payment from them,
-    so those two are what gets filed, whichever two things were actually
-    agreed. Writing them here means the review screen, the preview, the
-    filed document and the payment schedule all read the same three numbers.
-  */
+  // Another document's facts this one prints, read from their owner.
+  if (context.allAnswers) {
+    const map = fieldMapFor(documentType);
+    for (const id of map ? factsRead(map) : []) {
+      const fact = factById(id);
+      if (!fact || fact.owner === documentType || fact.owner.startsWith("guide:")) continue;
+      const own = contextFor(fact, documentType, context);
+      if (fact.applies && !fact.applies(own)) {
+        delete resolved[fact.key];
+        continue;
+      }
+      const stored = own.answers[fact.key];
+      if (stored !== undefined && (stored.trim() !== "" || fact.optional)) {
+        resolved[fact.key] = stored;
+        continue;
+      }
+      const known = knownValue(fact, documentType, context);
+      if (known !== undefined) {
+        resolved[fact.key] = known;
+        continue;
+      }
+      if (fact.mustAnswer || !fact.start) continue;
+      const fallback = fact.start(own);
+      if (fallback !== undefined && fallback !== "") resolved[fact.key] = fallback;
+    }
+  }
   /*
     Box 11 with the record of where it came from: the deal's own answer and
     its `_emptyWeight*` keys, or the vehicle's document figure when the
@@ -732,11 +485,16 @@ export function paperworkAnswers(
     read by the review and the filing and never listed as answers.
   */
   if (documentType === "form130U") {
-    // From the stored answers, not `resolved`: a default filled in above is
-    // not an answer anybody gave, and must not be recorded as one.
+    // From the stored answers, not `resolved`: a starting value filled in
+    // above is not an answer anybody gave, and must not be recorded as one.
     const affixed = affixedEmptyWeight(context.answers, context.emptyWeight);
     if (affixed) Object.assign(resolved, affixed);
   }
+  /*
+    The note's solved figures, filed as answers. The contract prints a rate
+    and a count and derives the payment from them, so those two are what
+    gets filed, whichever two things were actually agreed.
+  */
   if (documentType === "financing") {
     const terms = financingTerms(resolved, context);
     if (terms && !isProblem(terms)) {
@@ -759,79 +517,42 @@ export function paperworkAnswers(
 }
 
 /**
- * The county nearly every Texas deal is filed in, from the mailing city.
- *
- * The big cities and this lot's own metro, not all 254 counties: a table
- * covering most deals with certainty beats one covering all deals with
- * guesses. A city this table does not know returns undefined and the
- * question is simply asked, exactly as before.
+ * The facts a filing may not go without: a mustAnswer fact this document
+ * prints that applies and has no stored answer. The filing refuses them by
+ * name (`mustAnswer`); a start was never filed for one of these.
  */
-const TEXAS_CITY_COUNTY: Record<string, string> = {
-  houston: "Harris",
-  pasadena: "Harris",
-  baytown: "Harris",
-  "deer park": "Harris",
-  humble: "Harris",
-  katy: "Harris",
-  spring: "Harris",
-  tomball: "Harris",
-  cypress: "Harris",
-  "la porte": "Harris",
-  channelview: "Harris",
-  "sugar land": "Fort Bend",
-  richmond: "Fort Bend",
-  rosenberg: "Fort Bend",
-  "missouri city": "Fort Bend",
-  pearland: "Brazoria",
-  angleton: "Brazoria",
-  alvin: "Brazoria",
-  "league city": "Galveston",
-  galveston: "Galveston",
-  "texas city": "Galveston",
-  friendswood: "Galveston",
-  conroe: "Montgomery",
-  "the woodlands": "Montgomery",
-  "san antonio": "Bexar",
-  austin: "Travis",
-  "round rock": "Williamson",
-  georgetown: "Williamson",
-  dallas: "Dallas",
-  irving: "Dallas",
-  garland: "Dallas",
-  mesquite: "Dallas",
-  "grand prairie": "Dallas",
-  "fort worth": "Tarrant",
-  arlington: "Tarrant",
-  plano: "Collin",
-  mckinney: "Collin",
-  frisco: "Collin",
-  "el paso": "El Paso",
-  "corpus christi": "Nueces",
-  laredo: "Webb",
-  lubbock: "Lubbock",
-  amarillo: "Potter",
-  brownsville: "Cameron",
-  mcallen: "Hidalgo",
-  killeen: "Bell",
-  waco: "McLennan",
-  "wichita falls": "Wichita",
-  midland: "Midland",
-  odessa: "Ector",
-  beaumont: "Jefferson",
-  "port arthur": "Jefferson",
-  tyler: "Smith",
-  "college station": "Brazos",
-  bryan: "Brazos",
-  denton: "Denton",
-  lewisville: "Denton",
-  abilene: "Taylor",
-};
-
-export function texasCountyForCity(city: string): string | undefined {
-  const key = city.trim().toLowerCase();
-  if (!key) return undefined;
-  return TEXAS_CITY_COUNTY[key];
+export function unansweredSwornFacts(documentType: string, context: PaperworkContext): DealFact[] {
+  const out: DealFact[] = [];
+  const map = fieldMapFor(documentType);
+  const ids = new Set<string>([
+    ...ownedFacts(documentType).map((fact) => fact.id),
+    ...(map ? factsRead(map) : []),
+  ]);
+  for (const id of ids) {
+    const fact = factById(id);
+    if (!fact?.mustAnswer || fact.owner.startsWith("guide:")) continue;
+    if (fact.owner !== documentType && !context.allAnswers) continue;
+    if (!factApplies(fact, documentType, context)) continue;
+    const own = contextFor(fact, documentType, context);
+    if ((own.answers[fact.key] ?? "").trim() === "") out.push(fact);
+  }
+  return out;
 }
+
+/** Every document's answers on the deal, for `PaperworkContext.allAnswers`. */
+export function readAllPaperwork(stepData: unknown): Record<string, Record<string, string>> {
+  if (!stepData || typeof stepData !== "object") return {};
+  const bag = (stepData as Record<string, unknown>)[PAPERWORK_KEY];
+  if (!bag || typeof bag !== "object") return {};
+  const out: Record<string, Record<string, string>> = {};
+  for (const owner of Object.keys(bag as Record<string, unknown>)) {
+    out[owner] = readPaperwork(stepData, owner);
+  }
+  return out;
+}
+
+/** The county nearly every Texas deal is filed in, from the mailing city. */
+export { texasCountyForCity };
 
 /** The fee line, as the bill of sale should start it. */
 export const DEFAULT_FEES = {

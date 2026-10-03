@@ -6,10 +6,55 @@
   "domain": "discountusedcarsandtrucks.com",
   "partBDomain": "desk.discountusedcarsandtrucks.com",
   "_partBDomain": "Owner-confirmed desk host (on the film's fact list), shown in the URL pill from the first desk frame.",
-  "partB": { "cuts": { "signinPainted": 12, "saleSkeleton": [42, 55], "readbackRelease": [108, 134] }, "docFileName": "130-U_Carter_812345.pdf", "clock": "2026-10-02T14:00:00-05:00" },
+  "partB": {
+    "cuts": {
+      "signinPainted": 12,
+      "saleSkeleton": [
+        42,
+        55
+      ],
+      "readbackRelease": [
+        108,
+        134
+      ]
+    },
+    "docFileName": "130-U_Carter_812345.pdf",
+    "clock": "2026-10-02T14:00:00-05:00",
+    "_onboarding": "Not set: the shipped film (2026-10-02) predates Your Fees, so its 'fresh' owner met no fees step. Before re-capturing on today's desk, ask the user (D-16): owner-fees (with partB.demoFee) or sales."
+  },
+  "deskClock": "2026-10-02T14:00:00-05:00",
+  "_deskClock": "The day the off-camera deals were signed (the server's date), 14:00 CDT; the pad's \"Signed: 10/02/2026\" matches the documents.",
+  "demo": {
+    "phone": "7135550142",
+    "addressPartB": {
+      "street": "1418 Belrose Dr",
+      "city": "Houston",
+      "zip": "77034",
+      "county": "Harris",
+      "checkedOn": "2026-10-02",
+      "how": "searched before capture (lesson B13): the real Belrose Dr is in 77035 and numbered 55xx-59xx, so 1418 in 77034 is no household"
+    },
+    "addressNarrated": {
+      "street": "10418 Almeda Genoa Rd",
+      "city": "Houston",
+      "zip": "77034",
+      "county": "Harris",
+      "checkedOn": "2026-10-02",
+      "how": "Census geocoder onelineaddress (Public_AR_Current) returned a match in Harris County; no home listing found at that number (lessons N2, B13)"
+    }
+  },
   "deskUrl": "https://desk.discountusedcarsandtrucks.com",
-  "facts": ["www.discountusedcarsandtrucks.com", "(713) 900-5050", "8108 Gulf Fwy, Houston", "Tue – Sat 10 AM – 7 PM"],
-  "outroLines": ["www.discountusedcarsandtrucks.com", "(713) 900-5050 · 8108 Gulf Fwy, Houston", "Tue – Sat 10 AM – 7 PM"],
+  "facts": [
+    "www.discountusedcarsandtrucks.com",
+    "(713) 900-5050",
+    "8108 Gulf Fwy, Houston",
+    "Tue – Sat 10 AM – 7 PM"
+  ],
+  "outroLines": [
+    "www.discountusedcarsandtrucks.com",
+    "(713) 900-5050 · 8108 Gulf Fwy, Houston",
+    "Tue – Sat 10 AM – 7 PM"
+  ],
   "brand": {
     "mark": "clients/discount-used-cars-site/public/brand/discount-mark.png",
     "logoReverse": "clients/discount-used-cars-site/public/brand/discount-logo-reverse.png"
@@ -19,25 +64,66 @@
   "clock": "2026-09-30T14:00:00-05:00",
   "timezone": "America/Chicago",
   "loader": {
-    "viewport": [1440, 900],
-    "stage": [540, 378.53, 360, 142.94],
-    "mark": [540, 378.53, 360, 48.94],
-    "word": [607.5, 451.47, 240, 45],
-    "wordFont": { "size": 30, "lineHeight": 45, "weight": 600, "trackingEm": 0.5, "color": "#FFFFFF" },
-    "cover": [520, 366, 400, 136],
+    "viewport": [
+      1440,
+      900
+    ],
+    "stage": [
+      540,
+      378.53,
+      360,
+      142.94
+    ],
+    "mark": [
+      540,
+      378.53,
+      360,
+      48.94
+    ],
+    "word": [
+      607.5,
+      451.47,
+      240,
+      45
+    ],
+    "wordFont": {
+      "size": 30,
+      "lineHeight": 45,
+      "weight": 600,
+      "trackingEm": 0.5,
+      "color": "#FFFFFF"
+    },
+    "cover": [
+      520,
+      366,
+      400,
+      136
+    ],
     "coverColor": "#000000",
     "wordDoneSec": 1.5
   },
   "stingMarkWidth": 600,
   "logoWidth": 760,
   "storyboard": {
-    "HERO_ANCHOR": [0.75, 0.72],
+    "HERO_ANCHOR": [
+      0.75,
+      0.72
+    ],
     "BODY": "Truck",
-    "BODY_FOCUS": { "x": 375, "y": 385 },
-    "HOURS_FOCUS": { "x": 400, "y": 422 },
+    "BODY_FOCUS": {
+      "x": 375,
+      "y": 385
+    },
+    "HOURS_FOCUS": {
+      "x": 400,
+      "y": 422
+    },
     "FINDER_QUERY": "F-150",
     "SERVICE_TILE": "We buy trucks",
-    "SERVICE_FOCUS": { "x": 740, "y": 623 },
+    "SERVICE_FOCUS": {
+      "x": 740,
+      "y": 623
+    },
     "PHONE_SWIPE_2": 430,
     "PHONE_SWIPE_3": 450
   },
@@ -64,14 +150,152 @@
       "on": "2026-10-02",
       "how": "Every claim checked against the desk's code and filmed on its preview mock in one whole sale (clients/discount-used-cars-demo/narration/script-v1.md and README.md).",
       "features": [
-        "site-hero-road", "site-lineup-finder", "site-sell-band", "desk-admin-row", "onboarding-signature",
-        "car-from-inventory", "odometer-from-inventory", "spanish-documents", "id-scan", "address-lookup",
-        "address-readback", "price-and-fees-question", "receipt-math", "seller-lien", "who-files",
-        "inspection-status", "130u-county", "130u-seller-line", "phone-signing", "past-sales"
+        "site-hero-road",
+        "site-lineup-finder",
+        "site-sell-band",
+        "desk-admin-row",
+        "onboarding-signature",
+        "car-from-inventory",
+        "odometer-from-inventory",
+        "spanish-documents",
+        "id-scan",
+        "address-lookup",
+        "address-readback",
+        "price-and-fees-question",
+        "receipt-math",
+        "seller-lien",
+        "who-files",
+        "inspection-status",
+        "130u-county",
+        "130u-seller-line",
+        "phone-signing",
+        "past-sales"
       ]
     },
     "cut": [],
-    "speak": {}
+    "speak": {},
+    "anchors": {
+      "01-site-a": {
+        "seg": "1",
+        "event": "frame"
+      },
+      "02-site-b": {
+        "seg": "2a",
+        "event": "frame"
+      },
+      "03-site-c": {
+        "seg": "3",
+        "event": "frame"
+      },
+      "04-signin-a": {
+        "seg": "4",
+        "event": "frame"
+      },
+      "05-signin-b": {
+        "seg": "7a",
+        "event": "type",
+        "nth": 0
+      },
+      "06-signin-c": {
+        "seg": "7a",
+        "event": "draw",
+        "nth": 0,
+        "end": true
+      },
+      "07-car-a": {
+        "seg": "20",
+        "event": "frame"
+      },
+      "08-car-b": {
+        "seg": "20",
+        "event": "click",
+        "nth": 1
+      },
+      "09-car-c": {
+        "seg": "20",
+        "event": "click",
+        "nth": 2
+      },
+      "10-buyer-a": {
+        "seg": "21a",
+        "event": "click",
+        "nth": 0
+      },
+      "11-buyer-b": {
+        "seg": "21c",
+        "event": "type",
+        "nth": 0
+      },
+      "12-buyer-c": {
+        "seg": "21c",
+        "event": "frame"
+      },
+      "13-buyer-d": {
+        "seg": "21c",
+        "event": "hold",
+        "nth": 0
+      },
+      "14-money-a": {
+        "seg": "22b",
+        "event": "frame"
+      },
+      "15-money-b": {
+        "seg": "22b",
+        "event": "click",
+        "nth": 2
+      },
+      "16-money-c": {
+        "overlay": "docA",
+        "event": "doc",
+        "doc": 0,
+        "key": 0
+      },
+      "17-plan-a": {
+        "seg": "23a",
+        "event": "frame"
+      },
+      "18-plan-b": {
+        "seg": "23d",
+        "event": "frame"
+      },
+      "19-payoff-a": {
+        "overlay": "docB",
+        "event": "doc",
+        "doc": 0,
+        "key": 0
+      },
+      "20-payoff-b": {
+        "overlay": "docB",
+        "event": "doc",
+        "doc": 0,
+        "key": 1
+      },
+      "21-payoff-c": {
+        "overlay": "docB",
+        "event": "doc",
+        "doc": 0,
+        "key": 4
+      },
+      "22-stored-a": {
+        "seg": "24",
+        "event": "frame"
+      },
+      "23-stored-b": {
+        "seg": "27c",
+        "event": "type",
+        "nth": 0
+      },
+      "24-close": {
+        "outro": true,
+        "event": "frame"
+      }
+    },
+    "exceptions": {
+      "11-buyer-b": "typing starts 0.13 s before 'street' (the cursor is already in the field; the address is typed as the line names it)",
+      "21-payoff-c": "the push back to the whole certification block starts as the line starts, 1.0 s before 'signed'; the caption lands 0.2 s before the word",
+      "23-stored-b": "'Carter' starts typing 0.07 s before 'search' (heard as one movement)"
+    },
+    "_anchors": "Each line's key word and the action it names (scripts/narrated-plan.cjs reads them, prints the lip-to-picture table and gates it). Derived from the shipped plan.ts and its README table."
   },
   "_zoomCopy": "Written by measure-site.cjs --storyboard … --into: the text each zoom shows (follow zooms approximate). The README lists it for the owner.",
   "zoomCopy": {

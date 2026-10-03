@@ -5,6 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { generatePdf } from "@/lib/documents/pdf-generator";
 import { requiredDocumentTypes } from "@/lib/sales/deal-type";
 import type { SalePlan } from "@/lib/sales/sale-plan";
+import type { SalvagePath } from "@/lib/sales/salvage-plan";
 import type { DealType } from "@/lib/sales/deal-type";
 
 /**
@@ -84,8 +85,10 @@ export async function selectDeliverable(
    */
   plan?: SalePlan,
   titleStatus?: string | null,
+  /** The salvage plan's path: a tow-away sale's packet is its three sheets. */
+  salvagePath?: SalvagePath | null,
 ): Promise<DeliverySelection> {
-  const required = requiredDocumentTypes(funding, plan, titleStatus);
+  const required = requiredDocumentTypes(funding, plan, titleStatus, salvagePath ?? null);
   const deliveryRequired = required.filter((type) => !INK_ONLY_TYPES.has(type));
   const inkOnly = required.filter((type) => INK_ONLY_TYPES.has(type));
 

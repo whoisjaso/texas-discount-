@@ -104,7 +104,10 @@ a read from your dealer config.
 | Salvage paths | `src/lib/sales/salvage-plan.ts` |
 | Money model | `src/lib/sales/money.ts`, constants in `src/lib/documents/billOfSale.ts` |
 | Step engine | `src/lib/sales/guide.ts` |
-| Per-document questions | `src/lib/sales/paperwork.ts` |
+| Per-document questions | `src/lib/sales/paperwork.ts` (derived from the maps) |
+| Field maps, probes, read-back | `src/lib/documents/field-maps/*` |
+| Deal fact registry, tap dates | `src/lib/sales/deal-facts.ts`, `src/lib/sales/date-choices.ts` |
+| Unicode font for state forms | `src/lib/pdf/unicode-text.ts`, `public/fonts/pdf/*` |
 | Financing terms and rate ceilings | `src/lib/documents/terms.ts` |
 | Buyer ID (read vs confirmed) | `src/lib/sales/buyer-id.ts`, `src/lib/forms/id-document.ts` |
 | Licence barcode (AAMVA PDF417) | `src/lib/sales/aamva.ts` |
@@ -1054,6 +1057,104 @@ On a `salvage_unrebuilt` car, `step_data.salvagePlan.path`:
   (Tex. Occ. Code ch. 2302).
 - `undecided`: everything is captured, documents wait, badge says why.
 
+## Document templates, page by page
+
+A document is its pages, and every box on every page names one source. Build
+the desk's paperwork from that, not from a list of questions somebody
+thought to ask: a box nothing fills prints blank on a signed legal record
+(the co-buyer, the trade-in's VIN, the first payment date, the licence
+state), and nobody finds out until a title clerk does.
+
+**The field map.** One file per document under
+`src/lib/documents/field-maps/` (`types.ts` holds the shape). A map lists the
+document's pages in order and, on each page, every box the paper prints:
+
+- `id`: the key the document's probe returns (the decoded `completed_link`
+  key for a designed sheet, the `AgreementData` key for the 130-U, the field
+  builder's key for the VTR-61, VTR-271 and Buyer's Guide);
+- `label`: the label as printed on the form;
+- `source`: exactly one of `dealer` (config or onboarding), `fees` (the
+  sale's fee copy or webDEALER), `vehicle` (a column), `buyer` (the licence
+  step's confirmed record), `coBuyer`, `answer` (a registered deal fact),
+  `computed` (money or terms), `date` (sale date, signed on, contract date,
+  lien date), `signature`, `static` (printed by the template), `none` (with
+  the reason);
+- `blank`: when the box may print empty. `never` (the sale always has it: a
+  blank is a defect, refused at filing), `when` (printed only on some sales,
+  the condition named), `allowed` (the form itself allows it, its words
+  quoted), `ink` (a signature or date left for a pen), `office` (left for
+  the county), `marker` (a dealer fact still unset prints `[Not set: ...]`);
+- `acroField` on a state form, and `printed: false` for a value carried in
+  the payload but not printed on that page.
+
+A state form's map also lists, in `notOnThisDesk`, every AcroForm field the
+desk deliberately never fills, with the reason, so a coverage test can tell
+"not mapped" from "left alone on purpose".
+
+**The fact registry.** `src/lib/sales/deal-facts.ts` registers every
+`answer` a map reads, once per sale: its owner (the document that asks it,
+or a `guide:` step), the question, the kind and where its answer is stored.
+A fact can be:
+
+- `known` from the record (the county the intake decoded, what the money
+  step says was paid today): then it is never asked;
+- `start`ed from the record (a tap pre-selected, still asked);
+- `mustAnswer` (sworn or contractual: the odometer, the first payment date,
+  how a tow-away car leaves). Never defaulted; the filing refuses it unanswered;
+- `optional` (the box may print blank);
+- free text only with a stated reason (`freeText`: money, a VIN, a name, a
+  duration in the dealer's words). Everything else is a tap: a choice, a
+  list (the states, the counties), a multi-pick (the warranty systems), a
+  `dateChoice` (dates worked out from the contract date and the frequency,
+  with a typed date behind "Another Date"), or choices with an "other"
+  typed behind them (the number of payments, the rate).
+
+**Derived questions.** A document's corridor asks exactly the facts its
+pages leave open: the facts it owns (in its map's `askOrder`) plus any it
+borrows from another document that has not been filed. A fact already held
+anywhere on the sale is never asked twice. `paperworkQuestions` is that
+derivation; `paperworkAnswers` prunes answers that no longer apply (a
+warranty answer after the sale went back to as-is) so a stale answer never
+prints.
+
+**Probes and read-back.** `field-maps/probes.ts` runs the real print path
+for a document (the corridor's payload builder and its decoder, the 130-U's
+`buildAgreementData`, the VTR-271 and Buyer's Guide builders) and returns
+what each box will print. The review screen shows that, page by page
+(`readBack` in `field-maps/resolve.ts`): each printed box, its value, its
+source chip, Change on an answered box, a red "missing" with the place it is
+fixed. The review is the page, not a list of answers: the rebuilt
+disclosure's review shows its year, make, VIN, printed name, signature and
+date, and no price, because the state page prints no price.
+
+**Filing refuses a blank the sale could fill.** After every refusal that
+already existed, in this order, and none lifted by `DESK_ALLOW_UNSET_FACTS`:
+`mustAnswer` (a sworn fact unanswered), `termsUnsolved` (the note's terms do
+not solve), `rebuiltDisclosureFirst` (a rebuilt car's disclosure is filed
+before any instrument of sale), `poaInstrument` (the server decides which
+power of attorney the model year allows), and `fieldMissing`, which names
+every `never` box whose probe is empty (`missingPrintedFields`), page by
+page, and writes nothing.
+
+**Stamps.** A value the buyer signs to is stamped into `completed_link` at
+filing (the late-handling fee and its total, who files the registration, the
+ID's kind and issuer, the renewal-reminder answer, what was paid today, the
+warranty's kind), and every renderer falls back to its old reading when the
+stamp is absent. A copy filed before the change re-renders as filed.
+
+**Any name prints.** The state forms fill in Helvetica (WinAnsi). When a
+value holds a letter WinAnsi cannot print (Vietnamese, Polish), the filler
+embeds a bundled Unicode face (DejaVu Sans, its licence beside it in
+`public/fonts/pdf`) for that document only; a WinAnsi-only fill is
+unchanged.
+
+**Tests that hold the maps to the paper** (see "Tests you must write"):
+every printed box has a source; every designed-sheet payload key is on its
+map; every state-form AcroForm field is mapped or in `notOnThisDesk`; each
+map's `askOrder` equals the facts it owns; and every route's every owed
+document, filed the way the review screen posts it, probes with no `never`
+box blank.
+
 ## The documents
 
 `requiredDocumentTypes(funding, plan, titleStatus, salvagePath)` is the ONE
@@ -1067,34 +1168,55 @@ Sale, Form 130-U, Vehicle Responsibility, Insurance Acknowledgment, Power Of
 Attorney, Financing Contract (last). The FTC Buyer's Guide is printed for the
 window and never stored, so it is never a required document.
 
-Per-document questions (only what the record does not already hold):
+Per-document questions (derived from the field maps: only what the pages
+leave open and the record does not already hold; taps unless the answer is
+free-form by nature):
 
 - **Bill of sale:** Is That The Real Mileage? (Real / Rolled Over / Not The
-  Real Mileage), How Are They Paying Today? (cash deals only), Is There A
-  Trade-In? → What Are They Trading In? → What Are We Allowing For It?, Sold
-  As-Is Or With A Warranty? → How Long Is The Warranty?
-- **130-U:** Which State Issued Their Licence? (only if unknown), Which County
-  Do They Live In? (only if not derived), What Are We Applying For? (Title And
-  Registration / Title Only / Registration Only), Is The Buyer A Person Or A
-  Business?, What Is The Empty Weight? (skipped when a title, MCO or
-  weight-certificate figure is on the vehicle; a one-tap confirmation of a
-  sourced estimate; otherwise typed with its source; see "Empty weight (130-U
-  box 11)"), What Is The Carrying Capacity? (trucks and vans only, "Not
-  Applicable" allowed; starts at the TxDMV minimum for a truck).
-- **Financing:** How Much Are They Putting Down? (prefilled from what the
-  money step says crossed the desk; never asked twice), How Often Do They
+  Real Mileage; sworn, never defaulted), Which State Issued Their Licence?
+  (a tap on the state list, only when the intake did not say), How Are They
+  Paying Today? (cash deals only), Is There A Trade-In? → What Are They
+  Trading In? → What Is The Trade-In's VIN? (optional) → What Are We
+  Allowing For It?, Sold As-Is Or With A Warranty? → Full Or Limited
+  Warranty? → What Share Of The Labor / Parts Do We Pay? (limited only) →
+  Which Systems Does It Cover? (multi-pick, the FTC form's systems) → How
+  Long Is The Warranty?
+- **130-U:** Which County Do They Live In? (a list; skipped when the intake
+  decoded the county), What Are We Applying For? (Title And Registration /
+  Title Only / Registration Only), Is The Buyer A Person Or A Business? →
+  What Is The Business's Legal Name? → What Is The Business's FEIN?, What
+  Is The Empty Weight? (skipped when a title, MCO or weight-certificate
+  figure is on the vehicle; a one-tap confirmation of a sourced estimate;
+  otherwise typed with its source; see "Empty weight (130-U box 11)"), What
+  Is The Carrying Capacity? (trucks and vans only, "Not Applicable"
+  allowed), Email Them Registration Renewal Reminders? (only with an email
+  on file; asked, never assumed).
+- **Financing:** How Much Are They Putting Down? (skipped when the money
+  step recorded what was paid today; never asked twice), How Often Do They
   Pay? (Weekly / Every Two Weeks / Monthly), What Did You Agree On? (The
-  Payment / The Number Of Payments / Both), then the one or two figures, What
-  Is The Rate? (when not both), When Is The First Payment Due?. The rest is
-  solved: amortise at the agreed figures, hold the APR to the Texas Finance
-  Code ch. 348 ceiling for the vehicle's class (never below the 18%
-  optional ceiling, §303.009), and if the implied rate exceeds it, bring the
-  rate down and recompute the payment at the ceiling. Encode no ceiling
-  number the owner has not confirmed.
-- **Review-only** (no questions, everything comes from the sale): Power Of
-  Attorney, Insurance Acknowledgment, Rebuilt Title Disclosure, the tow-away
-  sheets. Vehicle Responsibility has no questions either; it prints
-  `registrationCost` as the figure the buyer owes if the filing comes back.
+  Payment / The Number Of Payments / Both), then the one or two figures (How
+  Many Payments? is a tap with a typed number behind "Another Number"), What
+  Is The Rate? (when not both: the house rate as a tap, a typed rate
+  behind it), When Is The First Payment Due? (two dates worked out from the
+  contract date and the frequency, a typed date behind them; sworn into the
+  contract, never defaulted). The rest is solved: amortise at the agreed
+  figures, hold the APR to the Texas Finance Code ch. 348 ceiling for the
+  vehicle's class (never below the 18% optional ceiling, §303.009), and if
+  the implied rate exceeds it, bring the rate down and recompute the payment
+  at the ceiling. Encode no ceiling number the owner has not confirmed.
+- **Salvage bill of sale (tow-away):** the mileage, the licence state and
+  the payment as on the bill of sale, then How Is The Car Leaving The Lot?
+  (On A Tow Truck / On A Trailer / On A Flatbed; never defaulted).
+- **Review-only** (no questions, every box comes from the sale): Power Of
+  Attorney, Insurance Acknowledgment, Rebuilt Title Disclosure, Vehicle
+  Responsibility (it prints `registrationCost` as the figure the buyer owes
+  if the filing comes back, and the late-handling fee stamped at filing),
+  the tow-away acknowledgment and the buyer's responsibility statement.
+
+The Rebuilt Title Disclosure is the state's own page (Form ENF-MV-RBLT
+DSCLMR: year, make, VIN, printed name, signature, date). A copy filed before
+the state page carries no marker and re-renders as the designed sheet it was
+signed on (decision D-05).
 
 Each document ends at a **review screen**: the facts read back, the live
 preview of the exact sheet that will print, the signature pad for the buyer
@@ -1615,6 +1737,20 @@ Sales** beneath it (and **Sale Times** and **Promises** if built).
 
 ## Tests you must write (pure modules, no database)
 
+- Field maps (see "Document templates, page by page"): every printed box has
+  exactly one source and a blank rule; every key a designed sheet's payload
+  carries is on its map; every AcroForm field of the 130-U, VTR-271 and
+  VTR-61 is mapped or in `notOnThisDesk` with a reason; each `askOrder`
+  equals the facts its document owns; every route (cash paid, cash with a
+  balance, buy here pay here with a trade, bank, buyer files, rebuilt,
+  tow-away, Spanish, business buyer, warranty) files every owed document
+  with no `never` box blank; a sale missing a box is refused by name and
+  nothing is written; a sworn fact is never defaulted; the new refusals come
+  after every old one and the demo flag lifts none of them; a copy filed
+  before the change renders whole without the new stamps; a Vietnamese and
+  a Polish name fill the 130-U, VTR-271, VTR-61 and the state's rebuilt
+  disclosure without throwing, and a WinAnsi name keeps Helvetica alone;
+  every new question has its English and Spanish words.
 - Money: every test vector above, plus "$" and "$3,000.00" parsing, empty vs 0,
   paid clamp, lender balance always 0.
 - Plan: the derived chain on both branches; `false` counts as answered;

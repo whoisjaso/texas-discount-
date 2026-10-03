@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { PDFDocument, StandardFonts } from "pdf-lib";
+import { fontFor } from "@/lib/pdf/unicode-text";
 import { dealership, dealerSignerPrintedName, factOr } from "@/lib/dealership-config";
 import { fillDealerPrintedName, type PrintedNameLayout } from "@/lib/forms/dealer-printed-name-field";
 import { VTR61_COMPONENTS, type Vtr61Part } from "@/lib/vehicles/title-work-evidence";
@@ -155,7 +156,7 @@ export async function fillVtr61(input: Vtr61Input): Promise<Uint8Array> {
   const bytes = await readFile(PDF_PATH);
   const pdf = await PDFDocument.load(bytes);
   const form = pdf.getForm();
-  const font = await pdf.embedFont(StandardFonts.Helvetica);
+  const helvetica = await pdf.embedFont(StandardFonts.Helvetica);
 
   const dealerParty = vtr61DealerParties(input);
   // The dealership's entity rows print its legal name, however it was typed.
@@ -204,6 +205,8 @@ export async function fillVtr61(input: Vtr61Input): Promise<Uint8Array> {
     values[component.number] = entries.map((part) => part.partNumber).filter(Boolean).join("; ");
   }
 
+  // Helvetica, unless a name or an origin has a letter it cannot print.
+  const { font } = await fontFor(pdf, helvetica, [...Object.values(values), printedByDealer]);
   for (const [name, value] of Object.entries(values)) {
     const field = form.getTextField(name);
     field.setText(value);

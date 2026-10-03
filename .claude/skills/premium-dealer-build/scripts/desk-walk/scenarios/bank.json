@@ -57,8 +57,7 @@
    "text": "As-Is"
   },
   "countyOfResidence": {
-   "button": "Next",
-   "exact": true
+   "text": "Harris"
   },
   "applicationType": {
    "text": "Title And Registration"
@@ -90,6 +89,12 @@
   },
   "lender": {
    "text": "Chase Auto Finance"
+  },
+  "buyerLicenseState": {
+   "text": "Texas (TX)"
+  },
+  "renewalReminders": {
+   "text": "No"
   }
  }
 }

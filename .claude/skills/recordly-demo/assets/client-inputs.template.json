@@ -7,12 +7,27 @@
   "partBDomain": null,
   "_partBDomain": "Stays null until the owner confirms the desk host may be shown in the URL pill.",
   "partB": null,
-  "_partB": "Leave null for the site film (part A). For the desk film (part B, assets/storyboard-desk.json): { \"cuts\": { \"signinPainted\": n, \"saleSkeleton\": [a, b], \"readbackRelease\": [a, b] }, \"docFileName\": \"130-U_<Buyer last name>_<last 6 of VIN>.pdf\", \"clock\": \"<the day the off-camera deal is signed>T14:00:00<offset>\" }, the cuts measured on the desk captures (references/verification.md, part B).",
+  "_partB": "Leave null for a site with no desk. With the desk (the deliverable is then part A + part B, about 80 s), fill it in three stages, each checked by fill-client.cjs check --stage <stage>: desk (runbook B0, before any desk capture): { \"onboarding\": \"owner-fees\" | \"sales\" — the USER's answer to 'Film the owner's first sign-in including Your Fees (I type a fee figure you give me), or film a salesperson's first sign-in (no fees screen)?', never chosen for them; \"demoFee\": { \"cents\": 15000, \"source\": \"owner\" | \"user-approved\", \"note\": \"who gave it, when\" } on the owner-fees path only (named as a demo input in the README and the send note, never on screen) }; post (runbook B5, measured on the captures): \"cuts\": { \"signinPainted\": n, \"saleSkeleton\": [a, b], \"readbackRelease\": [a, b] } (scripts/measure-desk-cuts.cjs --into), \"docFileName\": the 130-U's downloaded name, e.g. 130-U_Carter_812345.pdf.",
+  "deskClock": null,
+  "_deskClock": "With a desk: the capture day at 14:00 in the dealer's zone with that day's offset, e.g. 2026-10-02T14:00:00-05:00. It is the date the desk server stamps on the documents (its real date), so the pad's 'Signed:' matches the paper. Never the site's clock (fill-client refuses the fallback).",
+  "demo": null,
+  "_demo": "With a desk: { \"phone\": \"<area code>5550142\" (a fictional 555 number in the dealer's area code), \"addressPartB\": { \"street\", \"city\", \"zip\", \"county\", \"checkedOn\", \"how\" } — a street NUMBER that does not exist on a real street, typed into the read-back (lesson B13: search it before capture), \"addressNarrated\": { same keys } — narrated cut only: a block number on a commercial road the Census geocoder resolves (the autofill line needs it) and no listed home (lesson N2): curl 'https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?address=<street, city, TX zip>&benchmark=Public_AR_Current&format=json' must return a match; record the URL and the date in how / checkedOn. No web access: ask the user for an address }. The demo people (Maria Lopez, James Carter, licence 41927365) and the preview lot's car are house values.",
+  "voice": null,
+  "_voice": "Leave null: the house voice is Kokoro af_heart at speed 0.95. Only a client decision changes it: { \"voice\": \"af_bella\", \"speed\": 0.95, \"why\": \"the owner chose it from samples on <date>\" }; voice.py refuses any other voice without this.",
   "deskUrl": "https://desk.{{domain}}",
   "_deskUrl": "Only used as VITE_DESK_URL for the capture build, so the drawer's Admin row renders. It is never navigated in part A. If the client has no sale desk, stop and ask the user: the house cut ends on that row.",
-  "facts": ["www.{{domain}}", "{{(000) 000-0000}}", "{{street, city as the site prints it}}", "{{short hours exactly as the visit card prints them, no closed days}}"],
+  "facts": [
+    "www.{{domain}}",
+    "{{(000) 000-0000}}",
+    "{{street, city as the site prints it}}",
+    "{{short hours exactly as the visit card prints them, no closed days}}"
+  ],
   "_facts": "Only business.ts fields sourced OWNER or TXDMV, in this order: web address (www. + domain), phone as (000) 000-0000, street and city, short hours. No prices, no claims.",
-  "outroLines": ["www.{{domain}}", "{{phone}} · {{street, city}}", "{{short hours}}"],
+  "outroLines": [
+    "www.{{domain}}",
+    "{{phone}} · {{street, city}}",
+    "{{short hours}}"
+  ],
   "_outroLines": "Exactly facts[0]; facts[1] + ' · ' + facts[2]; facts[3]. fill-client.cjs check enforces it.",
   "brand": {
     "mark": null,
@@ -30,10 +45,19 @@
   "logoWidth": null,
   "_logoWidth": "theme.outro.logoWidth. Leave null: new-project.sh sets min(760, round(300 × logo width / height)) from logoReverse (Discount's 2.6:1 logo gives 760, a 1.28:1 logo 384) and prints it. Set a number only to override, with the reason in the README.",
   "storyboard": {
-    "HERO_ANCHOR": [0.75, 0.72],
+    "HERO_ANCHOR": [
+      0.75,
+      0.72
+    ],
     "BODY": "Truck",
-    "BODY_FOCUS": { "x": 375, "y": 385 },
-    "HOURS_FOCUS": { "x": 400, "y": 422 },
+    "BODY_FOCUS": {
+      "x": 375,
+      "y": 385
+    },
+    "HOURS_FOCUS": {
+      "x": 400,
+      "y": 422
+    },
     "FINDER_QUERY": "{{a model in stock, about 5 characters, e.g. F-150}}",
     "SERVICE_TILE": "{{label of the middle service-band tile, exactly as the site prints it}}",
     "SERVICE_FOCUS": null,

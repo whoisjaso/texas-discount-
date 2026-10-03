@@ -1,9 +1,37 @@
 import type { SaleDetail } from "@/lib/admin/sale-desk";
-import { paperworkMoney, readPaperwork, type PaperworkContext, type PaperworkMoney } from "@/lib/sales/paperwork";
+import {
+  paperworkMoney,
+  readAllPaperwork,
+  readPaperwork,
+  type PaperworkContext,
+  type PaperworkMoney,
+} from "@/lib/sales/paperwork";
+import { businessDateToday } from "@/lib/documents/us-date";
 import { readMoney } from "@/lib/sales/money";
 import { readBuyerId } from "@/lib/sales/buyer-id";
 import { emptyWeightContext } from "@/lib/vehicles/empty-weight/on-the-sale";
 import type { DealFeeLines } from "@/lib/sales/fee-schedule";
+
+/**
+ * What every document's questions read off the sale beyond its own answers:
+ * the ID kind and the intake's county (so a fact the intake answered is not
+ * asked again), the buyer's email (box 27 is asked only with one), the
+ * contract's date (the first payment's taps) and every document's answers
+ * (a page printing another document's fact reads it there). One builder for
+ * the question screen, the preview and the filing, so the three agree.
+ */
+export function saleContextExtras(
+  sale: SaleDetail,
+): Pick<PaperworkContext, "idKind" | "intakeCounty" | "buyerEmail" | "contractDate" | "allAnswers"> {
+  const mailing = readBuyerId(sale.stepData).mailing;
+  return {
+    idKind: sale.buyer?.idKind ?? null,
+    intakeCounty: (mailing.county ?? "").trim(),
+    buyerEmail: sale.buyer?.email ?? "",
+    contractDate: businessDateToday(),
+    allAnswers: readAllPaperwork(sale.stepData),
+  };
+}
 
 /**
  * What a document's questions and review screen know about the sale, built
@@ -58,6 +86,7 @@ export function paperworkFilingContext(
     vehicleYear: sale.vehicle?.year ?? null,
     saleYear: Number((sale.startedAt ?? sale.createdAt).slice(0, 4)) || undefined,
     answers,
+    ...saleContextExtras(sale),
   };
   return { money, context };
 }

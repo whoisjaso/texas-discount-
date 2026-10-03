@@ -57,7 +57,7 @@ const write = (out, text) => {
 
 const HOLE = /\{\{|\}\}/;
 const VAR = /\{\{([A-Z0-9_]+)\}\}/g;
-const META_KEYS = new Set(['checked', 'cut', 'speak']);
+const META_KEYS = new Set(['checked', 'cut', 'speak', 'anchors', 'exceptions']); // anchors / exceptions: narrated-plan.cjs (the lip-to-picture gate)
 const LINE_FIELDS = ['text', 'speak', 'cue', 'key'];
 
 /** Written forms the voice misreads in a said value, with how to spell them. */
@@ -187,6 +187,13 @@ function build(inp, tpl) {
     else for (const f of C.features) {
       if (!tpl.features[f]) problems.push(`narration.checked.features: "${f}" is not a feature of the template (${Object.keys(tpl.features).join(', ')})`);
       else confirmed.add(f);
+    }
+    // the desk changed since the walk: the corridor lines (the money, who files, the inspection) may now be untrue
+    const desk = process.env.DESK_DIR || (flags.desk && flags.desk !== true ? flags.desk : '');
+    if (desk && typeof C.on === 'string') {
+      let last = '';
+      try { last = require('child_process').execFileSync('git', ['-C', desk, 'log', '-1', '--format=%cs', '--', 'src/lib/sales', 'src/components/admin'], { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); } catch { last = ''; }
+      if (last && last > C.on) problems.push(`narration.checked.on is ${C.on}, but the desk's sale corridor changed on ${last} (git log src/lib/sales): walk the desk again (desk-server.sh + desk-walk sale.cjs), re-check every line, then set checked.on`);
     }
   }
 
@@ -395,7 +402,7 @@ function main() {
   if (cmd === 'selftest') return selftest(tplFile);
   const file = positional[0];
   if (!['init', 'check', 'lines', 'script'].includes(cmd) || !file) {
-    console.error('usage: fill-narration.cjs init|check|lines|script <client-inputs.json> [--out FILE] [--template FILE] | selftest');
+    console.error('usage: fill-narration.cjs init|check|lines|script <client-inputs.json> [--out FILE] [--template FILE] [--desk DIR] | selftest');
     process.exit(2);
   }
   const tpl = readJson(tplFile);

@@ -226,7 +226,10 @@
       "smsConsentFrequency": "Message frequency varies.",
       "smsConsentStop": "Reply STOP to opt out at any time.",
       "smsConsentRates": "Message and data rates may apply.",
-      "smsConsentNotRequired": "This consent is not a condition of purchase, financing, or rental."
+      "smsConsentNotRequired": "This consent is not a condition of purchase, financing, or rental.",
+      "idCard": "ID #",
+      "otherId": "ID #",
+      "dealerLicenceShort": "Dealer licence"
     },
     "billOfSale": {
       "title": "Bill of Sale",
@@ -341,7 +344,17 @@
       "outstandingWeHandle": "We handle it",
       "outstandingYours": "Yours to do",
       "outstandingOnFile": "On file",
-      "outstandingBringIt": "Bring it to us"
+      "outstandingBringIt": "Bring it to us",
+      "paidToday": "Paid Today",
+      "balanceOwed": "Balance Owed",
+      "payCash": "Cash",
+      "payZelle": "Zelle",
+      "payCashApp": "Cash App",
+      "payVenmo": "Venmo",
+      "payCard": "Card",
+      "payCheck": "Check",
+      "payFinancing": "Financing",
+      "payOther": "Other"
     },
     "contract": {
       "title": "Retail Installment Contract",
@@ -720,7 +733,12 @@
       "filed": "Filed",
       "and": "and",
       "walkthroughNav": "Walkthrough",
-      "paperworkNav": "Paperwork"
+      "paperworkNav": "Paperwork",
+      "likelyAnswer": "The likely answer",
+      "search": "Search",
+      "useTyped": "Use {value}",
+      "done": "Done",
+      "another": "Another"
     },
     "rail": {
       "home": "Home",
@@ -837,7 +855,7 @@
         },
         "buyerLicenseState": {
           "question": "Which State Issued Their Licence?",
-          "note": "Two letters, from the card itself."
+          "note": "As printed on the card."
         },
         "paymentMethod": {
           "question": "How Are They Paying Today?",
@@ -894,7 +912,81 @@
         },
         "warrantyDuration": {
           "question": "How Long Is The Warranty?",
-          "note": "However it is written on the window form."
+          "note": "As it reads on the window form, e.g. 30 days or 1,000 miles."
+        },
+        "tradeInVin": {
+          "question": "What Is The Trade-In's VIN?",
+          "note": "Seventeen characters, off the dash or the door. Box 36 on the 130-U."
+        },
+        "warrantyKind": {
+          "question": "Full Or Limited Warranty?",
+          "options": {
+            "limited": {
+              "label": "Limited Warranty"
+            },
+            "full": {
+              "label": "Full Warranty"
+            }
+          }
+        },
+        "warrantyLaborPercent": {
+          "question": "What Share Of The Labor Do We Pay?",
+          "note": "A percentage. The Buyers Guide prints it beside LIMITED WARRANTY."
+        },
+        "warrantyPartsPercent": {
+          "question": "What Share Of The Parts Do We Pay?",
+          "note": "A percentage. The Buyers Guide prints it beside LIMITED WARRANTY."
+        },
+        "warrantySystems": {
+          "question": "Which Systems Does It Cover?",
+          "note": "The systems the Buyers Guide lists. Tap each one covered, then Done.",
+          "options": {
+            "frameBody": {
+              "label": "Frame & Body"
+            },
+            "engine": {
+              "label": "Engine"
+            },
+            "transmission": {
+              "label": "Transmission & Drive Shaft"
+            },
+            "differential": {
+              "label": "Differential"
+            },
+            "cooling": {
+              "label": "Cooling System"
+            },
+            "electrical": {
+              "label": "Electrical System"
+            },
+            "fuel": {
+              "label": "Fuel System"
+            },
+            "accessories": {
+              "label": "Accessories"
+            },
+            "brakes": {
+              "label": "Brake System"
+            },
+            "airBags": {
+              "label": "Air Bags"
+            },
+            "steering": {
+              "label": "Steering System"
+            },
+            "suspension": {
+              "label": "Suspension System"
+            },
+            "tires": {
+              "label": "Tires"
+            },
+            "wheels": {
+              "label": "Wheels"
+            },
+            "exhaust": {
+              "label": "Exhaust System"
+            }
+          }
         }
       },
       "form130U": {
@@ -934,6 +1026,26 @@
         "carryingCapacity": {
           "question": "What Is The Carrying Capacity?",
           "note": "Trucks and vans only. The GVWR on the door jamb less the empty weight, or the buyer's own figure."
+        },
+        "businessName": {
+          "question": "What Is The Business's Legal Name?",
+          "note": "As registered. Box 16 prints it as the applicant."
+        },
+        "businessFein": {
+          "question": "What Is The Business's FEIN?",
+          "note": "Nine digits. Box 14 prints it in place of a licence number."
+        },
+        "renewalReminders": {
+          "question": "Email Them Registration Renewal Reminders?",
+          "note": "Box 27 on the form. The state sends them to the email in box 26.",
+          "options": {
+            "yes": {
+              "label": "Yes, Email Reminders"
+            },
+            "no": {
+              "label": "No"
+            }
+          }
         }
       },
       "financing": {
@@ -959,10 +1071,22 @@
         },
         "apr": {
           "question": "What Is The Rate?",
-          "note": "Held to this car's legal ceiling."
+          "note": "Held to this car's legal ceiling.",
+          "other": {
+            "label": "Another Rate"
+          }
         },
         "numberOfPayments": {
-          "question": "How Many Payments?"
+          "question": "How Many Payments?",
+          "options": {
+            "36": {
+              "label": "36 Payments",
+              "gloss": "The desk's default term"
+            }
+          },
+          "other": {
+            "label": "Another Number"
+          }
         },
         "paymentFrequency": {
           "question": "How Often Do They Pay?",
@@ -979,7 +1103,77 @@
           }
         },
         "firstPaymentDate": {
-          "question": "When Is The First Payment Due?"
+          "question": "When Is The First Payment Due?",
+          "other": {
+            "label": "Another Date"
+          }
+        }
+      },
+      "templates": {
+        "inOneWeek": "In One Week",
+        "inTwoWeeks": "In Two Weeks",
+        "inFourWeeks": "In Four Weeks",
+        "inOneMonth": "In One Month",
+        "inTwoMonths": "In Two Months",
+        "startingRate": "The desk's starting rate"
+      },
+      "salvageBillOfSale": {
+        "odometerStatus": {
+          "question": "Is That The Real Mileage?",
+          "options": {
+            "actual": {
+              "label": "Yes, That Is The Real Mileage"
+            },
+            "exceeds": {
+              "label": "It Has Rolled Over",
+              "gloss": "Past the meter's limit"
+            },
+            "not_actual": {
+              "label": "No, Not The Real Mileage",
+              "gloss": "Warranty of odometer discrepancy"
+            }
+          }
+        },
+        "buyerLicenseState": {
+          "question": "Which State Issued Their Licence?",
+          "note": "As printed on the card."
+        },
+        "paymentMethod": {
+          "question": "How Are They Paying Today?",
+          "options": {
+            "Cash": {
+              "label": "Cash"
+            },
+            "Zelle": {
+              "label": "Zelle"
+            },
+            "CashApp": {
+              "label": "Cash App"
+            },
+            "Venmo": {
+              "label": "Venmo"
+            },
+            "Card": {
+              "label": "Card"
+            },
+            "Check": {
+              "label": "Check"
+            }
+          }
+        },
+        "howLeaving": {
+          "question": "How Is The Car Leaving The Lot?",
+          "options": {
+            "towTruck": {
+              "label": "On A Tow Truck"
+            },
+            "trailer": {
+              "label": "On A Trailer"
+            },
+            "flatbed": {
+              "label": "On A Flatbed"
+            }
+          }
         }
       }
     },
@@ -1016,7 +1210,15 @@
         "paymentFrequency": "Paid",
         "firstPaymentDate": "First Payment",
         "quotedRegistrationAmount": "Tax And Fees",
-        "howLeaving": "Leaving the lot"
+        "howLeaving": "Leaving the lot",
+        "tradeInVin": "Trade-In VIN",
+        "warrantyKind": "Warranty Kind",
+        "warrantyLaborPercent": "Labor We Pay",
+        "warrantyPartsPercent": "Parts We Pay",
+        "warrantySystems": "Systems Covered",
+        "businessName": "Business",
+        "businessFein": "FEIN",
+        "renewalReminders": "Renewal Reminders"
       },
       "values": {
         "payment": "The payment amount",
@@ -1034,7 +1236,11 @@
         "registrationOnly": "Registration only",
         "towTruck": "On a tow truck",
         "trailer": "On a trailer",
-        "flatbed": "On a flatbed"
+        "flatbed": "On a flatbed",
+        "limited": "Limited warranty",
+        "full": "Full warranty",
+        "Individual": "A person",
+        "Business": "A business"
       },
       "money": {
         "car": "Car",
@@ -1099,7 +1305,39 @@
       "governmentFeesInvalid": "This sale's government fees are not figures the desk recorded. Record them again from webDEALER.",
       "governmentFeesCountyChanged": "The buyer's county on this form is not the county the government fees were recorded for. Record the government fees again from webDEALER for the buyer's county.",
       "chapter345Vehicle": "Handle A Sale's paperwork is for cars, trucks, SUVs and vans (Tex. Fin. Code ch. 348). A motorcycle, moped, ATV, towable RV or boat is sold under ch. 345, with a documentary fee of $200.00 at most that no filing raises, and its own notice (Fin. Code §345.251; 7 TAC §86.201). Do this sale's paperwork by hand.",
-      "recordGovernmentFees": "Record The Government Fees"
+      "recordGovernmentFees": "Record The Government Fees",
+      "page": {
+        "heading": "Page {n} Of {total}",
+        "what": "What it will print",
+        "missing": "Missing",
+        "fixIt": "Fix it",
+        "change": "Change",
+        "blank": "Left blank",
+        "sources": {
+          "dealer": "From your dealership",
+          "fees": "From your fees",
+          "vehicle": "From the car",
+          "buyer": "From the licence",
+          "coBuyer": "From the co-buyer",
+          "answer": "You answered",
+          "computed": "Worked out",
+          "date": "Date of sale",
+          "signature": "Signature",
+          "static": "Printed by the form",
+          "none": "Not on this sale"
+        },
+        "statuses": {
+          "ink": "Left for ink",
+          "office": "Left for the tax office",
+          "marker": "Not set by the owner",
+          "blankAllowed": "Left blank"
+        }
+      },
+      "mustAnswer": "Answer this first; it is a statement the paper swears to and it is never filled in for you:",
+      "termsUnsolved": "The note's terms are not worked out. Answer the payment, the number of payments or the rate so the contract has a payment schedule.",
+      "rebuiltDisclosureFirst": "File the Rebuilt Title Disclosure first. Texas wants it signed before the bill of sale.",
+      "poaInstrument": "The power of attorney on record must be the one this car's model year allows. Check the year on the vehicle and open the review again.",
+      "fieldMissing": "This document would print blank where the sale should say something. Fill these in first:"
     },
     "packet": {
       "title": "The Paperwork.",

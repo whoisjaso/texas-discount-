@@ -139,6 +139,7 @@ function loadPlaywright() {
   if (!process.env.PLAYWRIGHT_BROWSERS_PATH && fs.existsSync('/opt/pw-browsers')) {
     process.env.PLAYWRIGHT_BROWSERS_PATH = '/opt/pw-browsers';
   }
+  if (process.env.PWPATH) return require(process.env.PWPATH); // scripts/env.sh writes it (default $(npm root -g)/playwright)
   try {
     return require('playwright');
   } catch {

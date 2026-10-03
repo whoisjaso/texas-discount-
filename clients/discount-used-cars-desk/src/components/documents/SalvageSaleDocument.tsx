@@ -103,7 +103,8 @@ export default function SalvageSaleDocument({
         ? copy.towClauses
         : copy.responsibilityClauses;
 
-  const titleFrom = data.titleOriginState ? data.titleOriginState : dealership.address.region;
+  // No origin recorded means a Texas title, whatever state the lot is in.
+  const titleFrom = data.titleOriginState ? data.titleOriginState : "TX";
   const leaving = data.howLeaving ? copy.howLeaving[data.howLeaving] : "";
 
   return (
@@ -111,6 +112,7 @@ export default function SalvageSaleDocument({
     <div className="print-doc bos-print doc-sheet">
       <section className="bos-page" data-bos-page={sheet}>
         <DocumentLetterhead
+          lang={language === "es" ? "es" : "en"}
           title={heading}
           subtitle={subtitle}
           reference={[
@@ -183,6 +185,9 @@ export default function SalvageSaleDocument({
               <Field label={copy.docFeeLabel} value={dollars(data.docFee)} />
               <Field label={copy.totalLabel} value={dollars(data.total)} />
               <Field label={copy.paidTodayLabel} value={dollars(data.amountPaidToday)} />
+              {(data.balanceOwed ?? 0) > 0 ? (
+                <Field label={copy.balanceOwedLabel} value={dollars(data.balanceOwed ?? 0)} />
+              ) : null}
             </div>
             {/* The documentary fee notice, beside the money (Tex. Fin. Code
                 §348.006(c)(3)); only on copies stamped at filing. The
@@ -192,7 +197,12 @@ export default function SalvageSaleDocument({
               spanish={language === "es" ? true : undefined}
             />
             <div className="mt-4">
-              <Field label={copy.paymentMethodLabel} value={data.paymentMethod} />
+              <Field
+                label={copy.paymentMethodLabel}
+                value={[copy.paymentMethodLabels[data.paymentMethod] ?? data.paymentMethod, data.paymentMethodOther]
+                  .filter(Boolean)
+                  .join(", ")}
+              />
             </div>
           </section>
         ) : null}
@@ -234,7 +244,7 @@ export default function SalvageSaleDocument({
             />
           </div>
           <p className="bos-helper" style={{ marginTop: "0.75rem" }}>
-            {dealership.name} · {dealership.address.street}, {dealership.address.locality},{" "}
+            {brand.legal} · {dealership.address.street}, {dealership.address.locality},{" "}
             {dealership.address.region} {dealership.address.postalCode}
             {data.salvageLicense ? ` · ${copy.salvageLicenseLabel} ${data.salvageLicense}` : ""}
           </p>
