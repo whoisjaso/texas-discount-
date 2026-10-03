@@ -1,6 +1,17 @@
 ---
 name: recordly-demo
-description: Make the house demo video for a car dealer's website and its staff sale desk, exactly as the approved Discount Used Cars film, a Recordly / Screen Studio style macOS screen recording of a premium-dealer-build site. The intro match-cuts onto the site's own loader; one macOS window holds every shot with pixel-matched hard cuts, auto-zooms and a smoothed cursor; then an iPhone cut with iOS swipes, iOS sounds and a facts-only outro. Ships the capture, measure, fill, render and verify scripts and the Remotion template. Use it whenever the user wants a demo video for a dealer or dealership, a screen recording of the site or the desk, a site walkthrough, product reel, promo or screen-recording ad, a video for the dealer's social, says "do the video for this client" or "like the Discount video", wants a Mac screen recording look, wants a narrated or voice-over walkthrough of the site and desk (the narrated long cut), or mentions Recordly or Screen Studio, even without the word demo. Use it instead of building a dealer video from scratch with remotion-motion-graphics.
+description: >-
+  Make the house demo videos for a car dealer's website and staff sale desk, exactly as the approved
+  Discount Used Cars films: the short Recordly / Screen Studio style macOS screen recording (intro
+  match-cut onto the site's loader, one macOS window with pixel-matched cuts, auto-zooms, smoothed
+  cursor, iPhone cut with iOS swipes, iOS sounds, facts-only outro) and the narrated long cut (a fact-
+  checked money-made / time-saved script voiced free with Kokoro). Ships the capture, measure, fill,
+  render and verify scripts and the Remotion template. Use it whenever the user wants a demo video for
+  a dealer, a screen recording or walkthrough of the site or desk, a narrated or voice-over
+  walkthrough, a product reel, promo or screen-recording ad, a dealer social video, says "do the video
+  for this client" or "like the Discount video", wants a Mac screen recording look, or mentions
+  Recordly or Screen Studio, even without the word demo. Use it instead of building a dealer video
+  from scratch with remotion-motion-graphics.
 ---
 
 # The house demo video (Recordly style)
