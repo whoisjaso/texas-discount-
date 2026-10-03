@@ -36,6 +36,7 @@ Calibration: the approved Discount film passes every gate with the numbers quote
 - [5. After rendering: the stills to look at](#5-after-rendering-the-stills-to-look-at)
 - [6. What to do with a failure](#6-what-to-do-with-a-failure)
 - [7. Part B: the desk](#7-part-b-the-desk)
+- [8. The narrated long cut](#8-the-narrated-long-cut)
 
 ## 1. Before capture
 
@@ -176,3 +177,10 @@ film. `python3` + `ffmpeg -vf select=eq(n\,N)`: contact-sheet the frames and rea
 Privacy, every frame: the sign-in email and the identity handle blurred; on documents, identity numbers and money
 blurred; the bill of sale never shown. Desk data is demo data only.
 
+## 8. The narrated long cut
+
+The gates are in `references/narration.md` §10. In short: `narrated-check.cjs` prints PLAN OK before rendering; after
+rendering the frame count equals the plan's total, the luma scan is clean, the mix reads about −16 LUFS integrated with
+a true peak ≤ −1.5 dBTP, every onset is a played cue or a line's start, the key-noun table lands, and the stills of
+every segment start, zoom, document key, the phone and the outro have been looked at. The share copy is under 40 MB.
+Money may be shown on the long cut's documents when a line is about it (demo deal data); identity numbers stay blurred.

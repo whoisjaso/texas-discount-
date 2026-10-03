@@ -114,3 +114,10 @@ Timeline (film frames): A 0–1099 (the Admin click drawn at 1093) · 6 1099–1
 1487–1542 · 9 1542–1633 · 10a 1633–1734 · 10b 1734–1774 · 11 1774–1874 · 12 1874–1967 · B6 1967–2096 · phone
 2096–2366 · outro 2360–2474. The finish pass's critic findings and their fixes are lessons B1–B13.
 
+
+## The narrated long cut (2026-10-03)
+
+`clients/discount-used-cars-demo`, composition `Narrated` (3:50, 6901 frames): the approved film's part A and desk
+sign-in reused, eight new desk captures (20-car … 27-desk-stored, in `narration/storyboard-long.json`), the deal's own
+bill of sale and 130-U pages, the phone ceremony, and 24 Kokoro lines anchored by key word. Recipe:
+`references/narration.md`; lessons N1–N12; timing and lip-to-picture tables: the project's `narration/README.md`.

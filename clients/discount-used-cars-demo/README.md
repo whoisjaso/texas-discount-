@@ -9,6 +9,10 @@ its tuning numbers are.
   site, as approved in demo-v1) and part B (the sale desk and the signed 130-U). `out/discount-demo-share.mp4` is the
   ≤ 24 MB copy for chat (same picture size, +faststart).
 - **Composition:** `Demo` (`src/Demo.tsx`, running order in `src/demo/timeline.ts`).
+- **Narrated long cut:** `out/discount-demo-narrated.mp4` (3:50, composition `Narrated`, `src/narrated/`) and its
+  share copy `out/discount-demo-narrated-share.mp4` (under 40 MB): the same window and desk laid against the approved
+  24-line voice-over. Its timing table, lip-to-picture table, what is shown another way and how to re-make it are in
+  `narration/README.md`. The `Demo` film is unchanged by it.
 - **Storyboard:** `.claude/skills/recordly-demo/examples/discount-used-cars/storyboard.json`. Each shot's actions, zooms,
   injected CSS and the reasons behind them are in its `notes`, `why` and `describe` fields.
 - **On-screen facts:** only www.discountusedcarsandtrucks.com, (713) 900-5050, 8108 Gulf Fwy, Houston, and
@@ -196,6 +200,12 @@ src/scenes/DocScene       B6: the 130-U in a Preview window, push onto the selle
 src/components/           MatchSting, LogoSting, Wallpaper/Backdrop, MacWindow, IPhone, Camera, Cursor,
                           TapRipple, Sfx, Overlays, Title
 public/shots/<id>/        captures (regenerated, git-ignored)
-public/docs/              the 130-U page 1 (and the bill of sale page 1, unused) at 300 dpi, from the off-camera deal
+public/docs/              the 130-U page 1 (and the bill of sale page 1, unused) at 300 dpi, from the off-camera deal;
+                          narr-*.png: the narrated cut's deal pages
+public/vo/                the narrated cut's trimmed voice lines (scripts/prepare-vo.py)
 public/sfx/               sound kit (scripts/prepare-sfx.sh)
+src/narrated/             the narrated long cut: plan.ts (segments, overlays, anchored lines), Narrated.tsx,
+                          NarratedDoc.tsx (the deal's PDF pages), NarratedPhone.tsx, vo-lines.ts (generated)
+narration/                the script, the approved voice, words.json, storyboard-long.json, README.md
+scripts/narrated-*.cjs    the plan check, the stills list, the rendered film's gates; scripts/prepare-vo.py
 ```

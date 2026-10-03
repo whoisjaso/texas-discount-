@@ -18,6 +18,7 @@ IDs in "Source": F1–F20 are critic LOOK round 2, F21–F34 critic RULES round 
 - [Review](#review) (R1–R7)
 - [Operations](#operations) (O1–O2)
 - [Part B: the desk](#part-b-the-desk) (B1–B13)
+- [The narrated long cut](#the-narrated-long-cut) (N1–N12)
 - [Decisions kept: do not "fix" these](#decisions-kept-do-not-fix-these)
 - [Open items](#open-items)
 
@@ -491,6 +492,77 @@ Part B (the sale desk) went through a desk build/verify pass, captures 6-12, two
 **B13. Check a demo address does not exist.**
 - *Rule:* A fictional buyer address on screen must not be a real household: search it before capture.
 - *Note:* 1418 Belrose Dr, Houston 77034 was checked (the real Belrose Dr is in 77035 and numbered 55xx–59xx).
+
+## The narrated long cut
+
+The narrated variant (`references/narration.md`) for Discount: 24 voice lines, captures 20-27 on one fresh desk, a
+plan that anchors each line's key word on its picture, then a stills pass and a timing pass.
+
+**N1. The address lookup needs the proxy env on the desk server.**
+- *Rule:* Start the desk's `next dev` with `NODE_USE_ENV_PROXY=1` when outbound HTTPS goes through an agent proxy.
+- *Why:* The street autofill (city, ZIP, county) calls the Census geocoder from the server; Node's fetch ignores
+  `HTTPS_PROXY` without it.
+- *Symptom:* "Filled in from …" never appears; the city, ZIP and county stay empty and the line "the desk looks up the
+  city, the ZIP and the county" has nothing to show.
+
+**N2. The demo address must be one the geocoder knows, and must not be a household.**
+- *Rule:* Pick a real street the Census geocoder resolves (Discount: 10418 Almeda Genoa Rd, Houston 77034, Harris
+  County), and check it is not a listed home (B13).
+- *Why:* An invented address is not found, so the autofill the line promises does not happen.
+
+**N3. A licence scan is filmed through a test camera feed, never a photo of a real licence.**
+- *Rule:* Override `getUserMedia` with a canvas stream drawing a card printed "DEMO CARD" (front, then back on
+  `window.__cam.side = 'back'`). Its PDF417 is a generated AAMVA payload for the demo buyer; click the shutter rather
+  than waiting for the scanner's quality gate.
+- *Why:* The desk's decoder is real, so the name and number really fill in; the gate never passes on synthetic frames.
+- *Symptom:* Not decoded when the barcode is small or flattened in the strip; `DAQ` (the number) not parsed without a
+  line feed after the `DL` subfile designator. Leave out the address elements when the film types the address.
+
+**N4. Headless Chromium paints no native select popup.**
+- *Rule:* Intercept the select's mousedown, draw a stand-in menu where the OS menu opens, set the value on the real
+  select; say so in the README.
+- *Symptom:* The click opens nothing, then the value changes by magic.
+
+**N5. A second phone session needs a different drawing.**
+- *Rule:* When the ceremony is captured in two sessions, the second draws the same hand slightly changed (Discount:
+  ×0.95, +9, +4 px).
+- *Why:* A fresh session offers no earlier stroke to reuse, and the server refuses a pixel-identical one (reuse
+  consent).
+- *Symptom:* Sign And Finish errors with the reuse-consent message.
+
+**N6. A failed capture changes the mock: restart, re-onboard, rebuild.**
+- *Rule:* After any capture that fails part way, restart the desk (by PID), onboard the member again off camera and
+  rebuild the deal with the scenario before the next capture.
+- *Symptom:* Later captures open on a half-finished deal or skip the onboarding the film needs.
+
+**N7. The mock keeps no uploaded files.**
+- *Rule:* The licence review page (which shows the scan's images) is confirmed off camera and cut around.
+- *Symptom:* Broken image boxes on "Check What The Card Says".
+
+**N8. The word comes just before the action, measured on real event frames.**
+- *Rule:* Anchor a line's key word 0–0.3 s before the click, press or menu it names, from `cursor.json` events.
+- *Why:* The storyboard's planned seconds drift by the page's own timing; anchoring on a hover start left "hold" 0.7 s
+  before the press and "done, yours, theirs" 0.5 s before each hover.
+
+**N9. Frame every zoom against measured boxes, and judge edges at full size.**
+- *Rule:* Compute the view (viewport ÷ depth around the focus) against the page's boxes before rendering; look at
+  doubtful edges in a full-size crop.
+- *Symptom:* A 6 px sliver of a black button along the bottom; a dimmed heading half in frame over a dialog. The
+  contact-sheet thumbnails made clean edges look cut, and one "fix" from a thumbnail would have made the frame worse.
+
+**N10. Keys closer than their push never land.**
+- *Rule:* Space document keys at least `dur` + 0.3 s apart, or accept that the camera passes through the first.
+- *Symptom:* The bill of sale's total row is held for 5 frames before the camera moves on to the lien section.
+
+**N11. The transcribe-back check is a prompt to listen.**
+- *Rule:* Every difference between `speak` and what faster-whisper heard is listed and decided.
+- *Symptom:* Whisper heard "walking and", "the sales Spanish"; Kokoro's line 20 is heard without its opening "And".
+
+**N12. A cut between two zoom states needs a camera on both sides.**
+- *Rule:* Where a camera must run on across a jump cut, start the next segment's zoom before its first frame
+  (`edit.addZooms`, negative `startFrame`) or shift the outgoing zoom (`zoomShift`); the check compares a moving camera
+  with its next frame.
+- *Symptom:* A 2.0x read-back cut onto a 1.0x page: the pointer and the page jumped at the cut.
 
 ## Decisions kept: do not "fix" these
 

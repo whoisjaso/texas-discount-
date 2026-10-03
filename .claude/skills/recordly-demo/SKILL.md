@@ -1,6 +1,6 @@
 ---
 name: recordly-demo
-description: Make the house demo video for a car dealer's website and its staff sale desk, exactly as the approved Discount Used Cars film, a Recordly / Screen Studio style macOS screen recording of a premium-dealer-build site. The intro match-cuts onto the site's own loader; one macOS window holds every shot with pixel-matched hard cuts, auto-zooms and a smoothed cursor; then an iPhone cut with iOS swipes, iOS sounds and a facts-only outro. Ships the capture, measure, fill, render and verify scripts and the Remotion template. Use it whenever the user wants a demo video for a dealer or dealership, a screen recording of the site or the desk, a site walkthrough, product reel, promo or screen-recording ad, a video for the dealer's social, says "do the video for this client" or "like the Discount video", wants a Mac screen recording look, or mentions Recordly or Screen Studio, even without the word demo. Use it instead of building a dealer video from scratch with remotion-motion-graphics.
+description: Make the house demo video for a car dealer's website and its staff sale desk, exactly as the approved Discount Used Cars film, a Recordly / Screen Studio style macOS screen recording of a premium-dealer-build site. The intro match-cuts onto the site's own loader; one macOS window holds every shot with pixel-matched hard cuts, auto-zooms and a smoothed cursor; then an iPhone cut with iOS swipes, iOS sounds and a facts-only outro. Ships the capture, measure, fill, render and verify scripts and the Remotion template. Use it whenever the user wants a demo video for a dealer or dealership, a screen recording of the site or the desk, a site walkthrough, product reel, promo or screen-recording ad, a video for the dealer's social, says "do the video for this client" or "like the Discount video", wants a Mac screen recording look, wants a narrated or voice-over walkthrough of the site and desk (the narrated long cut), or mentions Recordly or Screen Studio, even without the word demo. Use it instead of building a dealer video from scratch with remotion-motion-graphics.
 ---
 
 # The house demo video (Recordly style)
@@ -239,6 +239,27 @@ verification §7.
 7. **Render** `CRF=17 AUDIO_BITRATE=192k render.sh $P discount-demo` (about 30 min, background), then
    `verify.sh` and the by-eye list in verification §7.
 
+## Narrated long cut (a variant, on request)
+
+When the user asks for a narrated, long or explainer version, make the house film's long cut: the same window, cursor,
+cameras, documents, phone and sounds, laid against a voice-over that walks the owner through the site and one whole
+sale (Discount: composition `Narrated`, 3:50, 24 lines; the `Demo` composition is untouched). The edit follows the
+voice: each line's picture shows what it says, the camera on the thing named as the word is said. The full recipe is
+`references/narration.md`; problems and fixes are lessons N1–N12.
+
+1. **Script** with the lens "money made or time saved"; every claim checked against the desk on the day; one key word
+   per line the picture can show; a `speak` spelling for the voice (`130-U` → "one-thirty-U", `LLC` → "L L C").
+2. **Voice** with Kokoro-82M `af_heart` at speed 0.95, one WAV per line; **transcribe back** with faster-whisper
+   (`small.en`, word timestamps) and listen to every difference; the word times are the edit's anchors.
+3. **Levels:** one gain for the set and a limiter at 0.70 (about −16 LUFS integrated, true peak ≤ −1.5 dBTP); each line
+   trimmed to its speech. The film's own sounds duck 6 dB under the voice. No music.
+4. **Storyboard against the voice** (timing table first), capture the new desk shots on one fresh server in order, then
+   build the plan: segments (holds under overlays), overlays (the deal's real PDF pages, the phone ceremony), and lines
+   anchored by key word, 0–0.3 s before the action they name; gaps 0.5–1 s within a thought, up to 3 s on a beat.
+5. **Gates:** the plan check (gaps, cut continuity), stills at every segment start, zoom and document key, the render
+   (h264 CRF 17, AAC 192k, +faststart) and a share copy under 40 MB, loudness, onsets, and a lip-to-picture table of
+   key nouns in the project's narration README, with anything shown another way than the line says.
+
 ## What may change per client, and what may not
 
 - **Per client** (all in `client-inputs.json`): domain, facts, outro lines, logos, the loader geometry, word and intro
@@ -261,6 +282,8 @@ except one deliberate override: the grade and vignette sit under the window.
 - `references/storyboard.md`: every storyboard and capture field, cursor.json, `DesktopSegment`, and adapting and
   measuring the placeholders.
 - `references/verification.md`: the gates, the stills list, the thresholds, and what to do with a failure.
+- `references/narration.md`: the narrated long cut: script lens, Kokoro voice, transcribe-back, levels, the plan of
+  anchored lines, landing rules, ducking, truthful stand-ins, gates.
 - `examples/discount-used-cars/`: the approved film's `storyboard.json`, its `client-inputs.json`, and `NOTES.md`
   (timeline, cut point f1099, what was client-specific, the reproduction check).
 

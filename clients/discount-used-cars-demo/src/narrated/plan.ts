@@ -16,7 +16,7 @@
 import { theme } from "../theme";
 import { project } from "../project";
 import { DesktopSegment } from "../scenes/DesktopScene";
-import { partASegments, partBSegments, withCutClick } from "../demo/timeline";
+import { partASegments, partBSegments } from "../demo/timeline";
 import { VO_LINES, VoLine } from "./vo-lines";
 
 const fps = theme.fps;
@@ -47,8 +47,6 @@ const ringOn = (index: number, clickFrame: number, lastShown: number, start: num
   frame: start - (lastShown - clickFrame) - 1,
 });
 
-// Cameras (CSS px of the 1440 x 900 page), re-aimed in the composition like part B's (zoomFocus)
-const WIZARD = { point: [720, 490] as [number, number], depth: 1.32 };
 
 // ---- holds that let a line finish on its picture (frames), tuned against the table the check script prints
 export const HOLDS = {
@@ -91,7 +89,9 @@ const SEGMENTS: Seg[] = [
   // ends on the title step's Next (the name and phone steps that follow are cut: 21 opens on the licence)
   cap("20", "20-car", 0, 999, {
     edit: { addClicks: [{ frame: -4 }] },
-    zoomFocus: { 0: { point: [1076, 700], depth: 2.0 }, 1: { point: [720, 455], depth: 2.0 }, 2: { point: [720, 560], depth: 2.1 } },
+    // the whole lot (both columns) with the Camry under the pointer; the odometer step without its Next; the car line, the
+    // odometer and the language with its menu
+    zoomFocus: { 0: { point: [720, 600], depth: 2.0 }, 1: { point: [720, 440], depth: 2.0 }, 2: { point: [720, 552], depth: 2.1 } },
   }),
   // ---- the buyer: the scan (front, back, the barcode read), the number filled in, the address, the county,
   // the read-back and Hold To Confirm. The blank frames between the scanner and the form, and between the steps,
@@ -100,11 +100,11 @@ const SEGMENTS: Seg[] = [
   cap("21a", "21-buyer", 0, 92, { zoomShift: { 0: { startSec: 6 / fps } }, }),
   cap("21b", "21-buyer", 97, 230, {
     zoomShift: { 0: { startSec: 6 / fps } },
-    zoomFocus: { 0: { point: [720, 560], depth: 1.6 } },
+    zoomFocus: { 0: { point: [720, 571], depth: 1.6 } }, // the card pictures to the ID number (Scan ID just out of frame)
     edit: { moveEvents: [ringOn(3, 89, 91, 97)] },
   }),
   cap("21c", "21-buyer", 234, 875, {
-    zoomFocus: { 1: { point: [720, 550], depth: 1.5 }, 2: { point: [720, 600], depth: 2.2 }, 3: { point: [720, 450], depth: 2.0 } },
+    zoomFocus: { 1: { point: [720, 550], depth: 1.5 }, 2: { point: [720, 600], depth: 2.2 }, 3: { point: [720, 460], depth: 2.0 } }, // 3: the read-back (the page's heading just out of frame)
     edit: {
       moveEvents: [ringOn(4, 227, 229, 234), { type: "hold", index: 0, endFrame: 873 }],
       nudge: { dx: 45, dy: 0, in: [752, 766], out: [880, 890] },
@@ -121,14 +121,19 @@ const SEGMENTS: Seg[] = [
     zoomFocus: { 0: { point: [720, 445], depth: 1.8 } },
     edit: {
       nudge: { dx: 45, dy: 0, in: [-2, -1], out: [6, 22] },
-      addZooms: [{ startFrame: -45, inFrames: 45, outFrame: 0, outFrames: 30, depth: 2.0, follow: false, focus: { point: [720, 450] }, sfx: false }],
+      addZooms: [{ startFrame: -45, inFrames: 45, outFrame: 0, outFrames: 30, depth: 2.0, follow: false, focus: { point: [720, 460] }, sfx: false }],
     },
   }),
   cap("22b", "22-money", 146, 500, { edit: { moveEvents: [ringOn(0, 137, 141, 146)] }, zoomFocus: { 0: { point: [720, 445], depth: 1.8 } } }),
   cap("22c", "22-money", 503, 856, {
-    edit: { moveEvents: [ringOn(3, 497, 499, 503)] },
+    edit: {
+      moveEvents: [ringOn(3, 497, 499, 503)],
+      addZooms: [{ startFrame: 650, inFrames: 45, outFrame: 810, outFrames: 30, depth: 2.05, follow: false, focus: { point: [720, 624.5] }, sfx: false }],
+    },
     zoomShift: { 0: { outSec: 3 / fps }, 1: { startSec: 3 / fps } },
-    zoomFocus: { 0: { point: [720, 445], depth: 1.8 }, 1: { point: [720, 420], depth: 2.0 }, 2: { point: [720, 618], depth: 2.1 } },
+    // the receipt's rows (J), then a pan down to the total and the balance owed (K, Next in frame), then a slight push in
+    // as the amount handed over is typed (K2: the field in, Next out)
+    zoomFocus: { 0: { point: [720, 445], depth: 1.8 }, 1: { point: [720, 420], depth: 2.0 }, 2: { point: [720, 640], depth: 2.0 } },
   }),
   hold("22h", "22-money", 855, 0), // doc A (its length is set below)
   // ---- the plan
@@ -139,15 +144,15 @@ const SEGMENTS: Seg[] = [
   cap("23e", "23-plan", 640, 671, { edit: { moveEvents: [ringOn(3, 632, 636, 640)] }, zoomFocus: { 0: { point: [720, 470], depth: 1.45 } } }),
   hold("23h", "23-plan", 670, 0), // doc B
   // ---- signed and stored
-  cap("24", "24-desk-qr", 0, 62, { zoomFocus: { 0: { point: [620, 515], depth: 2.2 } } }),
+  cap("24", "24-desk-qr", 0, 62, { zoomFocus: { 0: { point: [575, 520], depth: 2.82 } } }), // the Scan To Sign card: code, words, Open here
   hold("24h", "24-desk-qr", 61, 0), // the phone
   cap("27a", "27-desk-stored", 20, 103, {
     zoomFocus: { 0: { point: [720, 356], depth: 1.62 } },
     eventCues: [{ type: "zoom", index: 0, at: "end", file: S.success.file, db: S.success.db, offsetSec: -0.2 }],
   }),
   cap("27b", "27-desk-stored", 112, 166, { edit: { moveEvents: [ringOn(0, 99, 102, 112)] } }),
-  cap("27c", "27-desk-stored", 175, 295, { edit: { moveEvents: [ringOn(1, 162, 165, 175)] }, zoomFocus: { 1: { point: [810, 300], depth: 1.4 } } }),
-  cap("27d", "27-desk-stored", 298, 348, { edit: { moveEvents: [ringOn(2, 294, 294, 298)] }, zoomShift: { 1: { outSec: 3 / fps } }, zoomFocus: { 1: { point: [810, 300], depth: 1.4 } } }),
+  cap("27c", "27-desk-stored", 175, 295, { edit: { moveEvents: [ringOn(1, 162, 165, 175)] }, zoomFocus: { 1: { point: [800, 330], depth: 1.35 } } }),
+  cap("27d", "27-desk-stored", 298, 348, { edit: { moveEvents: [ringOn(2, 294, 294, 298)] }, zoomShift: { 1: { outSec: 3 / fps } }, zoomFocus: { 1: { point: [800, 330], depth: 1.35 } } }),
   hold("27h", "27-desk-stored", 347, 0), // doc C
 ];
 
@@ -174,23 +179,23 @@ export const LINES: LinePlan[] = [
   { id: "05-signin-b", word: word("05-signin-b", "type"), anchor: { seg: "7a", capture: 14 }, why: "the first name is clicked and typed" },
   { id: "06-signin-c", word: word("06-signin-c", "signature"), anchor: { seg: "7a", capture: 170 }, why: "the signature's last stroke, at 1.8x" },
   { id: "07-car-a", word: word("07-car-a", "pick"), anchor: { seg: "20", capture: 4 }, why: "the pointer heads for the Camry" },
-  { id: "08-car-b", word: word("08-car-b", "correct"), anchor: { seg: "20", capture: 342 }, why: "the odometer is clicked to be corrected" },
+  { id: "08-car-b", word: word("08-car-b", "correct"), anchor: { seg: "20", capture: 352 }, why: "the odometer is clicked to be corrected (the click 0.2 s after the word)" },
   { id: "09-car-c", word: word("09-car-c", "spanish", 1), anchor: { seg: "20", capture: 630 }, why: "the language menu opens: Español, then English" },
   { id: "10-buyer-a", word: word("10-buyer-a", "scan"), anchor: { seg: "21a", capture: 5 }, why: "Scan ID" },
   { id: "11-buyer-b", word: word("11-buyer-b", "street"), anchor: { seg: "21c", capture: 285 }, why: "the street is typed" },
   { id: "12-buyer-c", word: word("12-buyer-c", "county"), anchor: { seg: "21c", capture: 452 }, why: "the county field, zoomed" },
-  { id: "13-buyer-d", word: word("13-buyer-d", "hold"), anchor: { seg: "21c", capture: 748 }, why: "Hold To Confirm is pressed" },
+  { id: "13-buyer-d", word: word("13-buyer-d", "hold"), anchor: { seg: "21c", capture: 765 }, why: "Hold To Confirm is pressed (the press 0.17 s after the word)" },
   { id: "14-money-a", word: word("14-money-a", "advertise"), anchor: { seg: "22b", capture: 190 }, why: "How Much Are They Paying?" },
   { id: "15-money-b", word: word("15-money-b", "inside"), anchor: { seg: "22b", capture: 490 }, why: "No: tax and fees go on top" },
   { id: "16-money-c", word: word("16-money-c", "owing"), anchor: { overlay: "docA", at: 0.75 }, why: "the bill of sale opens" },
   { id: "17-plan-a", word: word("17-plan-a", "tap"), anchor: { seg: "23a", capture: 90 }, why: "the pointer reaches We Do" },
-  { id: "18-plan-b", word: word("18-plan-b", "inspection"), anchor: { seg: "23d", capture: 371 }, why: "Where Does The Inspection Stand?" },
-  { id: "19-payoff-a", word: 0, anchor: { overlay: "docB", at: 0.35 }, why: "the 130-U opens" },
-  { id: "20-payoff-b", word: 0, anchor: { overlay: "docB", at: -1 }, why: "after 19 (placed by gap)" },
-  { id: "21-payoff-c", word: 0, anchor: { overlay: "docB", at: -1 }, why: "after 20 (placed by gap)" },
+  { id: "18-plan-b", word: word("18-plan-b", "yours"), anchor: { seg: "23d", capture: 540 }, why: "the pointer on We Are Doing It (done, yours, theirs: on each answer as it is said)" },
+  { id: "19-payoff-a", word: word("19-payoff-a", "county"), anchor: { overlay: "docB", at: 0.35 }, why: "the 130-U opens" },
+  { id: "20-payoff-b", word: word("20-payoff-b", "seller"), anchor: { overlay: "docB", at: -1 }, why: "after 19 (placed by gap)" },
+  { id: "21-payoff-c", word: word("21-payoff-c", "signed"), anchor: { overlay: "docB", at: -1 }, why: "after 20 (placed by gap)" },
   { id: "22-stored-a", word: word("22-stored-a", "code"), anchor: { seg: "24", capture: 54 }, why: "the packet's Scan To Sign code, zoomed" },
   { id: "23-stored-b", word: word("23-stored-b", "search"), anchor: { seg: "27c", capture: 241 }, why: "'Carter' typed into Past Sales" },
-  { id: "24-close", word: 0, anchor: { outro: 0.0 }, why: "the outro" },
+  { id: "24-close", word: word("24-close", "discount"), anchor: { outro: 0.0 }, why: "the outro" },
 ];
 /** natural gaps the lines placed by gap use (seconds between one line's end and the next one's start) */
 const GAP = { "20-payoff-b": 0.65, "21-payoff-c": 0.6 } as Record<string, number>;
@@ -246,7 +251,7 @@ const docA = (l16: number, len: number): DocSpec[] => {
       openAt: 0,
       closeAt: len - 0.45,
       keys: [
-        { at: t("owing") - 0.35, x: 700, y: 930, ds: 0.78, dur: 1.2 }, // the itemization: total, balance secured by seller lien
+        { at: t("owing") - 0.35, x: 1275, y: 930, ds: 0.7, dur: 1.2 }, // the itemization (the page's full width): total, balance secured by seller lien
         { at: t("bill") - 0.2, x: 1276, y: 2190, ds: 0.66, dur: 1.2 }, // the Seller Lien / Balance Owed section
       ],
       spots: [
@@ -276,10 +281,10 @@ const docB = (l19: number, l20: number, l21: number, len: number): DocSpec => {
     openAt: 0,
     closeAt: len - 0.45,
     keys: [
-      { at: a("county") - 0.45, x: 1276, y: 1121, ds: 0.76, dur: 1.3 }, // box 18 mailing address + box 19 county: Harris
+      { at: a("county") - 0.45, x: 1276, y: 1121, ds: 0.72, dur: 1.3 }, // box 18 mailing address + box 19 county: Harris
       { at: b("seller") - 0.35, x: 1278, y: 2905, ds: 0.8, dur: 1.3 }, // the certification block
       { at: b("prints") - 0.1, x: 1700, y: 2921, ds: 1.22, dur: 1.2 }, // "Discount Used Cars And Trucks, LLC (Maria Lopez)"
-      { at: b("with") - 0.15, x: 660, y: 2905, ds: 1.22, dur: 1.1 }, // her signature
+      { at: b("with") - 0.15, x: 600, y: 2905, ds: 1.6, dur: 1.1 }, // her signature
       { at: l21 + 0.1, x: 1278, y: 2905, ds: 0.8, dur: 1.2 }, // the block again: signed and named
     ],
     spots: [
@@ -354,7 +359,7 @@ export const buildNarrated = () => {
   const l19 = 0.35;
   const l20 = l19 + L("19-payoff-a").sec + GAP["20-payoff-b"];
   const l21 = l20 + L("20-payoff-b").sec + GAP["21-payoff-c"];
-  const docBLen = l21 + L("21-payoff-c").sec + 1.5;
+  const docBLen = l21 + L("21-payoff-c").sec + 2.0;
   byKey("23h").durationInFrames = sec(docBLen);
   // the phone: its parts, then a still on All Signed. while line 23 starts; it drops away as "signed" is said
   const partFrames = PHONE.parts.reduce((a, p) => a + (p[2] - p[1]), 0);
@@ -375,7 +380,7 @@ export const buildNarrated = () => {
     { key: "docC", hold: "27h", from: m["27h"], durationInFrames: sec(docCLen), docs: [docC(docCLen)] },
   ];
   // the outro: drawn under the desk, which dissolves away over its first 0.5 s
-  const outro = { from: deskEnd - sec(0.5), durationInFrames: sec(L("24-close").sec + 2.8) };
+  const outro = { from: deskEnd - sec(0.5), durationInFrames: sec(L("24-close").sec + 3.9) }; // 3.9 s after the last word: the lines, a breath, the fade
   const total = outro.from + outro.durationInFrames;
 
   // the lines
@@ -389,7 +394,7 @@ export const buildNarrated = () => {
       const prev = placed[placed.length - 1];
       anchorFilm = prev.from + sec(prev.sec + a.gap) + sec(wordT);
     } else if ("seg" in a) anchorFilm = filmOf(a.seg, a.capture);
-    else if ("outro" in a) anchorFilm = outro.from + sec(a.outro);
+    else if ("outro" in a) anchorFilm = outro.from + sec(a.outro) + sec(wordT);
     else {
       const o = overlays.find((x) => x.key === a.overlay) as Overlay;
       if (a.at === -1) {

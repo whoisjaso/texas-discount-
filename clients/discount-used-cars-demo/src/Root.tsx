@@ -12,6 +12,8 @@ import { FadeOut, Finish } from "./components/Overlays";
 import { ShotScene, ShotSceneProps } from "./scenes/ShotScene";
 import { PhoneScene, PhoneSceneProps } from "./scenes/PhoneScene";
 import { Demo, demoTimeline } from "./Demo";
+import { Narrated } from "./narrated/Narrated";
+import { narratedPlan } from "./narrated/plan";
 
 const { fps, width, height } = theme;
 const L = project.loader;
@@ -70,6 +72,8 @@ export const Root: React.FC = () => (
   <>
     {/* The film (part A; part B slots in at demoTimeline.cutPoint, see src/demo/timeline.ts) */}
     <Composition id="Demo" component={Demo} durationInFrames={demoTimeline.total} fps={fps} width={width} height={height} />
+    {/* The narrated long cut (src/narrated/): the same window, desk and sounds, laid against the voice-over */}
+    <Composition id="Narrated" component={Narrated} durationInFrames={narratedPlan.total} fps={fps} width={width} height={height} />
     <Composition id="Intro" component={Intro} durationInFrames={toFrames(2, fps)} fps={fps} width={width} height={height} />
     <Composition id="Outro" component={Outro} durationInFrames={toFrames(3.8, fps)} fps={fps} width={width} height={height} />
     {/* Any capture in public/shots/<id>/ in the window: --props='{"shot":"<id>","url":"<domain>"}' */}
