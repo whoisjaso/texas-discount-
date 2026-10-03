@@ -6,7 +6,7 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, Freeze, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { theme } from "../theme";
-import { computeTracks, ShotData, ShotEvent, shotFile, toContent, useShotsData, Vec } from "../lib/shot";
+import { computeTracks, ShotData, ShotEvent, ShotZoom, shotFile, toContent, useShotsData, Vec } from "../lib/shot";
 import { Backdrop } from "../components/Wallpaper";
 import { MacWindow, windowLayout } from "../components/MacWindow";
 import { CameraView, cameraAt } from "../components/Camera";
@@ -68,6 +68,12 @@ export type DesktopSegment = {
   zoomShift?: Record<number, { startSec?: number; outSec?: number; /** absolute capture seconds the zoom starts to leave; null holds it to the end */ outAtSec?: number | null }>;
   /** Composition-only edits of the capture's events and pointer (see SegmentEdit). */
   edit?: SegmentEdit;
+  /**
+   * A still: the capture frame at trimSec is held for durationInFrames (camera, pointer and page as they were on that
+   * frame; the window keeps breathing). Plays no capture sounds. Used by the narrated cut to let a line finish on a
+   * picture, and under a document or the phone laid over the desk.
+   */
+  hold?: boolean;
 };
 
 /**
@@ -84,6 +90,10 @@ export type SegmentEdit = {
   addClicks?: { frame: number }[];
   moveEvents?: { type: ShotEvent["type"]; index: number; frame?: number; endFrame?: number }[];
   nudge?: { dx: number; dy: number; in: [number, number]; out?: [number, number] };
+  /** events the capture lacks (e.g. a hide-the-pointer scroll span across a cut that skips a stretch of the capture) */
+  addEvents?: ShotEvent[];
+  /** zooms the capture lacks, appended after its own (e.g. a camera that opens at a depth and pulls back from the cut) */
+  addZooms?: ShotZoom[];
 };
 
 /** A copy of the shot data with a segment's edits applied. */
@@ -114,8 +124,9 @@ export const withEdits = (d: ShotData, edit?: SegmentEdit): ShotData => {
     const f = frames[Math.max(0, Math.min(frames.length - 1, c.frame))];
     events.push({ frame: c.frame, type: "click", x: f.x, y: f.y });
   }
+  for (const e of edit.addEvents ?? []) events.push({ ...e } as ShotEvent);
   events.sort((p, q) => p.frame - q.frame);
-  return { ...d, frames, events };
+  return { ...d, frames, events, zooms: edit.addZooms ? [...d.zooms, ...edit.addZooms] : d.zooms };
 };
 
 /** A solid patch over part of the page (viewport CSS px), drawn until `untilFrame` (scene frames). */
@@ -152,6 +163,8 @@ export type DesktopSceneProps = {
   cover?: Cover;
   /** zoom whooshes after the captures (scene frames), e.g. the 130-U push; their variants continue the rotation */
   whooshAfter?: { frame: number }[];
+  /** dB added to the sound cue starting at this scene frame (the narrated cut ducks effects under the voice) */
+  duckDb?: (sceneFrame: number) => number;
 };
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
@@ -197,6 +210,11 @@ export const desktopCues = (segments: DesktopSegment[], data: ShotData[], fps: n
   segments.forEach((seg, i) => {
     const d = data[i];
     const trim = Math.round((seg.trimSec ?? 0) * fps);
+    if (seg.hold) {
+      for (const c of seg.cues ?? []) out.push({ ...c, frame: c.frame + start });
+      start += seg.durationInFrames;
+      return;
+    }
     const auto = shotCues(d, { trimFrames: trim, durationInFrames: seg.durationInFrames, zoomIndexOffset: zoomsSoFar });
     if (autoSfx) out.push(...auto.map((c) => ({ ...c, frame: c.frame + start })));
     zoomsSoFar += auto.filter((c) => (theme.sfx.zoomIn.files as readonly string[]).includes(c.file)).length;
@@ -227,7 +245,7 @@ export const desktopCues = (segments: DesktopSegment[], data: ShotData[], fps: n
 export const prepareData = (raw: ShotData[], segments: DesktopSegment[]): ShotData[] =>
   raw.map((d, i) => withZoomFocus(withEdits(d, segments[i].edit), segments[i].zoomFocus, segments[i].zoomShift));
 
-export const DesktopScene: React.FC<DesktopSceneProps> = ({ segments, url, enter = false, bare = false, autoSfx = true, lights, cover, whooshAfter }) => {
+export const DesktopScene: React.FC<DesktopSceneProps> = ({ segments, url, enter = false, bare = false, autoSfx = true, lights, cover, whooshAfter, duckDb }) => {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
   const raw = useShotsData(segments.map((s) => s.shot));
@@ -243,7 +261,10 @@ export const DesktopScene: React.FC<DesktopSceneProps> = ({ segments, url, enter
     });
   }, [segments, fps]);
 
-  const cues = useMemo(() => (data ? desktopCues(segments, data, fps, { autoSfx, whooshAfter }) : []), [data, segments, autoSfx, fps, whooshAfter]);
+  const cues = useMemo(() => {
+    const list = data ? desktopCues(segments, data, fps, { autoSfx, whooshAfter }) : [];
+    return duckDb ? list.map((c) => ({ ...c, db: c.db + duckDb(c.frame) })) : list;
+  }, [data, segments, autoSfx, fps, whooshAfter, duckDb]);
 
   if (!data || !tracks) return bare ? null : <AbsoluteFill style={{ background: theme.colors.bg }} />;
 
@@ -258,6 +279,7 @@ export const DesktopScene: React.FC<DesktopSceneProps> = ({ segments, url, enter
   });
   const shotFrameOf = (i: number) => {
     const p = plan[i];
+    if (p.hold) return p.trim;
     return Math.max(0, Math.min(p.durationInFrames - 1, frame - p.start)) + p.trim;
   };
 
