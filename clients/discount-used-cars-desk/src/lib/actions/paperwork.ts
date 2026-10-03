@@ -49,6 +49,7 @@ import {
   type FreezeField,
 } from "@/lib/sales/bill-of-sale-freeze";
 import { BILL_OF_SALE_TYPES } from "@/lib/sales/down-payment-freeze";
+import { emptyWeightForFiling } from "@/lib/vehicles/empty-weight/on-the-sale";
 
 /**
  * The paperwork answers, and the document they end up as.
@@ -101,6 +102,11 @@ export async function savePaperworkAnswer(
   const access = await requireAdminActionPermission(["sales:manage", "paperwork:manage"]);
   if (!access.ok) return { ok: false, error: access.error };
   if (!key.trim()) return { ok: false, error: "Nothing to save." };
+  // Box 11 arrives with its source or not at all: only the empty-weight
+  // screen's own action (actions/empty-weight.ts) writes it.
+  if (documentType === "form130U" && (key === "emptyWeight" || key.startsWith("_emptyWeight"))) {
+    return { ok: false, error: "Use the empty weight screen." };
+  }
 
   /*
     Who may move the money step from here. The down payment is one fact with
@@ -420,6 +426,28 @@ export async function finalizePaperwork(
         }
       }
       replaces = replacedCopyId(rows, documentType);
+    }
+
+    /*
+      Box 11 from the server's own read, never the client's: a 130-U without
+      a confirmed empty weight does not file (webDEALER requires it and the
+      county returns the application without it), and form_data records
+      which source filed it, who confirmed it and when. Without the sale
+      there is no server read to take it from, so a 130-U does not file:
+      the client's box 11 is never written as it came.
+
+      After the gates above, so both sets of refusals apply: box 11 and its
+      record are among the server-derived answers (paperworkFilingContext
+      carries the empty-weight context), so a review screen that posted a
+      box 11 the sale no longer holds is refused as figuresChanged; then the
+      full provenance record overwrites every `_emptyWeight*` key, blank
+      where unknown, so a client-sent key can never survive.
+    */
+    if (documentType === "form130U") {
+      if (!sale) return { ok: false, error: "That sale could not be found. Open it again from Sales." };
+      const weight = emptyWeightForFiling(sale);
+      if (!weight.ok) return { ok: false, error: "Settle the empty weight (box 11) first: confirm it, or type it from the title." };
+      input = { ...input, formData: { ...input.formData, ...weight.fields } };
     }
 
     // The filer's own stroke, and none once their signing is turned off.

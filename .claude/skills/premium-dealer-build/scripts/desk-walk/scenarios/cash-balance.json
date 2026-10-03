@@ -18,7 +18,7 @@
     "countyOfResidence": {"button": "Next", "exact": true},
     "applicationType": {"text": "Title And Registration"},
     "applicantType": {"text": "A Person"},
-    "emptyWeight": [{"fill": "main input", "value": "3100"}, {"button": "Next", "exact": true}],
+    "emptyWeight": [{"fill": "main input", "value": "3100"}, {"button": "Texas Title", "exact": true}, {"button": "Next", "exact": true}],
     "issuingState": {"button": "Next", "exact": true}
   }
 }

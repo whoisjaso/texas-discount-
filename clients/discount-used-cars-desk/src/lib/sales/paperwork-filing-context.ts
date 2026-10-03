@@ -2,6 +2,7 @@ import type { SaleDetail } from "@/lib/admin/sale-desk";
 import { paperworkMoney, readPaperwork, type PaperworkContext, type PaperworkMoney } from "@/lib/sales/paperwork";
 import { readMoney } from "@/lib/sales/money";
 import { readBuyerId } from "@/lib/sales/buyer-id";
+import { emptyWeightContext } from "@/lib/vehicles/empty-weight/on-the-sale";
 
 /**
  * What a document's questions and review screen know about the sale, built
@@ -11,7 +12,9 @@ import { readBuyerId } from "@/lib/sales/buyer-id";
  *
  * The county is the one input looked up from outside the sale (the review
  * page resolves it from the mailing address); it only ever starts the 130-U's
- * county answer when nobody has typed one, so the caller passes it in.
+ * county answer when nobody has typed one, so the caller passes it in. The
+ * 130-U's box 11 is read off the sale (empty-weight/on-the-sale.ts), never
+ * looked up here.
  */
 export function paperworkFilingContext(
   sale: SaleDetail,
@@ -39,6 +42,14 @@ export function paperworkFilingContext(
     buyerCity: mailing.city ?? "",
     buyerCounty,
     vehicleWeight: sale.vehicle?.weightLbs ?? null,
+    /*
+      Box 11 as the review screen resolves it: the deal's confirmed answer
+      with its record, or the vehicle's document figure. No lookup and no
+      estimate (an unconfirmed estimate is never an answer), so the server's
+      answers carry the same box 11 the review posted, and a 130-U posted
+      with a box 11 the sale no longer holds is refused.
+    */
+    emptyWeight: documentType === "form130U" ? emptyWeightContext(sale.vehicle, null) : null,
     dealTotal: money.total,
     vehicleYear: sale.vehicle?.year ?? null,
     saleYear: Number((sale.startedAt ?? sale.createdAt).slice(0, 4)) || undefined,

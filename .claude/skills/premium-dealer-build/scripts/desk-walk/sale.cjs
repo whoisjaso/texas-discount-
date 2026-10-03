@@ -43,10 +43,28 @@ const failures = [];
     // ---- Start A Sale
     await p.goto(at('/admin/sales/new'), { waitUntil: 'networkidle', timeout: 180000 });
     await shot('start-car');
-    await p.getByText(sc.car).first().click(); await p.waitForTimeout(500);
+    if (sc.vin) {
+      // A car that is not on the lot: typed by VIN ("Not on the lot? Enter a
+      // VIN"), taken from the decode, then its mileage and details by hand.
+      const decoded = p.locator('.ed-start-lotvin button.ed-pick').first();
+      await p.locator('#tj-lot-vin').fill(sc.vin);
+      await decoded.waitFor({ timeout: 90000 });
+      await shot('start-vin');
+      await decoded.click(); await p.waitForTimeout(500);
+      if (sc.model) await p.locator('input[name=carModel]').fill(sc.model);
+      await p.locator('input[name=mileage]').fill(String(sc.mileage ?? 100000));
+    } else {
+      await p.getByText(sc.car).first().click(); await p.waitForTimeout(500);
+    }
     await p.locator('select[name=language]').selectOption(sc.language || 'en');
     await shot('start-odometer-language');
     await btn('Next', true).click(); await p.waitForTimeout(600);
+    if (sc.vin) {
+      await p.locator('select[name=carExterior]').selectOption(sc.exterior || 'White');
+      await p.locator('select[name=carBodyStyle]').selectOption(sc.bodyStyle || 'Sedan');
+      await shot('start-car-details');
+      await btn('Next', true).click(); await p.waitForTimeout(600);
+    }
     await p.getByText(sc.title || 'Clean title', { exact: true }).first().click();
     await shot('start-title');
     // SOP verification step 3: assert a computed style Vega's theme sets before trusting screenshots.
@@ -106,6 +124,14 @@ const failures = [];
     const step = decodeURIComponent((url.match(/\/(guide|paperwork)\/(.+)$/) || [])[2] || '');
     await shot(step || 'screen');
     if (/\/packet$/.test(url) || step === 'packet') break;
+    // A scenario may name text a screen must show (e.g. box 11's source on
+    // the 130-U review, or the empty-weight question's own state).
+    const want = (sc.expect || {})[step];
+    if (want) {
+      const seen = await p.getByText(want, { exact: false }).count();
+      log(seen ? `EXPECT OK ${step} :: ${want}` : `EXPECT FAILED ${step} :: ${want}`);
+      if (!seen) failures.push(`${step}: expected "${want}" on screen`);
+    }
     const a = sc.answers[step] ?? sc.answers[step.split('/').pop()];
     if (step.startsWith('document:') || ['title', 'titleWork'].includes(step)) {
       const filed = await p.getByText('Filed', { exact: true }).count();
@@ -120,8 +146,9 @@ const failures = [];
       await p.waitForURL((u) => u.href !== url, { timeout: 90000 }).catch(() => {});
       await settle(); continue;
     }
-    if (a === undefined && /(^|\/)after:/.test(step)) {
-      // An in-between page that sends itself on (paperwork/<doc>/after:<key>).
+    if (a === undefined && (/(^|\/)(after:.*|start)$/.test(step) || (!step && /\/(guide|paperwork\/[^/]+)$/.test(url)))) {
+      // An in-between page that sends itself on (paperwork/<doc>/after:<key>,
+      // paperwork/<doc>/start, or the bare guide that redirects to its step).
       // Read mid-redirect it has no answer; wait for it to move instead.
       await p.waitForURL((u) => u.href !== url, { timeout: 90000 }).catch(() => {});
       await settle();

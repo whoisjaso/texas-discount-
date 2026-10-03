@@ -658,6 +658,12 @@ export default function StartSale({ vehicles }: { vehicles: PickableVehicle[] })
         make: string;
         model: string;
         bodyStyle: string;
+        /**
+         * The decode's empty-weight estimate, shown read-only on the card and
+         * labelled as an estimate. Nothing here submits it: box 11 is settled
+         * on the 130-U, by a person, with its source.
+         */
+        emptyWeight?: { lbs: number; source: string } | null;
       }
     | null
   >(null);
@@ -724,6 +730,11 @@ export default function StartSale({ vehicles }: { vehicles: PickableVehicle[] })
             make: data.make ? String(data.make) : "",
             model: data.model ? String(data.model) : "",
             bodyStyle: data.bodyStyle ? String(data.bodyStyle) : "",
+            emptyWeight:
+              typeof data.emptyWeightEstimate?.curbLbs === "number" &&
+              ["epa", "canada", "vpic"].includes(data.emptyWeightEstimate.source)
+                ? { lbs: data.emptyWeightEstimate.curbLbs, source: String(data.emptyWeightEstimate.source) }
+                : null,
           });
         })
         .catch(() => {
@@ -1470,6 +1481,16 @@ export default function StartSale({ vehicles }: { vehicles: PickableVehicle[] })
                             <span className="ed-pick-meta block">
                               {t.start.vinNotOnLot} · {vinProbe.vin.slice(-6)}
                             </span>
+                            {vinProbe.emptyWeight ? (
+                              <span className="ed-pick-meta block" data-start-weight="true">
+                                {t.weight.start
+                                  .replace("{lbs}", vinProbe.emptyWeight.lbs.toLocaleString("en-US"))
+                                  .replace(
+                                    "{source}",
+                                    (t.weight.startSources as Record<string, string>)[vinProbe.emptyWeight.source] ?? "",
+                                  )}
+                              </span>
+                            ) : null}
                             <span className="ed-pick-meta block text-[color:var(--tj-copper,#8a4f2b)]">
                               {t.start.vinUseThis}
                             </span>

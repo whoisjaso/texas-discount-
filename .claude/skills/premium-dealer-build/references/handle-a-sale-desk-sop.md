@@ -154,7 +154,25 @@ alter table vehicles add column if not exists model text;
 alter table vehicles add column if not exists body_style text;
 alter table vehicles add column if not exists price numeric(12,2);
 alter table vehicles add column if not exists mileage int;          -- written at Start A Sale
-alter table vehicles add column if not exists empty_weight int;     -- 130-U box 11
+-- 130-U box 11, the empty weight, with its source (section "Empty weight").
+-- weight_lbs is box 11 as a person confirmed it FROM A DOCUMENT, rounding
+-- applied. An estimate never goes in weight_lbs: it lives in weight_estimate.
+alter table vehicles add column if not exists weight_lbs int;
+alter table vehicles add column if not exists weight_source text check (weight_source in
+  ('texas_title','out_of_state_title','mco','weight_certificate','kbb_jdpower'));
+alter table vehicles add column if not exists weight_reading_lbs int;   -- as printed, before rounding
+alter table vehicles add column if not exists weight_rule text check (weight_rule in ('roundUp','plus100RoundUp'));
+alter table vehicles add column if not exists weight_confirmed_by uuid;
+alter table vehicles add column if not exists weight_confirmed_by_name text;
+alter table vehicles add column if not exists weight_confirmed_at timestamptz;
+alter table vehicles add column if not exists weight_note text;         -- the reason for an override
+alter table vehicles add column if not exists weight_estimate jsonb;    -- source, method, range, confidence,
+                                                                        -- and the row it was made for (fingerprint)
+alter table vehicles add column if not exists weight_estimated_at timestamptz;
+-- weight_estimate is written only for an estimate made from a VIN decode (or
+-- for a car with no VIN), only over nothing or over the exact estimate read,
+-- and is stale once the row's VIN, year, make, model, trim, body style,
+-- engine, drive or fuel no longer match its fingerprint.
 alter table vehicles add column if not exists title_status text not null default 'unknown'
   check (title_status in ('clean','rebuilt_salvage','bonded','salvage_unrebuilt',
                           'nonrepairable','export_only','unknown'));
@@ -456,7 +474,24 @@ One screen, read back before anything is written.
   2WD), transmission, fuel, engine (`{DisplacementL}L V{cylinders}` or
   `{cylinders}-Cylinder`), doors, plant country, GVWR, curb weight (lbs).
   Treat `"Not Applicable"` and empty strings as null.
-- Curb weight, when present, prefills the 130-U empty-weight question. Body
+- For the empty-weight estimate the decode also keeps the raw `Model`,
+  `Series`, `DisplacementL`, `DriveType`, `ElectrificationLevel`, `BodyClass`,
+  `VehicleType` and the GVWR class code (`Class 1C` gives `1C`), and the
+  decode route answers with a sourced estimate beside the decode (see "Empty
+  weight (130-U box 11)"). Start A Sale shows it read-only, labelled as an
+  estimate; nothing it decoded is submitted.
+- The decode is used for the weight only when it agrees with the lot row on
+  the year and the make (FORD and Ford, RAM and Dodge are one make). A VIN
+  that decodes to another car (a typo) is ignored and the lot row is used.
+- A decode that fails or times out never fixes the car's class for good: the
+  estimate made from the lot row instead is shown, held for a few minutes and
+  never stored, and the decode is tried again on the next screen. Only a
+  decoded estimate (or one for a car with no VIN) is kept on the vehicle.
+- `CurbWeightLB` is a VIN-pattern value, often the heaviest version of the
+  model: measured against crash-test scales it reads +139 lb at the median,
+  p95 686 lb, and it is missing before MY2015 and for whole makes (Chevrolet,
+  GMC, Kia, Jeep, BMW, Lincoln). It is a cross-check only, never box 11.
+  vPIC's GVWR is a class range and is never used for carrying capacity. Body
   style decides whether carrying capacity is asked (trucks and vans only).
 - Show the decoded car for confirmation. A decode failure never blocks: the
   desk can type year, make and model.
@@ -768,8 +803,11 @@ Per-document questions (only what the record does not already hold):
 - **130-U:** Which State Issued Their Licence? (only if unknown), Which County
   Do They Live In? (only if not derived), What Are We Applying For? (Title And
   Registration / Title Only / Registration Only), Is The Buyer A Person Or A
-  Business?, What Is The Empty Weight? (prefilled from the decode), What Is
-  The Carrying Capacity? (trucks and vans only, "Not Applicable" allowed).
+  Business?, What Is The Empty Weight? (skipped when a title, MCO or
+  weight-certificate figure is on the vehicle; a one-tap confirmation of a
+  sourced estimate; otherwise typed with its source; see "Empty weight (130-U
+  box 11)"), What Is The Carrying Capacity? (trucks and vans only, "Not
+  Applicable" allowed; starts at the TxDMV minimum for a truck).
 - **Financing:** How Much Are They Putting Down? (prefilled from what the
   money step says crossed the desk; never asked twice), How Often Do They
   Pay? (Weekly / Every Two Weeks / Monthly), What Did You Agree On? (The
@@ -791,6 +829,154 @@ preview of the exact sheet that will print, the signature pad for the buyer
 writes `form_data` (answers and computed figures), builds `completed_link`
 (the render payload every print path reads), and sets `finalized_at`. Filing unsigned and printing for ink is always
 allowed; that is how a sale closes on the day the pad breaks.
+
+### Empty weight (130-U box 11)
+
+The state classes the registration fee by box 11 and the county returns an
+application without it. The desk works it out and affixes it, and every
+figure it files carries its source. Code: `src/lib/vehicles/empty-weight/`.
+
+**Sources, in this order** (measured against 1,706 NHTSA crash-test vehicles
+with lab-measured curb weights, MY1996 to 2026):
+
+1. A document a person holds, typed with its kind: Texas title (WEIGHT),
+   out-of-state title, MCO, weight certificate, KBB or JD Power (TxDMV
+   accepts these). The only source that skips the question.
+2. EPA test weight less 300 lb, from a bundled table: coverage 89.9%
+   (1,534 of 1,706), median error 67 lb, p95 346 lb. EPA's Equivalent Test Weight is the inertia class
+   of loaded vehicle weight, and loaded vehicle weight is curb weight plus 300
+   lb (40 CFR 86.1803-01; 40 CFR 1066.805, Table 1 and paragraph (b)), so the
+   estimate is the median ETW less 300 with half a class either side (62.5 lb
+   to ETW 4,000, 125 to 5,500, 250 above).
+3. Transport Canada's curb weight (vPIC `GetCanadianVehicleSpecifications`),
+   live, median trim: median error 84 lb. Also the cross-check.
+4. vPIC `CurbWeightLB` from the decode: last resort and cross-check (it
+   reads high; its range runs 700 lb DOWN from the figure).
+5. Nothing: the question is asked exactly as before.
+
+Agreement is a confidence hint, never an approval: EPA and Canada within 150
+lb put EPA within 150 lb of the scale 86% of the time; more than 250 lb apart
+and the screen shows both figures and the spread. The EPA match is strict
+about the engine (displacement within 0.1 L: a V6 never borrows a V8's
+weight), matches an EV only to EVs, prefers the hybrid, then the query's own
+model, then the drive, tries the model year then Y-1, Y-2, Y+1, and needs the
+same series number in the EPA name for a heavy-duty vehicle. "The query's own
+model" means an EPA name that adds a different-vehicle word (SPORT, CITY,
+CONNECT, EVOQUE, VELAR, CLUBMAN, COUNTRYMAN, GRAND, CROSS, TYPE, PRIME, MAX,
+XL, ESV and the like) loses to one that does not: a Bronco is never weighed
+as a Bronco Sport, a Cherokee never as a Grand Cherokee. Trim words (LE, SE,
+XLE) are not on that list. When only such names match, the match level says
+`+partial`. The other way round, a query that names the variant itself (a
+Civic whose decode Series is Type R) keeps only the EPA rows that carry it
+(`+variant`), so a Type R is weighed as a Type R (3,075 lb), never blended
+with the plain Civic's 2,700. Every change to these rules is measured on the
+crash-test set before it ships: this one moved none of the 1,706 vehicles,
+while adding POLICE to the list made Crown Victoria and Explorer worse and
+was left out. The Python reference (`scripts/empty-weight/reference_estimate.py`)
+and the TypeScript port apply the same rules and the parity test holds them
+equal on every crash-test row.
+
+**Confidence** is low when only vPIC has a figure, when EPA and Canada are
+more than 250 lb apart, when the match is `+partial`, when the range is wider
+than 600 lb (it spans different vehicles, not one car's trims), when a lot
+row with no engine size was matched (every engine blended), or when a
+neighbouring year was used with the drive unmatched. High needs EPA same-year
+with the drive matched and Canada within 150 lb, from a decode.
+
+**Texas rounding** (applied on the server, shown live on the screen):
+round up to the next 100 (VTR-130-UIF box 11). A Texas or out-of-state title
+and a weight certificate get nothing added (Vehicle Weight Verification
+Guidelines, June 2026; Title Manual 10-4, 10-5). An MCO, KBB or JD Power
+figure, and an estimate (a manufacturer-style curb weight), get +100 lb for a
+passenger or passenger-truck class vehicle, not for a truck or bus (Transp.
+Code 502.055(d)(1); RTB 010-16). Vectors: MCO 3,589 is 3,700; the Title
+Manual's 6,415 is 6,600; title 4,200 is 4,200; certificate 3,765 is 3,800.
+
+**The screen, by state:** a document on the vehicle skips the question and is
+affixed with its source; a sourced estimate is shown as box 11 with the
+sentence that explains it, naming the EPA models it actually stands on, not
+the car being sold ("Estimate from EPA test data for the 2019 Toyota Camry
+2.5 L: EPA tested the Camry, Camry LE/SE and Camry XLE/XSE (2019) at 3,625
+lb, which is the car plus 300 lb, so about 3,325 lb") and the cross-checks,
+for one tap (Confirm This Weight); otherwise the figure is typed off a document
+and its kind chosen. The input never starts with an unsourced figure. A
+legacy `weight_lbs` with no source is shown as "where it came from was not
+recorded", never defaulted.
+
+**Gates** (no one-tap confirm; the estimate is a labelled hint and a title,
+MCO or scale ticket is needed): a pickup or work truck, a cargo or work van,
+a cab-chassis (`INCOMPLETE VEHICLE`), heavy duty (GVWR class 2G, 8,001 lb,
+or more, or 2500/3500/HD/Super Duty in the name; 250/350 only on a truck), a
+bus, a vehicle whose class nobody knows (no body style on the lot row and no
+VehicleType from a decode: it could be a pickup, and an unknown class is
+never treated as a passenger car), a low-confidence estimate that no second
+source supports within 250 lb, and, as a HOUSE RULE, an estimate whose box
+11 at the top of its range is within 300 lb of the 6,000 lb registration
+line (5,700 or more). About 1 pickup estimate in 10 lands on the wrong side
+of a Texas weight line.
+
+A pickup or work van is known by NAME as well as by body style and vPIC's
+VehicleType (`rules.ts` `workVehicleByName`: F-150 to F-450, Silverado,
+Sierra, Ram 1500 to 3500, Tundra, Tacoma, Frontier, Titan, Ranger, Colorado,
+Canyon, Gladiator, Ridgeline, Maverick, Santa Cruz and the rest; Transit,
+ProMaster, Sprinter, Express, Savana, NV, E-Series and the rest), and by an
+EPA match named PICKUP, CAB or CHASSIS. Matched on whole words, so a Range
+Rover is never a Ranger and a Mercedes E 350 is never a Ford E-350. A lot
+body style of "Van" or "Cargo Van" is a work van; "Minivan" is not. A pickup
+is a truck for the rounding too: no +100 on its MCO.
+
+**Override with a reason:** the review's Change link reopens the question. A
+typed figure whose box 11 differs from a document already on the deal or the
+vehicle needs a reason, which is kept. An estimate never replaces a document.
+A typed document is also written to the vehicle (`weight_*`) when the caller
+may edit vehicles, so the next sale of that car skips the question.
+
+**The record:** the deal carries `emptyWeight` plus `_emptyWeightSource`
+(a document kind, `estimate_epa`, `estimate_canada`, `estimate_vpic`, or
+`typed_unrecorded` for an answer from before sources were recorded),
+`_emptyWeightFrom`, `_emptyWeightReading`, `_emptyWeightRule`,
+`_emptyWeightBy`, `_emptyWeightById`, `_emptyWeightAt`, `_emptyWeightReason`
+and `_emptyWeightEstimate` (the estimate as shown). The ordinary answer
+action refuses those keys; only the empty-weight screen's action writes them.
+Filing the 130-U overwrites them in `form_data` from the server's own read
+and REFUSES a 130-U whose box 11 nobody settled, and a 130-U whose sale the
+server cannot read (there is nothing to take box 11 from, and the client's
+figure is never written as it came). Box 11 and its record are among the
+answers the filing resolves for itself (`paperworkFilingContext` carries the
+empty-weight context), so a review screen that posted a box 11 or a record
+the sale no longer holds is refused as `figuresChanged` (Voiding and filing
+again); the overwrite comes after that check and after the refiling gates.
+The source is shown on the
+desk (question, review, webDEALER handoff, sale page) and never printed on
+the state form. A weight on the vehicle with no recorded source is shown on
+the webDEALER handoff as "Source not recorded; confirm it on the 130-U", has
+no copy button (a link to the 130-U instead), is left out of Copy All, and
+counts as missing: webDEALER is the filing. The door jamb shows GVWR, not the empty weight: say so in the
+question's note.
+
+**Carrying capacity:** a truck starts at the Registration Manual Table 2-1
+minimum for its box 11 (1,000 lb up to 6,000 lb empty, then 1,500, 2,000,
+3,000, 4,000, 5,000, 6,000, 7,000 to 33,000), labelled as that, on the screen
+only, never a default.
+
+**The yearly step:** when EPA posts a new model year's Test Car List, run
+`python3 scripts/empty-weight/build_epa_table.py --download` and
+`python3 scripts/empty-weight/make_fixtures.py --crash <research dir>`, commit
+the regenerated table and fixture, and run the tests. `--download` writes a
+`manifest.json` beside the files (URL, sha256 and download date per file;
+the same bytes keep their first date). The build reads only the manifest,
+never file times, takes `built` as its newest date, and stops on a file the
+manifest does not name or whose sha256 changed, so the same files always give
+the same table byte for byte. A folder fetched by hand gets its first
+manifest from `--urls urls.txt --downloaded YYYY-MM-DD`. The table records
+each file's URL, sha256 and download date, ships as one JSON string in a
+server-only module, and never reaches a client bundle. Stored estimates made
+against an older table are worked out again on their own.
+
+**Open questions for the county** (the confirm step keeps a person in the
+loop meanwhile): whether +100 applies to a passenger-truck vehicle registered
+as Passenger from a web curb weight, and how RTB 010-16's +100 sits with the
+2026 guideline, which mentions it only for MCOs.
 
 ### Voiding and filing again
 
@@ -862,8 +1048,9 @@ filed again; nothing is ever deleted.
   does (`paperworkAnswers`, through `paperworkFilingContext`) and refuses a
   posted answer that differs or one the sale does not hold, filling any left
   out with the sale's own, so the mileage statement, trade-in, payment
-  method, warranty, how a salvage car leaves and the contract's rate, count
-  and payments are the sale's; and a document printing the bill of sale's
+  method, warranty, how a salvage car leaves, the 130-U's box 11 with its
+  source record, and the contract's rate, count and payments are the sale's;
+  and a document printing the bill of sale's
   figures must state the figures the current bill of sale PRINTED (read off
   its own completed link). After the void the summary opens with a banner,
   or the screen the void was asked from opens again with `?from=summary`.
@@ -927,6 +1114,10 @@ Legal content each document must carry:
   dealer-authored sheet (bill of sale, contract, vehicle responsibility,
   insurance acknowledgment, rebuilt disclosure, tow-away sheets) whose
   filing recorded a name.
+  **Box 11 (empty weight)** is rounded up to the next 100 per the rules in
+  "Empty weight (130-U box 11)", and its source (the document, or the
+  confirmed estimate, who confirmed it and when) is recorded in `form_data`,
+  never printed on the form. A 130-U with box 11 unsettled does not file.
 - **VTR-61 (Rebuilt Vehicle Statement):** printed from title work and signed
   in ink. Wherever the dealership is the owner or the rebuilder, that
   party's "Printed Name (Same as Signature)" is the same pairing,
@@ -1186,7 +1377,9 @@ Sales** beneath it (and **Sale Times** and **Promises** if built).
   now; a dependent document cannot be filed while no bill of sale is
   current. In the app: the reason rule counts code points and ignores
   format characters; a filing posted with an answer the sale does not hold
-  is refused and a left-out answer filled; a dependent whose figures the
+  is refused and a left-out answer filled (a 130-U posted with a box 11 or
+  a box 11 source the sale does not hold too, and one past every refiling
+  gate with no settled box 11 still does not file); a dependent whose figures the
   current bill of sale did not print is refused; Close The Sale's price on a
   typed-amount deal must be the printed one; Start A Sale refuses a
   different name on a held customer's phone and never rewrites the row; the
@@ -1223,6 +1416,34 @@ Sales** beneath it (and **Sale Times** and **Promises** if built).
 - Tokens: expiry, tampering, wrong purpose.
 - AAMVA: US and Canadian date orders, `NONE`, 9-digit ZIP.
 - VIN: valid, invalid characters, wrong length, check digit.
+- Empty weight: box 11 rounding vectors (MCO 3,589 to 3,700; 6,415 to 6,600;
+  title 4,200; certificate 3,765 to 3,800; no +100 on a truck) and Table
+  2-1; the TypeScript EPA estimate equal to the Python reference on a
+  crash-test fixture, with coverage at least 85%, median error at most 75 lb
+  and p95 at most 400 lb; a Silverado 2500 never matching a light-duty or
+  Suburban row; a 3.6 V6 getting no V8 weight; EVs only to EVs; an estimate
+  or legacy weight never a default and never filed unconfirmed; a document
+  on the vehicle skipping the question and affixing its source; the gates
+  (pickup, cargo van, cab-chassis, heavy duty, bus, unknown class, low
+  confidence uncorroborated, near 6,000 lb) refusing a one-tap confirm on the
+  server; a bare pickup row (no body style, no decode: 2018 F-150, Gladiator,
+  Frontier, Ranger, Maverick, Santa Cruz) coming out a truck with no +100,
+  and Range Rover, E 350, B 250 and Camry never read as work vehicles; a
+  Bronco never weighed as a Bronco Sport and a Cherokee never as a Grand
+  Cherokee, a ProMaster matched only to PROMASTER CITY marked `+partial` and
+  low confidence, a Civic whose Series is Type R weighed on the Type R rows
+  only (`+variant`) while a plain Civic never takes them, and the method
+  sentence naming the EPA models; a failed
+  decode's lot-row estimate never stored and retried after minutes; a stored
+  estimate stale once the row's VIN, year, make or model change; a decode
+  for another make ignored; an unsourced vehicle weight never in webDEALER's
+  Copy All and counted as missing; a 130-U refused when its sale cannot be
+  read; the table build reading no file times and stopping on an unmapped
+  file; an override needing a reason; the printer never
+  using an estimate or an unsourced weight; webDEALER never showing an
+  estimate; the lookup silent on failure and never writing `weight_lbs`; the
+  public site never seeing a weight column; every weight string in both
+  languages with no banned dash.
 - Guards: dealer facts only in the config file; no untranslated literal in
   corridor components; every requirable document type has a question set or
   review screen, a renderer, and is allowed by the database check constraint.
@@ -1240,6 +1461,23 @@ Sales** beneath it (and **Sale Times** and **Promises** if built).
    - bank financing (lender named as lienholder, no dealer lien anywhere)
    - buyer files and no insurance shown (vehicle responsibility and insurance
      acknowledgment appear, 130-U does not)
+   And four for box 11: a car with an EPA estimate confirmed with one tap,
+   a car with a title figure on file (no empty-weight screen; the review
+   names "Texas title"), a car no source knows, entered by VIN through
+   "Not on the lot?" (`no-source`: a 1991 Geo Storm, which EPA's table,
+   Transport Canada and vPIC all lack; the question is asked exactly as
+   before, reading "Not on any record", and the typed title figure files
+   with its source), and a pickup (the screen asks for a document and
+   shows the estimate as a hint; after a title figure, carrying capacity
+   starts at the Table 2-1 minimum). On the estimate card, check the method
+   sentence names the EPA models it stands on; on a car with a weight but no
+   recorded source, check the webDEALER handoff shows it with a link to the
+   130-U and no copy button.
+   A title figure typed on one sale is written to the car, so every later
+   sale of that car skips the question, as it should. The in-memory preview
+   reuses the same few cars across walks: walk the estimate confirm first on
+   a freshly started server, before any walk that types a weight for the
+   same car (the scenarios' 2019 Camry is also `cash-otd`'s).
    On each: screenshot every step, sign every document through the ceremony,
    and finish at a packet reading "N Of N Signed".
 3. Before trusting any screenshot, assert one computed style the client's
@@ -1247,7 +1485,11 @@ Sales** beneath it (and **Sale Times** and **Promises** if built).
    if it is wrong.
 4. Download every PDF of one full packet through the same route the Open
    button uses, rasterise the pages, and read them: the 130-U's filled fields
-   dumped by name (applicant, address, county, licence, odometer, lienholder),
+   dumped by name (applicant, address, county, licence, odometer, lienholder,
+   and `11 Empty Weight` beside the filed `form_data._emptyWeightSource`,
+   `_emptyWeightReading`, `_emptyWeightRule`, `_emptyWeightBy` and
+   `_emptyWeightAt`, read from `GET /api/documents/agreements/<id>`; the
+   two must agree, and the source must be the one the review named),
    the bill of sale's figures summing to its total, the odometer identical on
    every document, and today's business date on every signature.
 
@@ -1265,5 +1507,6 @@ signature, and approve any Spanish translation.
 official form; put the dealer financing contract on a bank deal; print a
 dealer lien on a lender deal; let a signature land on a document the buyer
 could not scroll through; put the power of attorney in the e-sign ceremony;
-store "done"; ask a question the record already answers; restyle the
-client's public site; run destructive database operations.
+store "done"; ask a question the record already answers; file an estimated
+weight nobody confirmed; restyle the client's public site; run destructive
+database operations.

@@ -21,6 +21,10 @@ import {
   type TermsProblem,
 } from "@/lib/documents/terms";
 import { dealership } from "@/lib/dealership-config";
+import {
+  affixedEmptyWeight,
+  type EmptyWeightContext,
+} from "@/lib/vehicles/empty-weight/on-the-sale";
 
 /**
  * The paperwork, asked one question at a time, on the sale.
@@ -159,14 +163,22 @@ export type PaperworkContext = {
    */
   buyerCounty: string;
   /**
-   * The vehicle's empty weight in pounds, when the row holds one.
+   * The vehicle row's `weight_lbs`, as callers have always passed it.
    *
-   * Box 11 of the 130-U, which the state uses to class the registration
-   * fee. Nothing asked it, so the box filed blank on every corridor sale.
-   * Now it is asked, and a weight already on the vehicle row is the
-   * starting answer.
+   * Read by nothing that decides box 11 any more: a weight with no recorded
+   * source is shown on the empty-weight screen and never defaulted, because
+   * a default is filed unseen. `emptyWeight` below is what decides.
    */
   vehicleWeight?: number | null;
+  /**
+   * Box 11 on this sale: a document figure on the vehicle, an estimate with
+   * its source, or a legacy figure (empty-weight/on-the-sale.ts). A document
+   * on file skips the question and is affixed with its source; an estimate
+   * is only ever an answer once a person confirms it.
+   */
+  emptyWeight?: EmptyWeightContext | null;
+  /** A question the review's Change link reopened, e.g. "emptyWeight". */
+  reopen?: string;
   /**
    * The whole deal in dollars, off the money step, for the note's principal.
    * Null until the money step is answered.
@@ -325,16 +337,30 @@ const FORM_130U: PaperworkQuestion[] = [
     key: "emptyWeight",
     question: "What Is The Empty Weight?",
     kind: "number",
-    // Box 11. The state classes the registration fee by it, and the county
-    // sends an application back without it. It is on the door jamb sticker
-    // and on the old title; the VIN decode carries it for some vehicles.
-    note: "In pounds. Box 11 on the form; on the door jamb or the old title.",
+    /*
+      Box 11. The state classes the registration fee by it, and the county
+      sends an application back without it. It is on the Texas title (WEIGHT)
+      and on the out-of-state title; the door jamb sticker carries the GVWR,
+      which is a different figure.
+
+      Skipped when the vehicle already holds a document figure (a title, an
+      MCO, a weight certificate, KBB or JD Power), which is affixed with its
+      source. Otherwise the screen offers a sourced estimate for one tap, or
+      asks for the figure and the document it came from. Never a silent
+      default: an estimate is an answer only once a person confirms it, and
+      "Change" on the review reopens this question.
+    */
+    note: "In pounds. Box 11; it is on the Texas title (WEIGHT) or the out-of-state title. The door jamb shows GVWR, not the empty weight.",
+    applies: (c) => !c.emptyWeight?.onFile || c.answers.emptyWeight !== undefined || c.reopen === "emptyWeight",
   },
   {
     key: "carryingCapacity",
     question: "What Is The Carrying Capacity?",
     kind: "text",
-    note: "Trucks and vans only. It is on the door jamb.",
+    // A truck starts at the TxDMV minimum for its box 11 (Registration Manual
+    // Table 2-1), labelled as that, on the screen only (the page passes it);
+    // never through paperworkDefault, so it is never filed unseen.
+    note: "Trucks and vans only. The GVWR on the door jamb less the empty weight, or the buyer's own figure.",
     // No source anywhere in the product, and it only matters for one class of
     // vehicle, so it is asked only of that class rather than of everybody.
     applies: ({ bodyStyle }) =>
@@ -628,11 +654,15 @@ export function paperworkDefault(
       // What they said, then what the city implies. Never the other way round.
       return context.buyerCounty.trim() || texasCountyForCity(context.buyerCity);
     }
-    // The weight the vehicle row already holds, when it holds one. A
-    // starting point the operator can correct off the door jamb, not an
-    // answer given on their behalf.
-    if (key === "emptyWeight" && context.vehicleWeight != null && context.vehicleWeight > 0) {
-      return String(Math.round(context.vehicleWeight));
+    /*
+      Box 11 only from a document on file (a title, an MCO, a weight
+      certificate, KBB or JD Power), which already carries its source. An
+      estimate, or a weight on the row nobody recorded the source of, is
+      never a default: a default is filed unseen, and an estimate is filed
+      only once a person confirms it on the empty-weight screen.
+    */
+    if (key === "emptyWeight" && context.emptyWeight?.onFile) {
+      return String(context.emptyWeight.onFile.box11);
     }
   }
   if (documentType === "financing") {
@@ -694,6 +724,18 @@ export function paperworkAnswers(
     agreed. Writing them here means the review screen, the preview, the
     filed document and the payment schedule all read the same three numbers.
   */
+  /*
+    Box 11 with the record of where it came from: the deal's own answer and
+    its `_emptyWeight*` keys, or the vehicle's document figure when the
+    question was skipped. A stored answer always wins. Underscored keys are
+    read by the review and the filing and never listed as answers.
+  */
+  if (documentType === "form130U") {
+    // From the stored answers, not `resolved`: a default filled in above is
+    // not an answer anybody gave, and must not be recorded as one.
+    const affixed = affixedEmptyWeight(context.answers, context.emptyWeight);
+    if (affixed) Object.assign(resolved, affixed);
+  }
   if (documentType === "financing") {
     const terms = financingTerms(resolved, context);
     if (terms && !isProblem(terms)) {

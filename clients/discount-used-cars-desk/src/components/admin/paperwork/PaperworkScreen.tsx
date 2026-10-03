@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { ArrowLeft, FilePdf } from "@phosphor-icons/react";
 import { previewPaperworkPdf } from "@/lib/actions/paperwork-preview";
 import AnswerStep from "@/components/admin/paperwork/AnswerStep";
+import EmptyWeightStep from "@/components/admin/paperwork/EmptyWeightStep";
 import ReviewStep from "@/components/admin/paperwork/ReviewStep";
 import FunnelLanguageToggle from "@/components/admin/funnel/FunnelLanguageToggle";
 import { useFunnel } from "@/components/admin/funnel/FunnelLocaleProvider";
@@ -15,6 +16,7 @@ import {
 } from "@/lib/sales/question-i18n";
 import type { AskedQuestion, PaperworkMoney } from "@/lib/sales/paperwork";
 import HeldByBillOfSale, { FreezeProvider } from "@/components/admin/guide/HeldByBillOfSale";
+import type { WeightPrompt } from "@/lib/vehicles/empty-weight/on-the-sale";
 
 /**
  * The paperwork corridor's chrome, on the client so the toggle can swap
@@ -42,6 +44,8 @@ export default function PaperworkScreen({
   quotedRegistrationAmount,
   poa,
   freeze = null,
+  weightPrompt = null,
+  suggestionNote = null,
 }: {
   /**
    * Whether the filed bill of sale holds this answer, and whether this viewer
@@ -72,6 +76,10 @@ export default function PaperworkScreen({
     grantorName: string;
     grantorAddress: string;
   } | null;
+  /** The 130-U empty-weight screen's model, on that question only. */
+  weightPrompt?: WeightPrompt | null;
+  /** Where the starting value came from, when the page offers one (carrying capacity). */
+  suggestionNote?: "capacityMinimum" | null;
 }) {
   const { t } = useFunnel();
   const [previewPending, startPreview] = useTransition();
@@ -144,6 +152,14 @@ export default function PaperworkScreen({
               doneHref={guideHref}
               poa={poa}
             />
+          ) : question && question.key === "emptyWeight" && weightPrompt ? (
+            <EmptyWeightStep
+              dealId={dealId}
+              documentType={documentType}
+              question={question}
+              prompt={weightPrompt}
+              nextHref={nextHref}
+            />
           ) : question ? (
             <AnswerStep
               dealId={dealId}
@@ -151,6 +167,7 @@ export default function PaperworkScreen({
               question={question}
               current={current}
               nextHref={nextHref}
+              suggestionNote={suggestionNote}
             />
           ) : null}
         </div>

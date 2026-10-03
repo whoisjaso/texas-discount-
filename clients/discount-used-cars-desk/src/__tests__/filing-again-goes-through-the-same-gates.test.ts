@@ -32,6 +32,7 @@ import { paperworkMoney, readPaperwork, type PaperworkMoney } from "@/lib/sales/
 import { readMoney } from "@/lib/sales/money";
 import { filingGate, figuresDiffer, replacedCopyId } from "@/lib/sales/refile-gates";
 import { finalizePaperwork } from "@/lib/actions/paperwork";
+import { affixedEmptyWeight, emptyWeightContext } from "@/lib/vehicles/empty-weight/on-the-sale";
 import { completeSale } from "@/lib/actions/complete-sale";
 
 const DEAL = "refile-deal";
@@ -45,20 +46,38 @@ const STEP_DATA = {
   paperwork: {
     billOfSale: { tradeIn: "yes", tradeInAllowance: "2000", tradeInDescription: "2012 Honda Civic LX" },
     financing: { downPayment: "2000", paymentFrequency: "Monthly" },
+    // Box 11 settled off the Texas title, as the empty-weight screen writes
+    // it: a 130-U never files without it (empty-weight/on-the-sale.ts).
+    form130U: {
+      emptyWeight: "4500",
+      _emptyWeightSource: "texas_title",
+      _emptyWeightFrom: "deal",
+      _emptyWeightReading: "4500",
+      _emptyWeightRule: "roundUp",
+      _emptyWeightBy: "Maria Lopez",
+      _emptyWeightById: "member-1",
+      _emptyWeightAt: "2026-10-02T13:30:00.000Z",
+      _emptyWeightReason: "",
+      _emptyWeightEstimate: "",
+    },
   },
 };
 
 const money: PaperworkMoney = paperworkMoney(9000, readPaperwork(STEP_DATA, "billOfSale"), readMoney(STEP_DATA), "inHouse");
 
-async function seed(documents: Array<Record<string, unknown>>) {
+async function seed(
+  documents: Array<Record<string, unknown>>,
+  stepData: Record<string, unknown> = STEP_DATA,
+  vehicle: Record<string, unknown> = {},
+) {
   const client = createMockSupabaseClient();
   await client.from("deals").insert({
     id: DEAL,
     status: "in_progress",
     language: "en",
-    step_data: STEP_DATA,
+    step_data: stepData,
     customers: { id: "refile-buyer", name: "Andrea Salinas", phone: "7135550188" },
-    vehicles: { id: "refile-car", year: 2017, make: "Ford", model: "Explorer", vin: "1FM5K8D80HGA00001", title_status: "clean", sale_price: 9000 },
+    vehicles: { id: "refile-car", year: 2017, make: "Ford", model: "Explorer", vin: "1FM5K8D80HGA00001", title_status: "clean", sale_price: 9000, ...vehicle },
   });
   if (documents.length) await client.from("document_agreements").insert(documents.map((row) => ({ deal_id: DEAL, language: "en", ...row })));
 }
@@ -161,7 +180,58 @@ describe("finalizePaperwork, on the preview store", () => {
     // And the 130-U may follow it now.
     const next = await file("form130U");
     expect(next).toMatchObject({ ok: true });
-    expect(mockInserted("document_agreements").find((row) => row.id === next.agreementId)).toMatchObject({ parent_agreement_id: "t130" });
+    const refiled = mockInserted("document_agreements").find((row) => row.id === next.agreementId);
+    expect(refiled).toMatchObject({ parent_agreement_id: "t130" });
+    // Box 11 files from the deal's own record, with its source.
+    expect(refiled?.form_data).toMatchObject({ emptyWeight: "4500", _emptyWeightSource: "texas_title", _emptyWeightBy: "Maria Lopez" });
+  });
+
+  it("files box 11 only as the sale holds it: a stale one is refused, an unsettled one never files", async () => {
+    await seed([voided("bos", "billOfSale"), voided("t130", "form130U")]);
+    expect(await file("billOfSale")).toMatchObject({ ok: true });
+    // A review tab posting a box 11, or a record, the sale does not hold.
+    expect(await file("form130U", { ...money, emptyWeight: "2000" })).toMatchObject({ ok: false, code: "figuresChanged" });
+    expect(await file("form130U", { ...money, _emptyWeightBy: "Nobody" })).toMatchObject({ ok: false, code: "figuresChanged" });
+    expect(mockInserted("document_agreements").filter((row) => row.document_type === "form130U" && !row.voided_at)).toHaveLength(0);
+
+    // Past every refiling gate, a 130-U with no settled box 11 still does not file.
+    resetMockWrites();
+    const { form130U: _settled, ...unsettled } = STEP_DATA.paperwork;
+    void _settled;
+    await seed([voided("bos", "billOfSale"), voided("t130", "form130U")], { ...STEP_DATA, paperwork: unsettled });
+    expect(await file("billOfSale")).toMatchObject({ ok: true });
+    const refused = await file("form130U");
+    expect(refused).toMatchObject({ ok: false });
+    expect(refused.error).toMatch(/^Settle the empty weight \(box 11\) first/);
+    expect(mockInserted("document_agreements").filter((row) => row.document_type === "form130U" && !row.voided_at)).toHaveLength(0);
+  });
+
+  it("files a 130-U whose box 11 is the car's own title figure, posted the way the review screen posts it", async () => {
+    const { form130U: _settled, ...unsettled } = STEP_DATA.paperwork;
+    void _settled;
+    const onFile = {
+      weight_lbs: 4600,
+      weight_source: "texas_title",
+      weight_reading_lbs: 4520,
+      weight_rule: "roundUp",
+      weight_confirmed_by_name: "Maria Lopez",
+      weight_confirmed_at: "2026-10-01T15:00:00.000Z",
+    };
+    await seed([voided("bos", "billOfSale"), voided("t130", "form130U")], { ...STEP_DATA, paperwork: unsettled }, onFile);
+    expect(await file("billOfSale")).toMatchObject({ ok: true });
+    // The review affixes the car's figure with its record (the question is skipped).
+    const affixed = affixedEmptyWeight(
+      {},
+      emptyWeightContext(
+        { year: 2017, make: "Ford", model: "Explorer", weightLbs: 4600, weightSource: "texas_title", weightReadingLbs: 4520, weightRule: "roundUp", weightConfirmedByName: "Maria Lopez", weightConfirmedAt: "2026-10-01T15:00:00.000Z" },
+        null,
+      ),
+    );
+    expect(affixed).toMatchObject({ emptyWeight: "4600", _emptyWeightFrom: "vehicle" });
+    const result = await file("form130U", { ...money, ...affixed });
+    expect(result).toMatchObject({ ok: true });
+    const row = mockInserted("document_agreements").find((entry) => entry.id === result.agreementId);
+    expect(row?.form_data).toMatchObject({ emptyWeight: "4600", _emptyWeightSource: "texas_title", _emptyWeightFrom: "vehicle", _emptyWeightReading: "4520", _emptyWeightBy: "Maria Lopez" });
   });
 
   it("keeps the existing pins: nothing reads document_agreements or the sale before the filing gates", () => {

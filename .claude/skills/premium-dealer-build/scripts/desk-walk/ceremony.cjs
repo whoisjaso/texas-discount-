@@ -3,7 +3,7 @@
 // written to <out>/signing-url.txt, so a later walk can try it again.
 const { chromium } = require(process.env.PWPATH);
 const fs = require('fs');
-const { BASE, guard, at, previewCookies } = require('./desk-base.cjs');
+const { guard, at, follow, previewCookies } = require('./desk-base.cjs');
 const { AUDIT } = require('./audit-fn.cjs');
 const failures = [];
 (async () => {
@@ -18,10 +18,12 @@ const failures = [];
   await desk.goto(at(deal + '/packet'), { waitUntil: 'networkidle', timeout: 180000 });
   const href = await desk.getByRole('link', { name: /Open here/i }).first().getAttribute('href');
   console.log('SIGN LINK', href && href.replace(/[A-Za-z0-9_-]{20,}/, '<token>'));
-  fs.writeFileSync(`${out}/signing-url.txt`, at(href));
+  // The link carries the desk's configured origin; a walk against DESK_BASE follows it to the same path there.
+  const signUrl = follow(href);
+  fs.writeFileSync(`${out}/signing-url.txt`, signUrl);
   const p = await ctx.newPage();
   p.on('pageerror', e => console.log('PAGEERR', e.message.slice(0, 200)));
-  await p.goto(at(href), { waitUntil: 'networkidle' });
+  await p.goto(signUrl, { waitUntil: 'networkidle' });
   let n = 0;
   const shot = async (l) => { await p.waitForTimeout(700); await p.screenshot({ path: `${out}/sign-${String(n++).padStart(2, '0')}-${l}.png`, fullPage: true }); for (const f of await p.evaluate(AUDIT)) failures.push(l + ': ' + f); };
   await shot('cover');

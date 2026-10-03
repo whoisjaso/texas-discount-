@@ -115,6 +115,21 @@ export interface Vehicle {
   insuranceStatus?: VehicleInsuranceStatus | null;
   titleRegistrationStatus?: VehicleTitleRegistrationStatus | null;
   lastCensusAt?: string | null;
+  /**
+   * The 130-U box 11 record (migration 20261002000001). `weightLbs` above is
+   * box 11 as a person confirmed it from a document; these say which
+   * document, the figure printed on it, the rounding rule, who and when.
+   * `weightEstimate` is an estimate with its source, never a fact.
+   */
+  weightSource?: string | null;
+  weightReadingLbs?: number | null;
+  weightRule?: string | null;
+  weightConfirmedBy?: string | null;
+  weightConfirmedByName?: string | null;
+  weightConfirmedAt?: string | null;
+  weightNote?: string | null;
+  weightEstimate?: unknown;
+  weightEstimatedAt?: string | null;
 }
 
 /** Row shape returned by Supabase (snake_case) */
@@ -194,6 +209,16 @@ export interface VehicleRow {
   title_status_verified_at?: string | null;
   title_status_verified_by?: string | null;
   title_status_evidence?: string | null;
+  // The 130-U box 11 record (migration 20261002000001).
+  weight_source?: string | null;
+  weight_reading_lbs?: number | null;
+  weight_rule?: string | null;
+  weight_confirmed_by?: string | null;
+  weight_confirmed_by_name?: string | null;
+  weight_confirmed_at?: string | null;
+  weight_note?: string | null;
+  weight_estimate?: unknown;
+  weight_estimated_at?: string | null;
 }
 
 // Pipeline columns are optional on insert (nullable in DB, no default)
@@ -213,7 +238,10 @@ type PipelineColumns =
   | "last_known_location" | "readiness_bucket" | "keys_status" | "gps_status"
   | "insurance_status" | "title_registration_status" | "last_census_at"
   | "title_status" | "title_status_verified_at" | "title_status_verified_by"
-  | "title_status_evidence";
+  | "title_status_evidence"
+  | "weight_source" | "weight_reading_lbs" | "weight_rule" | "weight_confirmed_by"
+  | "weight_confirmed_by_name" | "weight_confirmed_at" | "weight_note"
+  | "weight_estimate" | "weight_estimated_at";
 
 export type VehicleInsert = Omit<
   VehicleRow,
@@ -486,6 +514,15 @@ export function mapVehicleRow(row: VehicleRow): Vehicle {
     insuranceStatus: row.insurance_status ?? null,
     titleRegistrationStatus: row.title_registration_status ?? null,
     lastCensusAt: row.last_census_at ?? null,
+    weightSource: row.weight_source ?? null,
+    weightReadingLbs: row.weight_reading_lbs ?? null,
+    weightRule: row.weight_rule ?? null,
+    weightConfirmedBy: row.weight_confirmed_by ?? null,
+    weightConfirmedByName: row.weight_confirmed_by_name ?? null,
+    weightConfirmedAt: row.weight_confirmed_at ?? null,
+    weightNote: row.weight_note ?? null,
+    weightEstimate: row.weight_estimate ?? null,
+    weightEstimatedAt: row.weight_estimated_at ?? null,
   };
 }
 

@@ -913,11 +913,11 @@
         },
         "emptyWeight": {
           "question": "¿Cuál es el peso vacío?",
-          "note": "En libras. Casilla 11 del formulario; está en el marco de la puerta o en el título anterior."
+          "note": "En libras. Casilla 11; está en el título de Texas (WEIGHT) o en el título de otro estado. El marco de la puerta muestra el GVWR, no el peso vacío."
         },
         "carryingCapacity": {
           "question": "¿Cuál es la capacidad de carga?",
-          "note": "Solo camionetas y vanes. Está en el marco de la puerta."
+          "note": "Solo camionetas y vanes. El GVWR del marco de la puerta menos el peso vacío, o la cifra del propio comprador."
         }
       },
       "financing": {
@@ -1876,6 +1876,105 @@
         "voidNotCurrent": "Esa copia ya no es la archivada. Vuelva a cargar los papeles.",
         "voidCouldNotCheck": "No se pudieron revisar los papeles, así que no se anuló nada. Intente de nuevo.",
         "voidFailed": "No se pudo anular. No cambió nada. Intente de nuevo."
+      }
+    },
+    "weight": {
+      "sources": {
+        "texas_title": "Título de Texas",
+        "out_of_state_title": "Título de otro estado",
+        "mco": "MCO",
+        "weight_certificate": "Certificado de peso",
+        "kbb_jdpower": "KBB o JD Power",
+        "estimate_epa": "Estimado (datos de prueba de la EPA)",
+        "estimate_canada": "Estimado (Transport Canada)",
+        "estimate_vpic": "Estimado (decodificación del VIN)",
+        "typed_unrecorded": "Escrito en esta venta, sin fuente registrada"
+      },
+      "sourceButtons": {
+        "texas_title": "Título De Texas",
+        "out_of_state_title": "Título De Otro Estado",
+        "mco": "MCO",
+        "weight_certificate": "Certificado De Peso",
+        "kbb_jdpower": "KBB O JD Power"
+      },
+      "estimateLabel": "Estimado",
+      "box11": "{lbs} lb",
+      "box11Reads": "La casilla 11 dirá {lbs} lb ({rule}).",
+      "rules": {
+        "roundUp": "redondeado hacia arriba a la siguiente centena",
+        "plus100RoundUp": "más 100 lb por ser vehículo de pasajeros, redondeado hacia arriba a la siguiente centena"
+      },
+      "methodEpa": "Estimado con datos de prueba de la EPA para el {vehicle}: la EPA probó el {epaModels} ({yearUsed}) a {etw} lb, que es el carro más 300 lb, así que pesa unas {curb} lb (de {low} a {high} lb).",
+      "methodEpaOtherYear": "La EPA no publicó {year}; esta es su cifra de {yearUsed}.",
+      "listAnd": "y",
+      "methodCanada": "Estimado con las especificaciones de Transport Canada: unas {curb} lb (de {low} a {high} lb entre las versiones).",
+      "methodVpic": "Estimado de la decodificación del VIN: {curb} lb. Suele dar la versión más pesada, así que puede estar hasta 700 lb alto.",
+      "ruleLine": "Casilla 11: {rule}.",
+      "crossCanada": "Transport Canada indica {lbs} lb.",
+      "crossVpic": "La decodificación del VIN indica {lbs} lb.",
+      "lowConfidence": "Las fuentes difieren por {spread} lb. Léalo del título si puede.",
+      "confirm": "Confirmar Este Peso",
+      "confirming": "Confirmando",
+      "orType": "O escríbalo de un documento",
+      "typeIt": "Escríbalo de un documento",
+      "typeLabel": "Peso como aparece impreso, en libras",
+      "whichDocument": "¿De qué documento es?",
+      "reason": "¿Por Qué Es Diferente?",
+      "reasonHint": "El documento registrado dice {lbs} lb.",
+      "farFromEstimate": "Eso está a más de 300 lb del estimado de {lbs} lb. Revise el documento.",
+      "gateLead": "Este necesita el peso de un documento: el título, el MCO o un certificado de peso.",
+      "gate": {
+        "pickup": "Una pickup o camioneta de trabajo nunca se tramita con un estimado.",
+        "cargoVan": "Una van de carga o de trabajo nunca se tramita con un estimado.",
+        "incomplete": "Un chasis cabina no tiene peso vacío hasta que se termina de construir.",
+        "heavyDuty": "La EPA no tiene datos de prueba de vehículos de servicio pesado.",
+        "bus": "Un autobús se pesa, no se estima.",
+        "classUnknown": "El registro no dice qué tipo de vehículo es, así que podría ser una camioneta.",
+        "lowConfidence": "Las fuentes no coinciden lo suficiente para tramitarlo con un estimado.",
+        "nearSixThousand": "El estimado queda a menos de 300 lb de la línea de registro de 6,000 lb."
+      },
+      "hint": "Solo como referencia: se estima en unas {lbs} lb.",
+      "legacy": "En el registro del vehículo: {lbs} lb. No se anotó de dónde salió.",
+      "none": "No está en ningún registro. Léalo del título; sin título, se necesita un certificado de peso.",
+      "onFile": "Registrado: {lbs} lb ({source}).",
+      "answered": "En esta venta: {lbs} lb. {line}",
+      "entered": "{source}, escrito por {by} el {date}",
+      "confirmed": "{source}, confirmado por {by} el {date}",
+      "noDate": "{source}",
+      "reasonLine": "Por qué difiere: {reason}",
+      "review": {
+        "notSettled": "Todavía no se define",
+        "settle": "Definirlo",
+        "change": "Cambiar"
+      },
+      "handoff": {
+        "notRecorded": "Fuente no registrada; confírmelo en el 130-U",
+        "source": "Fuente: {line}"
+      },
+      "sale": {
+        "label": "Peso vacío",
+        "onFile": "{lbs} lb · {line}",
+        "estimate": "Unas {lbs} lb · Estimado, sin confirmar ({source})",
+        "legacy": "{lbs} lb · fuente no registrada",
+        "unknown": "Todavía no se sabe"
+      },
+      "start": "Peso vacío: unas {lbs} lb (estimado de {source}, se confirma en el 130-U)",
+      "startSources": {
+        "epa": "datos de prueba de la EPA",
+        "canada": "Transport Canada",
+        "vpic": "la decodificación del VIN"
+      },
+      "capacityMinimum": "Mínimo de TxDMV para este peso vacío (Manual de Registro, Tabla 2-1)",
+      "notSettledRefusal": "Primero defina el peso vacío (casilla 11): confírmelo, o escríbalo del título.",
+      "errors": {
+        "estimateMissing": "No hay estimado para este vehículo. Escriba la cifra del título.",
+        "estimateNeedsDocument": "Este vehículo necesita el peso de un documento: el título, el MCO o un certificado de peso.",
+        "estimateChanged": "El estimado cambió; revíselo de nuevo.",
+        "documentOnFile": "Ya hay una cifra de un documento registrada. Escriba la nueva cifra de un documento para cambiarla.",
+        "weightInvalid": "Escriba el peso en libras, como aparece impreso.",
+        "weightSourceMissing": "Diga de qué documento es la cifra.",
+        "reasonRequired": "Diga por qué es diferente del documento registrado.",
+        "saveFailed": "No se pudo guardar. Inténtelo de nuevo."
       }
     }
   }

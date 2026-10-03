@@ -15,6 +15,142 @@ passed on the command line and never written to a file:
 
 The desk this one was forked from has the same requirements.
 
+## 000000. Merge: void, lock and reset with the automatic empty weight (10/03/2026)
+
+This section records the merge of `claude/desk-void-and-freeze` (sections
+00000 and the first 0000 below) and `claude/desk-empty-weight` (the second
+0000 below), which were built in parallel on 10/02/2026. It supersedes them
+only where the two met; everything else in each still stands. Port **5193**
+only (5190, 5191 and 5192 were not touched; every walk script refuses any
+other local port).
+
+**Where the two met, and how they were joined.** Nothing either side does
+was dropped: every refusal, guard, test and walk feature of both is kept.
+
+1. **`finalizePaperwork`** (`src/lib/actions/paperwork.ts`). The void
+   branch files from answers the server resolves itself
+   (`paperworkFilingContext` then `paperworkAnswers`) and adds the
+   `billOfSaleAlreadyFiled`, `billOfSaleFirst` and `figuresChanged`
+   refusals; the weight branch refuses a 130-U whose box 11 nobody settled
+   (or whose sale cannot be read) and writes box 11 with its nine
+   `_emptyWeight*` keys from the server's own read. Joined: the filing
+   context now carries the empty-weight context, so box 11 and its record
+   are among the server-derived answers (a review screen that posted a box
+   11 or a record the sale no longer holds is refused as `figuresChanged`);
+   the box 11 guard and overwrite run after the refiling gates, so the
+   provenance keys it writes blank are never mistaken for answers the sale
+   does not hold. A 130-U still refuses without its sale or a settled box 11.
+2. **`savePaperworkAnswer`**: the freeze check on the bill of sale's
+   answers and the box 11 guard (only the empty-weight screen writes
+   `emptyWeight` and `_emptyWeight*`) both stand.
+3. **Screens**: `PaperworkScreen` takes both `freeze` and
+   `weightPrompt`/`suggestionNote`; `SaleDetailView` keeps the void link,
+   the printed licence and price for Close The Sale, and the empty-weight
+   line; `ReviewStep` had `Link` imported by both sides, now once.
+4. **Migrations**: both branches named theirs `20261002000000_*`, one
+   version for two files (the Supabase CLI records a migration by its
+   version, so the second could not be recorded). The
+   empty-weight one is now `20261002000001_vehicle_empty_weight.sql`
+   (unchanged inside; the two are independent). README owner step 2 lists
+   all three in order.
+5. **Walk scripts**: one `DESK_BASE` reading, in `desk-base.cjs` (default
+   `http://localhost:5190`), with its guard against other local ports; the
+   ceremony follows a signing link to the same path on `DESK_BASE`
+   (`follow()` in `desk-base.cjs`) and saves it to `signing-url.txt`, and
+   keeps the Spanish prompt and receipt; `sale.cjs` keeps `RESUME_DEAL`, the refused
+   start, the `vin` start through "Not on the lot?" and the `expect` checks;
+   `bhph-void.json` taps "Texas Title" after typing box 11, like the
+   scenario it follows.
+6. **Docs**: SKILL.md and the SOP carry every rule of both once; the SOP
+   keeps "Empty weight (130-U box 11)" and "Voiding and filing again" as
+   their own subsections and states the joined filing rule in each.
+
+**Tests.** One existing test needed the merged rule: in
+`filing-again-goes-through-the-same-gates`, a 130-U now files only with a
+settled box 11, so the fixture's deal carries one (typed off a Texas title,
+as the empty-weight screen writes it), and the re-filed 130-U is also
+checked to carry it. Two new cases there: a 130-U posted with a box 11 or a
+box 11 source the sale does not hold is refused as `figuresChanged`, and one
+past every refiling gate with no settled box 11 still does not file; and a
+130-U whose box 11 is the car's own title figure files when posted the way
+the review screen posts it (it fails if the filing context drops the
+empty-weight context, or if the box 11 overwrite runs before the gates). The
+migration rename moved one path in `the-public-site-never-sees-a-weight`.
+Nothing was skipped, weakened or deleted.
+
+### Checks
+
+| Check | Result |
+|---|---|
+| `npx tsc --noEmit` | exit 0 |
+| `npx eslint .` | 0 errors, the same 4 pre-existing warnings |
+| `npx vitest run` (default workers, first run after the merge, before the last new case) | **176 files, 2,235 tests passed** (void 155 / 2,010 and weight 161 / 1,960 over a common 140 / 1,736, plus one new case) |
+| `npx vitest run` (default workers, three later runs, load average 11 to 13 from other work on the machine) | every test passed but one timeout by time alone per run, each a different fact of `no-hardcoded-dealer-facts` (5,040, 5,152 and 6,458 ms against its 5,000 ms limit; the known loaded case in section 0000 below); alone it passes 28 / 28 |
+| `npx vitest run --maxWorkers=2` (final) | **176 files, 2,236 tests passed**; `test-output.txt` |
+| `npx next build` | exit 0; `next-env.d.ts` restored with `git checkout` |
+
+### Live (port 5193, preview mock)
+
+`.next` deleted, then
+
+```
+setsid env PORT=5193 NEXT_PUBLIC_SITE_URL=http://localhost:5193 \
+  DESK_ALLOW_UNSET_FACTS=true DESK_PREVIEW_MEMBER=fresh \
+  ADMIN_SESSION_SECRET=<throwaway> INTERNAL_RENDER_TOKEN=<throwaway> \
+  CHROME_PATH=<chromium> node_modules/.bin/next dev -p 5193
+```
+
+stopped with `kill -- -<PGID>`. Walks with `DESK_BASE=http://localhost:5193`,
+all at 1440×900, on one server, in this order:
+
+| Walk | Result |
+|---|---|
+| `onboard.cjs` as Maria Lopez | name, signature, "You Are All Set", Handle A Sale |
+| `estimate-confirm` sale, then ceremony (first, before any walk types a weight for the Camry) | `EXPECT OK form130U/review :: Estimate (EPA test data), confirmed by`; **2 / 2 signed**, Ready To Print |
+| `cash-otd` sale (typed 3340, Texas Title), then ceremony | **2 / 2 signed**, Ready To Print |
+| `freeze.cjs` on the cash-otd deal | funding and the amount refused with the bill of sale's sentence, registration and insurance with `planFrozen` (the filed 130-U), each EN and ES; held note shown; reload unchanged |
+| `bhph-trade` sale (typed 4400, Texas Title), then ceremony | **3 / 3 signed**, Ready To Print |
+| `void.cjs` as sales | Void disabled, "Only an owner or a manager can void it." |
+| `void.cjs` as owner, `NEW_DOWN=2000`, with the ceremony's link | "Void The Bill Of Sale?", three documents "Signed by the buyer", Keep It focused; summary banner; "Waiting For The New Copies 0 on file · 3 to file again"; the notice with who, when and the quoted reason; Voided Copies (3); old link "This link was replaced." and its buyer route **410**; Down today 2000 saved, no refusal |
+| `sale.cjs` with `RESUME_DEAL` and `bhph-void.json`, then ceremony with the new link | bill of sale, 130-U (box 11 not asked again: settled on the deal) and contract filed again; **3 / 3 signed**, Ready To Print; "Replaces the copy voided" on all three |
+
+`follow()` was moved into `desk-base.cjs` after these walks (the ceremony
+had done the same rewrite inline); on a second fresh server `onboard.cjs`,
+then `cash-otd` and its ceremony with the final scripts: **2 / 2 signed**,
+the saved link on port 5193.
+
+Every walk: **0 contrast failures, 0 page errors**. Server log: no
+TypeError and no failed write; three `Error: aborted` (`ECONNRESET`) lines
+when `freeze.cjs` closed its browser with a request in flight.
+
+**Read back** (`GET /api/documents/agreements/<id>`, and the PDFs through
+the packet's own links, PyMuPDF):
+
+| Filing | Box 11 | `_emptyWeightSource` | Reading | Rule | From | By | Keys |
+|---|---|---|---|---|---|---|---|
+| `estimate-confirm` 130-U | 3500 | `estimate_epa` | 3325 | `plus100RoundUp` | deal | Maria Lopez | 9 |
+| `cash-otd` 130-U | 3400 | `texas_title` | 3340 | `roundUp` | deal | Maria Lopez | 9 |
+| `bhph-trade` 130-U, voided | 4400 | `texas_title` | 4400 | `roundUp` | deal | Maria Lopez | 9 |
+| `bhph-trade` 130-U, filed again (parent: the voided one) | 4400 | `texas_title` | 4400 | `roundUp` | deal | Maria Lopez | 9 |
+
+On the voided deal: the two 130-U PDFs print `11 Empty Weight` 4400, the
+voided one stamped VOID on both pages; the three voided PDFs are named
+`…_VOIDED_20261002.pdf` and stamped on every page; the voided bill of sale
+and contract state the lien and amount financed **$6,045.50** (down
+$1,500), the new ones **$5,545.50** (down $2,000), as in the void branch's
+own run.
+
+**Not run again here** (each branch ran them at both sizes, and none of
+their code paths changed in the merge beyond what the walks above cover):
+the 390×844 walks, the Spanish void, `reset.cjs`, and the `title-on-file`,
+`no-source`, `cash-balance`, `bank` and `buyer-files` scenarios.
+
+**Seen, not changed:** neither branch holds box 11 once the 130-U is filed.
+The void's lock covers what the bill of sale prints, and box 11 is not on
+it, so the empty-weight screen can still change the deal's box 11 after the
+130-U is filed (the filed copy keeps its own). Whether a filed 130-U should
+hold it is the owner's call.
+
 ## 00000. Review and verify fixes to the void, the freeze and the reset (10/02/2026)
 
 This section records the latest run and supersedes section 0000 and below
@@ -388,6 +524,246 @@ and `reset-390x844/`; `pdfs/` holds the stamped voided bill of sale).
   scope).
 - The new Spanish strings (freeze, void, ceremony, reset, `planFrozen`) need
   a native speaker's or counsel's review.
+
+## 0000. The 130-U empty weight, automatic and sourced (10/02/2026)
+
+This section records the empty-weight change and supersedes the sections
+below where they differ. How the weight is found and what staff see is in
+the README ("The 130-U empty weight (box 11)"); the standard every desk ships
+with is in the SOP ("Empty weight (130-U box 11)").
+
+The runs used the desk's own dev server on port 5192, started fresh for each
+screen size, on the in-memory preview mock (no Supabase) with
+`DESK_ALLOW_UNSET_FACTS=true` and throwaway `ADMIN_SESSION_SECRET` and
+`INTERNAL_RENDER_TOKEN` values passed on the command line. This sandbox has
+no Chrome, so the bill of sale's HTML-to-PDF route answers 500 "Chrome not
+found"; that route is not part of this change. The 130-U PDF is filled on the
+server and was read back field by field.
+
+**What the desk does now.**
+
+- A document figure on the car (Texas title, out-of-state title, MCO, weight
+  certificate, KBB or JD Power) skips the 130-U question and is affixed with
+  its source.
+- Otherwise a sourced estimate is offered for one tap: EPA test weight less
+  300 lb from a bundled table, cross-checked against Transport Canada and the
+  VIN decode, rounded per TxDMV, with the sentence that says which EPA models
+  it stands on.
+- Pickups, work vans, cab-chassis, heavy duty, buses, a vehicle whose kind
+  nobody recorded, a low-confidence estimate no second source supports, and
+  anything within 300 lb of 6,000 lb need a document; the estimate is shown
+  as a hint only.
+- Nothing known: the question is asked exactly as before.
+- A 130-U with box 11 unsettled does not file. Filing rewrites box 11 and
+  its `_emptyWeight*` record in `form_data` from the server's own read.
+
+**What the review found, and what changed.**
+
+1. **A pickup with no body style and no decode got the one-tap Confirm and
+   the passenger +100** (2018 F-150, Gladiator, Frontier, Ranger, Maverick,
+   Santa Cruz). **Fixed:** an unknown class needs a document
+   (`classUnknown`); a pickup or work van is also known by name
+   (`workVehicleByName`, whole words, so a Range Rover is never a Ranger and
+   a Mercedes E 350 is never a Ford E-350) and by an EPA match named PICKUP,
+   CAB or CHASSIS; a pickup by name is a truck for the rounding, so its MCO
+   gets no +100; a lot body style of "Van" or "Cargo Van" is a work van.
+   Test: `an-unknown-vehicle-is-never-a-car`.
+2. **One vPIC timeout fixed a car's class for the life of the table** (the
+   lot-row estimate was stored and reused). **Fixed:** only an estimate made
+   from a decode (or for a car with no VIN) is stored; a lot-row stand-in is
+   held in memory for 5 minutes and the decode is tried again; a stored
+   lot-row estimate is decoded over. Test:
+   `a-weight-estimate-follows-the-car`.
+3. **A stored estimate outlived a corrected vehicle row.** **Fixed:** the
+   estimate carries the row's fingerprint (VIN, year, make, model, trim, body
+   style, engine, drive, fuel) and is worked out again when it no longer
+   matches, written over only where the old one still stands. Test:
+   `a-weight-estimate-follows-the-car`.
+4. **Short names matched longer, different vehicles at medium confidence**
+   (ProMaster as PROMASTER CITY, Bronco with BRONCO SPORT, Range Rover with
+   EVOQUE, Transit with TRANSIT CONNECT). **Fixed:** the query's own model
+   wins over names that add a different-vehicle word; a match on such names
+   only is `+partial`; `+partial`, a range wider than 600 lb, or a lot row
+   with no engine size is low confidence, and low confidence no second source
+   supports within 250 lb needs a document. **Added this run:** the
+   reviewer's 2018 Civic whose decode Series is "Type R" still blended in the
+   plain Civic's rows (2,700 lb). A query that names the variant now keeps
+   only the rows that carry it (`+variant`): 3,075 lb, against a published
+   curb weight of about 3,117. Measured on all 1,706 crash-test vehicles
+   before adopting it: no vehicle changed (coverage 1,534, 89.9%; median
+   error 67 lb; p95 346 lb), and the regenerated fixture is byte-identical.
+   Adding POLICE to the different-vehicle words was tried and left out: it
+   moved Crown Victoria and Explorer away from their lab weights. Test:
+   `the-estimate-names-what-epa-tested` (the new case fails without the
+   rule).
+5. **The method sentence named the car being sold as what EPA tested.**
+   **Fixed:** it names the EPA models it stands on ("EPA tested the Camry,
+   Camry LE/SE and Camry XLE/XSE (2019) at 3,625 lb"), and the confirmed
+   record keeps them. Test: `the-estimate-names-what-epa-tested`.
+6. **webDEALER's Copy All pasted a weight nobody recorded the source of.**
+   **Fixed:** that figure is shown with "Source not recorded; confirm it on
+   the 130-U", has no copy button (a link to the 130-U instead), reads "(not
+   confirmed; settle it on the 130-U)" in Copy All, and counts as missing.
+   The pinned `webdealer-copy-fields` test (3265 shown) is unchanged. Test:
+   `an-unsourced-weight-is-never-pasted`.
+7. **With the sale unreadable, the filing skipped the weight gate.**
+   **Fixed:** a 130-U whose sale the server cannot read does not file. Test:
+   `a-130u-without-its-sale-does-not-file`.
+8. **The table build took its dates from file times.** **Fixed:** it reads a
+   manifest (URL, sha256, download date) written by `--download`, stops on a
+   file the manifest does not name or whose bytes changed, and never reads a
+   file time. Test: `the-epa-table-rebuilds-the-same`.
+9. **A VIN that decodes to another make of the same year drove the
+   estimate.** **Fixed:** the decode is used only when it agrees with the lot
+   row on year and make (FORD and Ford, RAM and Dodge are one make). Test:
+   `a-weight-estimate-follows-the-car`.
+
+The verification's own notes, settled:
+
+- *A decoder curb weight does not skip the question.* By design: it is an
+  estimate, and an estimate needs a person's confirmation before it is
+  filed. Only a document figure skips the question.
+- *The "Not on any record" state was never seen live.* It is now: the new
+  `no-source` walk starts a sale for a 1991 Geo Storm through "Not on the
+  lot? Enter a VIN". EPA's table starts at MY1995, Transport Canada returns
+  nothing for it, and vPIC has no curb weight before 2015. The question
+  reads "Not on any record. Read it off the title; without one, a weight
+  certificate is needed.", the input starts empty, and the typed title
+  figure (2,340) files as 2,400 with its source.
+- *The Camry range reads 3,137 to 3,388 lb around 3,325.* Correct as shown:
+  EPA tested the 2019 Camry 2.5 twice at ETW 3,500 (the L) and six times at
+  3,625. The median gives 3,325, and the range runs from the lighter class's
+  floor to the heavier class's ceiling. Box 11 is 3,500 either way.
+- *`form_data` was not dumped.* It is now, below, from
+  `GET /api/documents/agreements/<id>` on the running preview.
+- *The override script logged "REFUSAL NONE".* The script read only the
+  first alert node (Next's route announcer). It now reads every alert; the
+  screenshots show the refusal at both sizes.
+
+### Checks
+
+| Check | Result |
+|---|---|
+| `npx tsc --noEmit` | exit 0 |
+| `npx eslint` | 0 errors, the same 4 warnings, all in files this change does not touch |
+| `npx vitest run` | 161 files, 1960 tests passed (was 140 and 1736); 21 new files, no existing test file changed; `test-output.txt` |
+| `npx next build` | exit 0; `next-env.d.ts` restored afterwards |
+| EPA table in the client bundle | 0 files in `.next/static` carry it; 4 server chunks do |
+| Crash-test accuracy (Python reference, all 1,706 vehicles) | coverage 1,534 (89.9%), median error 67 lb, p95 346 lb |
+| TypeScript port against the reference | equal on every fixture row (parity test); fixture regenerated byte-identical after the `+variant` rule |
+
+The first full test run after a machine restart failed one check by time
+alone: `no-hardcoded-dealer-facts` "does not hardcode the phone number" took
+5,027 ms against its 5,000 ms limit while every file was compiled cold
+(imports 55 s against 30 s warm). Two warm runs passed 161 of 161 at the
+default worker count, and the check passes alone in about 1.9 s. The guard
+re-parses every script once per fact; the new empty-weight files add about
+65 ms (about 6%) to each 1.1 s pass, most of which is existing code. The
+test was not changed.
+
+### Walks, at 390×844 and 1440×900
+
+Eight scenarios at each size, each on a fresh server, each signed through
+the ceremony to its packet:
+
+| Scenario | 390×844 | 1440×900 |
+|---|---|---|
+| `estimate-confirm` (2019 Camry, one-tap EPA estimate; review shows "Estimate (EPA test data), confirmed by") | 2 / 2 signed | 2 / 2 signed |
+| `title-on-file` (2020 Altima, Texas title on the car; no weight screen; review shows "Texas title") | 2 / 2 signed | 2 / 2 signed |
+| `no-source` (1991 Geo Storm by VIN; question reads "Not on any record"; typed title figure) | 2 / 2 signed | 2 / 2 signed |
+| unfiled Camry (stopped at the weight question; refused at filing; settled; filed) | 2 / 2 signed | 2 / 2 signed |
+| `cash-otd` | 2 / 2 signed | 2 / 2 signed |
+| `bank` | 2 / 2 signed | 2 / 2 signed |
+| `bhph-trade` | 3 / 3 signed | 3 / 3 signed |
+| `buyer-files` (no 130-U) | 3 / 3 signed | 3 / 3 signed |
+| `cash-balance` | 2 / 2 signed | 2 / 2 signed |
+
+Every `expect` check passed, 0 contrast failures in the sales and the
+ceremonies, 0 page errors in the walks and the direct scripts. Server logs:
+no TypeError, no unhandled error, no failed weight write; the only errors
+are the bill of sale's "Chrome not found" (8 per run).
+
+### Box 11 on paper and on the record
+
+Read back from each filing's `form_data` (`GET /api/documents/agreements/<id>`),
+identical at both sizes, and, for the first four, from the filed 130-U PDFs
+(field `11 Empty Weight`, PyMuPDF):
+
+| Sale | PDF box 11 | `_emptyWeightSource` | Reading | Rule | From | By |
+|---|---|---|---|---|---|---|
+| `estimate-confirm` (Camry) | 3500 | `estimate_epa` | 3325 | `plus100RoundUp` | deal | owner@example.dev |
+| `title-on-file` (Altima) | 3300 | `texas_title` | 3252 | `roundUp` | vehicle | Preview Fixture |
+| `no-source` (Geo Storm) | 2400 | `texas_title` | 2340 | `roundUp` | deal | owner@example.dev |
+| unfiled, then settled (Camry) | 3500 | `estimate_epa` | 3325 | `plus100RoundUp` | deal | owner@example.dev |
+| `cash-otd` (Camry) and `bank` (CR-V), typed | 3400 | `texas_title` | 3340 | `roundUp` | deal | owner@example.dev |
+| `bhph-trade` (Explorer), typed | 4400 | `texas_title` | 4400 | `roundUp` | deal | owner@example.dev |
+| `cash-balance` (Malibu), typed | 3100 | `texas_title` | 3100 | `roundUp` | deal | owner@example.dev |
+
+Each confirmed estimate also keeps `_emptyWeightEstimate`: EPA 2019, ETW
+3,625, the models CAMRY, CAMRY LE/SE and CAMRY XLE/XSE, the EPA file
+(`19tstcar-2020-10-02.xlsx`), Transport Canada 3,472 lb, the VIN decode
+3,572 lb, confidence high, table built 10/02/2026. Every filing carries
+`_emptyWeightAt`. The state form prints only the number. The rasterised box
+is in `empty-weight/pdf-box11-*.png`.
+
+### What the screens showed (both sizes)
+
+Screenshots in `docs/verification/empty-weight/` (each at 390 and 1440),
+with the full log in `walk-summary.txt`:
+
+- **Estimate** (`b1-estimate-card`): "Estimate 3,500 lb", the method
+  sentence naming the EPA models, "Transport Canada lists 3,472 lb. The VIN
+  decode lists 3,572 lb.", one Confirm This Weight.
+- **Unsettled** (`b2`, `b3`): the review reads "Empty Weight: Not settled
+  yet · Settle It", and File The Form 130-U is refused with "Settle the
+  empty weight (box 11) first: confirm it, or type it from the title." After
+  one tap (`b4`) the review reads "3,500 lb · Estimate (EPA test data),
+  confirmed by owner@example.dev on 10/02/2026" and it files (`b5`).
+- **Nothing known** (`d-no-source-vin`, `d-no-source-question`,
+  `d-no-source-review`): the decoded card shows no weight line; the question
+  reads "Not on any record. Read it off the title; without one, a weight
+  certificate is needed." with an empty input; the review reads "2,400 lb ·
+  Texas title, entered by owner@example.dev on 10/02/2026".
+- **Pickup** (`01` to `04`): "This one needs the weight from a document ...
+  A pickup or work truck is never filed on an estimate. For reference only:
+  estimated at about 4,950 lb." with no Confirm; 5012 from a Texas title
+  reads "Box 11 will read 5,100 lb"; carrying capacity starts at 1000,
+  labelled "TxDMV minimum for this empty weight (Registration Manual Table
+  2-1)".
+- **Weight with no recorded source** (`05`, `06`, `bmw-handoff-row`): "On
+  the vehicle record: 3,765 lb. Where it came from was not recorded.", the
+  input starts empty; the webDEALER row shows 3765 with "Source not
+  recorded; confirm it on the 130-U", no copy button and a link to the
+  130-U; the sale page reads "About 3,950 lb · Estimate, not confirmed (EPA
+  test data)".
+- **Override with a reason** (`10` to `14`): the Altima review shows "3,300
+  lb · Texas title, entered by Preview Fixture on 10/01/2026"; Change
+  reopens with "On file: 3,300 lb (Texas title)."; 3400 with no reason is
+  refused ("Say why it is different from the document on file."); with "Title
+  reissued after a bed liner was fitted" it saves, and the review, sale page
+  and handoff all show 3,400 with its source and reason.
+- **Handoff and sale page** (`*-handoff-row`, `*-sale-page`): the same
+  figure and source line as the review and the PDF for every sale above.
+
+### Open items
+
+1. **Apply the migration before deploying** this version:
+   `supabase/migrations/20261002000001_vehicle_empty_weight.sql` (README
+   owner step 14). The sale pages read the new columns.
+2. **Two questions for the county**, recorded in the SOP: whether +100
+   applies to a passenger-truck vehicle registered Passenger from a web curb
+   weight, and how RTB 010-16's +100 sits with the 2026 guideline. The
+   confirm step keeps a person in the loop meanwhile.
+3. **Walk and demo data:** a typed weight must name its document, so the
+   five standard scenarios tap "Texas Title" after typing it, and any
+   recorded demo that files a 130-U needs the same tap. A title figure typed
+   on one sale is written to the car, so walk `estimate-confirm` first on a
+   fresh preview server (SOP, Verification).
+4. **The bill of sale PDF** could not be rendered here (no Chrome); the
+   130-U PDFs were.
+5. **Merge:** the void/freeze work also edits `finalizePaperwork` in
+   `src/lib/actions/paperwork.ts`; this change adds 14 lines there, plus a
+   5-line guard in `savePaperworkAnswer` and one import.
 
 ## 000. Review fixes to the four decisions (10/02/2026)
 

@@ -32,6 +32,36 @@ import { readBuyerId, settled } from "@/lib/sales/buyer-id";
 import { codeCase } from "@/lib/documents/presentation-case";
 import { readMoney } from "@/lib/sales/money";
 import { paperworkMoney, readPaperwork } from "@/lib/sales/paperwork";
+import { getFunnelStrings, fillTemplate } from "@/lib/sales/i18n";
+import { affixedEmptyWeight, emptyWeightContext } from "@/lib/vehicles/empty-weight/on-the-sale";
+import { lbs, weightSourceLabel, weightSourceLine } from "@/lib/vehicles/empty-weight/copy";
+import type { WeightEstimate } from "@/lib/vehicles/empty-weight/types";
+
+/**
+ * The car's empty weight in one line, with where it came from: box 11 as
+ * this sale settled it, else the vehicle's document figure, else an
+ * estimate said to be one, else nothing known. The sale screen is English,
+ * like the rest of this view; the words live in the catalogue.
+ */
+function emptyWeightLine(sale: SaleDetail, estimate: WeightEstimate | null): string {
+  const t = getFunnelStrings("en");
+  const ctx = emptyWeightContext(sale.vehicle, estimate);
+  const affixed = affixedEmptyWeight(readPaperwork(sale.stepData, "form130U"), ctx);
+  if (affixed) {
+    return fillTemplate(t.weight.sale.onFile, {
+      lbs: lbs(Number(affixed.emptyWeight)),
+      line: weightSourceLine(t, { kind: affixed._emptyWeightSource, by: affixed._emptyWeightBy, at: affixed._emptyWeightAt }),
+    });
+  }
+  if (ctx.estimate) {
+    return fillTemplate(t.weight.sale.estimate, {
+      lbs: lbs(ctx.estimate.curbLbs),
+      source: (t.weight.startSources as Record<string, string>)[ctx.estimate.source] ?? weightSourceLabel(t, null),
+    });
+  }
+  if (ctx.legacyLbs !== null) return fillTemplate(t.weight.sale.legacy, { lbs: lbs(ctx.legacyLbs) });
+  return t.weight.sale.unknown;
+}
 
 /**
  * A sale.
@@ -111,9 +141,12 @@ function Fact({ label, value }: { label: string; value: string }) {
 export default function SaleDetailView({
   sale,
   backLink,
+  weightEstimate = null,
 }: {
   sale: SaleDetail;
   backLink: React.ReactNode;
+  /** The car's empty-weight estimate, when the page resolved one in time. */
+  weightEstimate?: WeightEstimate | null;
 }) {
   const buyerName = sale.buyer?.name?.trim() || "Buyer not set";
   const completed = sale.status === "completed";
@@ -205,6 +238,11 @@ export default function SaleDetailView({
             {vehicleLabel(sale.vehicle)}
             {sale.vehicle?.vin ? ` · VIN ${sale.vehicle.vin.toUpperCase()}` : ""}
           </p>
+          {sale.vehicle ? (
+            <p className="ed-fine ed-sale-weight" data-sale-weight="true">
+              {getFunnelStrings("en").weight.sale.label}: {emptyWeightLine(sale, weightEstimate ?? null)}
+            </p>
+          ) : null}
           {/* What the title lets this sale be, computed and never typed. */}
           <DealBadge badge={badge} label={badge.label} gloss={badge.gloss} compact={badge.tone === "ok"} />
         </div>

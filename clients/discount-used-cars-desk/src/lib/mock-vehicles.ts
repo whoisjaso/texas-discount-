@@ -124,6 +124,19 @@ const MOCK_VEHICLES: Vehicle[] = [
     // One unverified title on purpose, so preview mode exercises the title
     // gate: the Start Sale badge, the block, and the resolve screen's row.
     titleType: null,
+    /*
+      Box 11 on file, from a document, so preview shows the 130-U skipping
+      its empty-weight question and the review naming the source. A fixture,
+      labelled as one: the reading is not off a real title.
+    */
+    weightSource: "texas_title",
+    weightReadingLbs: 3252,
+    weightLbs: 3300,
+    weightRule: "roundUp",
+    weightConfirmedBy: null,
+    weightConfirmedByName: "Preview Fixture",
+    weightConfirmedAt: "2026-10-01T15:00:00.000Z",
+    weightNote: "Preview fixture, not a real title",
   },
   {
     id: "mock-4",

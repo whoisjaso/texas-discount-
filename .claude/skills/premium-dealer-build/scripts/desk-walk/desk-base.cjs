@@ -4,9 +4,11 @@
 // desk's own `npm run dev` uses). Another local server on another port (a
 // video capture, a second checkout) must never be touched by a walk, so every
 // request a walk's browser makes to localhost or 127.0.0.1 on any other port
-// is aborted, and `go()` refuses to navigate anywhere but DESK_BASE. Start the
+// is aborted, and `at()` refuses to navigate anywhere but DESK_BASE. Start the
 // desk with NEXT_PUBLIC_SITE_URL set to the same origin, or its signing and QR
-// links point at the default port and the guard stops the walk there.
+// links point at the default port and the guard stops the walk there; the one
+// link a walk follows by hand, the ceremony's signing link, goes through
+// `follow()`, which takes it to the same path on DESK_BASE.
 const BASE = (process.env.DESK_BASE || 'http://localhost:5190').replace(/\/+$/, '');
 const ORIGIN = new URL(BASE).origin;
 
@@ -40,6 +42,15 @@ function at(pathOrUrl) {
   return url;
 }
 
+/**
+ * A link the desk printed, followed on DESK_BASE: the link carries the desk's
+ * configured origin (NEXT_PUBLIC_SITE_URL, or its default), so a walk against
+ * DESK_BASE follows it to the same path there and never to another server.
+ */
+function follow(href) {
+  return at(/^https?:\/\//.test(href) ? href.replace(/^https?:\/\/[^/]+/, BASE) : href);
+}
+
 /** The preview cookies for DESK_BASE's host. */
 function previewCookies(value) {
   const cookies = [{ name: 'tj-local-admin-preview', value, domain: new URL(BASE).hostname, path: '/' }];
@@ -50,4 +61,4 @@ function previewCookies(value) {
   return cookies;
 }
 
-module.exports = { BASE, ORIGIN, guard, at, previewCookies };
+module.exports = { BASE, ORIGIN, guard, at, follow, previewCookies };

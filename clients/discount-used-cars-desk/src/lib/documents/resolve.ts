@@ -16,14 +16,17 @@ import { looksLikeAStreet } from "@/lib/admin/address-lookup";
  * government file the intake screen has completed addresses against for
  * months. What is new is that the corridor reaches for it.
  *
- * ## The empty weight is deliberately not here
+ * ## The empty weight is resolved elsewhere, and never silently
  *
- * Box 11 was briefly resolved from NHTSA's curb weight, which was a mistake.
- * Curb weight is a manufacturer's figure for the model in general; the empty
- * weight is read off the door jamb or the old title of THIS vehicle, which is
- * what SALE_PROCESS_DESIGN.md has always said and what the dealership works
- * from. The vehicle row still supplies it when it holds one, straight through
- * `paperworkDefault`, and otherwise the question is asked.
+ * Box 11 was once filled from NHTSA's curb weight as if it were a fact about
+ * this car, which was a mistake: it is a figure for the model in general and
+ * vPIC's often reads the heaviest version. It now lives in
+ * `vehicles/empty-weight/`, under the same rules as this file plus one more:
+ * every figure carries its source. A document figure on the vehicle (a
+ * title, an MCO, a weight certificate) is box 11 and skips the question; an
+ * estimate (EPA test weight less 300 lb, Transport Canada, the decode) is
+ * shown with its source and becomes box 11 only when a person confirms it;
+ * with neither, the question is asked as it always was.
  *
  * ## Rules this keeps
  *
