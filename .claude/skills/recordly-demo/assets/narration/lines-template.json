@@ -1,0 +1,208 @@
+{
+  "_note": "The narrated long cut's house script: the same 24 lines for every client, with {{VARIABLES}} for what is client-specific. scripts/fill-narration.cjs fills it from client-inputs.json -> narration and writes the project's narration/lines.json (id, seg, text, speak: what Kokoro voices) and narration/script.md (the same lines with their pictures, for the owner to read before voicing). script-template.md is this script for people: the variables table, the conditions, the per-line desk checks and how to fill and fact-check. Keep the two in step: fill-narration.cjs selftest refuses a line whose text is not in script-template.md, and checks that filling this file with examples/discount-used-cars/client-inputs.json gives Discount's approved 24 lines exactly. Change a line's wording only as a template change (bump version, re-run the selftest); a new line goes in behind a flag that is false for Discount.",
+  "version": 1,
+  "approved": "Discount Used Cars and Trucks, script checked against the desk 10/02/2026, voiced and shipped 10/03/2026 (clients/discount-used-cars-demo/narration).",
+  "scenes": {
+    "site": "1 · The site",
+    "signin": "2 · Sign in once",
+    "car": "3 · The car",
+    "buyer": "4 · The buyer",
+    "money": "5 · The money",
+    "plan": "6 · The plan",
+    "payoff": "7 · The payoff",
+    "stored": "8 · Signed and stored",
+    "close": "9 · Close"
+  },
+  "variables": {
+    "ROAD_SAID": { "kind": "said", "perClient": true, "hint": "the road or area customers drive to, as said aloud (Gulf Fwy -> Gulf Freeway); the site's hero must show it", "source": "site business.ts street + the hero copy that names it" },
+    "STOCK_SAID": { "kind": "said", "hint": "what the lot sells, singular, the storyboard's BODY first, e.g. truck, car and SUV", "source": "the client's real inventory + dealership-config.ts profile.segment" },
+    "FEES_SAID": { "kind": "said", "hint": "the items the desk's receipt computes, as said, e.g. tax, title, registration and doc fee", "source": "the client's desk receipt (src/lib/sales/money.ts, dealerFees / the owner's fee schedule)" },
+    "LEGAL_NAME_SAID": { "kind": "said", "perClient": true, "hint": "LEGAL_NAME spelled for the voice (LLC -> L L C)", "source": "dealership-config.ts legalName" },
+    "DEALER_NAME_SAID": { "kind": "said", "perClient": true, "hint": "the dealer's name as customers say it (the DBA), spelled for the voice", "source": "site business.ts name / dealership-config.ts name" },
+    "CLOSE_TAGLINE": { "kind": "said", "house": "More buyers through the door. Less time on paperwork. Fewer mistakes that cost you money.", "hint": "the closing three payoffs; the house line unless the owner gives one, never a price, rating or 'best'", "source": "house default" },
+    "SERVICE_BAND": { "kind": "shown", "hint": "the site's sell band as it names itself, e.g. We Buy Cars", "source": "site Layout.tsx nav label / Home.tsx band" },
+    "LEGAL_NAME": { "kind": "shown", "perClient": true, "hint": "the legal name exactly as the documents print it, e.g. Example Motors, LLC", "source": "dealership-config.ts legalName" },
+    "DEMO_STAFF": { "kind": "shown", "house": "Maria Lopez", "hint": "the demo salesperson typed at onboarding (never a real person)", "source": "house demo data" },
+    "DEMO_BUYER": { "kind": "shown", "house": "James Carter", "hint": "the demo buyer on the DEMO card (never a real person)", "source": "house demo data (lesson N3)" },
+    "DEMO_CAR": { "kind": "shown", "hint": "the car picked off the desk's preview mock lot, e.g. 2019 Toyota Camry SE", "source": "the desk's src/lib/mock-vehicles.ts" },
+    "DEMO_ADDRESS": { "kind": "shown", "hint": "a real street near the dealer the Census geocoder knows and that is not a household", "source": "lessons N2 and B13" },
+    "DEMO_COUNTY": { "kind": "shown", "hint": "the county the desk's lookup gives for DEMO_ADDRESS", "source": "the desk's address lookup" },
+    "SELL_BAND": { "kind": "flag", "hint": "true when the site has the sell band and its trade-in lead form", "source": "site Home.tsx band + pages/Sell.tsx" },
+    "SPANISH_DOCS": { "kind": "flag", "hint": "true when the owner confirms they sell in Spanish (the desk's Spanish documents)", "source": "the owner; business.ts spanish; dealership-config.ts languages" },
+    "SELLER_LIEN": { "kind": "flag", "hint": "true when the owner lets a buyer drive off owing part of the price", "source": "the owner" },
+    "CLIENT": { "kind": "derived", "from": "client", "source": "client-inputs.json client" },
+    "BODY": { "kind": "derived", "from": "storyboard.BODY", "source": "client-inputs.json storyboard.BODY" },
+    "FINDER_QUERY": { "kind": "derived", "from": "storyboard.FINDER_QUERY", "source": "client-inputs.json storyboard.FINDER_QUERY" },
+    "SERVICE_TILE": { "kind": "derived", "from": "storyboard.SERVICE_TILE", "source": "client-inputs.json storyboard.SERVICE_TILE" },
+    "OUTRO_FACTS": { "kind": "derived", "from": "outroLines", "source": "client-inputs.json outroLines, joined with ' · '" }
+  },
+  "features": {
+    "site-hero-road": { "what": "The hero's headline or lede names {{ROAD_SAID}}, so the 1.5x hero zoom shows it as it is said.", "where": "site: src/pages/Home.tsx hero; business.ts street" },
+    "site-lineup-finder": { "what": "The lineup by body type, the finder's search, and the header's call button (tel: link).", "where": "site: src/pages/Home.tsx lineup and finder; src/components/Layout.tsx header" },
+    "site-sell-band": { "what": "The {{SERVICE_BAND}} band and its page take a trade-in lead.", "where": "site: src/pages/Home.tsx band; src/pages/Sell.tsx; src/lib/leads.ts ('trade-in')" },
+    "desk-admin-row": { "what": "The site's drawer has the Admin row to the sale desk.", "where": "site: src/components/Layout.tsx drawer (VITE_DESK_URL)" },
+    "onboarding-signature": { "what": "The first sign-in asks the member's legal name and a drawn signature, once, and the desk reuses it.", "where": "desk: src/app/admin/account/onboarding" },
+    "car-from-inventory": { "what": "Start A Sale picks the car off the lot; year, make, model and VIN are on every form without typing.", "where": "desk: src/components/admin/StartSale.tsx; the packet's documents" },
+    "odometer-from-inventory": { "what": "The odometer comes in from inventory, can be corrected, and every document prints that one reading.", "where": "desk: src/components/admin/StartSale.tsx ('Which Car Is It?'); the packet" },
+    "spanish-documents": { "what": "Marking the sale Spanish gives Spanish signing screens, acknowledgments and Buyer's Guide.", "where": "desk: StartSale.tsx language select; src/lib/sales/deal-language.ts; the packet in Spanish" },
+    "id-scan": { "what": "Scanning the licence's back fills the name and number; only what the operator confirms prints.", "where": "desk: src/components/sales/LicenceScanner.tsx; src/lib/sales/aamva.ts" },
+    "address-lookup": { "what": "Typing the street fills the city, the ZIP and the county.", "where": "desk: src/lib/admin/address-lookup.ts (NODE_USE_ENV_PROXY=1 behind a proxy, lesson N1)" },
+    "address-readback": { "what": "The mailing address is read back to the buyer and held to confirm before the sale starts.", "where": "desk: StartSale.tsx read-back and Hold To Confirm" },
+    "price-and-fees-question": { "what": "'How Much Are They Paying?' then 'Does That Include Tax And Fees?' (out the door or plus).", "where": "desk: src/lib/sales/guide.ts" },
+    "receipt-math": { "what": "The receipt computes {{FEES_SAID}} and shows the balance still owed.", "where": "desk: src/lib/sales/money.ts; dealership-config.ts dealerFees (or the owner's fee schedule)" },
+    "seller-lien": { "what": "A balance owed names the dealership as lienholder on the bill of sale and the 130-U.", "where": "desk: src/lib/documents/lien.ts; the bill of sale and 130-U of a deal with a balance" },
+    "who-files": { "what": "One tap on who files: We Do builds the 130-U packet, The Customer Does the responsibility form.", "where": "desk: src/lib/sales/guide.ts (registrationBy); src/lib/sales/sale-plan.ts" },
+    "inspection-status": { "what": "The inspection's three answers print on the buyer's copy.", "where": "desk: src/lib/sales/guide.ts (inspectionBy); the buyer's copy" },
+    "130u-county": { "what": "130-U box 19's county is the one from the address step.", "where": "desk: src/lib/fill-130u; a filled 130-U" },
+    "130u-seller-line": { "what": "The 130-U seller line prints '{{LEGAL_NAME}} (the member's name)' with the member's drawn signature.", "where": "desk: dealerSignerPrintedName in dealership-config.ts; src/lib/fill-130u/seller-line-fit.ts; SOP 130-U bullet" },
+    "phone-signing": { "what": "The buyer scans the packet's code and signs every page on their own phone.", "where": "desk: src/app/sign/packet/[token]" },
+    "past-sales": { "what": "Past Sales finds the sale by the buyer's name and opens its signed PDFs.", "where": "desk: src/app/admin/sales/past" }
+  },
+  "lines": [
+    {
+      "id": "01-site-a", "seg": "site", "key": "{{ROAD_SAID}}",
+      "cue": "The logo match-cuts onto the site's loader; the hero at 1.5x on the headline that names {{ROAD_SAID}}, as it is said; the scroll to the lineup on 'showroom'",
+      "text": "Your customers find you on their phone before they ever drive to {{ROAD_SAID}}. So the first thing they see is a showroom, not a lot.",
+      "needs": ["site-hero-road"]
+    },
+    {
+      "id": "02-site-b", "seg": "site", "key": "{{BODY}}",
+      "cue": "The lineup lands on the {{BODY}} card on the first word; 2.0x on it to 'one tap away' (the header's phone icon in frame); the visit card on 'Fewer tire-kickers'; the finder: Search clicked, '{{FINDER_QUERY}}' typed on 'knowing what they want'",
+      "text": "Every {{STOCK_SAID}}, searchable in seconds, with your number one tap away. Fewer tire-kickers calling to ask what you have. More buyers walking in knowing what they want.",
+      "needs": ["site-lineup-finder"]
+    },
+    {
+      "id": "03-site-c", "seg": "site", "key": "trade-in", "when": "SELL_BAND",
+      "cue": "The {{SERVICE_BAND}} band: 2.0x on its middle tile ('{{SERVICE_TILE}}') on 'trade-in'",
+      "text": "And when somebody wants to sell, the site takes the trade-in lead for you, while you're with another customer.",
+      "needs": ["site-sell-band"]
+    },
+    {
+      "id": "04-signin-a", "seg": "signin", "key": "sale desk",
+      "cue": "Menu, the drawer; 1.8x on 'Admin · Staff Sign-In To The Sale Desk' on 'sale desk'",
+      "text": "Behind the site is the part that pays for itself: your sale desk.",
+      "needs": ["desk-admin-row"]
+    },
+    {
+      "id": "05-signin-b", "seg": "signin", "key": "type",
+      "cue": "Team Access (the email under a privacy blur), Sign In; 'What Is Your Name?': {{DEMO_STAFF}} typed; Draw Your Signature, the pen starts on 'Once.'",
+      "text": "The first time your salesperson signs in, they type their legal name, and draw their signature. Once.",
+      "needs": ["onboarding-signature"]
+    },
+    {
+      "id": "06-signin-c", "seg": "signin", "key": "signature", "requires": ["05-signin-b", "20-payoff-b"],
+      "cue": "The pen at 1.8x: the last stroke lands on 'signature' and is held; Save Signature, 'You Are All Set'",
+      "text": "Remember that signature. You're going to see why it matters.",
+      "needs": ["onboarding-signature", "130u-seller-line"]
+    },
+    {
+      "id": "07-car-a", "seg": "car", "key": "Pick",
+      "cue": "Start A Sale: the lot at 2.0x; the pointer goes to the {{DEMO_CAR}} on 'Pick'; it is clicked on 'Nobody types them'",
+      "text": "Pick the car off your lot. Year, make, model, VIN. Already on every form. Nobody types them.",
+      "needs": ["car-from-inventory"]
+    },
+    {
+      "id": "08-car-b", "seg": "car", "key": "correct",
+      "cue": "'Which Car Is It?': the odometer from inventory at 2.0x on 'brings in the number'; clicked just after 'correct'; the dash reading typed on 'what the dash says today'",
+      "text": "Miles change, so the desk brings in the number from inventory, and lets you correct it to what the dash says today. Every document prints that same number.",
+      "needs": ["odometer-from-inventory"]
+    },
+    {
+      "id": "09-car-c", "seg": "car", "key": "Spanish", "when": "SPANISH_DOCS",
+      "cue": "The language select: Español chosen just after 'Spanish'; English chosen just after 'English'; Next on 'keep moving' (a stand-in menu where the OS menu opens, lesson N4)",
+      "text": "A lot of your buyers are more comfortable in Spanish. Mark the sale Spanish, and their signing screens, their acknowledgments and the Buyer's Guide come up in Spanish. English-speaking buyer? Leave it in English, and keep moving.",
+      "needs": ["spanish-documents"]
+    },
+    {
+      "id": "10-buyer-a", "seg": "buyer", "key": "Scan",
+      "cue": "'What ID Did The Buyer Bring?': Scan ID just after 'Scan'; the DEMO card for {{DEMO_BUYER}} through the test camera feed (lesson N3); the name and licence number filled beside the card's pictures on 'fill in'",
+      "text": "Scan the back of the license, and the name and number fill in. You check them against the card. Only what you confirm goes on paper.",
+      "needs": ["id-scan"]
+    },
+    {
+      "id": "11-buyer-b", "seg": "buyer", "key": "street",
+      "cue": "'Where Do We Mail The Title?' at 1.5x: the street of {{DEMO_ADDRESS}} typed on 'Type the street'; 'Filled in from …' with the city, the ZIP and {{DEMO_COUNTY}} on 'the city, the ZIP, and the county'",
+      "text": "Type the street, and the desk looks up the city, the ZIP, and the county for you.",
+      "needs": ["address-lookup"]
+    },
+    {
+      "id": "12-buyer-c", "seg": "buyer", "key": "county", "requires": ["11-buyer-b", "19-payoff-a"],
+      "cue": "2.2x on County ({{DEMO_COUNTY}}) on 'county'",
+      "text": "Remember that county. We'll come back to it.",
+      "needs": ["address-lookup", "130u-county"]
+    },
+    {
+      "id": "13-buyer-d", "seg": "buyer", "key": "hold",
+      "cue": "The read-back card ('Is This The Mailing Address?') at 2.0x on 'read the mailing address back'; Hold To Confirm pressed just after 'hold', filled, released",
+      "text": "The address on an ID isn't always where somebody lives. So the desk makes you read the mailing address back to them, and hold to confirm. The title goes to the right door the first time. No returned mail. No angry phone call three weeks later.",
+      "needs": ["address-readback"]
+    },
+    {
+      "id": "14-money-a", "seg": "money", "key": "advertise",
+      "cue": "'How Are They Paying?': Cash; 'How Much Are They Paying?' at 1.8x under 'advertise out the door … price plus tax and fees'",
+      "text": "Sometimes you advertise out the door. Sometimes it's price plus tax and fees. You know how it goes.",
+      "needs": ["price-and-fees-question"]
+    },
+    {
+      "id": "15-money-b", "seg": "money", "key": "inside",
+      "cue": "The price typed on 'the number you shook hands on'; 'Does That Include Tax And Fees?': No, just after 'inside'; the receipt rows at 2.0x on 'math' (a fee the owner has not set is blurred); the total and the balance owed after a part payment on 'still owed'",
+      "text": "Type the number you shook hands on, and tap whether tax and fees were inside it. The desk does the {{FEES_SAID}} math, and shows you exactly what's still owed. No calculator. No mistakes that come out of your pocket.",
+      "needs": ["price-and-fees-question", "receipt-math"]
+    },
+    {
+      "id": "16-money-c", "seg": "money", "key": "owing", "when": "SELLER_LIEN",
+      "cue": "The bill of sale (the deal's own PDF): the total and 'Balance secured by seller lien' on 'owing'; the 130-U opens over it: {{LEGAL_NAME}} as first lienholder on 'lienholder'",
+      "text": "And if they leave owing you money, the bill of sale and the title application name your dealership as lienholder, automatically. Your money is protected on paper before they drive off.",
+      "needs": ["seller-lien"]
+    },
+    {
+      "id": "17-plan-a", "seg": "plan", "key": "tap",
+      "cue": "'Who Files The Title And Registration?' at 1.45x: the pointer on We Do on 'One tap', on The Customer Does on 'when they do'; We Do tapped as the line ends",
+      "text": "Who files the title? One tap, and the desk builds the right packet. The 130-U when you file it, the responsibility form when they do.",
+      "speak": "Who files the title? One tap, and the desk builds the right packet. The one-thirty-U when you file it, the responsibility form when they do.",
+      "needs": ["who-files"]
+    },
+    {
+      "id": "18-plan-b", "seg": "plan", "key": "yours",
+      "cue": "'Where Does The Inspection Stand?': the pointer on Already Passed, We Are Doing It, The Customer Will on 'done', 'yours', 'theirs'; one tapped as the line ends",
+      "text": "Inspection? Tap where it stands, and the buyer's copy says in writing whether it's done, yours, or theirs. If it's theirs, it's on paper.",
+      "needs": ["inspection-status"]
+    },
+    {
+      "id": "19-payoff-a", "seg": "payoff", "key": "county", "requires": ["11-buyer-b", "13-buyer-d"],
+      "cue": "The 130-U (the deal's own PDF, page 1): push onto boxes 18-19, {{DEMO_COUNTY}} spotlit, on 'county'",
+      "text": "Here's the title application. The county? Already filled in. That's the one you confirmed at the start.",
+      "needs": ["130u-county"]
+    },
+    {
+      "id": "20-payoff-b", "seg": "payoff", "key": "seller", "requires": ["05-signin-b"],
+      "cue": "Push onto the certification block on 'seller line'; onto the printed '{{LEGAL_NAME}} ({{DEMO_STAFF}})' on 'prints'; onto the drawn signature on 'with the signature'",
+      "text": "And the seller line. The county now wants the company and the person who signed. So it prints {{LEGAL_NAME_SAID}}, and the salesperson's name in parentheses, with the signature they drew on day one. That's why we asked for it.",
+      "needs": ["130u-seller-line", "onboarding-signature"]
+    },
+    {
+      "id": "21-payoff-c", "seg": "payoff", "key": "signed", "requires": ["20-payoff-b"],
+      "cue": "Back to the whole block, signed and named, on 'signed'; caption 'Signed Once. On Every Title Application.'",
+      "text": "Every document, signed and named, without anybody touching a pen.",
+      "needs": ["130u-seller-line"]
+    },
+    {
+      "id": "22-stored-a", "seg": "stored", "key": "code",
+      "cue": "The packet: Scan To Sign (the code) on 'code'; the phone slides in on 'signs every page': Begin, the bill of sale read and signed",
+      "text": "The buyer scans a code, and signs every page on their own phone.",
+      "needs": ["phone-signing"]
+    },
+    {
+      "id": "23-stored-b", "seg": "stored", "key": "search",
+      "cue": "The phone: All Signed; the desk: Ready To Print, 2 / 2 signed, on 'stays with the sale'; Past Sales: {{DEMO_BUYER}}'s last name typed on 'search their name'; the sale opened, Open / Print, the signed PDF",
+      "text": "And every signed document stays with the sale. If a customer files a complaint, or somebody comes asking questions months from now, search their name, and pull up the paperwork in seconds.",
+      "needs": ["past-sales"]
+    },
+    {
+      "id": "24-close", "seg": "close", "key": "{{DEALER_NAME_SAID}}",
+      "cue": "The signed bill of sale, pushed onto the signatures, dissolves into the outro (facts only): {{OUTRO_FACTS}}; fade to black",
+      "text": "{{CLOSE_TAGLINE}} {{DEALER_NAME_SAID}}.",
+      "needs": []
+    }
+  ]
+}

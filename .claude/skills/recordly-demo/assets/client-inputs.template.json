@@ -43,6 +43,8 @@
   },
   "overrides": [],
   "_overrides": "Timing changes the page forces (e.g. a longer FINDER_QUERY), applied after filling: [{ \"shot\": \"2-scroll\", \"path\": \"actions.8.perCharSec\", \"value\": 0.12, \"why\": \"…\" }]. path is dot-separated into the filled shot (array indexes as in the template). Every override is listed in the README; each one needs a reason and a full re-verify.",
+  "narration": null,
+  "_narration": "Leave null for the house films. For the narrated long cut only: scripts/fill-narration.cjs init <this file> writes the block to fill (the house script's variables: what is said, what is shown, the flags for the optional lines, and checked: the features walked on this client's desk). The variables table and the fact-check are in assets/narration/script-template.md; examples/discount-used-cars/client-inputs.json has a filled one. fill-narration.cjs lines / script then write narration/lines.json and narration/script.md.",
   "zoomCopy": null,
   "_zoomCopy": "Leave null: measure-site.cjs --storyboard … --into writes the text each zoom shows (step 6); the README lists it for the owner."
 }

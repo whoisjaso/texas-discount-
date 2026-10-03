@@ -25,6 +25,41 @@ house film stays the default. The `Demo` composition is never changed by it.
 
 ## 1. The script
 
+**Every client gets the house script, filled; it is not rewritten.** The 24 lines live in
+`assets/narration/lines-template.json`, and `assets/narration/script-template.md` is the same script for people. It
+holds:
+
+- the variables table (each variable, where its value comes from, Discount's value);
+- the conditional lines and the setup/payoff pairs;
+- the feature each line narrates and where to check it on the desk;
+- how to fill and fact-check.
+
+The client's values go in `client-inputs.json` → `narration`, and `scripts/fill-narration.cjs` turns them into
+`narration/lines.json` (what Kokoro voices) and `narration/script.md` (the lines with their pictures, which the owner
+reads before voicing):
+
+```bash
+node $S/scripts/fill-narration.cjs init   $I          # the empty block: said / shown variables, flags, checked, cut, speak
+node $S/scripts/fill-narration.cjs check  $I
+node $S/scripts/fill-narration.cjs lines  $I --out $P/narration/lines.json
+node $S/scripts/fill-narration.cjs script $I --out $P/narration/script.md
+node $S/scripts/fill-narration.cjs selftest           # Discount's approved 24 lines, exactly, and every refusal
+```
+
+- **The variables:** the road customers drive to, what the lot sells, the fees the receipt adds up, the legal name as
+  the voice says it, the dealer's name, and the closing line are spoken. The sell band's name, the legal name as
+  printed, and the demo people, car, address and county are on screen only.
+- **The flags:** `SELL_BAND`, `SPANISH_DOCS` and `SELLER_LIEN` leave out lines 03, 09 and 16 when false.
+- **Refusals:** the fill refuses a leftover `{{placeholder}}`, a missing or unknown variable, and an abbreviation in a
+  spoken value ("Fwy", "LLC", "&"). It refuses a line whose feature is not in `narration.checked.features` (seen
+  working on this client's desk), half a setup/payoff pair, and Discount's road, name or legal name reused for another
+  client.
+- **Wording is house.** A change to a line is a template change: edit both files, bump `version`, and re-run the
+  selftest. A new line goes in behind a flag that is false for Discount. A per-client voice spelling goes in
+  `narration.speak`.
+
+The rules the house script was written to, for any change to it:
+
 - **Lens: money made or time saved.** Every line answers "what does this do for the dealer?" ("Fewer tire-kickers
   calling to ask what you have", "No calculator. No mistakes that come out of your pocket"), not a feature list.
 - **Every claim is checked against the desk** (its code and a walk through it) on the day, and the script says so with
@@ -34,8 +69,9 @@ house film stays the default. The `Demo` composition is never changed by it.
   held frame.
 - **Pace:** about 140 words a minute, sentences short. 24 lines came to 3:13 of speech in a 3:50 film.
 - **Two texts per line:** `text` is what is shown and documented; `speak` is what the voice is given, spelled as the
-  dealer says it: `130-U` → `one-thirty-U`, `LLC` → `L L C`. Numbers, form names and abbreviations are spelled out
-  this way before voicing, never fixed after.
+  dealer says it: `130-U` → `one-thirty-U` (line 17's `speak`). Numbers, form names and abbreviations are spelled out
+  this way before voicing, never fixed after. A spoken variable is spelled for the voice in its value, so it reads
+  right in both: line 20's `LEGAL_NAME_SAID` is "… And Trucks, L L C", exactly as the approved line has it.
 - **Two "remember this" lines pay off later** (the signature, the county): they make a long tour feel built, and the
   payoff overlay shows the exact thing the earlier line pointed at.
 
@@ -174,3 +210,8 @@ scripts/narrated-check.cjs      the plan check; narrated-frames.cjs: the stills 
 src/narrated/                   plan.ts, Narrated.tsx, NarratedDoc.tsx, NarratedPhone.tsx, vo-lines.ts
 public/vo/, public/docs/narr-*  the trimmed voice; the deal's document pages
 ```
+
+A new client's project has `narration/script.md` and `narration/lines.json` from `fill-narration.cjs` in place of a
+hand-written `script-v1.md`. Discount's script came before the template: its `lines-timed.json` is what the template
+reproduces (`examples/discount-used-cars/narration-lines.json` is that file without the lengths). Its older
+`lines.json` differs only in lacking line 17's `speak`, which was added at voicing.

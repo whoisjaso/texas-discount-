@@ -42,6 +42,37 @@
     "PHONE_SWIPE_3": 450
   },
   "overrides": [],
+  "_narration": "The narrated long cut's variables (assets/narration/script-template.md, 'Variables'). scripts/fill-narration.cjs fills the house script with them and gives the approved 24 lines exactly (fill-narration.cjs selftest; narration-lines.json beside this file is the shipped set, clients/discount-used-cars-demo/narration/lines-timed.json without its lengths).",
+  "narration": {
+    "ROAD_SAID": "Gulf Freeway",
+    "STOCK_SAID": "truck, car and SUV",
+    "FEES_SAID": "tax, title, registration and doc fee",
+    "LEGAL_NAME_SAID": "Discount Used Cars And Trucks, L L C",
+    "DEALER_NAME_SAID": "Discount Used Cars and Trucks",
+    "CLOSE_TAGLINE": "More buyers through the door. Less time on paperwork. Fewer mistakes that cost you money.",
+    "SERVICE_BAND": "We Buy Cars",
+    "LEGAL_NAME": "Discount Used Cars And Trucks, LLC",
+    "DEMO_STAFF": "Maria Lopez",
+    "DEMO_BUYER": "James Carter",
+    "DEMO_CAR": "2019 Toyota Camry SE",
+    "DEMO_ADDRESS": "10418 Almeda Genoa Rd, Houston 77034",
+    "DEMO_COUNTY": "Harris",
+    "SELL_BAND": true,
+    "SPANISH_DOCS": true,
+    "SELLER_LIEN": true,
+    "checked": {
+      "on": "2026-10-02",
+      "how": "Every claim checked against the desk's code and filmed on its preview mock in one whole sale (clients/discount-used-cars-demo/narration/script-v1.md and README.md).",
+      "features": [
+        "site-hero-road", "site-lineup-finder", "site-sell-band", "desk-admin-row", "onboarding-signature",
+        "car-from-inventory", "odometer-from-inventory", "spanish-documents", "id-scan", "address-lookup",
+        "address-readback", "price-and-fees-question", "receipt-math", "seller-lien", "who-files",
+        "inspection-status", "130u-county", "130u-seller-line", "phone-signing", "past-sales"
+      ]
+    },
+    "cut": [],
+    "speak": {}
+  },
   "_zoomCopy": "Written by measure-site.cjs --storyboard … --into: the text each zoom shows (follow zooms approximate). The README lists it for the owner.",
   "zoomCopy": {
     "1-hero zoom 0 (1.5x)": [

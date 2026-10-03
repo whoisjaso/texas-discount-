@@ -121,3 +121,18 @@ Timeline (film frames): A 0–1099 (the Admin click drawn at 1093) · 6 1099–1
 sign-in reused, eight new desk captures (20-car … 27-desk-stored, in `narration/storyboard-long.json`), the deal's own
 bill of sale and 130-U pages, the phone ceremony, and 24 Kokoro lines anchored by key word. Recipe:
 `references/narration.md`; lessons N1–N12; timing and lip-to-picture tables: the project's `narration/README.md`.
+
+**The house script reproduces it.** `client-inputs.json` → `narration` holds Discount's values for the narrated
+script's variables:
+
+- the road "Gulf Freeway";
+- "truck, car and SUV";
+- the legal name said as "… And Trucks, L L C";
+- the three flags, all true;
+- the 20 features checked 2026-10-02.
+
+`scripts/fill-narration.cjs` fills `assets/narration/lines-template.json` with them. The 24 lines it gives are byte
+for byte `narration-lines.json`, which is the shipped `narration/lines-timed.json` without its `sec` lengths, in the
+project's `lines.json` layout. `node scripts/fill-narration.cjs selftest` checks this, and checks the equality against
+the shipped file itself when the repo is present. Against the project's older `lines.json`, the only difference is
+line 17's `speak` ("one-thirty-U"), which was added at voicing.

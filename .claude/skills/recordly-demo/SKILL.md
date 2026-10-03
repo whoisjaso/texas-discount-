@@ -258,8 +258,25 @@ sale (Discount: composition `Narrated`, 3:50, 24 lines; the `Demo` composition i
 voice: each line's picture shows what it says, the camera on the thing named as the word is said. The full recipe is
 `references/narration.md`; problems and fixes are lessons N1–N12.
 
-1. **Script** with the lens "money made or time saved"; every claim checked against the desk on the day; one key word
-   per line the picture can show; a `speak` spelling for the voice (`130-U` → "one-thirty-U", `LLC` → "L L C").
+1. **Script: the house script, filled.** Every client gets the same 24 lines. Only the variables change: the dealer's
+   name, the road customers drive to, what the lot sells, the legal name as said ("L L C"), the demo people and deal,
+   and the optional lines (Spanish, the sell band, the seller lien). The script is `assets/narration/script-template.md`
+   (variables table, conditions, per-line desk checks, how to fill and fact-check) and `lines-template.json`.
+   ```bash
+   node $S/scripts/fill-narration.cjs init $I       # adds client-inputs.json → narration to fill
+   node $S/scripts/fill-narration.cjs check $I
+   node $S/scripts/fill-narration.cjs lines $I --out $P/narration/lines.json     # what Kokoro voices
+   node $S/scripts/fill-narration.cjs script $I --out $P/narration/script.md     # the owner reads it before voicing
+   ```
+   - Re-check every line against this client's desk before voicing, and list each feature seen working in
+     `narration.checked`. The fill refuses a line whose feature is not listed, so an unshipped feature is never
+     narrated.
+   - A line the desk cannot back is cut, with its reason (`narration.cut`), never softened.
+   - The paperwork on screen is the client's real dealership on a demo deal.
+   - The fill also refuses: leftover `{{placeholders}}`, abbreviations in spoken values, half a setup/payoff pair, and
+     Discount's facts reused for another client.
+   - `fill-narration.cjs selftest` proves the template gives Discount's approved 24 lines exactly. A change to the
+     wording is a template change, never a per-client edit.
 2. **Voice** with Kokoro-82M `af_heart` at speed 0.95, one WAV per line; **transcribe back** with faster-whisper
    (`small.en`, word timestamps) and listen to every difference; the word times are the edit's anchors.
 3. **Levels:** one gain for the set and a limiter at 0.70 (about −16 LUFS integrated, true peak ≤ −1.5 dBTP); each line
@@ -274,7 +291,9 @@ voice: each line's picture shows what it says, the camera on the thing named as 
 ## What may change per client, and what may not
 
 - **Per client** (all in `client-inputs.json`): domain, facts, outro lines, logos, the loader geometry, word and intro
-  key (measured), clock and timezone, the storyboard placeholders, and `logoWidth` (derived from the logo).
+  key (measured), clock and timezone, the storyboard placeholders, and `logoWidth` (derived from the logo). For the
+  narrated cut, also the `narration` block: the script's variables, flags and desk checks. The wording itself is
+  house.
 - **House, never per client:** everything else in `template/`, including every timing, depth, ease, spring, colour,
   sound level and cue rule, and the capture settings. If a site truly forces a timing change, put it in
   `client-inputs.json` → `overrides` with its reason (the README lists it) and re-run every gate. Many of these numbers
@@ -293,10 +312,11 @@ except one deliberate override: the grade and vignette sit under the window.
 - `references/storyboard.md`: every storyboard and capture field, cursor.json, `DesktopSegment`, and adapting and
   measuring the placeholders.
 - `references/verification.md`: the gates, the stills list, the thresholds, and what to do with a failure.
-- `references/narration.md`: the narrated long cut: script lens, Kokoro voice, transcribe-back, levels, the plan of
-  anchored lines, landing rules, ducking, truthful stand-ins, gates.
-- `examples/discount-used-cars/`: the approved film's `storyboard.json`, its `client-inputs.json`, and `NOTES.md`
-  (timeline, cut point f1099, what was client-specific, the reproduction check).
+- `references/narration.md`: the narrated long cut: the house script and its fill, Kokoro voice, transcribe-back,
+  levels, the plan of anchored lines, landing rules, ducking, truthful stand-ins, gates.
+- `examples/discount-used-cars/`: the approved film's `storyboard.json`, its `client-inputs.json` (with the narration
+  block), `narration-lines.json` (the shipped 24 lines the template reproduces), and `NOTES.md` (timeline, cut point
+  f1099, what was client-specific, the reproduction checks).
 
 ## Files
 
@@ -305,6 +325,8 @@ scripts/capture.cjs        storyboard shot → deterministic frames, shot.mp4, c
 scripts/measure-site.cjs   loader geometry, intro key, Open Now; storyboard preflight with framing suggestions
                            (--storyboard, --rects, --into); read-only on the site
 scripts/fill-client.cjs    client-inputs.json → project.ts / storyboard.json / README.md (check refuses placeholders)
+scripts/fill-narration.cjs client-inputs.json → narration/lines.json + script.md from the house script (init, check,
+                           lines, script; selftest reproduces Discount's 24 lines and every refusal)
 scripts/new-project.sh     template + assets + filled files → clients/<slug>-demo, logoWidth, npm ci
 scripts/render.sh          preflight, typecheck, master (CRF 16) + share copy (≤ 24 MB); --check stops before rendering
 scripts/verify.sh          the gates (wraps verify-film.cjs; --plan and --cuts-only modes; --allow-* flags)
@@ -316,6 +338,8 @@ template/scripts/prepare-sfx.sh rebuilds the sound kit from its source pack; onl
 assets/storyboard-dealer-site.json   the house storyboard with placeholders, `adapt` notes and `frame` / `rest` rules
 assets/storyboard-desk.json          part B: the seven desk shots (house values; fills DESK_CLOCK and TIMEZONE)
 assets/client-inputs.template.json   the one file filled per client
+assets/narration/          the narrated cut's house script: script-template.md (variables, conditions, desk checks,
+                           fill and fact-check) and lines-template.json (what fill-narration.cjs fills)
 assets/project-README.md   the per-project README
 assets/sfx/, assets/fonts/ the 17 sounds the film plays (SOURCES.md) and Barlow Semi Condensed (OFL.txt)
 ```
