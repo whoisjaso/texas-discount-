@@ -5,6 +5,8 @@ import { PUBLIC_VEHICLE_DB_COLUMNS } from "@/lib/vehicles/public";
 import type { Lead, LeadRow, Vehicle, VehicleRow } from "@/types/database";
 import { packetPreviewAgreements, packetPreviewDeals } from "@/lib/supabase/packet-preview-fixtures";
 import { dealership } from "@/lib/dealership-config";
+import { VOIDED_WITH_BILL_OF_SALE, voidEligibility } from "@/lib/sales/void-bill-of-sale";
+import type { AgreementRecord } from "@/lib/sales/filed-documents";
 
 type QueryMode = "rows" | "single";
 
@@ -63,6 +65,12 @@ type MockStore = {
   minted: { count: number };
   /** app_metadata written through auth.admin.updateUserById, by user id. */
   authMetadata?: Map<string, Record<string, unknown>>;
+  /**
+   * DESK_PREVIEW_MEMBER=fresh-reset: when the owner "reset" the preview
+   * account, set on first use and cleared with the other writes. A preview
+   * session that signed in before it is signed out (password-reset-cutoff.ts).
+   */
+  previewResetAt?: string | null;
 };
 const store: MockStore = ((globalThis as { __tjMockStore?: MockStore }).__tjMockStore ??= {
   written: new Map(),
@@ -110,6 +118,7 @@ export function resetMockWrites(): void {
   uploaded.clear();
   inserted.clear();
   authMetadata.clear();
+  store.previewResetAt = null;
 }
 
 /**
@@ -121,11 +130,21 @@ export function resetMockWrites(): void {
  */
 function previewAppMetadata(userId: string): Record<string, unknown> {
   const flag = process.env.DESK_PREVIEW_MEMBER?.trim();
+  const preview = userId === "local-admin-preview";
   const issued =
-    flag === "fresh-temporary-password" && userId === "local-admin-preview"
+    (flag === "fresh-temporary-password" || flag === "fresh-reset") && preview
       ? { requires_password_change: true }
       : {};
-  return { ...issued, ...authMetadata.get(userId) };
+  /*
+    fresh-reset: the same account, after an owner reset its password. The
+    reset time is fixed the first time it is read, so a preview session that
+    began before it is signed out and one that signs in afterwards is not.
+  */
+  const reset =
+    flag === "fresh-reset" && preview
+      ? { password_reset_at: (store.previewResetAt ??= new Date().toISOString()) }
+      : {};
+  return { ...issued, ...reset, ...authMetadata.get(userId) };
 }
 
 /** The row as the fixtures have it, with anything written over the top. */
@@ -173,6 +192,17 @@ function applyInsert(state: MockQueryState): Array<Record<string, unknown>> | nu
   return rows;
 }
 
+/** An update aimed at a voided document row, which the database refuses. */
+function updatesVoidedDocument(state: MockQueryState): boolean {
+  if (!state.update || state.table !== "document_agreements") return false;
+  const target = state.filters.find((f) => f.column === "id" && f.op === "eq");
+  if (typeof target?.value !== "string") return false;
+  const row = allRows("document_agreements").find((r) => (r as { id?: unknown }).id === target.value) as
+    | Record<string, unknown>
+    | undefined;
+  return Boolean(row?.voided_at);
+}
+
 function createMockQueryResult(state: MockQueryState) {
   if (state.readOnlyMutation) {
     return { data: null, error: { code: "42501", message: "Public inventory is read-only." } };
@@ -183,6 +213,11 @@ function createMockQueryResult(state: MockQueryState) {
       data: state.mode === "single" ? (added[0] ?? null) : added,
       error: null,
     };
+  }
+  if (updatesVoidedDocument(state)) {
+    // The database's final-row trigger (20261002000000_void_filed_documents):
+    // a voided document is never written again, and the update is refused.
+    return { data: null, error: { code: "42501", message: "voided_document_is_final" } };
   }
   applyUpdate(state);
   const rows = getMockRows(state);
@@ -416,7 +451,12 @@ function getPreviewRows(table: string): Array<Record<string, unknown>> {
  */
 function previewTeamMembers(): Array<Record<string, unknown>> {
   const flag = process.env.DESK_PREVIEW_MEMBER?.trim();
-  if (flag !== "fresh" && flag !== "fresh-cannot-sign" && flag !== "fresh-temporary-password") return [];
+  if (
+    flag !== "fresh" &&
+    flag !== "fresh-cannot-sign" &&
+    flag !== "fresh-temporary-password" &&
+    flag !== "fresh-reset"
+  ) return [];
   const at = "2026-10-01T15:00:00.000Z";
   return [
     {
@@ -1253,6 +1293,13 @@ export function createMockSupabaseClient(user: User | null = null): SupabaseClie
     async signOut() {
       return { error: null };
     },
+    /**
+     * Preview has no JWT, so no claims: the password-reset cutoff reads the
+     * preview's own signed-in cookie there instead (password-reset-cutoff.ts).
+     */
+    async getClaims() {
+      return { data: { claims: null }, error: null };
+    },
     async signInWithPassword() {
       return { data: { user, session: null }, error: null };
     },
@@ -1359,7 +1406,157 @@ export function createMockSupabaseClient(user: User | null = null): SupabaseClie
       });
       return { data: { vehicle_id: vehicle.id, customer_id: customer.id }, error: null };
     }
+    if (name === "void_filed_documents") return voidFiledDocuments(args);
     return { data: null, error: { message: `mock: no rpc named ${name} in preview` } };
+  }
+
+  /**
+   * The void, done the way the database function does it (migration
+   * 20261002000000_void_filed_documents.sql): the same refusals, through the
+   * same pure rules the action uses, then every current filed row of the
+   * named types is marked voided with one group, the signing text and any
+   * texted copy are switched off, and one audit event is written. Nothing is
+   * deleted, and the rows' own documents are not touched.
+   *
+   * Who voided: the preview has no auth.uid() to read a roster row from, so
+   * the name and member id come from the action's detail, which the real
+   * function keeps only as metadata.
+   */
+  function voidFiledDocuments(args: Record<string, unknown>) {
+    const fail = (message: string) => ({ data: null, error: { code: "P0001", message } });
+    const dealId = typeof args.p_deal_id === "string" ? args.p_deal_id : "";
+    const rootId = typeof args.p_root_id === "string" ? args.p_root_id : "";
+    const types = Array.isArray(args.p_types) ? (args.p_types as string[]) : [];
+    const detail = (args.p_detail && typeof args.p_detail === "object" ? args.p_detail : {}) as Record<string, unknown>;
+    const at = typeof args.p_at === "string" ? args.p_at : "";
+    if (!user) return fail("forbidden");
+    // The function voids its own fixed set: the caller's list must be exactly it.
+    const fixed = new Set<string>(VOIDED_WITH_BILL_OF_SALE);
+    if (types.length !== fixed.size || new Set(types).size !== fixed.size || types.some((type) => !fixed.has(type))) {
+      return fail("not_voidable");
+    }
+    const atMs = Date.parse(at);
+    if (!Number.isFinite(atMs) || Math.abs(atMs - Date.now()) > 5 * 60 * 1000) return fail("bad_time");
+    if (detail.titleApplication !== "notYet") return fail("title_question");
+    const deal = getMockRows({ table: "deals", mode: "single", filters: [{ column: "id", op: "eq", value: dealId }] })[0] as
+      | Record<string, unknown>
+      | undefined;
+    if (!deal) return fail("not_current");
+    const rows = getMockRows({
+      table: "document_agreements",
+      mode: "rows",
+      filters: [{ column: "deal_id", op: "eq", value: dealId }],
+    }) as unknown as AgreementRecord[];
+    const role = user.app_metadata?.desk_role;
+    const verdict = voidEligibility({
+      role: typeof role === "string" ? (role as Parameters<typeof voidEligibility>[0]["role"]) : "owner",
+      hasMember: typeof detail.memberId === "string" && detail.memberId.length > 0,
+      reason: args.p_reason,
+      // The attestation is the action's; the database records it, it does not ask it.
+      titleApplication: "notYet",
+      dealStatus: typeof deal.status === "string" ? deal.status : null,
+      rows,
+      rootId,
+      stepData: deal.step_data,
+    });
+    if (!verdict.ok) {
+      const message =
+        verdict.code === "voidNotAllowed" || verdict.code === "voidNeedsTeamRow"
+          ? "forbidden"
+          : verdict.code === "voidReasonRequired" || verdict.code === "voidReasonTooLong"
+            ? "reason_required"
+            : verdict.code === "voidSaleClosed"
+              ? "sale_closed"
+              : verdict.code === "voidTitleFiled"
+                ? "title_filed"
+                : "not_current";
+      return fail(message);
+    }
+    if (!types.includes(verdict.plan.root.document_type ?? "")) return fail("not_current");
+    const group =
+      typeof globalThis.crypto?.randomUUID === "function"
+        ? globalThis.crypto.randomUUID()
+        : `preview-void-${Date.now()}`;
+    const name =
+      typeof detail.memberName === "string" && detail.memberName.trim() ? detail.memberName.trim() : user.email ?? "A team member";
+    const voids = verdict.plan.voids.filter((row) => types.includes(row.document_type ?? ""));
+    // Dated no earlier than the moment of voiding, as the function does.
+    const voidedAt = new Date(Math.max(atMs, Date.now())).toISOString();
+    for (const row of voids) {
+      applyUpdate({
+        table: "document_agreements",
+        mode: "rows",
+        filters: [{ column: "id", op: "eq", value: row.id }],
+        update: {
+          voided_at: voidedAt,
+          voided_by: user.id,
+          voided_by_member_id: detail.memberId,
+          voided_by_name: name,
+          void_reason: verdict.reason,
+          void_group_id: group,
+          voided_with_id: row.id === verdict.plan.root.id ? null : verdict.plan.root.id,
+        },
+      });
+    }
+    for (const text of getMockRows({ table: "packet_signing_texts", mode: "rows", filters: [{ column: "deal_id", op: "eq", value: dealId }] })) {
+      const id = (text as { id?: unknown }).id;
+      if (typeof id === "string") {
+        applyUpdate({ table: "packet_signing_texts", mode: "rows", filters: [{ column: "id", op: "eq", value: id }], update: { active: false } });
+      }
+    }
+    for (const invite of getMockRows({ table: "paperwork_invites", mode: "rows", filters: [{ column: "deal_id", op: "eq", value: dealId }] })) {
+      const row = invite as { id?: unknown; active?: unknown };
+      if (typeof row.id !== "string" || row.active === false) continue;
+      applyInsert({
+        table: "paperwork_invite_events",
+        mode: "rows",
+        filters: [],
+        insert: [{ invite_id: row.id, event: "revoked", detail: { reason: "documents_voided", void_group: group } }],
+      });
+      applyUpdate({
+        table: "paperwork_invites",
+        mode: "rows",
+        filters: [{ column: "id", op: "eq", value: row.id }],
+        update: { active: false, revoked_at: new Date().toISOString() },
+      });
+    }
+    const documents = voids.map((row) => ({
+      id: row.id,
+      type: row.document_type,
+      signed: Boolean(row.has_buyer_signature) || Boolean(row.signed_at),
+      filed_at: row.finalized_at ?? row.completed_at ?? row.created_at ?? null,
+    }));
+    applyInsert({
+      table: "team_activity_events",
+      mode: "rows",
+      filters: [],
+      insert: [
+        {
+          actor_id: typeof detail.memberId === "string" ? detail.memberId : null,
+          event_type: "sale_documents_voided",
+          entity_type: "deal",
+          entity_id: dealId,
+          body: `${name} voided the filed ${verdict.plan.root.document_type} and ${Math.max(documents.length - 1, 0)} other document(s): ${verdict.reason}`,
+          metadata: {
+            ...detail,
+            void_group: group,
+            reason: verdict.reason,
+            root_id: verdict.plan.root.id,
+            root_type: verdict.plan.root.document_type,
+            voided_at: voidedAt,
+            documents,
+            signed_count: documents.filter((entry) => entry.signed).length,
+          },
+        },
+      ],
+    });
+    const voidedIds = new Set(voids.map((row) => row.id));
+    const data = getMockRows({
+      table: "document_agreements",
+      mode: "rows",
+      filters: [{ column: "deal_id", op: "eq", value: dealId }],
+    }).filter((row) => voidedIds.has((row as { id?: string }).id));
+    return { data, error: null };
   }
 
   return {

@@ -101,7 +101,7 @@ export default function CompleteSalePanel({
       </div>
 
       {error ? (
-        <p role="alert" className="ed-body mt-5 text-[#E7A38A]">
+        <p role="alert" className="ed-body mt-5 text-[color:var(--tj-danger)]">
           {error}
         </p>
       ) : null}

@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import { saveSalePlate, saveSalePlateLater } from "@/lib/actions/sale-funding";
 import { tapHaptic } from "@/lib/haptics";
 import { useFunnel } from "@/components/admin/funnel/FunnelLocaleProvider";
+import { FreezeWayOut, useFreezeRefusal } from "@/components/admin/guide/HeldByBillOfSale";
 
 /**
  * The plate, asked the moment we know we are filing.
@@ -35,11 +36,15 @@ export default function PlateStep({
   const [typed, setTyped] = useState(current ?? "");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // A refusal from the filed bill of sale names what it holds and the way out.
+  const freezeRefusal = useFreezeRefusal();
   const locked = useRef(false);
 
   const plate = typed.trim().toUpperCase();
 
-  async function finish(save: () => Promise<{ ok: boolean; error?: string }>) {
+  async function finish(
+    save: () => Promise<{ ok: boolean; error?: string; code?: string; field?: string; heldBy?: string }>,
+  ) {
     if (locked.current) return;
     locked.current = true;
     setError(null);
@@ -49,7 +54,7 @@ export default function PlateStep({
     if (!result.ok) {
       setPending(false);
       locked.current = false;
-      setError(result.error ?? t.chrome.couldNotSave);
+      setError(freezeRefusal.text(result) ?? result.error ?? t.chrome.couldNotSave);
       return;
     }
     onNavigate();
@@ -103,6 +108,7 @@ export default function PlateStep({
           {error}
         </p>
       ) : null}
+      {error ? <FreezeWayOut heldBy={freezeRefusal.heldBy} /> : null}
     </div>
   );
 }

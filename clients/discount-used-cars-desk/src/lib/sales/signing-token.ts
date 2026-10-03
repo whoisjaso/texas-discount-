@@ -8,8 +8,11 @@ import { adminSigningSecret, SIGNING_SECRET_NAMES } from "@/lib/auth/signing-sec
  *
  * Signed rather than stored, for the same reasons: nothing to write when a
  * link is issued, nothing to clean up when it expires, nothing to migrate on
- * a fork. The trade is that a token cannot be revoked before it expires, so
- * the window is short and the authority narrow: this token lets its holder
+ * a fork. The trade is that a token is not revoked by anything stored about
+ * it: it dies at its expiry, or when the deal's paperwork is voided after it
+ * was minted (owner's decision 10/02/2026; every reader compares its issue
+ * time with the deal's latest void). So the window is short and the
+ * authority narrow: this token lets its holder
  * read the filed documents of ONE deal and put a signature on them. It
  * cannot change a document, cannot see any other deal, and cannot reach the
  * admin. Somebody who intercepts it can sign a sale they were handed the
@@ -47,7 +50,18 @@ export function issueSigningToken(dealId: string, now: number = Date.now()): str
 }
 
 export type SigningTokenResult =
-  | { ok: true; dealId: string; expiresAt: number }
+  | {
+      ok: true;
+      dealId: string;
+      expiresAt: number;
+      /**
+       * When the link was minted (its expiry less the fixed lifetime). A link
+       * minted at or before the deal's latest void no longer signs anything
+       * (void-bill-of-sale.ts, signingSessionRevoked): the token format is
+       * unchanged, so this is how a stateless token is revoked.
+       */
+      issuedAt: number;
+    }
   | { ok: false; reason: "malformed" | "expired" | "bad-signature" };
 
 /** Signature before expiry, so a forged token learns nothing from its date. */
@@ -77,7 +91,7 @@ export function verifySigningToken(
 
   if (now >= expiresAt) return { ok: false, reason: "expired" };
 
-  return { ok: true, dealId, expiresAt };
+  return { ok: true, dealId, expiresAt, issuedAt: expiresAt - SIGNING_TTL_MS };
 }
 
 /** The URL the QR code points at. */

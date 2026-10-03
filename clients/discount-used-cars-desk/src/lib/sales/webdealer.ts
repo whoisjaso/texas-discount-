@@ -309,16 +309,29 @@ export function readPlate(stepData: unknown): string | null {
 export function writePlate(
   stepData: unknown,
   plate: string,
+  /**
+   * When the plate is being recorded (ISO). Kept as `plateRecordedAt` only
+   * when the plate actually changes: a plate recorded after the bill of sale
+   * was filed is the desk's evidence that the title application went to the
+   * county, which refuses a void (void-bill-of-sale.ts).
+   */
+  options: { at?: string } = {},
 ): Record<string, unknown> {
   const base =
     stepData && typeof stepData === "object"
       ? { ...(stepData as Record<string, unknown>) }
       : {};
-  base[PLATE_KEY] = plate.trim().toUpperCase();
+  const next = plate.trim().toUpperCase();
+  const changed = (readPlate(stepData) ?? "") !== next;
+  base[PLATE_KEY] = next;
   // A plate typed is a plate asked for; the corridor's step is answered.
   base[PLATE_ASKED_KEY] = true;
+  if (options.at && changed) base[PLATE_RECORDED_AT_KEY] = options.at;
   return base;
 }
+
+/** When the plate on the deal was recorded (ISO), when the desk recorded the time. */
+export const PLATE_RECORDED_AT_KEY = "plateRecordedAt";
 
 /**
  * Whether the plate question has been put to the desk, whatever the answer.

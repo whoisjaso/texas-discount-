@@ -5,8 +5,15 @@ import { createServerClient } from "@supabase/ssr";
 import { routing } from "./i18n/routing";
 import {
   ADMIN_DEVICE_SESSION_COOKIE,
+  adminDeviceSessionIssuedAt,
   isValidAdminDeviceSession,
 } from "./lib/auth/admin-device-session";
+import {
+  earliestAuthenticationMs,
+  passwordResetAtMs,
+  sessionPredatesReset,
+  SIGNED_OUT_RESET_PATH,
+} from "./lib/auth/password-reset-cutoff";
 import { LOCAL_ADMIN_SESSION_COOKIE } from "./lib/auth/local-admin";
 import { withAdminAuthCookiePersistence } from "./lib/supabase/auth-cookies";
 
@@ -105,6 +112,49 @@ export async function proxy(request: NextRequest) {
         request.cookies.get(ADMIN_DEVICE_SESSION_COOKIE)?.value,
       )
     : false;
+
+  /*
+    A password reset signs out every device signed in before it (owner's
+    decision 10/02/2026; password-reset-cutoff.ts). Checked only when the
+    account has a reset recorded. A stale session is signed out locally (the
+    revocation the SDK offers; there is no sign-out by user id), its auth
+    cookies are cleared with the device cookie, and it is sent to sign in
+    with a one-line notice. On the sign-in page itself it gets the cleared
+    cookies and the page, never a bounce back into the desk.
+  */
+  if (pathname.startsWith("/admin") && pathname !== "/admin/auth/callback" && user) {
+    const resetAtMs = passwordResetAtMs(user.app_metadata);
+    if (resetAtMs !== null) {
+      const deviceIssuedAtMs = await adminDeviceSessionIssuedAt(
+        request.cookies.get(ADMIN_DEVICE_SESSION_COOKIE)?.value,
+        user.id,
+      );
+      let authenticatedAtMs: number | null = null;
+      try {
+        const { data } = await supabase.auth.getClaims();
+        authenticatedAtMs = earliestAuthenticationMs((data?.claims as { amr?: unknown } | undefined)?.amr);
+      } catch {
+        authenticatedAtMs = null;
+      }
+      if (sessionPredatesReset({ resetAtMs, deviceIssuedAtMs, authenticatedAtMs })) {
+        try {
+          await supabase.auth.signOut({ scope: "local" });
+        } catch {
+          // The time check is the guarantee; the sign-out is best effort.
+        }
+        const signedOut =
+          pathname === "/admin/login" || pathname === "/admin/signup"
+            ? response
+            : NextResponse.redirect(new URL(SIGNED_OUT_RESET_PATH, request.url));
+        // The cleared auth cookies the sign-out wrote onto `response`.
+        if (signedOut !== response) {
+          for (const cookie of response.cookies.getAll()) signedOut.cookies.set(cookie);
+        }
+        signedOut.cookies.delete(ADMIN_DEVICE_SESSION_COOKIE);
+        return signedOut;
+      }
+    }
+  }
 
   // Admin routes: auth check, skip i18n routing
   if (pathname.startsWith("/admin")) {

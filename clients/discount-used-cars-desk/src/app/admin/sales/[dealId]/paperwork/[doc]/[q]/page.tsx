@@ -1,4 +1,7 @@
 import { notFound, redirect } from "next/navigation";
+import { getCurrentAdminAccess } from "@/lib/admin/current-admin";
+import { canVoidDocuments } from "@/lib/sales/void-bill-of-sale";
+import { isDocumentDone } from "@/lib/admin/sale-desk";
 import FunnelLocaleProvider from "@/components/admin/funnel/FunnelLocaleProvider";
 import PaperworkScreen from "@/components/admin/paperwork/PaperworkScreen";
 import { getFunnelBundles } from "@/lib/sales/i18n";
@@ -191,9 +194,28 @@ export default async function PaperworkQuestionPage({ params }: Props) {
     };
   }
 
+  /*
+    The filed bill of sale holds every answer it prints, and the down payment
+    the contract shares with it (owner's decision 10/02/2026): the screen
+    says so before anything is changed; the server refuses a change.
+  */
+  const freeze = await (async () => {
+    const access = await getCurrentAdminAccess().catch(() => null);
+    const billFiled = ["billOfSale", "salvageBillOfSale"].some((type) =>
+      isDocumentDone(sale.documents[type] ?? "none"),
+    );
+    const held =
+      billFiled &&
+      (entry.documentType === "billOfSale" ||
+        entry.documentType === "salvageBillOfSale" ||
+        (entry.documentType === "financing" && question?.key === "downPayment"));
+    return { canVoid: canVoidDocuments(access?.role ?? null), held };
+  })();
+
   return (
     <FunnelLocaleProvider bundles={getFunnelBundles()} initial={lang} userId={userId}>
       <PaperworkScreen
+        freeze={freeze}
         dealId={dealId}
         documentType={entry.documentType}
         documentTitle={entry.title}

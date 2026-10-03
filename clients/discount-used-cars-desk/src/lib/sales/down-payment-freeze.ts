@@ -40,6 +40,8 @@ export type FiledAgreementRow = {
   status?: string | null;
   completed_at?: string | null;
   finalized_at?: string | null;
+  /** Set when the document was voided (owner's decision 10/02/2026). */
+  voided_at?: string | null;
 };
 
 /**
@@ -48,8 +50,13 @@ export type FiledAgreementRow = {
  * filed or signed always freezes the down payment. The desk's own filing sets
  * `finalized_at`; the older e-sign path completes a deal-linked row with
  * `completed_at` and status "completed" and no `finalized_at`.
+ *
+ * A voided row is never filed any more (owner's decision 10/02/2026): it is a
+ * record of what was filed, kept and readable, and it holds nothing frozen,
+ * counts toward no packet and can be signed by no one.
  */
 export function isFiledAgreement(row: FiledAgreementRow): boolean {
+  if (row.voided_at) return false;
   return (
     Boolean(row.finalized_at) ||
     Boolean(row.completed_at) ||

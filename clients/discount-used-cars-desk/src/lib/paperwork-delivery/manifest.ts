@@ -67,6 +67,7 @@ type AgreementRow = {
   created_at: string | null;
   has_buyer_signature: boolean | null;
   language: string | null;
+  voided_at?: string | null;
 };
 
 export async function selectDeliverable(
@@ -90,12 +91,14 @@ export async function selectDeliverable(
 
   const { data, error } = await service
     .from("document_agreements")
-    .select("id, document_type, status, finalized_at, created_at, has_buyer_signature, language")
+    .select("id, document_type, status, finalized_at, created_at, has_buyer_signature, language, voided_at")
     .eq("deal_id", dealId)
     .order("created_at", { ascending: false });
   if (error) throw error;
 
-  const rows = (data ?? []) as AgreementRow[];
+  // A voided copy is a record, never the deal's document: it is never texted,
+  // however it was signed (owner's decision 10/02/2026).
+  const rows = ((data ?? []) as AgreementRow[]).filter((row) => !row.voided_at);
   const deliverable: DeliverySelection["deliverable"] = [];
   const missing: string[] = [];
 

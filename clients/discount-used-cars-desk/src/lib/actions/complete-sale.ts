@@ -4,6 +4,21 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { createAdminDataClient } from "@/lib/supabase/admin-data";
 import { requireAdminActionPermission } from "@/lib/admin/current-admin";
+import { getSaleDetail, SALE_DOCUMENTS } from "@/lib/admin/sale-desk";
+import { readDealAgreements, refileTypes } from "@/lib/sales/filed-documents";
+import { requiredDocumentTypes } from "@/lib/sales/deal-type";
+import { settledPlan } from "@/lib/sales/sale-plan";
+import { readSalvagePlan } from "@/lib/sales/salvage-plan";
+import { filedBillOfSaleOn } from "@/lib/sales/filed-bill-of-sale";
+import { readMoney } from "@/lib/sales/money";
+import {
+  BILL_OF_SALE_FROZEN_CODE,
+  FREEZE_MESSAGES,
+  billOfSaleStatement,
+  frozenFieldsChanged,
+  idPrintedConflict,
+  type FreezeField,
+} from "@/lib/sales/bill-of-sale-freeze";
 
 /**
  * Complete a sale — one database transaction, with its invariants named.
@@ -31,7 +46,22 @@ export type CompleteSaleInput = {
 
 export type CompleteSaleResult =
   | { success: true; vehicleId: string; customerId: string }
-  | { success: false; error: string };
+  | {
+      success: false;
+      error: string;
+      code?: "voidedNotRefiled" | typeof BILL_OF_SALE_FROZEN_CODE | "couldNotCheck";
+      field?: FreezeField;
+    };
+
+/** Whether the money step holds a typed amount (the figures no longer follow the vehicle row). */
+function hasTypedAmount(stepData: unknown): boolean {
+  return readMoney(stepData).amount.trim() !== "";
+}
+
+/** The English refusal when voided paperwork has not been filed again. */
+function voidedNotRefiledMessage(titles: string[]): string {
+  return `Some paperwork was voided and has not been filed again: ${titles.join(", ")}. File it before closing the sale.`;
+}
 
 /** The RPC's named refusals, said the way the desk needs to hear them. */
 const RPC_ERRORS: Record<string, string> = {
@@ -98,6 +128,75 @@ export async function completeSale(
       : null;
   if (salePrice !== null && salePrice < 0) {
     return { success: false, error: RPC_ERRORS.bad_price };
+  }
+
+  /*
+    Voided paperwork comes back before the sale closes (owner's decision
+    10/02/2026): a sale whose bill of sale was voided, or anything voided
+    with it, is not closed until every document it still owes is filed again.
+    And the filed bill of sale holds what it states: the price it prints
+    (moved here only through the vehicle row on a deal with no typed amount)
+    and the buyer's licence number it prints. Both read fail closed.
+  */
+  try {
+    const supabase = await createAdminDataClient();
+    const sale = await getSaleDetail(dealId);
+    if (sale) {
+      const rows = await readDealAgreements(supabase, dealId);
+      const owed = requiredDocumentTypes(
+        sale.funding.type,
+        settledPlan(sale.stepData),
+        sale.vehicle?.titleStatus ?? null,
+        readSalvagePlan(sale.stepData).path,
+      );
+      const refile = refileTypes(rows, owed);
+      if (refile.length > 0) {
+        const titles = refile.map(
+          (type) => SALE_DOCUMENTS.find((entry) => entry.documentType === type)?.title ?? type,
+        );
+        return { success: false, code: "voidedNotRefiled", error: voidedNotRefiledMessage(titles) };
+      }
+      const filed = await filedBillOfSaleOn(dealId);
+      if (filed) {
+        if (salePrice !== null && salePrice !== filed.advertised) {
+          const context = { rootType: filed.type };
+          const [field] = frozenFieldsChanged(
+            billOfSaleStatement(sale.stepData, { ...context, advertised: filed.advertised }),
+            billOfSaleStatement(sale.stepData, { ...context, advertised: salePrice }),
+          );
+          if (field) {
+            return { success: false, code: BILL_OF_SALE_FROZEN_CODE, field, error: FREEZE_MESSAGES[field] };
+          }
+        }
+        /*
+          And on a deal whose amount was typed at the money step (so the
+          vehicle row no longer feeds the figures above), the car is marked
+          sold at the price the paper states: a different figure here would
+          leave the vehicle's sold price disagreeing with the filed bill of
+          sale (the verify walk's cash out-the-door deal closed at $12,345
+          that way). On a deal with no typed amount the vehicle row IS the
+          price the figures are drawn from, and the check above holds it.
+        */
+        const printedPrice = filed.printed?.salePrice;
+        if (
+          salePrice !== null &&
+          hasTypedAmount(sale.stepData) &&
+          typeof printedPrice === "number" &&
+          Math.round(salePrice * 100) !== Math.round(printedPrice * 100)
+        ) {
+          return { success: false, code: BILL_OF_SALE_FROZEN_CODE, field: "price", error: FREEZE_MESSAGES.price };
+        }
+        if (idPrintedConflict(filed.printed?.buyerLicense, input.buyerIdNumber)) {
+          return { success: false, code: BILL_OF_SALE_FROZEN_CODE, field: "buyerId", error: FREEZE_MESSAGES.buyerId };
+        }
+      }
+    }
+  } catch {
+    return {
+      success: false,
+      code: "couldNotCheck",
+      error: "The paperwork could not be checked, so the sale was not closed. Try again.",
+    };
   }
 
   try {

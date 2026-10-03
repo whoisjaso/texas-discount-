@@ -28,6 +28,27 @@ import { buildHandoffFields } from "@/lib/sales/webdealer";
 import { dealership } from "@/lib/dealership-config";
 import { getFunnelBundles } from "@/lib/sales/i18n";
 import { resolveAdminLanguageWithUser } from "@/lib/admin/server-language";
+import { getCurrentAdminAccess } from "@/lib/admin/current-admin";
+import { canVoidDocuments } from "@/lib/sales/void-bill-of-sale";
+import { filedBillOfSaleOn } from "@/lib/sales/filed-bill-of-sale";
+import { isDocumentDone } from "@/lib/admin/sale-desk";
+
+/**
+ * The steps whose answer a filed bill of sale states (owner's decision
+ * 10/02/2026): the screen says so before anything is changed. The plate is
+ * held only when the filed copy printed one.
+ */
+const HELD_STEPS = new Set([
+  "paid",
+  "price",
+  "funding",
+  "lender",
+  "plan:registration",
+  "plan:inspection",
+  "plan:insurance",
+  "buyerId",
+  "language",
+]);
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: `Sale - ${dealership.name}` };
@@ -258,9 +279,25 @@ export default async function GuideStepPage({ params, searchParams }: Props) {
 
   const { lang, userId } = await resolveAdminLanguageWithUser();
 
+  const freeze = await (async () => {
+    const access = await getCurrentAdminAccess().catch(() => null);
+    const canVoid = canVoidDocuments(access?.role ?? null);
+    const billFiled = ["billOfSale", "salvageBillOfSale"].some((type) =>
+      isDocumentDone(sale.documents[type] ?? "none"),
+    );
+    let held = billFiled && HELD_STEPS.has(current.key);
+    if (billFiled && (current.key === "plate" || current.key === "title")) {
+      // Held only against a plate the filed copy printed.
+      const filed = await filedBillOfSaleOn(sale.id).catch(() => null);
+      held = Boolean(filed?.printed?.plate);
+    }
+    return { canVoid, held };
+  })();
+
   return (
     <FunnelLocaleProvider bundles={getFunnelBundles()} initial={lang} userId={userId}>
       <GuideStepScreen
+        freeze={freeze}
         dealId={sale.id}
         vehicle={vehicleLabel(sale.vehicle)}
         buyerName={sale.buyer?.name?.trim() ?? ""}

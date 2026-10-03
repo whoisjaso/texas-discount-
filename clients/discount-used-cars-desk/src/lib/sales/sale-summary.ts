@@ -30,7 +30,7 @@ import type { SalePlan } from "@/lib/sales/sale-plan";
 import type { SalvagePath } from "@/lib/sales/salvage-plan";
 
 /** The furthest state a document has reached on this deal. */
-export type SummaryDocumentState = "none" | "draft" | "filed" | "signed";
+export type SummaryDocumentState = "none" | "draft" | "filed" | "signed" | "voided";
 
 /**
  * A value, described rather than rendered.

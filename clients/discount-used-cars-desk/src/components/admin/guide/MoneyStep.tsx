@@ -11,6 +11,7 @@ import { useFunnel } from "@/components/admin/funnel/FunnelLocaleProvider";
 import { fillTemplate, funnelDollars } from "@/lib/sales/i18n";
 import { DOC_FEE_SET } from "@/lib/documents/billOfSale";
 import { notSet } from "@/lib/dealership-config";
+import { FreezeWayOut, frozenRefusalText } from "@/components/admin/guide/HeldByBillOfSale";
 
 /**
  * The money, in the order the owner says it out loud:
@@ -70,6 +71,8 @@ export default function MoneyStep({
   const [answers, setAnswers] = useState<MoneyAnswers>(initial);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** The last refusal came from the filed bill of sale: show the way out. */
+  const [frozen, setFrozen] = useState(false);
   const [stage, setStage] = useState<PriceStage>("basis");
   const [direction, setDirection] = useState<StageDirection>("forward");
   const stageIndex = PRICE_STAGES.indexOf(stage);
@@ -111,7 +114,8 @@ export default function MoneyStep({
    * words of its own is the down payment after the bill of sale is filed
    * (SOP Freeze): it says to void and re-file the bill of sale first.
    */
-  function moneyRefusal(result: { error?: string; code?: string }): string {
+  function moneyRefusal(result: { error?: string; code?: string; field?: string }): string {
+    setFrozen(result.code === "downPaymentFrozen" || result.code === "billOfSaleFrozen");
     if (result.code === "downPaymentFrozen") {
       // Nothing was saved, so the box and the receipt go back to the down
       // payment the filed bill of sale states rather than drawing a balance
@@ -123,6 +127,15 @@ export default function MoneyStep({
     // Not a dollar amount of zero or more: nothing was saved, and the box
     // keeps what was typed so it can be corrected.
     if (result.code === "paidTodayInvalid") return t.money.paidTodayInvalid;
+    // The price or what it includes, after the bill of sale is filed (owner's
+    // decision 10/02/2026): nothing was saved, so the box and the receipt go
+    // back to what the deal holds.
+    if (result.code === "billOfSaleFrozen") {
+      setTyped(initial.amount.trim() || (advertised > 0 ? String(advertised) : ""));
+      setAdjustTyped(initial.paidTodayAmount);
+      setAnswers(initial);
+      return frozenRefusalText(t, result);
+    }
     return result.error ?? t.chrome.couldNotSave;
   }
 
@@ -229,6 +242,7 @@ export default function MoneyStep({
             {error}
           </p>
         ) : null}
+        {error && frozen ? <FreezeWayOut /> : null}
       </div>
     );
   }
@@ -456,6 +470,7 @@ export default function MoneyStep({
             {error}
           </p>
         ) : null}
+        {error && frozen ? <FreezeWayOut /> : null}
       </div>
     </div>
   );

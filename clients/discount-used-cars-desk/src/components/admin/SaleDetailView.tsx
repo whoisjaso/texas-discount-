@@ -28,6 +28,10 @@ import DealBadge from "@/components/admin/DealBadge";
 import { buildLenderDirectory } from "@/lib/sales/lenders";
 import { buildHandoffFields } from "@/lib/sales/webdealer";
 import { dealership, factOr } from "@/lib/dealership-config";
+import { readBuyerId, settled } from "@/lib/sales/buyer-id";
+import { codeCase } from "@/lib/documents/presentation-case";
+import { readMoney } from "@/lib/sales/money";
+import { paperworkMoney, readPaperwork } from "@/lib/sales/paperwork";
 
 /**
  * A sale.
@@ -167,6 +171,29 @@ export default function SaleDetailView({
 
   const handoffFields = buildHandoffFields(sale, factOr(dealership.license, "dealer licence (GDN)"));
 
+  /*
+    Once a bill of sale is filed it holds the buyer's licence number it
+    printed, so Close The Sale starts from that number: the same value the
+    paper states, which the close then refuses to change (owner's decision
+    10/02/2026).
+  */
+  const billOfSaleFiled = ["billOfSale", "salvageBillOfSale"].some((type) =>
+    isDocumentDone(sale.documents[type] ?? "none"),
+  );
+  const printedLicence = codeCase(settled(readBuyerId(sale.stepData).licenseNumber) ?? sale.buyer?.idNumber ?? "");
+  /*
+    And the price it printed, on a deal whose amount was typed: the figure the
+    car is marked sold at. On a deal with no typed amount the vehicle row's
+    price is what the figures were drawn from, so it stays the start.
+  */
+  const typedAmount = readMoney(sale.stepData).amount.trim() !== "";
+  const printedPrice = paperworkMoney(
+    sale.vehicle?.salePrice,
+    readPaperwork(sale.stepData, "billOfSale"),
+    readMoney(sale.stepData),
+    sale.funding.type,
+  ).salePrice;
+
   return (
     <div className="ed-admin px-5 py-8 md:px-10 md:py-12">
       {backLink}
@@ -242,6 +269,16 @@ export default function SaleDetailView({
             />
           ))}
         </ul>
+        {/* The filed bill of sale is voided from the packet, where its copies
+            and what goes with it are read back first (owner's decision
+            10/02/2026). */}
+        {billOfSaleFiled && !completed ? (
+          <p className="ed-sale-summary-link mt-4">
+            <Link href={`/admin/sales/${encodeURIComponent(sale.id)}/packet?void=billOfSale`}>
+              Void The Bill Of Sale
+            </Link>
+          </p>
+        ) : null}
       </section>
 
       <WebDealerHandoff
@@ -284,8 +321,8 @@ export default function SaleDetailView({
           <CompleteSalePanel
             dealId={sale.id}
             buyerName={sale.buyer?.name?.trim() ?? ""}
-            buyerIdNumber={sale.buyer?.idNumber ?? ""}
-            salePrice={sale.vehicle?.salePrice ?? null}
+            buyerIdNumber={billOfSaleFiled ? printedLicence : (sale.buyer?.idNumber ?? "")}
+            salePrice={billOfSaleFiled && typedAmount ? printedPrice : (sale.vehicle?.salePrice ?? null)}
           />
         )}
       </section>

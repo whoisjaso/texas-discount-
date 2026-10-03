@@ -147,3 +147,9 @@ secrets.
 - `scripts/desk-walk/`: `sale.cjs`, `ceremony.cjs`, `pdfs.cjs`, `audit-fn.cjs`
   and five sale scenarios: full end-to-end desk walks with the theme assertion
   and WCAG contrast audit, the signing ceremony, and packet PDF download.
+  Also `onboard.cjs` (first sign-in), `void.cjs` (void the filed bill of sale,
+  `VOID_LANG=es` for the Spanish desk; `bhph-void.json` with `RESUME_DEAL`
+  files again), `freeze.cjs` (held screens
+  refuse, EN and ES) and `reset.cjs` (a reset signs out old devices). Every
+  script reads `DESK_BASE` (default `http://localhost:5190`) through
+  `desk-base.cjs`, which aborts any request to another local port.

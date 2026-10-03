@@ -21,6 +21,7 @@ export const metadata = { title: `The Whole Sale - ${dealership.name}` };
 
 interface Props {
   params: Promise<{ dealId: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }
 
 /**
@@ -35,8 +36,10 @@ interface Props {
  * The step list is the corridor's own. Nothing on this page decides whether
  * an answer counts; it asks `buildGuideSteps` and reports what it says.
  */
-export default async function SaleSummaryPage({ params }: Props) {
+export default async function SaleSummaryPage({ params, searchParams }: Props) {
   const { dealId } = await params;
+  // Straight after a void: say so above the answers to change.
+  const voided = ((await searchParams) ?? {}).voided === "1";
 
   const sale = await getSaleDetail(dealId);
   if (!sale) notFound();
@@ -144,7 +147,7 @@ export default async function SaleSummaryPage({ params }: Props) {
 
   return (
     <FunnelLocaleProvider bundles={getFunnelBundles()} initial={lang} userId={userId}>
-      <SummaryScreen facts={facts} saleHref={saleHref} guideHref={`${saleHref}/guide`} />
+      <SummaryScreen facts={facts} saleHref={saleHref} guideHref={`${saleHref}/guide`} voided={voided} />
     </FunnelLocaleProvider>
   );
 }

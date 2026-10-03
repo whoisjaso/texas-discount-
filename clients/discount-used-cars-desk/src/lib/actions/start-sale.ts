@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { AGREEMENT_RECORD_COLUMNS, isCurrentFiled, type AgreementRecord } from "@/lib/sales/filed-documents";
 import { mergeBuyerProfile, toE164 } from "@/lib/admin/buyer-profile";
 import { readIdKind } from "@/lib/forms/id-document";
 import { issueCaptureToken } from "@/lib/sales/capture-token";
@@ -313,6 +314,32 @@ export async function startSale(
 
     if (existing?.id) {
       customerId = existing.id;
+      /*
+        A returning buyer whose details another open sale's filed paperwork
+        states (owner's decision 10/02/2026: the filed bill of sale holds the
+        buyer it names). The customer row is read live by that sale's power
+        of attorney, its webDEALER handoff and its sale screens, so it is not
+        rewritten from here while that paperwork is filed: the same person
+        starts a second sale without touching it, and a different name on
+        the same phone number is refused rather than renaming the other
+        sale's buyer (the verify walk saw a filed, signed bill of sale's sale
+        page re-labelled with the next buyer's name). Fails closed.
+      */
+      const held = await customerHeldByFiledPaperwork(supabase, existing.id);
+      if (held === "unknown") {
+        return { success: false, error: "Could not look the buyer up. Try again." };
+      }
+      if (held) {
+        const sameName =
+          (existing.name ?? "").trim().replace(/\s+/g, " ").toLowerCase() ===
+          buyerName.trim().replace(/\s+/g, " ").toLowerCase();
+        if (!sameName) {
+          return {
+            success: false,
+            error: `This phone number belongs to ${existing.name}, the buyer on another open sale whose paperwork is filed. Start this sale with the buyer's own phone number, or close or void that sale's paperwork first.`,
+          };
+        }
+      }
       /**
        * The sale's language is the sale's, not the customer's.
        *
@@ -324,17 +351,16 @@ export async function startSale(
        * because a fresh row has no preference to protect and the schema's
        * own default is not an observation about this person either.
        */
-      const { error: updateError } = await supabase
-        .from("customers")
-        .update({
-          name: buyerName,
-          email: buyerEmail || existing.email || null,
-          profile_data: mergeBuyerProfile(
-            existing.profile_data,
-            capturedProfile,
-          ),
-        })
-        .eq("id", existing.id);
+      const { error: updateError } = held
+        ? { error: null }
+        : await supabase
+            .from("customers")
+            .update({
+              name: buyerName,
+              email: buyerEmail || existing.email || null,
+              profile_data: mergeBuyerProfile(existing.profile_data, capturedProfile),
+            })
+            .eq("id", existing.id);
 
       if (updateError) {
         return {
@@ -668,4 +694,33 @@ async function resolveVehicle(
   }
 
   return { ok: true, id: created.id as string, titleStatus: newTitleStatus };
+}
+
+/**
+ * Whether another open sale of this customer has current filed paperwork,
+ * which states the customer's name, ID and address as they stand now.
+ * "unknown" when it could not be read (the caller refuses).
+ */
+async function customerHeldByFiledPaperwork(
+  supabase: Awaited<ReturnType<typeof import("@/lib/supabase/server").createClient>>,
+  customerId: string,
+): Promise<boolean | "unknown"> {
+  try {
+    const { data: deals, error } = await supabase
+      .from("deals")
+      .select("id")
+      .eq("customer_id", customerId)
+      .eq("status", "in_progress");
+    if (error) return "unknown";
+    const ids = ((deals ?? []) as Array<{ id: string }>).map((row) => row.id).filter(Boolean);
+    if (ids.length === 0) return false;
+    const { data: rows, error: rowsError } = await supabase
+      .from("document_agreements")
+      .select(AGREEMENT_RECORD_COLUMNS)
+      .in("deal_id", ids);
+    if (rowsError) return "unknown";
+    return ((rows ?? []) as AgreementRecord[]).some(isCurrentFiled);
+  } catch {
+    return "unknown";
+  }
 }
