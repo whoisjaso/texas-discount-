@@ -1,0 +1,101 @@
+{
+ "_note": "Box 11's pickup walk (SOP Verification: a pickup asks for a document and shows the estimate as a hint only; after a title figure, carrying capacity starts at the Registration Manual Table 2-1 minimum). It resumes the preview mock's seeded pickup sale, so run it with RESUME_DEAL=/admin/sales/preview-truck-deal (a 2018 Ford F-150 XLT with no weight on record; Start A Sale is skipped, so it needs no phone), once per fresh server. The title figure 5012 is the walk input the reference build typed (desk docs/verification/VERIFICATION.md, Pickup: 'Box 11 will read 5,100 lb'). Answers for a screen the corridor no longer asks are ignored; a 'NO ANSWER FOR <step>' stop means the corridor asks something new: answer it from the screen, never with an invented fact.",
+ "car": "2018 Ford F-150 XLT (the preview mock's preview-truck-deal)",
+ "language": "en",
+ "title": "Clean title",
+ "first": "Daniel",
+ "last": "Ortiz",
+ "answers": {
+  "funding": {
+   "button": "Cash",
+   "exact": true
+  },
+  "paid": [
+   {
+    "fill": "main input",
+    "value": "4000"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "price": [
+   {
+    "button": "Yes"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "plan:registration": {
+   "button": "We Do"
+  },
+  "plate": {
+   "button": "No plate yet"
+  },
+  "plan:title-signer": {
+   "button": "The Buyer, Here Today"
+  },
+  "plan:inspection": {
+   "button": "Already Passed"
+  },
+  "plan:insurance": {
+   "button": "Yes, Shown Today"
+  },
+  "odometerStatus": {
+   "button": "Yes, That Is The Real Mileage"
+  },
+  "paymentMethod": {
+   "text": "Cash"
+  },
+  "tradeIn": {
+   "text": "No"
+  },
+  "conditionType": {
+   "text": "As-Is"
+  },
+  "countyOfResidence": {
+   "text": "Harris"
+  },
+  "applicationType": {
+   "text": "Title And Registration"
+  },
+  "applicantType": {
+   "text": "A Person"
+  },
+  "emptyWeight": [
+   {
+    "fill": "main input",
+    "value": "5012"
+   },
+   {
+    "button": "Texas Title",
+    "exact": true
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "carryingCapacity": {
+   "button": "Next",
+   "exact": true
+  },
+  "issuingState": {
+   "button": "Next",
+   "exact": true
+  },
+  "buyerLicenseState": {
+   "text": "Texas (TX)"
+  },
+  "renewalReminders": {
+   "text": "No"
+  }
+ },
+ "expect": {
+  "form130U/emptyWeight": "needs the weight from a document",
+  "form130U/carryingCapacity": "Table 2-1"
+ }
+}

@@ -1,0 +1,5 @@
+.ed-sign-downloads { width: 100%; margin-top: 2rem; text-align: left; }
+.ed-sign-download { display: flex; justify-content: space-between; align-items: center; gap: 1rem; min-height: 3.5rem; padding: .8rem 0; border-top: 1px solid var(--ed-rule, #dedad2); color: var(--ed-ink, #25231f); font-size: .875rem; text-decoration: none; }
+.ed-sign-download > span:last-child { display: inline-flex; align-items: center; gap: .5rem; flex-shrink: 0; color: var(--ed-accent, #9b583f); font-size: .75rem; }
+.ed-sign-download:focus-visible { outline: 2px solid var(--ed-accent, #9b583f); outline-offset: 4px; }
+.ed-sign-download:hover > span:first-child { text-decoration: underline; text-underline-offset: 3px; }

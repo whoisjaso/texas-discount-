@@ -1,0 +1,1913 @@
+import type { SupabaseClient, User } from "@supabase/supabase-js";
+import { getMockLeads } from "@/lib/mock-leads";
+import { getMockVehicles } from "@/lib/mock-vehicles";
+import { PUBLIC_VEHICLE_DB_COLUMNS } from "@/lib/vehicles/public";
+import type { Lead, LeadRow, Vehicle, VehicleRow } from "@/types/database";
+import { packetPreviewAgreements, packetPreviewDeals } from "@/lib/supabase/packet-preview-fixtures";
+import { dealership } from "@/lib/dealership-config";
+import { VOIDED_WITH_BILL_OF_SALE, voidEligibility } from "@/lib/sales/void-bill-of-sale";
+import type { AgreementRecord } from "@/lib/sales/filed-documents";
+import { validateFeeSchedule } from "@/lib/sales/fee-schedule";
+import { hasTeamPermission, isTeamRole } from "@/lib/operations/team";
+
+type QueryMode = "rows" | "single";
+
+type MockRow = LeadRow | VehicleRow | Record<string, unknown>;
+
+type MockFilterOp = "eq" | "in" | "gte" | "neq" | "is" | "not-is" | "not-in";
+
+type MockQueryState = {
+  table: string;
+  mode: QueryMode;
+  filters: Array<{ column: string; op: MockFilterOp; value: unknown }>;
+  limit?: number;
+  /** The patch an `.update()` carried, applied when the call is awaited. */
+  update?: Record<string, unknown>;
+  /** The rows an `.insert()` carried, appended when the call is awaited. */
+  insert?: Array<Record<string, unknown>>;
+  readOnlyMutation?: boolean;
+  /** `.select("id", { count: "exact", head: true })` asked for a number. */
+  wantsCount?: boolean;
+  /** `head: true` means the caller wants the count and none of the rows. */
+  headOnly?: boolean;
+};
+
+/**
+ * What preview has been told, for the life of the process.
+ *
+ * The mock used to accept every write and remember none of them: `.update()`
+ * fell through the proxy's catch-all and resolved to the fixtures, and
+ * `storage.upload()` returned success without keeping anything. Anything
+ * written in preview vanished, and a walk through a feature that writes then
+ * reads back its own write came out green while proving nothing at all.
+ *
+ * That is worse than no fixture. A test instrument that always says yes is not
+ * a weak test, it is a false one, and the licence attach path is exactly the
+ * shape it would lie about: create a deal, upload two photographs, write them
+ * onto the deal, then look at the deal to see whether they arrived.
+ *
+ * Two maps, keyed by table and by bucket. In memory only, per process, cleared
+ * when the dev server restarts, which is the right lifetime for a fixture.
+ */
+/**
+ * One store for the whole dev server, whichever bundle asks.
+ *
+ * Next compiles route handlers, server actions and server components into
+ * separate bundles, and each bundle gets its own copy of a module's top-level
+ * state. So a document filed through a server action sat in one copy of this
+ * map while the PDF route, in another bundle, looked in a different one and
+ * answered 404 for a row that had just been written. `globalThis` is the one
+ * object every bundle shares, and the preview server is the only place this
+ * module ever runs, so it is the right home for a fixture's memory.
+ */
+type MockStore = {
+  written: Map<string, Map<string, Record<string, unknown>>>;
+  uploaded: Map<string, Set<string>>;
+  inserted: Map<string, Array<Record<string, unknown>>>;
+  minted: { count: number };
+  /** app_metadata written through auth.admin.updateUserById, by user id. */
+  authMetadata?: Map<string, Record<string, unknown>>;
+  /**
+   * DESK_PREVIEW_MEMBER=fresh-reset: when the owner "reset" the preview
+   * account, set on first use and cleared with the other writes. A preview
+   * session that signed in before it is signed out (password-reset-cutoff.ts).
+   */
+  previewResetAt?: string | null;
+  /**
+   * The dealership's fee schedule row and its change log
+   * (20261003000000_dealer_fee_schedule.sql). Both start empty, so a fresh
+   * preview owner meets the Your Fees step; no doc fee is ever seeded here.
+   */
+  feeSchedule?: Record<string, unknown> | null;
+  feeChanges?: Array<Record<string, unknown>>;
+};
+const store: MockStore = ((globalThis as { __tjMockStore?: MockStore }).__tjMockStore ??= {
+  written: new Map(),
+  uploaded: new Map(),
+  inserted: new Map(),
+  minted: { count: 0 },
+});
+// Added after the store's first shape; a dev server that already holds an
+// older store gains it here rather than on restart.
+const authMetadata = (store.authMetadata ??= new Map());
+store.feeChanges ??= [];
+const written = store.written;
+const uploaded = store.uploaded;
+
+/**
+ * Rows preview has been handed that the fixtures never had.
+ *
+ * `.insert()` used to fall through the proxy's catch-all like `.update()`
+ * once did: it resolved to the untouched fixtures, so Start A Sale "created"
+ * a deal whose id was the first fixture's, and File on a review screen
+ * "filed" a document that never existed. A whole sale could not be walked
+ * in preview, which is the one environment every persona walk and every
+ * verification script runs in. Every one of those walks stopped at the
+ * first document and called it done.
+ *
+ * Appended in memory per table, ids minted here, read back through the same
+ * path the fixtures take so filters, writes and the deal's embedded buyer
+ * and vehicle all behave the way a real row would.
+ */
+const inserted = store.inserted;
+const minted = store.minted;
+
+/** Everything preview has stored in one bucket. Read by tests and by walks. */
+export function mockUploads(bucket: string): string[] {
+  return [...(uploaded.get(bucket) ?? [])];
+}
+
+/** Every row preview has inserted into one table. Read by tests and by walks. */
+export function mockInserted(table: string): Array<Record<string, unknown>> {
+  return [...(inserted.get(table) ?? [])].map((row) => withWrites(table, row) as Record<string, unknown>);
+}
+
+/** Forget every write. For tests that need to start from the fixtures. */
+export function resetMockWrites(): void {
+  written.clear();
+  uploaded.clear();
+  inserted.clear();
+  authMetadata.clear();
+  store.previewResetAt = null;
+  store.feeSchedule = null;
+  store.feeChanges = [];
+}
+
+/**
+ * The preview account's app_metadata as the mock's auth holds it: the
+ * temporary-password flag when DESK_PREVIEW_MEMBER asks for an account still
+ * on one, then whatever auth.admin.updateUserById has written since (the
+ * onboarding password screen clears the flag). Empty otherwise, so preview
+ * is what it always was.
+ */
+function previewAppMetadata(userId: string): Record<string, unknown> {
+  const flag = process.env.DESK_PREVIEW_MEMBER?.trim();
+  const preview = userId === "local-admin-preview";
+  const issued =
+    (flag === "fresh-temporary-password" || flag === "fresh-reset") && preview
+      ? { requires_password_change: true }
+      : {};
+  /*
+    fresh-reset: the same account, after an owner reset its password. The
+    reset time is fixed the first time it is read, so a preview session that
+    began before it is signed out and one that signs in afterwards is not.
+  */
+  const reset =
+    flag === "fresh-reset" && preview
+      ? { password_reset_at: (store.previewResetAt ??= new Date().toISOString()) }
+      : {};
+  return { ...issued, ...reset, ...authMetadata.get(userId) };
+}
+
+/** The row as the fixtures have it, with anything written over the top. */
+function withWrites(table: string, row: MockRow): MockRow {
+  const id = (row as { id?: unknown }).id;
+  if (typeof id !== "string") return row;
+  const patch = written.get(table)?.get(id);
+  return patch ? { ...row, ...patch } : row;
+}
+
+function applyUpdate(state: MockQueryState) {
+  if (!state.update) return;
+  // Only an update aimed at one row by id is recorded. A broader one is not
+  // something this fixture can honestly represent, so it is left alone rather
+  // than half-applied.
+  const target = state.filters.find((f) => f.column === "id" && f.op === "eq");
+  if (typeof target?.value !== "string") return;
+
+  const table = written.get(state.table) ?? new Map<string, Record<string, unknown>>();
+  table.set(target.value, { ...table.get(target.value), ...state.update });
+  written.set(state.table, table);
+}
+
+/**
+ * Append what an insert carried, the way the database would: an id when the
+ * caller gave none, a creation time, and the status a fresh row starts in.
+ * The rows come back as the result, so `.insert(row).select("id").single()`
+ * answers with the id that was actually minted.
+ */
+function applyInsert(state: MockQueryState): Array<Record<string, unknown>> | null {
+  if (!state.insert) return null;
+  const now = new Date().toISOString();
+  const rows = state.insert.map((row) => {
+    minted.count += 1;
+    const stored: Record<string, unknown> = {
+      id: `preview-${state.table}-${minted.count}`,
+      created_at: now,
+      ...(state.table === "deals" ? { status: "in_progress", completed_at: null } : {}),
+      ...(state.table === "vehicles" ? { status: "available" } : {}),
+      ...row,
+    };
+    return stored;
+  });
+  inserted.set(state.table, [...(inserted.get(state.table) ?? []), ...rows]);
+  return rows;
+}
+
+/** An update aimed at a voided document row, which the database refuses. */
+function updatesVoidedDocument(state: MockQueryState): boolean {
+  if (!state.update || state.table !== "document_agreements") return false;
+  const target = state.filters.find((f) => f.column === "id" && f.op === "eq");
+  if (typeof target?.value !== "string") return false;
+  const row = allRows("document_agreements").find((r) => (r as { id?: unknown }).id === target.value) as
+    | Record<string, unknown>
+    | undefined;
+  return Boolean(row?.voided_at);
+}
+
+function createMockQueryResult(state: MockQueryState) {
+  if (state.readOnlyMutation) {
+    return { data: null, error: { code: "42501", message: "Public inventory is read-only." } };
+  }
+  const added = applyInsert(state);
+  if (added) {
+    return {
+      data: state.mode === "single" ? (added[0] ?? null) : added,
+      error: null,
+    };
+  }
+  if (updatesVoidedDocument(state)) {
+    // The database's final-row trigger (20261002000000_void_filed_documents):
+    // a voided document is never written again, and the update is refused.
+    return { data: null, error: { code: "42501", message: "voided_document_is_final" } };
+  }
+  applyUpdate(state);
+  const rows = getMockRows(state);
+  if (state.wantsCount) {
+    return {
+      data: state.headOnly ? null : rows,
+      count: rows.length,
+      error: null,
+    };
+  }
+  if (state.table === "public_inventory_vehicles" && state.mode === "single" && rows.length !== 1) {
+    return { data: null, error: { code: "PGRST116", message: "Public vehicle not found." } };
+  }
+  return {
+    data: state.mode === "single" ? (rows[0] ?? null) : rows,
+    error: null,
+  };
+}
+
+function vehicleToRow(vehicle: Vehicle): VehicleRow {
+  return {
+    id: vehicle.id,
+    make: vehicle.make,
+    model: vehicle.model,
+    year: vehicle.year,
+    price: vehicle.price,
+    mileage: vehicle.mileage,
+    vin: vehicle.vin,
+    status: vehicle.status,
+    description: vehicle.description,
+    image_url: vehicle.imageUrl,
+    gallery: vehicle.gallery,
+    slug: vehicle.slug,
+    body_style: vehicle.bodyStyle,
+    exterior_color: vehicle.exteriorColor,
+    interior_color: vehicle.interiorColor,
+    transmission: vehicle.transmission,
+    drivetrain: vehicle.drivetrain,
+    engine: vehicle.engine,
+    fuel_type: vehicle.fuelType,
+    date_added: vehicle.dateAdded,
+    created_at: vehicle.createdAt,
+    updated_at: vehicle.updatedAt,
+    trim: vehicle.trim,
+    purchase_price: vehicle.purchasePrice,
+    buy_fee: vehicle.buyFee,
+    total_cost: vehicle.totalCost,
+    seller_name: vehicle.sellerName,
+    auction_location: vehicle.auctionLocation,
+    work_order_number: vehicle.workOrderNumber,
+    stock_number: vehicle.stockNumber,
+    guarantee_expires_at: vehicle.guaranteeExpiresAt,
+    guarantee_price: vehicle.guaranteePrice,
+    transport_carrier: vehicle.transportCarrier,
+    transport_load_id: vehicle.transportLoadId,
+    transport_cost: vehicle.transportCost,
+    transport_pickup_eta: vehicle.transportPickupEta,
+    transport_delivery_eta: vehicle.transportDeliveryEta,
+    source_email_id: vehicle.sourceEmailId,
+    condition_notes: vehicle.conditionNotes,
+    title_type: vehicle.titleType,
+    // The same exact-value mapping the live migration used: a fixture that
+    // says Clean is clean, anything else stays unverified so preview mode
+    // exercises the title gate the way production does.
+    title_status: /^(clean|clear)$/i.test((vehicle.titleType ?? "").trim())
+      ? "clean"
+      : "unknown",
+    mechanical_cost: vehicle.mechanicalCost,
+    cosmetic_cost: vehicle.cosmeticCost,
+    other_costs: vehicle.otherCosts,
+    date_listed: vehicle.dateListed,
+    date_sold: vehicle.dateSold,
+    sale_price: vehicle.salePrice,
+    selling_fees: vehicle.sellingFees,
+    net_profit: vehicle.netProfit,
+    weight_lbs: vehicle.weightLbs,
+    weight_source: vehicle.weightSource ?? null,
+    weight_reading_lbs: vehicle.weightReadingLbs ?? null,
+    weight_rule: vehicle.weightRule ?? null,
+    weight_confirmed_by: vehicle.weightConfirmedBy ?? null,
+    weight_confirmed_by_name: vehicle.weightConfirmedByName ?? null,
+    weight_confirmed_at: vehicle.weightConfirmedAt ?? null,
+    weight_note: vehicle.weightNote ?? null,
+    weight_estimate: vehicle.weightEstimate ?? null,
+    weight_estimated_at: vehicle.weightEstimatedAt ?? null,
+    license_plate: vehicle.licensePlate,
+    buyer_name: vehicle.buyerName,
+    buyer_phone: vehicle.buyerPhone,
+    buyer_customer_id: vehicle.buyerCustomerId,
+    buyer_id_number: vehicle.buyerIdNumber,
+    lead_source_name: vehicle.leadSourceName,
+    days_in_stock: vehicle.daysInStock,
+    target_list_price: vehicle.targetListPrice,
+    floor_price: vehicle.floorPrice,
+    carfax_url: vehicle.carfaxUrl ?? null,
+    weekly_rental_rate: vehicle.weeklyRentalRate ?? null,
+    is_rental_fleet: vehicle.isRentalFleet ?? false,
+    last_known_location: vehicle.lastKnownLocation ?? null,
+    readiness_bucket: vehicle.readinessBucket ?? null,
+    keys_status: vehicle.keysStatus ?? null,
+    gps_status: vehicle.gpsStatus ?? null,
+    insurance_status: vehicle.insuranceStatus ?? null,
+    title_registration_status: vehicle.titleRegistrationStatus ?? null,
+    last_census_at: vehicle.lastCensusAt ?? null,
+  };
+}
+
+function leadToRow(lead: Lead): LeadRow {
+  return {
+    id: lead.id,
+    name: lead.name,
+    email: lead.email,
+    phone: lead.phone,
+    message: lead.message,
+    vehicle_id: lead.vehicleId,
+    source: lead.source,
+    status: lead.status,
+    buyer_name: lead.buyerName,
+    buyer_phone: lead.buyerPhone,
+    created_at: lead.createdAt,
+  };
+}
+
+/** The fixtures for a table plus whatever preview has inserted since. */
+function allRows(table: string): MockRow[] {
+  if (table === "public_inventory_vehicles") {
+    const vehiclesWithDeals = new Set(allRows("deals").map((row) => (row as Record<string, unknown>).vehicle_id));
+    return allRows("vehicles").filter((row) => {
+      const vehicle = row as Record<string, unknown>;
+      return vehicle.status === "Available" && (vehicle.is_rental_fleet ?? false) === false
+        && vehicle.date_sold == null && vehicle.buyer_customer_id == null
+        && !["buyer_name", "buyer_phone", "buyer_id_number"].some((key) => {
+          const value = vehicle[key];
+          return value != null && (typeof value !== "string" || value.trim() !== "");
+        })
+        && !(Number(vehicle.sale_price ?? 0) > 0) && !vehiclesWithDeals.has(vehicle.id);
+    }).map((row) => Object.fromEntries(PUBLIC_VEHICLE_DB_COLUMNS.map((key) =>
+      [key, (row as Record<string, unknown>)[key] ?? null])));
+  }
+  let rows: MockRow[];
+  if (table === "vehicles") {
+    rows = getMockVehicles().map(vehicleToRow);
+  } else if (table === "leads") {
+    rows = getMockLeads().map(leadToRow);
+  } else {
+    rows = getPreviewRows(table);
+  }
+  // Anything preview has been told, over the top of the fixture. Applied before
+  // filtering, so a row can be found by a value that was written rather than
+  // only by one that shipped in the fixture.
+  return [...rows, ...(inserted.get(table) ?? [])].map((row) => withWrites(table, row));
+}
+
+/**
+ * A deal's buyer and vehicle, embedded the way the real query embeds them.
+ *
+ * The fixtures carry `customers` and `vehicles` objects inline because the
+ * sale desk selects them that way. An inserted deal carries only the ids
+ * Start A Sale wrote, so the join is done here from the same rows the
+ * `customers` and `vehicles` tables answer with, writes included. Without
+ * this a freshly started sale read as "Buyer not set" and "Vehicle not
+ * set" on every screen after the one that created it.
+ */
+function embedDealRelations(row: MockRow): MockRow {
+  const deal = row as Record<string, unknown>;
+  const out: Record<string, unknown> = { ...deal };
+  if (!out.customers && typeof deal.customer_id === "string") {
+    out.customers =
+      allRows("customers").find((r) => (r as { id?: unknown }).id === deal.customer_id) ?? null;
+  }
+  if (!out.vehicles && typeof deal.vehicle_id === "string") {
+    out.vehicles =
+      allRows("vehicles").find((r) => (r as { id?: unknown }).id === deal.vehicle_id) ?? null;
+  }
+  return out;
+}
+
+function getMockRows(state: MockQueryState) {
+  let rows = allRows(state.table);
+  if (state.table === "deals") rows = rows.map(embedDealRelations);
+
+  for (const filter of state.filters) {
+    rows = rows.filter((row) => {
+      const value = row[filter.column as keyof typeof row];
+      switch (filter.op) {
+        case "in":
+          return Array.isArray(filter.value) && filter.value.includes(value);
+        case "not-in":
+          return !(Array.isArray(filter.value) && filter.value.includes(value));
+        case "gte":
+          return typeof value === "string" && typeof filter.value === "string" && value >= filter.value;
+        case "neq":
+          return value !== filter.value;
+        case "is":
+          return (value ?? null) === filter.value;
+        case "not-is":
+          return (value ?? null) !== filter.value;
+        default:
+          return value === filter.value;
+      }
+    });
+  }
+  if (typeof state.limit === "number") {
+    rows = rows.slice(0, state.limit);
+  }
+  return rows;
+}
+
+function getPreviewRows(table: string): Array<Record<string, unknown>> {
+  if (table === "document_agreements") return [...previewRentalAgreements, ...packetPreviewAgreements];
+  if (table === "deals") return [...previewDeals, ...packetPreviewDeals];
+  if (table === "customers") return previewCustomers;
+  if (table === "payment_schedules") return previewPaymentSchedules;
+  if (table === "installments") return previewInstallments;
+  if (table === "customer_payment_methods") return previewPaymentMethods;
+  if (table === "rental_ledger") return previewRentalLedger;
+  if (table === "notification_log") return previewNotificationLog;
+  if (table === "sms_messages") return previewSmsMessages;
+  if (table === "team_members") return previewTeamMembers();
+  if (table === "dealer_fee_schedule") return store.feeSchedule ? [{ ...store.feeSchedule }] : [];
+  if (table === "dealer_fee_schedule_changes") return (store.feeChanges ?? []).map((row) => ({ ...row }));
+  return [];
+}
+
+/**
+ * A team member for the preview session to onboard, only when asked for.
+ *
+ * The SOP says to test onboarding "with a fresh member in the preview mock
+ * (no name, no signature, onboarding not completed)". DESK_PREVIEW_MEMBER is
+ * read here and nowhere else: "fresh" is cleared to sign, "fresh-cannot-sign"
+ * is not, and "fresh-temporary-password" is "fresh" on an account still on
+ * the temporary password an approval issues (so onboarding starts with
+ * "Choose A Password"). "fresh-sales" is a salesperson cleared to sign, to
+ * prove the Your Fees step is the owner's alone (sign the preview in with the
+ * cookie "sales:<email>" to match). Unset, the table is empty and preview is
+ * what it always was.
+ *
+ * The name is empty, never invented: the person types it at onboarding. The
+ * `onboarding_completed_at` key is present (null), because the layout and the
+ * sign-in destination check for the key itself. Writes land in the mock's
+ * store and last until the dev server restarts. Production never reaches
+ * this: the service client is the real one whenever preview is off, and
+ * preview is always off when NODE_ENV is production.
+ */
+function previewTeamMembers(): Array<Record<string, unknown>> {
+  const flag = process.env.DESK_PREVIEW_MEMBER?.trim();
+  if (
+    flag !== "fresh" &&
+    flag !== "fresh-cannot-sign" &&
+    flag !== "fresh-temporary-password" &&
+    flag !== "fresh-reset" &&
+    flag !== "fresh-sales"
+  ) return [];
+  const at = "2026-10-01T15:00:00.000Z";
+  return [
+    {
+      id: "preview-team-member-1",
+      auth_user_id: "local-admin-preview",
+      full_name: "",
+      display_name: null,
+      username: null,
+      bio: null,
+      avatar_url: null,
+      email: null,
+      phone: null,
+      role: flag === "fresh-sales" ? "sales" : "owner",
+      language_preference: "en",
+      status: "active",
+      can_sign_contracts: flag !== "fresh-cannot-sign",
+      signature_data_url: null,
+      signature_updated_at: null,
+      invited_at: null,
+      last_invite_error: null,
+      onboarding_completed_at: null,
+      created_at: at,
+      updated_at: at,
+    },
+  ];
+}
+
+const previewDeals = [
+  {
+    id: "preview-completed-deal",
+    status: "completed",
+    current_step: 9,
+    step_data: {},
+    language: "en",
+    created_at: "2026-05-01T14:30:00.000Z",
+    completed_at: "2026-05-01T16:00:00.000Z",
+    vehicles: {
+      id: "preview-vehicle-paperwork-1",
+      year: 2022,
+      make: "Mercedes-Benz",
+      model: "C 300",
+      vin: "W1KAF4HB0NR123456",
+      // Price and body style are what the paperwork corridor reads: the money
+      // on a bill of sale comes off the price, and the 130-U asks a truck for a
+      // carrying capacity. Missing here meant neither could be seen locally.
+      sale_price: 28500,
+      body_style: "Sedan",
+    },
+    customers: {
+      id: "preview-customer-paperwork-1",
+      name: "Aaliyah Stone",
+      phone: "+17135550123",
+    },
+  },
+  {
+    id: "preview-active-deal",
+    status: "in_progress",
+    current_step: 4,
+    // A deal that went through the retired paperwork pipeline, so the sale's
+    // registration block is reachable in preview. Empty here meant that
+    // section could never be seen locally, which is how the mobile Late list
+    // went unrendered for months.
+    step_data: {
+      "5": { used_reassignment: "Reassignment" },
+      "6": { checklist: [true, true, true, true, false, false, false, false, false] },
+      "7": { plate_number: "27422DLR" },
+      /*
+        A confirmed mailing address, in its pieces.
+
+        Without one the whole address half of the webDEALER handoff renders as
+        five "Missing" rows locally, so nobody working on that screen ever
+        sees it carrying values. That is the same shape of blind spot this
+        file's other preview rows exist to close.
+      */
+      buyerId: {
+        mailing: {
+          street: "4521 Telephone Rd",
+          city: "Houston",
+          state: "TX",
+          postal: "77087-0421",
+          county: "Harris",
+        },
+        mailingConfirmed: true,
+      },
+    },
+    language: "en",
+    created_at: "2026-05-02T11:15:00.000Z",
+    completed_at: null,
+    vehicles: {
+      id: "preview-vehicle-paperwork-2",
+      year: 2019,
+      make: "BMW",
+      model: "530i",
+      vin: "WBAJA7C50KWW12345",
+      sale_price: 19750,
+      body_style: "Sedan",
+      weight_lbs: 3765,
+    },
+    customers: {
+      id: "preview-customer-paperwork-2",
+      name: "Marcus Reed",
+      phone: "+17135550188",
+    },
+  },
+  /*
+    A pickup, so the 130-U's empty weight can be seen in its "needs a
+    document" state: an estimate exists (EPA has the 2018 F-150 2.7 4x4), but
+    a pickup is never filed on an estimate, so the screen asks for the title,
+    the MCO or a scale ticket and shows the estimate as a hint only. Nothing
+    on the vehicle row says what it weighs.
+  */
+  {
+    id: "preview-truck-deal",
+    status: "in_progress",
+    current_step: 4,
+    step_data: {
+      buyerId: {
+        mailing: {
+          street: "8100 Bellfort Ave",
+          city: "Houston",
+          state: "TX",
+          postal: "77061",
+          county: "Harris",
+        },
+        mailingConfirmed: true,
+      },
+    },
+    language: "en",
+    created_at: "2026-10-02T15:00:00.000Z",
+    completed_at: null,
+    vehicles: {
+      id: "preview-vehicle-truck-1",
+      year: 2018,
+      make: "Ford",
+      model: "F-150 XLT",
+      trim: "XLT",
+      vin: "1FTEW1EP5JFA00001",
+      sale_price: 18900,
+      body_style: "Truck",
+      engine: "2.7L V6",
+      drivetrain: "4WD",
+      fuel_type: "Gasoline",
+      title_status: "clean",
+      weight_lbs: null,
+    },
+    customers: {
+      id: "preview-customer-truck-1",
+      name: "Daniel Ortiz",
+      phone: "+17135550166",
+    },
+  },
+];
+
+const previewCustomers = [
+  {
+    id: "preview-customer-1",
+    good_standing_since: "2026-04-01",
+    late_payment_count: 0,
+    default_billing_agreement_id: "preview-billing-1",
+  },
+  {
+    id: "preview-customer-2",
+    good_standing_since: null,
+    late_payment_count: 2,
+    default_billing_agreement_id: null,
+  },
+  {
+    id: "preview-customer-ended",
+    good_standing_since: "2026-02-15",
+    late_payment_count: 0,
+    default_billing_agreement_id: null,
+  },
+  {
+    id: "preview-financing-customer-1",
+    name: "Darius Coleman",
+    phone: "+17135550177",
+    email: "darius@example.com",
+    language: "en",
+    lead_id: null,
+    notes: null,
+    sms_opted_out: false,
+    stripe_customer_id: null,
+    created_at: "2026-04-12T14:10:00.000Z",
+    good_standing_since: null,
+    late_payment_count: 1,
+    default_billing_agreement_id: null,
+  },
+];
+
+const previewPaymentMethods = [
+  {
+    id: "preview-method-1",
+    customer_id: "preview-customer-1",
+    status: "active",
+    provider: "stripe",
+    method_type: "card",
+    last4: "4242",
+  },
+];
+
+const previewRentalLedger = [
+  {
+    id: "preview-ledger-rental-1",
+    agreement_id: "preview-rental-1",
+    renter_id: "preview-customer-1",
+    vehicle_id: "mock-1",
+    weekly_rate_cents: 42500,
+    current_balance_cents: 0,
+    paid_through_date: "2026-06-03",
+    ledger_status: "green",
+    next_charge_attempt_at: "2026-06-03T15:00:00.000Z",
+  },
+  {
+    id: "preview-ledger-rental-2",
+    agreement_id: "preview-rental-2",
+    renter_id: "preview-customer-2",
+    vehicle_id: "mock-2",
+    weekly_rate_cents: 37500,
+    current_balance_cents: 75000,
+    paid_through_date: "2026-05-20",
+    ledger_status: "delinquent",
+    next_charge_attempt_at: "2026-06-01T15:00:00.000Z",
+  },
+  {
+    id: "preview-ledger-release-hold",
+    agreement_id: "preview-rental-release-hold",
+    renter_id: "preview-customer-3",
+    vehicle_id: "mock-3",
+    weekly_rate_cents: 39500,
+    current_balance_cents: 39500,
+    paid_through_date: null,
+    ledger_status: "warning",
+    next_charge_attempt_at: "2026-06-01T15:00:00.000Z",
+  },
+];
+
+const previewPaymentSchedules = [
+  {
+    id: "preview-financing-schedule-1",
+    customer_id: "preview-financing-customer-1",
+    agreement_id: "preview-financing-agreement-1",
+    vehicle_description: "2021 Chevrolet Malibu LT",
+    schedule_type: "financing",
+    total_amount: 7200,
+    down_payment: 1200,
+    installment_amount: 600,
+    frequency: "Monthly",
+    num_payments: 12,
+    apr: 0,
+    start_date: "2026-04-15",
+    status: "active",
+    created_at: "2026-04-12T14:30:00.000Z",
+    customers: {
+      id: "preview-financing-customer-1",
+      name: "Darius Coleman",
+      phone: "+17135550177",
+      email: "darius@example.com",
+      language: "en",
+      lead_id: null,
+      notes: null,
+      sms_opted_out: false,
+      stripe_customer_id: null,
+      created_at: "2026-04-12T14:10:00.000Z",
+    },
+  },
+];
+
+const previewInstallments = [
+  {
+    id: "preview-financing-installment-1",
+    schedule_id: "preview-financing-schedule-1",
+    installment_number: 1,
+    due_date: "2026-04-15",
+    amount_due: 600,
+    amount_paid: 600,
+    status: "paid",
+    paid_date: "2026-04-15",
+    created_at: "2026-04-12T14:31:00.000Z",
+    // The screen reads the schedule through the installment, the way the real
+    // query joins it. Without this the preview shows nothing late, which is
+    // exactly the false all-clear the money screen is built not to give.
+    payment_schedules: {
+      id: "preview-financing-schedule-1",
+      status: "active",
+      vehicle_description: "2021 Chevrolet Malibu LT",
+      customer_id: "preview-financing-customer-1",
+      customers: { name: "Darius Coleman", phone: "+17135550177" },
+    },
+  },
+  {
+    id: "preview-financing-installment-2",
+    schedule_id: "preview-financing-schedule-1",
+    installment_number: 2,
+    due_date: "2026-05-15",
+    amount_due: 600,
+    amount_paid: 150,
+    status: "partial",
+    paid_date: "2026-05-16",
+    created_at: "2026-04-12T14:31:00.000Z",
+    // The screen reads the schedule through the installment, the way the real
+    // query joins it. Without this the preview shows nothing late, which is
+    // exactly the false all-clear the money screen is built not to give.
+    payment_schedules: {
+      id: "preview-financing-schedule-1",
+      status: "active",
+      vehicle_description: "2021 Chevrolet Malibu LT",
+      customer_id: "preview-financing-customer-1",
+      customers: { name: "Darius Coleman", phone: "+17135550177" },
+    },
+  },
+  {
+    id: "preview-financing-installment-3",
+    schedule_id: "preview-financing-schedule-1",
+    installment_number: 3,
+    due_date: "2026-06-15",
+    amount_due: 600,
+    amount_paid: 0,
+    status: "upcoming",
+    paid_date: null,
+    created_at: "2026-04-12T14:31:00.000Z",
+    // The screen reads the schedule through the installment, the way the real
+    // query joins it. Without this the preview shows nothing late, which is
+    // exactly the false all-clear the money screen is built not to give.
+    payment_schedules: {
+      id: "preview-financing-schedule-1",
+      status: "active",
+      vehicle_description: "2021 Chevrolet Malibu LT",
+      customer_id: "preview-financing-customer-1",
+      customers: { name: "Darius Coleman", phone: "+17135550177" },
+    },
+  },
+  {
+    id: "preview-financing-installment-4",
+    schedule_id: "preview-financing-schedule-1",
+    installment_number: 4,
+    due_date: "2026-07-15",
+    amount_due: 600,
+    amount_paid: 0,
+    status: "upcoming",
+    paid_date: null,
+    created_at: "2026-04-12T14:31:00.000Z",
+    // The screen reads the schedule through the installment, the way the real
+    // query joins it. Without this the preview shows nothing late, which is
+    // exactly the false all-clear the money screen is built not to give.
+    payment_schedules: {
+      id: "preview-financing-schedule-1",
+      status: "active",
+      vehicle_description: "2021 Chevrolet Malibu LT",
+      customer_id: "preview-financing-customer-1",
+      customers: { name: "Darius Coleman", phone: "+17135550177" },
+    },
+  },
+];
+
+const previewNotificationLog = [
+  {
+    id: "preview-financing-notification-1",
+    customer_id: "preview-financing-customer-1",
+    installment_id: "preview-financing-installment-2",
+    channel: "sms",
+    template_key: "overdue_3day",
+    message_body: `Hi Darius, your Malibu payment still has a $450 balance. Call ${dealership.shortName} when you are ready to clear it.`,
+    status: "sent",
+    provider_message_id: "preview-finance-message-1",
+    notification_date: "2026-05-18",
+    sent_at: "2026-05-18T15:00:00.000Z",
+  },
+];
+
+const previewSmsMessages = [
+  {
+    id: "preview-sms-1",
+    customer_id: "preview-customer-1",
+    direction: "outbound",
+    body: "Hi Maya, your insurance recheck is due today. Reply here once the updated card is ready.",
+    from_number: "+17135550100",
+    to_number: "+17135550101",
+    telnyx_message_id: "preview_telnyx_1",
+    status: "sent",
+    provider_status: "delivered",
+    error_code: null,
+    error_message: null,
+    last_status_at: "2026-05-27T14:31:00.000Z",
+    ai_generated: true,
+    created_at: "2026-05-27T14:30:00.000Z",
+  },
+  {
+    id: "preview-sms-2",
+    customer_id: "preview-customer-2",
+    direction: "outbound",
+    body: "Your Renewal Link Could Not Be Delivered. Staff Needs To Confirm The Phone Number.",
+    from_number: "+17135550100",
+    to_number: "+17135550102",
+    telnyx_message_id: "preview_telnyx_2",
+    status: "failed",
+    provider_status: "delivery_failed",
+    error_code: "40003",
+    error_message: "Destination handset unreachable",
+    last_status_at: "2026-05-27T13:11:00.000Z",
+    ai_generated: false,
+    created_at: "2026-05-27T13:10:00.000Z",
+  },
+  {
+    id: "preview-financing-sms-1",
+    customer_id: "preview-financing-customer-1",
+    direction: "outbound",
+    body: "Hi Darius, your Malibu account has a $450 remaining balance on payment #2. Reply here or call us today.",
+    from_number: "+17135550100",
+    to_number: "+17135550177",
+    telnyx_message_id: "preview_telnyx_finance_1",
+    status: "sent",
+    provider_status: "delivered",
+    error_code: null,
+    error_message: null,
+    last_status_at: "2026-05-18T15:02:00.000Z",
+    ai_generated: false,
+    created_at: "2026-05-18T15:00:00.000Z",
+  },
+];
+
+const previewRentalAgreements = [
+  /*
+    Two documents filed against a preview deal, so the packet screen can be
+    seen with something on it.
+
+    Without these the only reachable state of that screen locally is "nothing
+    has been signed yet", which is the one state that needs no checking. The
+    same gap is what hid the mobile Late list for months, and the note on
+    `previewDeals` records it: a fixture that cannot reach a screen's populated
+    state is a fixture that lets that state ship unlooked at.
+  */
+  {
+    id: "preview-agreement-bill-of-sale",
+    deal_id: "preview-active-deal",
+    document_type: "billOfSale",
+    status: "finalized",
+    buyer_name: "Marcus Reed",
+    vehicle_description: "2019 BMW 530i",
+    vehicle_vin: "WBAJA7C50KWW12345",
+    finalized_at: "2026-05-02T16:20:00.000Z",
+    completed_at: "2026-05-02T16:20:00.000Z",
+    created_at: "2026-05-02T16:20:00.000Z",
+  },
+  {
+    id: "preview-agreement-130u",
+    deal_id: "preview-active-deal",
+    document_type: "form130U",
+    status: "draft",
+    buyer_name: "Marcus Reed",
+    vehicle_description: "2019 BMW 530i",
+    vehicle_vin: "WBAJA7C50KWW12345",
+    finalized_at: null,
+    completed_at: null,
+    created_at: "2026-05-02T16:35:00.000Z",
+  },
+  {
+    id: "preview-rental-1",
+    document_type: "rental",
+    state: "active",
+    status: "completed",
+    buyer_name: "Maya Johnson",
+    buyer_phone: "(713) 555-0101",
+    buyer_email: "maya@example.com",
+    buyer_address: "2100 Main St",
+    buyer_city: "Houston",
+    buyer_state: "TX",
+    buyer_zip: "77002",
+    buyer_license: "TX-4839201",
+    buyer_license_state: "TX",
+    buyer_id_photo: "uploaded",
+    co_buyer_license: null,
+    vehicle_id: "mock-1",
+    vehicle_description: "2021 Mercedes-Benz GLE 350",
+    vehicle_vin: "4JGFB4KB1MA000001",
+    vehicles: { license_plate: "VGA-2041" },
+    weekly_rate: 425,
+    next_charge_date: "2026-06-03",
+    rental_end_date: "2026-05-28",
+    hardship_flag: false,
+    customer_id: "preview-customer-1",
+    created_at: "2026-05-01T15:00:00.000Z",
+    completed_at: "2026-05-01T16:00:00.000Z",
+    signed_at: "2026-05-01T16:00:00.000Z",
+    deleted_at: null,
+    terminated_at: null,
+    terminated_reason: null,
+    parent_agreement_id: null,
+    new_agreement_id: null,
+    renewal_decision_sent_at: null,
+    signing_token: "preview-signing-1",
+    signing_token_expires_at: "2027-01-01T00:00:00.000Z",
+    completed_link: "https://example.com/completed/preview-rental-1",
+    agreement_pdf_url: "https://example.com/preview-rental-1.pdf",
+    portal_data: {
+      d: {
+        rentalStartDate: "2026-05-01",
+        rentalEndDate: "2026-05-28",
+        vehicleYear: "2021",
+        vehicleMake: "Mercedes-Benz",
+        vehicleModel: "GLE 350",
+        vehicleVin: "4JGFB4KB1MA000001",
+      },
+      cd: {
+        renterPhone: "(713) 555-0101",
+        renterEmail: "maya@example.com",
+        renterLicense: "TX-4839201",
+        renterLicenseState: "TX",
+        idFrontImage: "uploaded",
+        idBackImage: "uploaded",
+        identityStatus: "verified",
+        insuranceCardImage: "uploaded",
+        insuranceStatus: "needs_review",
+        insuranceProvider: "Progressive",
+        insurancePolicyNumber: "P-2041",
+        insuranceEffectiveDate: "2026-05-01",
+        insuranceExpirationDate: "2026-05-28",
+        insuranceVehicleVin: "4JGFB4KB1MA000001",
+        insuranceCompanyPhone: "(800) 555-0199",
+        insuranceNamedInsured: "Maya Johnson",
+        insuranceVehicleVinMatch: true,
+        insuranceNamedInsuredMatch: true,
+        approvedDriverStatus: "approved",
+        emergencyContactName: "Andre Johnson",
+        emergencyContactPhone: "(713) 555-0110",
+        nextInsuranceVerificationDueDate: "2026-05-27",
+      },
+      ops: {
+        maintenanceRequests: [],
+      },
+    },
+  },
+  {
+    id: "preview-rental-2",
+    document_type: "rental",
+    state: "default",
+    status: "sent",
+    buyer_name: "Carlos Rivera",
+    buyer_phone: "(713) 555-0102",
+    buyer_email: "carlos@example.com",
+    buyer_address: null,
+    buyer_city: null,
+    buyer_state: null,
+    buyer_zip: null,
+    buyer_license: null,
+    buyer_license_state: null,
+    buyer_id_photo: null,
+    co_buyer_license: null,
+    vehicle_id: "mock-2",
+    vehicle_description: "2020 Lexus ES 350",
+    vehicle_vin: "58ADZ1B10LU000002",
+    vehicles: { license_plate: "VGA-1188" },
+    weekly_rate: 375,
+    next_charge_date: "2026-05-20",
+    rental_end_date: "2026-06-12",
+    hardship_flag: false,
+    customer_id: "preview-customer-2",
+    created_at: "2026-05-12T15:00:00.000Z",
+    completed_at: null,
+    signed_at: null,
+    deleted_at: null,
+    terminated_at: null,
+    terminated_reason: null,
+    parent_agreement_id: null,
+    new_agreement_id: null,
+    renewal_decision_sent_at: null,
+    signing_token: "preview-signing-2",
+    signing_token_expires_at: "2027-01-01T00:00:00.000Z",
+    completed_link: null,
+    agreement_pdf_url: null,
+    portal_data: {
+      d: {
+        rentalStartDate: "2026-05-12",
+        rentalEndDate: "2026-06-12",
+        vehicleYear: "2020",
+        vehicleMake: "Lexus",
+        vehicleModel: "ES 350",
+        vehicleVin: "58ADZ1B10LU000002",
+      },
+      cd: {
+        renterPhone: "(713) 555-0102",
+        renterEmail: "carlos@example.com",
+        identityStatus: "not_submitted",
+        insuranceStatus: "not_submitted",
+        approvedDriverStatus: "pending",
+      },
+      ops: {
+        maintenanceRequests: [],
+      },
+    },
+  },
+  {
+    id: "preview-reservation-1",
+    document_type: "rental",
+    state: "sent",
+    status: "pending",
+    buyer_name: "Aaliyah Stone",
+    buyer_phone: "(713) 555-0103",
+    buyer_email: "aaliyah@example.com",
+    buyer_address: null,
+    buyer_city: null,
+    buyer_state: null,
+    buyer_zip: null,
+    buyer_license: null,
+    buyer_license_state: null,
+    buyer_id_photo: null,
+    co_buyer_license: null,
+    vehicle_id: "mock-3",
+    vehicle_description: "2022 Mercedes-Benz C 300",
+    vehicle_vin: "W1KAF4GB1NR000003",
+    vehicles: { license_plate: "VGA-3300" },
+    weekly_rate: 395,
+    next_charge_date: "2026-06-01",
+    rental_end_date: "2026-06-29",
+    hardship_flag: false,
+    customer_id: "preview-customer-3",
+    created_at: "2026-05-26T19:20:00.000Z",
+    completed_at: null,
+    signed_at: null,
+    deleted_at: null,
+    terminated_at: null,
+    terminated_reason: null,
+    parent_agreement_id: null,
+    new_agreement_id: null,
+    renewal_decision_sent_at: null,
+    signing_token: "preview-signing-3",
+    signing_token_expires_at: "2027-01-01T00:00:00.000Z",
+    completed_link: null,
+    agreement_pdf_url: null,
+    portal_data: {
+      d: {
+        rentalStartDate: "2026-06-01",
+        rentalEndDate: "2026-06-29",
+        vehicleYear: "2022",
+        vehicleMake: "Mercedes-Benz",
+        vehicleModel: "C 300",
+        vehicleVin: "W1KAF4GB1NR000003",
+      },
+      cd: {
+        renterPhone: "(713) 555-0103",
+        renterEmail: "aaliyah@example.com",
+        identityStatus: "submitted",
+        insuranceStatus: "submitted",
+        approvedDriverStatus: "pending",
+      },
+      ops: {
+        maintenanceRequests: [],
+      },
+    },
+  },
+  {
+    id: "preview-rental-release-hold",
+    document_type: "rental",
+    state: "signed",
+    status: "pending",
+    buyer_name: "Jordan Miles",
+    buyer_phone: "(713) 555-0137",
+    buyer_email: "jordan@example.com",
+    buyer_address: "4300 Alameda Rd",
+    buyer_city: null,
+    buyer_state: null,
+    buyer_zip: null,
+    buyer_license: "TX-9137002",
+    buyer_license_state: "TX",
+    buyer_id_photo: "uploaded",
+    co_buyer_license: "TX-ADD-137",
+    vehicle_id: "mock-3",
+    vehicle_description: "2022 Mercedes-Benz C 300",
+    vehicle_vin: "W1KAF4GB1NR000003",
+    vehicles: { license_plate: "" },
+    weekly_rate: 395,
+    next_charge_date: null,
+    rental_end_date: "2026-06-29",
+    hardship_flag: false,
+    customer_id: "preview-customer-3",
+    created_at: "2026-05-26T19:20:00.000Z",
+    completed_at: null,
+    signed_at: "2026-05-31T18:15:00.000Z",
+    deleted_at: null,
+    terminated_at: null,
+    terminated_reason: null,
+    parent_agreement_id: null,
+    new_agreement_id: null,
+    renewal_decision_sent_at: null,
+    signing_token: "preview-signing-release-hold",
+    signing_token_expires_at: "2027-01-01T00:00:00.000Z",
+    completed_link: null,
+    agreement_pdf_url: null,
+    portal_data: {
+      releaseHolds: ["missing_plate", "additional_driver_not_approved"],
+      d: {
+        rentalStartDate: "2026-06-01",
+        rentalEndDate: "2026-06-29",
+        vehicleYear: "2022",
+        vehicleMake: "Mercedes-Benz",
+        vehicleModel: "C 300",
+        vehicleVin: "W1KAF4GB1NR000003",
+      },
+      cd: {
+        renterPhone: "(713) 555-0137",
+        renterEmail: "jordan@example.com",
+        renterLicense: "TX-9137002",
+        renterLicenseState: "TX",
+        idFrontImage: "uploaded",
+        idBackImage: "uploaded",
+        insuranceCardImage: "uploaded",
+        insuranceStatus: "submitted",
+        insuranceProvider: "Progressive",
+        insurancePolicyNumber: "P-9137",
+        insuranceEffectiveDate: "2026-05-31",
+        insuranceExpirationDate: "2026-06-29",
+        insuranceVehicleVin: "W1KAF4GB1NR000003",
+        insuranceNamedInsured: "Jordan Miles",
+        coRenterName: "Taylor Miles",
+        coRenterPhone: "(713) 555-0138",
+        coRenterLicense: "TX-ADD-137",
+        approvedDriverStatus: "pending",
+        emergencyContactName: "Avery Miles",
+        emergencyContactPhone: "(713) 555-0139",
+      },
+    },
+  },
+  {
+    id: "preview-rental-ended-archive",
+    document_type: "rental",
+    state: "terminated",
+    status: "completed",
+    buyer_name: "Renee Walker",
+    buyer_phone: "(713) 555-0194",
+    buyer_email: "renee@example.com",
+    buyer_address: "1221 Dowling St",
+    buyer_city: "Houston",
+    buyer_state: "TX",
+    buyer_zip: "77003",
+    buyer_license: "TX-1948207",
+    buyer_license_state: "TX",
+    buyer_id_photo: "uploaded",
+    co_buyer_license: null,
+    vehicle_id: "mock-4",
+    vehicle_description: "2020 Mercedes-Benz GLC 300",
+    vehicle_vin: "W1N0G8DB2LF000194",
+    vehicles: { license_plate: "VGA-1940" },
+    weekly_rate: 405,
+    next_charge_date: null,
+    rental_end_date: "2026-05-12",
+    hardship_flag: false,
+    customer_id: "preview-customer-ended",
+    created_at: "2026-04-14T13:00:00.000Z",
+    completed_at: "2026-04-14T14:15:00.000Z",
+    signed_at: "2026-04-14T14:12:00.000Z",
+    deleted_at: null,
+    terminated_at: "2026-05-12T18:30:00.000Z",
+    terminated_reason: "term_ended_no_active_rental",
+    parent_agreement_id: null,
+    new_agreement_id: null,
+    renewal_decision_sent_at: "2026-05-09T16:00:00.000Z",
+    signing_token: "preview-signing-ended-archive",
+    signing_token_expires_at: "2026-05-13T00:00:00.000Z",
+    completed_link: "https://example.com/completed/preview-rental-ended-archive",
+    agreement_pdf_url: "https://example.com/preview-rental-ended-archive.pdf",
+    portal_data: {
+      d: {
+        rentalStartDate: "2026-04-14",
+        rentalEndDate: "2026-05-12",
+        vehicleYear: "2020",
+        vehicleMake: "Mercedes-Benz",
+        vehicleModel: "GLC 300",
+        vehicleVin: "W1N0G8DB2LF000194",
+      },
+      cd: {
+        renterPhone: "(713) 555-0194",
+        renterEmail: "renee@example.com",
+        renterLicense: "TX-1948207",
+        renterLicenseState: "TX",
+        idFrontImage: "uploaded",
+        idBackImage: "uploaded",
+        identityStatus: "verified",
+        insuranceCardImage: "uploaded",
+        insuranceStatus: "verified",
+        insuranceProvider: "Progressive",
+        insurancePolicyNumber: "P-1940",
+        insuranceEffectiveDate: "2026-04-14",
+        insuranceExpirationDate: "2026-05-12",
+        insuranceVehicleVin: "W1N0G8DB2LF000194",
+        insuranceNamedInsured: "Renee Walker",
+        approvedDriverStatus: "approved",
+        emergencyContactName: "Miles Walker",
+        emergencyContactPhone: "(713) 555-0195",
+      },
+      ops: {
+        maintenanceRequests: [],
+      },
+    },
+  },
+  {
+    id: "preview-financing-agreement-1",
+    document_type: "financing",
+    state: "completed",
+    status: "completed",
+    buyer_name: "Darius Coleman",
+    buyer_phone: "+17135550177",
+    buyer_email: "darius@example.com",
+    buyer_address: "1818 Southmore Blvd",
+    buyer_city: "Houston",
+    buyer_state: "TX",
+    buyer_zip: "77004",
+    buyer_license: "TX-7712045",
+    buyer_license_state: "TX",
+    buyer_id_photo: "uploaded",
+    co_buyer_license: null,
+    vehicle_id: "mock-1",
+    vehicle_description: "2021 Chevrolet Malibu LT",
+    vehicle_vin: "1G1ZD5ST8MF000001",
+    vehicles: { license_plate: "VGA-1770" },
+    weekly_rate: null,
+    next_charge_date: null,
+    rental_end_date: null,
+    hardship_flag: false,
+    customer_id: "preview-financing-customer-1",
+    created_at: "2026-04-12T14:20:00.000Z",
+    completed_at: "2026-04-12T15:10:00.000Z",
+    signed_at: "2026-04-12T15:08:00.000Z",
+    deleted_at: null,
+    terminated_at: null,
+    terminated_reason: null,
+    parent_agreement_id: null,
+    new_agreement_id: null,
+    renewal_decision_sent_at: null,
+    signing_token: "preview-financing-signing-1",
+    signing_token_expires_at: "2027-01-01T00:00:00.000Z",
+    completed_link: "https://example.com/completed/preview-financing-agreement-1",
+    agreement_pdf_url: "https://example.com/preview-financing-agreement-1.pdf",
+    sms_send_enabled: true,
+    portal_data: {
+      financial: {
+        amountFinanced: 7200,
+      },
+      vehicle: {
+        vin: "1G1ZD5ST8MF000001",
+        plate: "VGA-1770",
+      },
+      sms: {
+        adminConfirmationRequired: false,
+      },
+    },
+  },
+  {
+    // Chargeback acknowledgment fixture — /sign/<id>?token=preview-chargeback-signing
+    id: "9e1f0a2b-3c4d-4e5f-8a6b-7c8d9e0f1a2b",
+    document_type: "chargebackAcknowledgment",
+    state: "sent",
+    status: "pending",
+    buyer_name: "Maya Johnson",
+    vehicle_description: "2021 Mercedes-Benz GLE 350",
+    vehicle_vin: "4JGFB4KB1MA000001",
+    deal_id: null,
+    deleted_at: null,
+    expires_at: null,
+    language: "en",
+    signing_token: "preview-chargeback-signing",
+    signing_token_expires_at: "2027-01-01T00:00:00.000Z",
+    form_data: {
+      dealId: null,
+      buyerName: "Maya Johnson",
+      buyerIdType: "license",
+      buyerIdNumber: "",
+      cardLast4: "",
+      vin: "4JGFB4KB1MA000001",
+      vehicleDescription: "2021 Mercedes-Benz GLE 350",
+      totalAmount: 1500,
+      transactionDate: "2026-06-01",
+      language: "en",
+    },
+  },
+];
+
+export function createMockSupabaseClient(user: User | null = null): SupabaseClient {
+  const auth = {
+    async getUser() {
+      return { data: { user }, error: null };
+    },
+    async signOut() {
+      return { error: null };
+    },
+    /**
+     * Preview has no JWT, so no claims: the password-reset cutoff reads the
+     * preview's own signed-in cookie there instead (password-reset-cutoff.ts).
+     */
+    async getClaims() {
+      return { data: { claims: null }, error: null };
+    },
+    async signInWithPassword() {
+      return { data: { user, session: null }, error: null };
+    },
+    /**
+     * The two admin calls onboarding makes in preview: reading the account's
+     * app_metadata and replacing the temporary password. The password itself
+     * is never kept; only the metadata written beside it is, by user id.
+     */
+    admin: {
+      async getUserById(id: string) {
+        return { data: { user: { id, app_metadata: previewAppMetadata(id) } }, error: null };
+      },
+      async updateUserById(id: string, attributes: { app_metadata?: Record<string, unknown> } = {}) {
+        if (attributes.app_metadata) {
+          authMetadata.set(id, { ...authMetadata.get(id), ...attributes.app_metadata });
+        }
+        return { data: { user: { id, app_metadata: previewAppMetadata(id) } }, error: null };
+      },
+    },
+  };
+
+  const storage = {
+    from(bucket: string) {
+      return {
+        async download() {
+          return { data: null, error: { message: "mock storage: no stored files in preview" } };
+        },
+        // The path is remembered, so a walk can ask afterwards whether the two
+        // sides of a licence actually arrived. It used to return success and
+        // keep nothing, which made every upload look like it worked.
+        async upload(path: string) {
+          const paths = uploaded.get(bucket) ?? new Set<string>();
+          paths.add(path);
+          uploaded.set(bucket, paths);
+          return { data: { path }, error: null };
+        },
+        getPublicUrl(path: string) {
+          return { data: { publicUrl: `https://example.com/mock-storage/${path}` } };
+        },
+        async createSignedUrl(path: string) {
+          return {
+            data: { signedUrl: `https://example.com/mock-storage/${path}?signed=preview` },
+            error: null,
+          };
+        },
+        async remove() {
+          return { data: null, error: null };
+        },
+      };
+    },
+  };
+
+  /**
+   * The one transaction the desk needs to close a sale, done the way the
+   * database function does it: the deal closes, the car is marked sold to
+   * this buyer, and a deal with no buyer or no car is refused by name.
+   *
+   * Everything else answers with an error, which is what the compare-and-set
+   * merge expects from this client: it falls back to the plain write.
+   */
+  async function rpc(name: string, args: Record<string, unknown> = {}) {
+    if (name === "caps_vehicle_sale_eligibilities") {
+      const ids = args.p_vehicle_ids;
+      if (args.p_scope !== "primary" || !Array.isArray(ids)) return { data: null, error: { message: "Invalid fixture eligibility request" } };
+      const vehicles = getMockRows({ table: "vehicles", mode: "rows", filters: [] }) as unknown as Record<string, unknown>[];
+      const deals = getMockRows({ table: "deals", mode: "rows", filters: [] }) as unknown as Record<string, unknown>[];
+      return { data: [...new Set(ids)].map(id => {
+        const vehicle = vehicles.find(row => row.id === id);
+        const saleAttached = vehicle && (vehicle.status === "Sold" || vehicle.date_sold != null || vehicle.buyer_customer_id != null
+          || [vehicle.buyer_name, vehicle.buyer_phone, vehicle.buyer_id_number].some(value => typeof value === "string" && value.trim())
+          || Number(vehicle.sale_price) > 0 || deals.some(deal => deal.vehicle_id === id || (deal.vehicles as { id?: string } | null)?.id === id));
+        const status = !vehicle ? "source_missing" : saleAttached ? "sale_blocked"
+          : vehicle.status !== "Available" || vehicle.is_rental_fleet ? "not_current_inventory" : "eligible";
+        return { vehicle_id: id, eligible: status === "eligible", status };
+      }), error: null };
+    }
+    if (name === "complete_sale_atomic") {
+      const dealId = args.p_deal_id;
+      if (typeof dealId !== "string") return { data: null, error: { message: "not_found" } };
+      const deal = getMockRows({ table: "deals", mode: "single", filters: [{ column: "id", op: "eq", value: dealId }] })[0] as
+        | Record<string, unknown>
+        | undefined;
+      if (!deal) return { data: null, error: { message: "not_found" } };
+      const customer = deal.customers as { id?: string } | null;
+      const vehicle = deal.vehicles as { id?: string } | null;
+      if (!customer?.id || !vehicle?.id) return { data: null, error: { message: "missing_parties" } };
+      const now = new Date().toISOString();
+      applyUpdate({
+        table: "deals",
+        mode: "rows",
+        filters: [{ column: "id", op: "eq", value: dealId }],
+        update: { status: "completed", completed_at: now },
+      });
+      applyUpdate({
+        table: "vehicles",
+        mode: "rows",
+        filters: [{ column: "id", op: "eq", value: vehicle.id }],
+        update: {
+          status: "sold",
+          buyer_customer_id: customer.id,
+          date_sold: now.slice(0, 10),
+          ...(typeof args.p_sale_price === "number" ? { sale_price: args.p_sale_price } : {}),
+        },
+      });
+      return { data: { vehicle_id: vehicle.id, customer_id: customer.id }, error: null };
+    }
+    if (name === "void_filed_documents") return voidFiledDocuments(args);
+    if (name === "save_dealer_fee_schedule") return saveDealerFeeSchedule(args);
+    if (name === "dealer_fee_record") return dealerFeeRecord(args);
+    return { data: null, error: { message: `mock: no rpc named ${name} in preview` } };
+  }
+
+  /** The caller's active roster row, as the database function reads it from auth.uid(). */
+  function callerMember(): Record<string, unknown> | null {
+    if (!user) return null;
+    const row = allRows("team_members").find(
+      (entry) => (entry as Record<string, unknown>).auth_user_id === user.id && (entry as Record<string, unknown>).status === "active",
+    ) as Record<string, unknown> | undefined;
+    return row ?? null;
+  }
+
+  /** The caller's role: the roster row's, else the preview session's. */
+  function callerRole() {
+    const member = callerMember();
+    const role = typeof member?.role === "string" ? member.role : user?.app_metadata?.desk_role;
+    return typeof role === "string" && isTeamRole(role) ? role : null;
+  }
+
+  /**
+   * The fee save, done the way the database function does it
+   * (20261003000000_dealer_fee_schedule.sql): the owner's own roster row,
+   * the same validator the desk uses (`validateFeeSchedule`, raising the
+   * first problem's code), compare-and-set on the version, then the row, the
+   * change log and the activity event together.
+   */
+  function saveDealerFeeSchedule(args: Record<string, unknown>) {
+    const fail = (message: string) => ({ data: null, error: { code: "P0001", message } });
+    const member = callerMember();
+    if (!user || !member || !hasTeamPermission(callerRole(), "admin:all")) return fail("forbidden");
+    const source = args.p_source;
+    if (source !== "onboarding" && source !== "settings") return fail("bad_source");
+    const next = args.p_next;
+    if (!next || typeof next !== "object" || Array.isArray(next)) return fail("docFeeRequired");
+    const { rulebookAsOf, ...fields } = next as Record<string, unknown>;
+    const [problem] = validateFeeSchedule(fields);
+    if (problem) return fail(problem.code);
+    if (typeof rulebookAsOf !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(rulebookAsOf)) return fail("bad_rulebook");
+
+    const current = store.feeSchedule ?? null;
+    const version = current ? Number(current.version) || 0 : 0;
+    if (args.p_expected_version !== version) return fail("stale");
+
+    const f = fields as {
+      docFeeCents: number;
+      occcFiling: { maxCents: number; filedOn: string; effectiveOn: string; licenseOrNmls: string; location: string } | null;
+      writesFinanceContracts?: boolean | null;
+      nmlsId?: string | null;
+      legacyLicense?: string | null;
+      deputy?: { isDeputy?: boolean; feeCents?: number };
+      vit?: { year?: number | null; inBusinessJan1?: boolean | null; passesThrough?: boolean | null; unitFactor?: number | null };
+      financesCh345?: boolean | null;
+    };
+    const name =
+      typeof member.full_name === "string" && member.full_name.trim() ? member.full_name.trim() : user.email ?? "An owner";
+    const shape = (row: Record<string, unknown> | null) =>
+      row
+        ? {
+            version: row.version,
+            docFeeCents: row.doc_fee_cents,
+            occcFiling:
+              row.occc_filed_max_cents === null || row.occc_filed_max_cents === undefined
+                ? null
+                : {
+                    maxCents: row.occc_filed_max_cents,
+                    filedOn: row.occc_filed_on,
+                    effectiveOn: row.occc_effective_on,
+                    licenseOrNmls: row.occc_license_or_nmls,
+                    location: row.occc_location,
+                  },
+            writesFinanceContracts: row.writes_finance_contracts ?? null,
+            nmlsId: row.nmls_id ?? null,
+            legacyLicense: row.legacy_license ?? null,
+            deputy: { isDeputy: row.is_dealer_deputy === true, feeCents: Number(row.deputy_fee_cents) || 0 },
+            vit: {
+              year: row.vit_year ?? null,
+              inBusinessJan1: row.vit_in_business_jan1 ?? null,
+              passesThrough: row.vit_passes_through ?? null,
+              unitFactor: row.vit_unit_factor ?? null,
+            },
+            financesCh345: row.finances_ch345 ?? null,
+          }
+        : null;
+    const now = new Date().toISOString();
+    const filing = f.occcFiling;
+    const text = (value: unknown) => (typeof value === "string" && value.trim() ? value.trim() : null);
+    const row: Record<string, unknown> = {
+      id: 1,
+      version: version + 1,
+      doc_fee_cents: f.docFeeCents,
+      occc_filed_max_cents: filing ? filing.maxCents : null,
+      occc_filed_on: filing ? filing.filedOn : null,
+      occc_effective_on: filing ? filing.effectiveOn : null,
+      occc_license_or_nmls: filing ? filing.licenseOrNmls.trim() : null,
+      occc_location: filing ? filing.location.trim() : null,
+      writes_finance_contracts: f.writesFinanceContracts ?? null,
+      nmls_id: text(f.nmlsId),
+      legacy_license: text(f.legacyLicense),
+      is_dealer_deputy: f.deputy?.isDeputy === true,
+      deputy_fee_cents: f.deputy?.feeCents ?? 0,
+      vit_year: f.vit?.year ?? null,
+      vit_in_business_jan1: f.vit?.inBusinessJan1 ?? null,
+      vit_passes_through: f.vit?.passesThrough ?? null,
+      vit_unit_factor: f.vit?.unitFactor ?? null,
+      finances_ch345: f.financesCh345 ?? null,
+      rulebook_as_of: rulebookAsOf,
+      updated_by: member.id ?? null,
+      updated_by_name: name,
+      updated_at: now,
+      created_at: current?.created_at ?? now,
+    };
+    const previous = shape(current);
+    const logged = shape(row);
+    store.feeSchedule = row;
+    minted.count += 1;
+    store.feeChanges = [
+      ...(store.feeChanges ?? []),
+      {
+        id: `preview-fee-change-${minted.count}`,
+        changed_at: now,
+        changed_by: member.id ?? null,
+        changed_by_name: name,
+        source,
+        previous,
+        next: logged,
+        rulebook_as_of: rulebookAsOf,
+      },
+    ];
+    const was = current ? `$${(Number(current.doc_fee_cents) / 100).toFixed(2)}` : "not set";
+    applyInsert({
+      table: "team_activity_events",
+      mode: "rows",
+      filters: [],
+      insert: [
+        {
+          actor_id: member.id ?? null,
+          event_type: "dealer_fees_saved",
+          entity_type: "dealer_fee_schedule",
+          entity_id: null,
+          body: `${name} set the documentary fee to $${(f.docFeeCents / 100).toFixed(2)} (was ${was}).`,
+          metadata: { previous, next: logged, source, version: version + 1 },
+        },
+      ],
+    });
+    return { data: version + 1, error: null };
+  }
+
+  /** What a saved version said (the tamper check's read), as the database function returns it. */
+  function dealerFeeRecord(args: Record<string, unknown>) {
+    if (!user) return { data: null, error: { code: "42501", message: "forbidden" } };
+    const role = callerRole();
+    if (!hasTeamPermission(role, "sales:read") && !hasTeamPermission(role, "paperwork:read")) {
+      return { data: null, error: { code: "42501", message: "forbidden" } };
+    }
+    const entry = [...(store.feeChanges ?? [])]
+      .reverse()
+      .find((change) => Number((change.next as Record<string, unknown> | null)?.version) === Number(args.p_version));
+    const next = entry?.next as Record<string, unknown> | undefined;
+    return {
+      data: next ? { version: next.version, docFeeCents: next.docFeeCents, occcFiling: next.occcFiling ?? null } : null,
+      error: null,
+    };
+  }
+
+  /**
+   * The void, done the way the database function does it (migration
+   * 20261002000000_void_filed_documents.sql): the same refusals, through the
+   * same pure rules the action uses, then every current filed row of the
+   * named types is marked voided with one group, the signing text and any
+   * texted copy are switched off, and one audit event is written. Nothing is
+   * deleted, and the rows' own documents are not touched.
+   *
+   * Who voided: the preview has no auth.uid() to read a roster row from, so
+   * the name and member id come from the action's detail, which the real
+   * function keeps only as metadata.
+   */
+  function voidFiledDocuments(args: Record<string, unknown>) {
+    const fail = (message: string) => ({ data: null, error: { code: "P0001", message } });
+    const dealId = typeof args.p_deal_id === "string" ? args.p_deal_id : "";
+    const rootId = typeof args.p_root_id === "string" ? args.p_root_id : "";
+    const types = Array.isArray(args.p_types) ? (args.p_types as string[]) : [];
+    const detail = (args.p_detail && typeof args.p_detail === "object" ? args.p_detail : {}) as Record<string, unknown>;
+    const at = typeof args.p_at === "string" ? args.p_at : "";
+    if (!user) return fail("forbidden");
+    // The function voids its own fixed set: the caller's list must be exactly it.
+    const fixed = new Set<string>(VOIDED_WITH_BILL_OF_SALE);
+    if (types.length !== fixed.size || new Set(types).size !== fixed.size || types.some((type) => !fixed.has(type))) {
+      return fail("not_voidable");
+    }
+    const atMs = Date.parse(at);
+    if (!Number.isFinite(atMs) || Math.abs(atMs - Date.now()) > 5 * 60 * 1000) return fail("bad_time");
+    if (detail.titleApplication !== "notYet") return fail("title_question");
+    const deal = getMockRows({ table: "deals", mode: "single", filters: [{ column: "id", op: "eq", value: dealId }] })[0] as
+      | Record<string, unknown>
+      | undefined;
+    if (!deal) return fail("not_current");
+    const rows = getMockRows({
+      table: "document_agreements",
+      mode: "rows",
+      filters: [{ column: "deal_id", op: "eq", value: dealId }],
+    }) as unknown as AgreementRecord[];
+    const role = user.app_metadata?.desk_role;
+    const verdict = voidEligibility({
+      role: typeof role === "string" ? (role as Parameters<typeof voidEligibility>[0]["role"]) : "owner",
+      hasMember: typeof detail.memberId === "string" && detail.memberId.length > 0,
+      reason: args.p_reason,
+      // The attestation is the action's; the database records it, it does not ask it.
+      titleApplication: "notYet",
+      dealStatus: typeof deal.status === "string" ? deal.status : null,
+      rows,
+      rootId,
+      stepData: deal.step_data,
+    });
+    if (!verdict.ok) {
+      const message =
+        verdict.code === "voidNotAllowed" || verdict.code === "voidNeedsTeamRow"
+          ? "forbidden"
+          : verdict.code === "voidReasonRequired" || verdict.code === "voidReasonTooLong"
+            ? "reason_required"
+            : verdict.code === "voidSaleClosed"
+              ? "sale_closed"
+              : verdict.code === "voidTitleFiled"
+                ? "title_filed"
+                : "not_current";
+      return fail(message);
+    }
+    if (!types.includes(verdict.plan.root.document_type ?? "")) return fail("not_current");
+    const group =
+      typeof globalThis.crypto?.randomUUID === "function"
+        ? globalThis.crypto.randomUUID()
+        : `preview-void-${Date.now()}`;
+    const name =
+      typeof detail.memberName === "string" && detail.memberName.trim() ? detail.memberName.trim() : user.email ?? "A team member";
+    const voids = verdict.plan.voids.filter((row) => types.includes(row.document_type ?? ""));
+    // Dated no earlier than the moment of voiding, as the function does.
+    const voidedAt = new Date(Math.max(atMs, Date.now())).toISOString();
+    for (const row of voids) {
+      applyUpdate({
+        table: "document_agreements",
+        mode: "rows",
+        filters: [{ column: "id", op: "eq", value: row.id }],
+        update: {
+          voided_at: voidedAt,
+          voided_by: user.id,
+          voided_by_member_id: detail.memberId,
+          voided_by_name: name,
+          void_reason: verdict.reason,
+          void_group_id: group,
+          voided_with_id: row.id === verdict.plan.root.id ? null : verdict.plan.root.id,
+        },
+      });
+    }
+    for (const text of getMockRows({ table: "packet_signing_texts", mode: "rows", filters: [{ column: "deal_id", op: "eq", value: dealId }] })) {
+      const id = (text as { id?: unknown }).id;
+      if (typeof id === "string") {
+        applyUpdate({ table: "packet_signing_texts", mode: "rows", filters: [{ column: "id", op: "eq", value: id }], update: { active: false } });
+      }
+    }
+    for (const invite of getMockRows({ table: "paperwork_invites", mode: "rows", filters: [{ column: "deal_id", op: "eq", value: dealId }] })) {
+      const row = invite as { id?: unknown; active?: unknown };
+      if (typeof row.id !== "string" || row.active === false) continue;
+      applyInsert({
+        table: "paperwork_invite_events",
+        mode: "rows",
+        filters: [],
+        insert: [{ invite_id: row.id, event: "revoked", detail: { reason: "documents_voided", void_group: group } }],
+      });
+      applyUpdate({
+        table: "paperwork_invites",
+        mode: "rows",
+        filters: [{ column: "id", op: "eq", value: row.id }],
+        update: { active: false, revoked_at: new Date().toISOString() },
+      });
+    }
+    const documents = voids.map((row) => ({
+      id: row.id,
+      type: row.document_type,
+      signed: Boolean(row.has_buyer_signature) || Boolean(row.signed_at),
+      filed_at: row.finalized_at ?? row.completed_at ?? row.created_at ?? null,
+    }));
+    applyInsert({
+      table: "team_activity_events",
+      mode: "rows",
+      filters: [],
+      insert: [
+        {
+          actor_id: typeof detail.memberId === "string" ? detail.memberId : null,
+          event_type: "sale_documents_voided",
+          entity_type: "deal",
+          entity_id: dealId,
+          body: `${name} voided the filed ${verdict.plan.root.document_type} and ${Math.max(documents.length - 1, 0)} other document(s): ${verdict.reason}`,
+          metadata: {
+            ...detail,
+            void_group: group,
+            reason: verdict.reason,
+            root_id: verdict.plan.root.id,
+            root_type: verdict.plan.root.document_type,
+            voided_at: voidedAt,
+            documents,
+            signed_count: documents.filter((entry) => entry.signed).length,
+          },
+        },
+      ],
+    });
+    const voidedIds = new Set(voids.map((row) => row.id));
+    const data = getMockRows({
+      table: "document_agreements",
+      mode: "rows",
+      filters: [{ column: "deal_id", op: "eq", value: dealId }],
+    }).filter((row) => voidedIds.has((row as { id?: string }).id));
+    return { data, error: null };
+  }
+
+  return {
+    auth,
+    storage,
+    rpc,
+    from(table: string) {
+      const state: MockQueryState = { table, mode: "rows", filters: [] };
+      const builder: Record<PropertyKey, unknown> = {
+        /*
+          `.select("id", { count: "exact", head: true })`.
+
+          This used to fall through the proxy's catch-all, so the options were
+          dropped and a count query resolved with rows and no `count`. Every
+          caller reads `result.count ?? null`, so each of them got null, and
+          the desk's work list — which is nothing but counts — could not be
+          looked at on a machine running the fixture. It reported "Nothing
+          outstanding" whatever the fixture held.
+        */
+        select(_columns?: string, options?: { count?: string; head?: boolean }) {
+          if (options?.count) state.wantsCount = true;
+          if (options?.head) state.headOnly = true;
+          return proxy;
+        },
+        eq(column: string, value: unknown) {
+          state.filters.push({ column, op: "eq", value });
+          return proxy;
+        },
+        neq(column: string, value: unknown) {
+          state.filters.push({ column, op: "neq", value });
+          return proxy;
+        },
+        in(column: string, value: unknown[]) {
+          state.filters.push({ column, op: "in", value });
+          return proxy;
+        },
+        is(column: string, value: unknown) {
+          state.filters.push({ column, op: "is", value });
+          return proxy;
+        },
+        /*
+          The two negations the sale actually uses: `.not("finalized_at",
+          "is", null)` to find signed documents, and `.not("document_type",
+          "in", "(a,b)")` to leave the rentals out. Anything else falls
+          through unfiltered, which is the honest answer for a fixture.
+        */
+        not(column: string, op: string, value: unknown) {
+          if (op === "is") state.filters.push({ column, op: "not-is", value });
+          if (op === "in") {
+            const list =
+              typeof value === "string"
+                ? value.replace(/^\(|\)$/g, "").split(",").map((v) => v.trim())
+                : value;
+            state.filters.push({ column, op: "not-in", value: list });
+          }
+          return proxy;
+        },
+        gte(column: string, value: unknown) {
+          state.filters.push({ column, op: "gte", value });
+          return proxy;
+        },
+        insert(rows: Record<string, unknown> | Array<Record<string, unknown>>) {
+          state.insert = Array.isArray(rows) ? rows : [rows];
+          return proxy;
+        },
+        // Title work writes one row per step with upsert. Preview keeps the
+        // newest write per (vehicle, step) by recording it like an insert;
+        // readers take the last row for a step, which is the same answer.
+        upsert(rows: Record<string, unknown> | Array<Record<string, unknown>>) {
+          state.insert = Array.isArray(rows) ? rows : [rows];
+          return proxy;
+        },
+        limit(value: number) {
+          state.limit = value;
+          return proxy;
+        },
+        /*
+          Recorded rather than swallowed.
+
+          This used to fall through the proxy's catch-all below, which returns
+          the builder for any method it does not know. `.update({...})` looked
+          like it worked, resolved to the untouched fixtures, and preview
+          silently forgot everything anybody wrote.
+        */
+        update(patch: Record<string, unknown>) {
+          state.update = patch;
+          return proxy;
+        },
+        maybeSingle() {
+          state.mode = "single";
+          return proxy;
+        },
+        single() {
+          state.mode = "single";
+          return proxy;
+        },
+        then(onFulfilled: unknown, onRejected: unknown) {
+          return Promise.resolve(createMockQueryResult(state)).then(
+            onFulfilled as Parameters<Promise<unknown>["then"]>[0],
+            onRejected as Parameters<Promise<unknown>["then"]>[1],
+          );
+        },
+      };
+
+      const proxy = new Proxy(builder, {
+        get(target, prop) {
+          if (table === "public_inventory_vehicles" && ["insert", "upsert", "update", "delete"].includes(String(prop))) {
+            return () => { state.readOnlyMutation = true; return proxy; };
+          }
+          if (prop in target) return target[prop];
+          return () => proxy;
+        },
+      });
+
+      return proxy;
+    },
+  } as unknown as SupabaseClient;
+}

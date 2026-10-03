@@ -1,0 +1,173 @@
+{
+ "car": "2017 Ford Explorer XLT",
+ "language": "en",
+ "title": "Clean title",
+ "first": "Andrea",
+ "last": "Salinas",
+ "phone": "7135550188",
+ "street": "7400 Metz St",
+ "city": "Houston",
+ "zip": "77034",
+ "county": "Harris",
+ "answers": {
+  "funding": {
+   "text": "Buy Here Pay Here"
+  },
+  "paid": [
+   {
+    "fill": "main input",
+    "value": "9000"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "price": [
+   {
+    "button": "No"
+   },
+   {
+    "fill": ".ed-money-adjust-field input",
+    "value": "2000"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "plan:registration": {
+   "button": "We Do"
+  },
+  "plate": {
+   "button": "No plate yet"
+  },
+  "plan:title-signer": {
+   "button": "The Buyer, Here Today"
+  },
+  "plan:inspection": {
+   "button": "Already Passed"
+  },
+  "plan:insurance": {
+   "button": "Yes, Shown Today"
+  },
+  "odometerStatus": {
+   "button": "Yes, That Is The Real Mileage"
+  },
+  "tradeIn": {
+   "text": "Yes"
+  },
+  "conditionType": {
+   "text": "As-Is"
+  },
+  "countyOfResidence": {
+   "text": "Harris"
+  },
+  "applicationType": {
+   "text": "Title And Registration"
+  },
+  "applicantType": {
+   "text": "A Person"
+  },
+  "emptyWeight": [
+   {
+    "fill": "main input",
+    "value": "4400"
+   },
+   {
+    "button": "Texas Title",
+    "exact": true
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "issuingState": {
+   "button": "Next",
+   "exact": true
+  },
+  "tradeInDescription": [
+   {
+    "fill": "main input",
+    "value": "2012 Honda Civic LX"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "tradeInAllowance": [
+   {
+    "fill": "main input",
+    "value": "2000"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "paymentFrequency": {
+   "text": "Monthly"
+  },
+  "termsBy": {
+   "text": "Both Of Those"
+  },
+  "paymentAmount": [
+   {
+    "fill": "main input",
+    "value": "400"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "numberOfPayments": {
+   "text": "36 Payments"
+  },
+  "apr": [
+   {
+    "text": "Another Rate"
+   },
+   {
+    "fill": ".ed-paper-other input",
+    "value": "18"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "downPayment": [
+   {
+    "fill": "main input",
+    "value": "2000"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "firstPaymentDate": {
+   "text": "In One Month"
+  },
+  "tradeInVin": [
+   {
+    "fill": "main input",
+    "value": "1HGCM82633A004352"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "buyerLicenseState": {
+   "text": "Texas (TX)"
+  },
+  "renewalReminders": {
+   "text": "No"
+  }
+ },
+ "_note": "bhph-trade after a void: the down payment is 2000. Used with sale.cjs RESUME_DEAL to file the voided documents again."
+}

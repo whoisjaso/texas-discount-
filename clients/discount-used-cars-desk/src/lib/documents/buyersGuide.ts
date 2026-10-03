@@ -1,0 +1,394 @@
+import { readFile } from "fs/promises";
+import { join } from "path";
+import { LineCapStyle, PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import {
+  DEALER_ADDRESS,
+  DEALER_NAME,
+  DEALER_PHONE,
+} from "@/lib/documents/shared";
+import { dealership, factOr } from "@/lib/dealership-config";
+
+export const BUYERS_GUIDE_TEMPLATE_SOURCE_URL =
+  "https://www.ftc.gov/system/files/documents/plain-language/buyersguide_eng_2016-11.pdf";
+export const BUYERS_GUIDE_TEMPLATE_SOURCE_URL_ES =
+  "https://www.ftc.gov/system/files/documents/plain-language/spdf-0083-guia-del-comprador.pdf";
+
+export type BuyersGuideLanguage = "en" | "es";
+
+export const BUYERS_GUIDE_TEMPLATE_PATH = join(
+  process.cwd(),
+  "public",
+  "forms",
+  "buyers-guide-ftc-english-2016.pdf",
+);
+export const BUYERS_GUIDE_TEMPLATE_PATH_ES = join(
+  process.cwd(),
+  "public",
+  "forms",
+  "buyers-guide-ftc-spanish-2016.pdf",
+);
+
+export const BUYERS_GUIDE_PREFILL_PAGE_INDEXES = [0, 2] as const;
+export const BUYERS_GUIDE_AS_IS_PAGE_INDEX = 0;
+
+// The AS IS checkbox on page 1, measured against a 10pt coordinate grid
+// rendered over each official FTC form (PDF points, origin bottom-left).
+export const BUYERS_GUIDE_AS_IS_BOX = {
+  x: 80.3,
+  y: 573.6,
+  width: 22.4,
+  height: 22.7,
+} as const;
+
+export const BUYERS_GUIDE_AS_IS_BOX_ES = {
+  x: 79.5,
+  y: 574.6,
+  width: 23.1,
+  height: 22.3,
+} as const;
+
+// Inset keeps the 2pt stroke fully inside the printed box outline.
+export const BUYERS_GUIDE_AS_IS_MARK_INSET = 1.8;
+
+interface FieldSpot {
+  x: number;
+  y: number;
+  maxWidth: number;
+  size?: number;
+}
+
+interface BuyersGuideLayout {
+  templatePath: string;
+  asIsBox: { x: number; y: number; width: number; height: number };
+  vehicle: { make: FieldSpot; model: FieldSpot; year: FieldSpot; vin: FieldSpot };
+  dealer: {
+    name: FieldSpot;
+    address: FieldSpot;
+    phone: FieldSpot;
+    email: FieldSpot;
+    contact: FieldSpot;
+  };
+}
+
+const LAYOUTS: Record<BuyersGuideLanguage, BuyersGuideLayout> = {
+  en: {
+    templatePath: BUYERS_GUIDE_TEMPLATE_PATH,
+    asIsBox: BUYERS_GUIDE_AS_IS_BOX,
+    vehicle: {
+      make: { x: 82, y: 650, maxWidth: 108, size: 11 },
+      model: { x: 205, y: 650, maxWidth: 78, size: 11 },
+      year: { x: 296, y: 650, maxWidth: 58, size: 11 },
+      vin: { x: 414, y: 650, maxWidth: 116, size: 10 },
+    },
+    dealer: {
+      name: { x: 82, y: 225, maxWidth: 430 },
+      address: { x: 82, y: 199, maxWidth: 430 },
+      phone: { x: 82, y: 174, maxWidth: 190 },
+      email: { x: 306, y: 174, maxWidth: 204 },
+      // Same line as the "FOR COMPLAINTS AFTER SALE, CONTACT:" label.
+      contact: { x: 252, y: 136, maxWidth: 258 },
+    },
+  },
+  es: {
+    templatePath: BUYERS_GUIDE_TEMPLATE_PATH_ES,
+    asIsBox: BUYERS_GUIDE_AS_IS_BOX_ES,
+    vehicle: {
+      make: { x: 80, y: 650, maxWidth: 115, size: 11 },
+      model: { x: 205, y: 650, maxWidth: 80, size: 11 },
+      year: { x: 296, y: 650, maxWidth: 58, size: 11 },
+      vin: { x: 385, y: 650, maxWidth: 148, size: 10 },
+    },
+    dealer: {
+      name: { x: 78, y: 219, maxWidth: 450 },
+      address: { x: 78, y: 194, maxWidth: 450 },
+      phone: { x: 78, y: 169, maxWidth: 200 },
+      email: { x: 302, y: 169, maxWidth: 225 },
+      // Spanish form puts the complaints contact on its own line BELOW the
+      // "PARA QUEJAS DESPUÉS DE LA VENTA COMUNÍQUESE CON:" label.
+      contact: { x: 78, y: 121, maxWidth: 450 },
+    },
+  },
+};
+
+export interface MarkLine {
+  start: { x: number; y: number };
+  end: { x: number; y: number };
+}
+
+// A single clean X spanning the checkbox corner-to-corner.
+export function buyersGuideAsIsMarkLines(
+  language: BuyersGuideLanguage = "en",
+): [MarkLine, MarkLine] {
+  const { x, y, width, height } = LAYOUTS[language].asIsBox;
+  const inset = BUYERS_GUIDE_AS_IS_MARK_INSET;
+  const left = x + inset;
+  const right = x + width - inset;
+  const bottom = y + inset;
+  const top = y + height - inset;
+  return [
+    { start: { x: left, y: bottom }, end: { x: right, y: top } },
+    { start: { x: left, y: top }, end: { x: right, y: bottom } },
+  ];
+}
+
+export interface BuyersGuideVehicleInput {
+  year?: string | number | null;
+  make?: string | null;
+  model?: string | null;
+  vin?: string | null;
+  stockNumber?: string | null;
+}
+
+export interface BuyersGuideDealerInput {
+  name?: string | null;
+  address?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  contact?: string | null;
+}
+
+/**
+ * The warranty the sale recorded (the bill of sale's answers), when the
+ * guide is printed for a sale. Absent: AS IS, exactly as before.
+ */
+export interface BuyersGuideWarrantyInput {
+  /** "as_is" marks AS IS; "warranty" marks DEALER WARRANTY. */
+  conditionType: "as_is" | "warranty";
+  /** FULL or LIMITED under DEALER WARRANTY. */
+  kind?: "full" | "limited" | null;
+  laborPercent?: string | null;
+  partsPercent?: string | null;
+  /** The systems covered, in the form's own words. */
+  systems?: string[];
+  duration?: string | null;
+}
+
+export interface BuyersGuideInput {
+  vehicle: BuyersGuideVehicleInput;
+  dealer?: BuyersGuideDealerInput;
+  language?: BuyersGuideLanguage;
+  warranty?: BuyersGuideWarrantyInput | null;
+}
+
+/*
+  The DEALER WARRANTY block on page 1, measured off each official form
+  (PDF points, origin bottom-left): the 22pt box, the FULL and LIMITED 8pt
+  boxes, the labor and parts blanks, and where SYSTEMS COVERED and DURATION
+  start. The marks are the AS IS mark's: a clean X inset from the outline.
+*/
+export const BUYERS_GUIDE_WARRANTY_LAYOUT = {
+  en: {
+    dealerWarranty: { x: 81, y: 524, width: 22, height: 22 },
+    full: { x: 94.8, y: 506, width: 8, height: 8 },
+    limited: { x: 94.8, y: 488, width: 8, height: 8 },
+    labor: { x: 278, y: 487, maxWidth: 25 },
+    parts: { x: 366, y: 487, maxWidth: 25 },
+    systems: { x: 81, y: 418, maxWidth: 220, bottom: 342 },
+    duration: { x: 312.7, y: 418, maxWidth: 220, bottom: 342 },
+  },
+  es: {
+    dealerWarranty: { x: 81.3, y: 496, width: 22, height: 22 },
+    full: { x: 95.1, y: 478, width: 8, height: 8 },
+    limited: { x: 95.1, y: 460, width: 8, height: 8 },
+    labor: { x: 312, y: 459, maxWidth: 36 },
+    parts: { x: 446, y: 459, maxWidth: 32 },
+    systems: { x: 81, y: 383, maxWidth: 220, bottom: 329 },
+    duration: { x: 313, y: 383, maxWidth: 220, bottom: 329 },
+  },
+} as const;
+
+function drawBoxMark(page: PDFPage, box: { x: number; y: number; width: number; height: number }, thickness: number) {
+  const inset = box.width > 12 ? BUYERS_GUIDE_AS_IS_MARK_INSET : 1;
+  const left = box.x + inset;
+  const right = box.x + box.width - inset;
+  const bottom = box.y + inset;
+  const top = box.y + box.height - inset;
+  for (const line of [
+    { start: { x: left, y: bottom }, end: { x: right, y: top } },
+    { start: { x: left, y: top }, end: { x: right, y: bottom } },
+  ]) {
+    page.drawLine({ ...line, thickness, color: BLACK, lineCap: LineCapStyle.Round });
+  }
+}
+
+/** Words wrapped into the lines that fit a width at a size. */
+function wrapWords(font: PDFFont, text: string, size: number, maxWidth: number): string[] {
+  const lines: string[] = [];
+  let line = "";
+  for (const word of clean(text).split(" ").filter(Boolean)) {
+    const next = line ? `${line} ${word}` : word;
+    if (font.widthOfTextAtSize(next, size) <= maxWidth || !line) line = next;
+    else {
+      lines.push(line);
+      line = word;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+function drawBlock(
+  page: PDFPage,
+  font: PDFFont,
+  text: string,
+  spot: { x: number; y: number; maxWidth: number; bottom: number },
+) {
+  let size = 10;
+  let lines = wrapWords(font, text, size, spot.maxWidth);
+  while (size > 6.5 && spot.y - (lines.length - 1) * (size + 2) < spot.bottom) {
+    size -= 0.5;
+    lines = wrapWords(font, text, size, spot.maxWidth);
+  }
+  lines.forEach((line, index) => {
+    page.drawText(line, { x: spot.x, y: spot.y - index * (size + 2), size, font, color: BLACK });
+  });
+}
+
+function drawWarranty(page: PDFPage, font: PDFFont, warranty: BuyersGuideWarrantyInput, language: BuyersGuideLanguage) {
+  const layout = BUYERS_GUIDE_WARRANTY_LAYOUT[language];
+  drawBoxMark(page, layout.dealerWarranty, 2);
+  if (warranty.kind === "full") drawBoxMark(page, layout.full, 1.2);
+  if (warranty.kind === "limited") {
+    drawBoxMark(page, layout.limited, 1.2);
+    drawFitText({ page, font, text: clean(warranty.laborPercent), spot: { ...layout.labor, size: 9 } });
+    drawFitText({ page, font, text: clean(warranty.partsPercent), spot: { ...layout.parts, size: 9 } });
+  }
+  if (warranty.systems?.length) drawBlock(page, font, warranty.systems.join(", "), layout.systems);
+  if (clean(warranty.duration)) drawBlock(page, font, clean(warranty.duration), layout.duration);
+}
+
+const BLACK = rgb(0, 0, 0);
+
+function clean(value: unknown): string {
+  return String(value ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function drawFitText({
+  page,
+  font,
+  text,
+  spot,
+}: {
+  page: PDFPage;
+  font: PDFFont;
+  text: unknown;
+  spot: FieldSpot;
+}) {
+  const safe = clean(text);
+  if (!safe) return;
+
+  let fontSize = spot.size ?? 10;
+  while (fontSize > 6 && font.widthOfTextAtSize(safe, fontSize) > spot.maxWidth) {
+    fontSize -= 0.5;
+  }
+
+  page.drawText(safe, {
+    x: spot.x,
+    y: spot.y,
+    size: fontSize,
+    font,
+    color: BLACK,
+  });
+}
+
+function drawAsIsSelection(page: PDFPage, language: BuyersGuideLanguage) {
+  for (const line of buyersGuideAsIsMarkLines(language)) {
+    page.drawLine({
+      ...line,
+      thickness: 2,
+      color: BLACK,
+      lineCap: LineCapStyle.Round,
+    });
+  }
+}
+
+function drawPageOneVehicle(
+  page: PDFPage,
+  font: PDFFont,
+  vehicle: BuyersGuideVehicleInput,
+  layout: BuyersGuideLayout,
+) {
+  drawFitText({ page, font, text: vehicle.make ?? "", spot: layout.vehicle.make });
+  drawFitText({ page, font, text: vehicle.model ?? "", spot: layout.vehicle.model });
+  drawFitText({ page, font, text: vehicle.year ?? "", spot: layout.vehicle.year });
+  drawFitText({ page, font, text: vehicle.vin ?? "", spot: layout.vehicle.vin });
+}
+
+function drawPageThreeDealer(
+  page: PDFPage,
+  font: PDFFont,
+  dealer: BuyersGuideDealerInput,
+  layout: BuyersGuideLayout,
+) {
+  // The FTC form's Email box holds an email address or its visible "Not set"
+  // marker, never the website: a website in that box is a real-looking value
+  // in the wrong field of a federal form (never invent a dealer fact).
+  const email = clean(dealer.email) || factOr(dealership.email, "dealer email");
+  drawFitText({ page, font, text: dealer.name ?? DEALER_NAME, spot: layout.dealer.name });
+  drawFitText({ page, font, text: dealer.address ?? DEALER_ADDRESS, spot: layout.dealer.address });
+  drawFitText({ page, font, text: dealer.phone ?? DEALER_PHONE, spot: layout.dealer.phone });
+  drawFitText({ page, font, text: email, spot: layout.dealer.email });
+  drawFitText({ page, font, text: dealer.contact ?? "Sales Office", spot: layout.dealer.contact });
+}
+
+export async function generateBuyersGuidePdf(input: BuyersGuideInput): Promise<Uint8Array> {
+  const language: BuyersGuideLanguage = input.language === "es" ? "es" : "en";
+  const layout = LAYOUTS[language];
+  const templateBytes = await readFile(layout.templatePath);
+  const pdf = await PDFDocument.load(templateBytes);
+  const pages = pdf.getPages();
+  const font = await pdf.embedFont(StandardFonts.HelveticaBold);
+
+  if (pages.length !== 3) {
+    throw new Error(
+      `Expected the FTC Buyers Guide template (${language}) to have 3 pages; found ${pages.length}.`,
+    );
+  }
+
+  // AS IS unless the sale recorded a dealer warranty: the guide is part of
+  // the contract, and it may not say AS IS beside a bill of sale that sold
+  // the car with a warranty.
+  if (input.warranty?.conditionType === "warranty") {
+    drawWarranty(pages[BUYERS_GUIDE_AS_IS_PAGE_INDEX], font, input.warranty, language);
+  } else {
+    drawAsIsSelection(pages[BUYERS_GUIDE_AS_IS_PAGE_INDEX], language);
+  }
+  drawPageOneVehicle(pages[BUYERS_GUIDE_PREFILL_PAGE_INDEXES[0]], font, input.vehicle, layout);
+  drawPageThreeDealer(pages[BUYERS_GUIDE_PREFILL_PAGE_INDEXES[1]], font, input.dealer ?? {}, layout);
+
+  return pdf.save();
+}
+
+/**
+ * The copy that hangs in the window: the filled front (page 1) and the back
+ * (page 3). Page 2 is the FTC's alternate "Implied Warranties Only" front,
+ * which this desk never sells under, so it stays in the three-page PDF and
+ * out of the window.
+ */
+export async function windowCopyOf(bytes: Uint8Array): Promise<Uint8Array> {
+  const source = await PDFDocument.load(bytes);
+  const out = await PDFDocument.create();
+  const [front, back] = await out.copyPages(source, [0, 2]);
+  out.addPage(front);
+  out.addPage(back);
+  return out.save();
+}
+
+export function buildBuyersGuideFilename(
+  vehicle: BuyersGuideVehicleInput,
+  language: BuyersGuideLanguage = "en",
+): string {
+  const label = [vehicle.year, vehicle.make, vehicle.model]
+    .map(clean)
+    .filter(Boolean)
+    .join("-")
+    .replace(/[^a-z0-9-]+/gi, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .toLowerCase();
+  const vinTail = clean(vehicle.vin).slice(-6).toUpperCase() || "NOVIN";
+  const suffix = language === "es" ? "-es" : "";
+  return `buyers-guide-${label || "vehicle"}-${vinTail}${suffix}.pdf`;
+}
