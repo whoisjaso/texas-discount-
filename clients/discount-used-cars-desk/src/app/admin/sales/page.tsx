@@ -11,6 +11,12 @@ import { dealTitleBadge } from "@/lib/sales/deal-badge";
 import DealBadge from "@/components/admin/DealBadge";
 import { ArrowRight, Plus } from "@phosphor-icons/react/ssr";
 import { dealerFees, dealership, missingDealerFacts } from "@/lib/dealership-config";
+import { getDealerFeeSchedule } from "@/lib/dealership-fees";
+import { feeProblemSentence, scheduleFields, validateFeeSchedule } from "@/lib/sales/fee-schedule";
+import { rulebookRecheckDue } from "@/lib/legal/texas-dealer-fees";
+import { businessDateToday } from "@/lib/documents/us-date";
+import { getCurrentAdminAccess } from "@/lib/admin/current-admin";
+import { hasTeamPermission } from "@/lib/operations/team";
 import { getStaffSignature } from "@/lib/actions/staff-signature";
 import {
   dealerSignerFixIsOnboarding,
@@ -179,6 +185,32 @@ export default async function SalesPage() {
   const held = await getStaffSignature().catch(() => null);
   const signerProblem = dealerSignerProblem(held);
 
+  /*
+    The fees (rulebook texas-dealer-fees.md section 5.2): once an owner has
+    saved a schedule, whether the documentary fee is set is its answer, not
+    the config's. A schedule that breaks the law as it stands (a rule
+    changed, or a config seed over the limit) is said here too, before
+    anyone reaches File. The owner gets the way to fix it.
+  */
+  const feeSchedule = await getDealerFeeSchedule();
+  const access = await getCurrentAdminAccess().catch(() => null);
+  const isOwner = hasTeamPermission(access?.role ?? null, "admin:all");
+  const savedFees =
+    feeSchedule.ok && feeSchedule.schedule.source === "owner"
+      ? {
+          docFee:
+            feeSchedule.schedule.docFeeCents === null || !Number.isFinite(feeSchedule.schedule.docFeeCents)
+              ? null
+              : feeSchedule.schedule.docFeeCents / 100,
+        }
+      : dealerFees;
+  const missingFacts = missingDealerFacts(savedFees);
+  const feeLawProblem = feeSchedule.ok
+    ? validateFeeSchedule(scheduleFields(feeSchedule.schedule)).find((problem) => problem.code !== "docFeeRequired") ?? null
+    : null;
+  const setFees = isOwner ? { href: "/admin/dealership/fees", label: "Set Your Fees" } : undefined;
+  const recheckDue = isOwner && rulebookRecheckDue(businessDateToday());
+
   return (
     <div className="ed-admin px-5 py-8 md:px-10 md:py-12">
       <header className="ed-sale-head">
@@ -198,12 +230,45 @@ export default async function SalesPage() {
         </div>
       ) : null}
 
-      {missingDealerFacts().length > 0 ? (
+      {missingFacts.length > 0 ? (
         <div className="mt-8">
           <AdminDataNotice
             label="Owner Details Needed"
             title="Dealer details missing"
-            message={`Documents print "Not set" and cannot be filed until the owner supplies: ${missingDealerFacts().join(", ")}.`}
+            message={`Documents print "Not set" and cannot be filed until the owner supplies: ${missingFacts.join(", ")}.`}
+            // The documentary fee is the one the owner sets in the desk.
+            action={missingFacts.includes("Documentary fee") ? setFees : undefined}
+          />
+        </div>
+      ) : null}
+
+      {!feeSchedule.ok ? (
+        <div className="mt-4">
+          <AdminDataNotice
+            label="Before You File"
+            title="The fee settings could not be read"
+            message="Nothing can be started or filed until they can be read. Try again in a moment."
+          />
+        </div>
+      ) : null}
+
+      {feeLawProblem ? (
+        <div className="mt-4">
+          <AdminDataNotice
+            label="Before You File"
+            title="Your fees break a Texas limit"
+            message={`${feeProblemSentence(feeLawProblem)} Nothing is filed over the limit until the fees are fixed.`}
+            action={setFees}
+          />
+        </div>
+      ) : null}
+
+      {recheckDue ? (
+        <div className="mt-4">
+          <AdminDataNotice
+            label="Owner Details Needed"
+            title="Fee rules are due for their January re-check"
+            message="The Texas fee rules this desk checks against are from last year. Re-check them before the year's sales (README, Your Fees)."
           />
         </div>
       ) : null}

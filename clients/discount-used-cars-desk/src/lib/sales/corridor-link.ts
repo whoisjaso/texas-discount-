@@ -11,6 +11,7 @@ import { idDocumentType } from "@/lib/forms/id-document";
 import { codeCase, fieldCase, vinCase } from "@/lib/documents/presentation-case";
 import { readTitleOrigin } from "@/lib/vehicles/title-kinds";
 import type { SaleDetail } from "@/lib/admin/sale-desk";
+import { DOC_FEE_NOTICE_VERSION } from "@/lib/legal/doc-fee-notice";
 
 /**
  * The corridor's filed document, assembled into something a printer can hold.
@@ -314,6 +315,10 @@ export function corridorCompletedLink(
       titleFee: num(formData.titleFee),
       docFee: num(formData.docFee),
       registrationFee: num(formData.registrationFee),
+      // The government lines of their own, once the sale's government fees
+      // are confirmed from webDEALER (government-fees.ts); absent otherwise,
+      // so a copy without them prints exactly as before.
+      ...governmentLineKeys(formData),
       otherFees: 0,
       otherFeesDescription: "",
       // On financed deals the method is the funding answer, not a question:
@@ -329,6 +334,12 @@ export function corridorCompletedLink(
       amountPaidToday: num(formData.paidToday),
       ...sellerLien,
       ...bankLienKeys(lien),
+      // The documentary fee notice prints beside the fee (Tex. Fin. Code
+      // §348.006(c)(3)), and the approved Spanish one beside it on a Spanish
+      // sale (§348.006(d)). Stamped at filing, so a copy filed before the
+      // notice existed re-renders exactly as it was filed.
+      docFeeNotice: DOC_FEE_NOTICE_VERSION,
+      docFeeNoticeSpanish: sale.language === "es",
     };
   } else if (documentType === "financing") {
     section = "financing";
@@ -361,6 +372,7 @@ export function corridorCompletedLink(
       tax: num(formData.tax),
       titleFee: num(formData.titleFee),
       registrationFee: num(formData.registrationFee),
+      ...governmentLineKeys(formData),
       docFee: num(formData.docFee),
       apr: num(formData.apr),
       numberOfPayments: num(formData.numberOfPayments),
@@ -372,6 +384,10 @@ export function corridorCompletedLink(
       // review all print the same three numbers.
       ...(num(formData.paymentAmount) > 0 ? { paymentAmount: num(formData.paymentAmount) } : {}),
       ...(num(formData.lastPaymentAmount) > 0 ? { lastPaymentAmount: num(formData.lastPaymentAmount) } : {}),
+      // Clause 16 prints the statute's exact notice, and the approved Spanish
+      // one on a Spanish sale. Stamped at filing, as on the bill of sale.
+      docFeeNotice: DOC_FEE_NOTICE_VERSION,
+      docFeeNoticeSpanish: sale.language === "es",
     };
   } else if (documentType === "form130U") {
     section = "form130U";
@@ -486,6 +502,11 @@ export function corridorCompletedLink(
       salvageLicense: dealership.salvageDealerLicense ?? "",
       titleOriginState: readTitleOrigin(sale.stepData).state ?? "",
       language: sale.language === "es" ? "es" : "en",
+      // The salvage bill of sale is the tow-away sale's buyer's order, so the
+      // documentary fee notice prints beside its fee as on any bill of sale.
+      ...(documentType === "salvageBillOfSale"
+        ? { docFeeNotice: DOC_FEE_NOTICE_VERSION, docFeeNoticeSpanish: sale.language === "es" }
+        : {}),
     };
   } else {
     // A type with no renderer. The render route's fallback shows the filed
@@ -506,4 +527,23 @@ export function corridorCompletedLink(
     signatures.buyerSignature ?? undefined,
     signatures.buyerSignatureDate ?? undefined,
   );
+}
+
+/**
+ * The inspection program replacement fee and the license plate fee, each on
+ * its own line, when the filing carries them (a sale whose government fees
+ * were confirmed from webDEALER). Never folded into the registration line
+ * (Transp. Code §548.510; OCCC Bulletin B25-1).
+ */
+function governmentLineKeys(formData: Record<string, unknown>): { inspectionFee?: number; plateFee?: number } {
+  const figure = (value: unknown) => {
+    const parsed = typeof value === "number" ? value : Number(String(value ?? "").replace(/[$,\s]/g, ""));
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+  };
+  const inspectionFee = figure(formData.inspectionFee);
+  const plateFee = figure(formData.plateFee);
+  return {
+    ...(inspectionFee > 0 ? { inspectionFee } : {}),
+    ...(plateFee > 0 ? { plateFee } : {}),
+  };
 }

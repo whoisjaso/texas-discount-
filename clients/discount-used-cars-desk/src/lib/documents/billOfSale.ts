@@ -15,16 +15,20 @@ export const TEXAS_TAX_RATE = dealerFees.taxRate;
 export const TEXAS_TITLE_FEE = dealerFees.titleFee;
 export const DEFAULT_REG_FEE = dealerFees.registrationFee;
 /**
- * The dealer's documentary fee, the one line the dealer sets. Texas puts no cap
- * on it. Read from the dealer config; until the owner supplies it the figure
- * is 0 on screen, the receipt marks it "Not set", and `missingDealerFacts()`
- * refuses to file any document.
+ * The dealer's documentary fee, the one line the dealer sets. $225 is presumed
+ * reasonable (7 TAC §84.205(b)(1)); above that only up to a maximum the dealer
+ * filed with the OCCC (rulebook, `src/lib/legal/texas-dealer-fees.ts`). This
+ * is the config's seed: an owner sets the figure at onboarding, each sale
+ * keeps a copy (`fee-schedule.ts`), and the limit is checked when the owner
+ * saves it and again at filing. Until it is supplied the figure is 0 on
+ * screen, the receipt marks it "Not set", and `missingDealerFacts()` refuses
+ * to file any document.
  */
 export const DEFAULT_DOC_FEE = dealerFees.docFee ?? 0;
 /** Whether the documentary fee above is a real figure or a missing one. */
 export const DOC_FEE_SET = dealerFees.docFee !== null && Number.isFinite(dealerFees.docFee);
 
-/** What this lot charges over the price and the tax: the three fee lines. */
+/** The config's three fee lines over the price and the tax (the default; each sale keeps its own). */
 export const DEALER_FEE_TOTAL = TEXAS_TITLE_FEE + DEFAULT_REG_FEE + DEFAULT_DOC_FEE;
 export const DEFAULT_SELLER_LIEN_REASON = 'Unpaid title, registration, tax office, or buyer balance advanced by seller';
 export const DEFAULT_SELLER_LIENHOLDER = {
@@ -108,8 +112,27 @@ export interface BillOfSaleData {
   titleFee: number;
   docFee: number;
   registrationFee: number;
+  /**
+   * The government vehicle inspection program replacement fee and the
+   * license plate fee, each on its own line, once the sale's government
+   * fees are confirmed from webDEALER. Absent on copies without them.
+   */
+  inspectionFee?: number;
+  plateFee?: number;
+  /**
+   * Printed as zero by the desk. Texas allows no dealer line outside the
+   * documentary fee, the dealer-deputy title fee and the inventory tax
+   * (Tex. Fin. Code §348.005), so a filing carrying any is refused.
+   */
   otherFees: number;
   otherFeesDescription: string;
+  /**
+   * The documentary fee notice's version, stamped at filing; absent on a copy
+   * filed before the notice existed, which prints exactly as it did.
+   */
+  docFeeNotice?: number;
+  /** The approved Spanish notice beside the English one (a Spanish sale). */
+  docFeeNoticeSpanish?: boolean;
   paymentMethod: 'Cash' | 'Certified Check' | 'Cashier Check' | 'Zelle' | 'CashApp' | 'Apple Pay' | 'PayPal' | 'Financing' | 'Other';
   paymentMethodOther: string;
   conditionType: 'as_is' | 'warranty';
@@ -180,7 +203,8 @@ export interface SellerLienSummary {
 export function calculateBillOfSale(data: BillOfSaleData) {
   const netTradeIn = Math.max(0, data.tradeInAllowance - data.tradeInPayoff);
   const balanceAfterTrade = Math.max(0, data.salePrice - netTradeIn);
-  const feesSubtotal = data.tax + data.titleFee + data.docFee + data.registrationFee + data.otherFees;
+  const feesSubtotal =
+    data.tax + data.titleFee + data.docFee + data.registrationFee + (data.inspectionFee ?? 0) + (data.plateFee ?? 0) + data.otherFees;
   const totalDue = balanceAfterTrade + feesSubtotal;
   return { netTradeIn, balanceAfterTrade, feesSubtotal, totalDue };
 }

@@ -25,6 +25,7 @@ import {
   isRenderableImageSrc,
 } from '@/lib/documents/shared';
 import { BALANCE_OWED_REASON } from '@/lib/sales/money';
+import DocFeeNotice from '@/components/documents/DocFeeNotice';
 
 export interface BuyerAcknowledgments {
   inspected: boolean;
@@ -542,10 +543,29 @@ export default function BillOfSalePreview({
                   <span>{b.docFeeLine}</span>
                   <span>{formatCurrency(data.docFee)}</span>
                 </div>
+                {/* Beside the fee, in bold capitals (Tex. Fin. Code
+                    §348.006(c)(3)); only on copies stamped at filing. */}
+                <DocFeeNotice data={data as unknown as Record<string, unknown>} />
                 <div className="bos-money-row bos-money-detail">
                   <span>{b.regFeeLine}</span>
                   <span>{formatCurrency(data.registrationFee)}</span>
                 </div>
+                {/* The government lines of their own, on a copy whose sale
+                    recorded its government fees from webDEALER: never
+                    inside the registration line (Transp. Code §548.510;
+                    OCCC Bulletin B25-1). Absent on every other copy. */}
+                {(data.inspectionFee ?? 0) > 0 ? (
+                  <div className="bos-money-row bos-money-detail" data-inspection-fee="">
+                    <span>{b.inspectionFeeLine}</span>
+                    <span>{formatCurrency(data.inspectionFee ?? 0)}</span>
+                  </div>
+                ) : null}
+                {(data.plateFee ?? 0) > 0 ? (
+                  <div className="bos-money-row bos-money-detail" data-plate-fee="">
+                    <span>{b.plateFeeLine}</span>
+                    <span>{formatCurrency(data.plateFee ?? 0)}</span>
+                  </div>
+                ) : null}
                 {data.otherFees > 0 && (
                   <div className="bos-money-row bos-money-detail">
                     <span>

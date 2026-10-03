@@ -41,6 +41,7 @@ export default function PaperworkScreen({
   buyerName,
   answers,
   money,
+  docFeeSet,
   quotedRegistrationAmount,
   poa,
   freeze = null,
@@ -69,6 +70,8 @@ export default function PaperworkScreen({
   buyerName: string;
   answers: Record<string, string>;
   money: PaperworkMoney | null;
+  /** Whether the sale's doc fee is set (its fee copy); absent, the config's answer. */
+  docFeeSet?: boolean;
   quotedRegistrationAmount: number | null;
   /** The power of attorney's facts and eligibility; null on every other doc. */
   poa: {
@@ -148,6 +151,7 @@ export default function PaperworkScreen({
               buyerName={buyerName}
               answers={answers}
               money={money}
+              docFeeSet={docFeeSet}
               quotedRegistrationAmount={quotedRegistrationAmount}
               doneHref={guideHref}
               poa={poa}

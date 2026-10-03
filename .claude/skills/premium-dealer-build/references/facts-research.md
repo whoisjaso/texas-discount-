@@ -32,18 +32,29 @@ exactly as licensed.
 These are never on public record; leave them `null` and list them in every
 report until supplied:
 
-- **Documentary fee** (the dealer's own; bills of sale show $0 "Not set" until then)
+- **Documentary fee** (the dealer's own; the owner sets it at first sign-in,
+  in the desk's Your Fees step, and filing is refused until it is set).
+  $225.00 or less is presumed reasonable (7 TAC §84.205(b)(1), in force since
+  2024-07-11); more only up to a maximum the dealer filed with the OCCC. Ask
+  only whether the dealer filed one. See `references/texas-dealer-fees.md`.
 - **Authorised signer** (name and title on the dealer signature line; the licence holder is the usual answer, but confirm)
 - **Website domain** (prints on documents)
 - Email, payment destinations (Zelle, Cash App…), SMS provider for signing texts
 - Salvage dealer licence, if held
 
-## Texas statutory defaults (not facts, but confirm)
+## Texas fees and tax (from the rulebook, not facts; confirm every build)
 
-6.25% motor vehicle sales tax, $33 title fee, $75 registration fee, Tex. Fin.
-Code ch. 348 rate ceilings (never below the 18% §303.009 floor). Outside
-Texas the whole Texas block of the desk SOP must be replaced with that state's
-forms and law: stop and report, it is the owner's decision.
+Every Texas fee figure, limit and citation is in
+`references/texas-dealer-fees.md` (with its as-of date and re-check
+schedule); do not restate them from memory. In short: 6.25% motor vehicle
+sales tax (Tax Code §152.021); the title fee is $33 or $28 by the buyer's
+county (Transp. Code §501.138(a)); registration is several state and county
+lines that vary by county and vehicle. The desk's $75 registration is a desk
+default until it computes them, never a statutory figure: confirm each sale
+against webDEALER. Tex. Fin. Code ch. 348 rate ceilings never go below the
+18% §303.009 floor. Outside Texas the whole Texas block of the desk SOP and
+the rulebook must be replaced with that state's forms and law: stop and
+report, it is the owner's decision.
 
 ## What the public site may show
 

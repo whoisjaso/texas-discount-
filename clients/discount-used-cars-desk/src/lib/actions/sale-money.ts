@@ -5,6 +5,8 @@ import { requireAdminActionPermission } from "@/lib/admin/current-admin";
 import { createClient } from "@/lib/supabase/server";
 import { readMoney, writeMoney, type MoneyAnswers } from "@/lib/sales/money";
 import { casMergeStepData } from "@/lib/sales/step-data-write";
+import { legacyFeeCopy } from "@/lib/dealership-fees";
+import { readDealFees, writeDealFees } from "@/lib/sales/fee-schedule";
 import { hasFinancingDownPayment, withDownPayment } from "@/lib/sales/paperwork";
 import { readFunding } from "@/lib/sales/deal-type";
 import {
@@ -85,6 +87,18 @@ export async function saveSaleMoney(
     */
     let frozen =
       patch.paidTodayAmount !== undefined ? await filedBillOfSaleOn(dealId) : undefined;
+    /*
+      A sale started before each sale kept its own fees gets its copy on its
+      next money save (fee-schedule.ts), so a later change to the fees no
+      longer moves it. Only fees the record vouches for are copied, and only
+      onto a sale that still has none (legacyFeeCopy).
+    */
+    const legacyFees = await legacyFeeCopy(dealId);
+    let copiedLegacyFees = false;
+    const withFeeCopy = (blob: Record<string, unknown>, current: Record<string, unknown>) => {
+      copiedLegacyFees = Boolean(legacyFees) && readDealFees(current).kind === "absent";
+      return copiedLegacyFees && legacyFees ? writeDealFees(blob, legacyFees) : blob;
+    };
     let refused: boolean = false;
     let frozenField: FreezeField | null = null;
     let needsLookup: boolean = false;
@@ -119,7 +133,7 @@ export async function saveSaleMoney(
             return null;
           }
           if (frozen !== null) {
-            const context = { advertised: frozen.advertised, rootType: frozen.type };
+            const context = { advertised: frozen.advertised, rootType: frozen.type, fees: frozen.printed?.fees ?? null };
             const [field] = frozenFieldsChanged(
               billOfSaleStatement(current, context),
               billOfSaleStatement(written, context),
@@ -138,10 +152,10 @@ export async function saveSaleMoney(
           readFunding(current).type === "inHouse" &&
           hasFinancingDownPayment(current)
         ) {
-          return withDownPayment(written, next.paidTodayAmount);
+          return withFeeCopy(withDownPayment(written, next.paidTodayAmount), current);
         }
-        return written;
-      });
+        return withFeeCopy(written, current);
+      }, { writesFees: legacyFees !== null });
       if (!needsLookup) break;
       frozen = await filedBillOfSaleOn(dealId);
     }
@@ -151,6 +165,29 @@ export async function saveSaleMoney(
       return { ok: false, code: BILL_OF_SALE_FROZEN_CODE, field, error: FREEZE_MESSAGES[field] };
     }
     if (!merged.ok) throw new Error(merged.error);
+    /*
+      The sale's first copy of its fees is on record like every other fee
+      change: the current schedule's, written once, by whom and when. Best
+      effort: the copy is the schedule's own (the database refuses any
+      other), so a log that fails loses no figure.
+    */
+    if (copiedLegacyFees && legacyFees) {
+      const name = access.member?.full_name?.trim() || access.user?.email || "A team member";
+      await supabase
+        .from("team_activity_events")
+        .insert({
+          actor_id: access.member?.id ?? null,
+          event_type: "deal_fees_copied",
+          entity_type: "deal",
+          entity_id: dealId,
+          body: `${name} saved the money on a sale started before each sale kept its own fees; it now keeps today's (documentary fee ${legacyFees.docFee === null ? "not set" : `$${legacyFees.docFee.toFixed(2)}`}).`,
+          metadata: { schedule_version: legacyFees.scheduleVersion, doc_fee: legacyFees.docFee },
+        })
+        .then(
+          () => null,
+          () => null,
+        );
+    }
   } catch {
     return { ok: false, error: "Could not save that. Try again." };
   }

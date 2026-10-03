@@ -6,6 +6,7 @@ import { CaretLeft } from "@phosphor-icons/react/ssr";
 import { dealership } from "@/lib/dealership-config";
 import { resolveVehicleWeight } from "@/lib/vehicles/empty-weight/ensure";
 import type { WeightEstimate } from "@/lib/vehicles/empty-weight/types";
+import { applyFeesOffer, dealFeeLinesForSale } from "@/lib/dealership-fees";
 
 export const metadata = { title: `Sale - ${dealership.name}` };
 export const dynamic = "force-dynamic";
@@ -72,5 +73,10 @@ export default async function SaleDetailPage({ params }: Props) {
     new Promise<null>((resolve) => setTimeout(() => resolve(null), 4000)),
   ]).catch(() => null);
 
-  return <SaleDetailView sale={sale} backLink={backLink} weightEstimate={estimate} />;
+  // The sale's own fees (the copy it started with), and whether to offer
+  // today's in their place.
+  const fees = await dealFeeLinesForSale(sale);
+  const applyFees = await applyFeesOffer(sale);
+
+  return <SaleDetailView sale={sale} backLink={backLink} weightEstimate={estimate} fees={fees} applyFees={applyFees} />;
 }

@@ -11,6 +11,26 @@ import {
   isDealershipContractType,
   RENTAL_DOCUMENT_TYPES,
 } from '@/lib/documents/contract-classification';
+import { decodeCompletedLinkFromUrl, withCompletedLinkDealerData } from '@/lib/documents/customerPortal';
+import {
+  FEE_DOCUMENTS,
+  LINK_UNREADABLE,
+  feeDocumentRefusal as gateFeeDocument,
+  noticeStamp,
+} from '@/lib/documents/fee-document-gate';
+
+/** The fee gate's refusal as a response, or null. */
+async function feeDocumentRefusal(
+  dealId: string | null,
+  payloads: Array<Record<string, unknown>>,
+): Promise<NextResponse | null> {
+  const refused = await gateFeeDocument(dealId, payloads);
+  return refused ? NextResponse.json({ error: refused.error, code: refused.code }, { status: refused.status }) : null;
+}
+
+function asObject(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+}
 
 // ============================================================
 // GET — Admin only, excludes completed_link blob for performance
@@ -140,6 +160,37 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: FILING_GATE_MESSAGES.billOfSaleAlreadyFiled }, { status: 409 });
     }
   }
+  /*
+    The dealer charges, here as in the sale's own filing (fee-schedule.ts;
+    rulebook texas-dealer-fees.md section 5.4): this older route takes a
+    finished document as an encoded link, or a pending one as portal data
+    the customer later completes from, so both are read and their fees
+    checked; a link that cannot be read is refused rather than filed
+    unchecked. What files carries the documentary fee notice's stamp, so the
+    notice prints beside the fee as it does on the sale's own paper.
+  */
+  let completedLink: unknown = body.completed_link;
+  let portalData: unknown = body.portal_data;
+  if (FEE_DOCUMENTS.has(body.document_type)) {
+    const payloads: Array<Record<string, unknown>> = [];
+    if (typeof completedLink === 'string' && completedLink !== '') {
+      const decoded = decodeCompletedLinkFromUrl(completedLink);
+      if (!decoded) return NextResponse.json({ error: LINK_UNREADABLE, code: 'linkUnreadable' }, { status: 422 });
+      payloads.push({ ...(decoded.dd ?? {}), ...(decoded.cd ?? {}) } as Record<string, unknown>);
+    }
+    const portal = asObject(portalData);
+    const portalDealer = asObject(portal?.d);
+    if (portalDealer) payloads.push({ ...portalDealer, ...(asObject(portal?.cd) ?? {}) });
+    const refused = await feeDocumentRefusal(typeof body.deal_id === 'string' && body.deal_id ? body.deal_id : null, payloads);
+    if (refused) return refused;
+    if (typeof completedLink === 'string' && completedLink !== '') {
+      completedLink = withCompletedLinkDealerData(completedLink, noticeStamp(body.language)) ?? completedLink;
+    }
+    if (portal && portalDealer) {
+      portalData = { ...portal, d: { ...portalDealer, ...noticeStamp(body.language) } };
+    }
+  }
+
   const signingToken = body.signing_token || generateSigningToken();
   const signingTokenExpiresAt =
     body.signing_token_expires_at || computeSigningTokenExpiresAt();
@@ -167,8 +218,8 @@ export async function POST(req: NextRequest) {
       has_cobuyer_signature: body.has_cobuyer_signature || false,
       has_dealer_signature: body.has_dealer_signature || false,
       has_buyer_id: body.has_buyer_id || false,
-      completed_link: body.completed_link || null,
-      portal_data: body.portal_data || null,
+      completed_link: completedLink || null,
+      portal_data: portalData || null,
       language: body.language || 'en',
       // Renewal chain: if present, links this agreement back to the parent
       // so payment_schedules can be reconciled (old one closed, new one created).
@@ -261,6 +312,36 @@ export async function PATCH(req: NextRequest) {
     }
     if (held) {
       return NextResponse.json({ error: FILED_DOCUMENT_IS_FIXED }, { status: 409 });
+    }
+  }
+
+  /*
+    A finished link set here is checked as one posted to POST is: a fee
+    document's fees within the limits, and the documentary fee notice's
+    stamp on it. A link that cannot be decoded is passed through as before:
+    every print path decodes it with this same decoder, so it prints no
+    figure at all (a draft's placeholder link is one).
+  */
+  if (typeof updates.completed_link === 'string' && updates.completed_link !== '') {
+    const { data: row, error: rowError } = await supabase
+      .from('document_agreements')
+      .select('id, deal_id, document_type, language')
+      .eq('id', body.id)
+      .single();
+    if (rowError || !row) {
+      return NextResponse.json({ error: 'The document could not be checked.' }, { status: 500 });
+    }
+    const held = row as { deal_id?: string | null; document_type?: string | null; language?: string | null };
+    if (held.document_type && FEE_DOCUMENTS.has(held.document_type)) {
+      const decoded = decodeCompletedLinkFromUrl(updates.completed_link);
+      if (decoded) {
+        const refused = await feeDocumentRefusal(held.deal_id ?? null, [
+          { ...(decoded.dd ?? {}), ...(decoded.cd ?? {}) } as Record<string, unknown>,
+        ]);
+        if (refused) return refused;
+        updates.completed_link =
+          withCompletedLinkDealerData(updates.completed_link, noticeStamp(held.language)) ?? updates.completed_link;
+      }
     }
   }
 

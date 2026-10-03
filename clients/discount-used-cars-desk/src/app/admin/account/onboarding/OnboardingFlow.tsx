@@ -18,6 +18,8 @@ import { dealerSignerPrintedName } from "@/lib/dealership-config";
 import { tapHaptic } from "@/lib/haptics";
 import { fillTemplate } from "@/lib/sales/i18n";
 import type { OnboardingStep } from "@/lib/onboarding/staff-name";
+import DealerFeesWizard from "@/components/admin/fees/DealerFeesWizard";
+import type { FeeSchedule } from "@/lib/sales/fee-schedule";
 
 /**
  * The onboarding corridor (SOP "First sign-in: onboarding").
@@ -31,6 +33,12 @@ import type { OnboardingStep } from "@/lib/onboarding/staff-name";
  * The signature screen saves through `saveStaffSignatureAction`, the action
  * /admin/account/signature uses, so there is one stored signature and every
  * dealer line, the 130-U's seller band included, reads it.
+ *
+ * Your Fees, for the Owner while the dealership has no saved fees, sits
+ * between the signature and Done (rulebook texas-dealer-fees.md section 5.2):
+ * the same screens as /admin/dealership/fees, with "Set These Later", so the
+ * owner is never locked out; the filing refusal ("Documentary fee") keeps the
+ * legal protection until they are set.
  */
 type ShownError =
   | { key: "nameRequired" | "signatureRequired" | "couldNotSave" }
@@ -46,7 +54,13 @@ export default function OnboardingFlow({
   initialFirst,
   initialLast,
   initialSignature,
+  fees = null,
 }: {
+  /**
+   * Your Fees: the schedule as it stands (the config seed), the dealer's
+   * county and the business date. Null when this visit has no fees step.
+   */
+  fees?: { schedule: FeeSchedule; county: string | null; today: string } | null;
   onRoster: boolean;
   steps: OnboardingStep[];
   initialStep: OnboardingStep;
@@ -82,6 +96,8 @@ export default function OnboardingFlow({
   // Kept as what went wrong, not as words, so the language toggle swaps the
   // message in place like every other word on the screen.
   const [error, setError] = useState<ShownError | null>(null);
+  // What the fees step ended with: saved, or left for later.
+  const [feesOutcome, setFeesOutcome] = useState<"saved" | "later" | null>(null);
   const locked = useRef(false);
   const questionRef = useRef<HTMLHeadingElement>(null);
   const shownStep = useRef(initialStep);
@@ -239,12 +255,20 @@ export default function OnboardingFlow({
         ? o.nameQuestion
         : step === "signature"
           ? o.signatureQuestion
-          : o.doneQuestion;
+          : step === "fees"
+            ? o.fees.nav
+            : o.doneQuestion;
 
   // The password screen is left only by saving it, so there is no going back
   // to it: the temporary password it replaced no longer exists.
   const before = position > 0 ? steps[position - 1] : null;
   const previous = before === "password" ? null : before;
+  // Saved fees are not walked again from here (a change is made under Your
+  // Fees), so Back from Done skips them once they are saved.
+  const beforeFees = position > 1 ? steps[position - 2] : null;
+  const backStep =
+    previous === "fees" && feesOutcome === "saved" ? (beforeFees === "password" ? null : beforeFees) : previous;
+  const showsFees = onRoster && step === "fees" && fees !== null;
 
   return (
     <div className="ed-guide" data-onboarding-step={onRoster ? step : "not-on-roster"}>
@@ -264,6 +288,25 @@ export default function OnboardingFlow({
         <FunnelLanguageToggle />
       </header>
 
+      {showsFees && fees ? (
+        <DealerFeesWizard
+          mode="onboarding"
+          initialSchedule={fees.schedule}
+          county={fees.county}
+          today={fees.today}
+          onSaved={() => {
+            setFeesOutcome("saved");
+            go(after("fees"));
+          }}
+          onLater={() => {
+            setFeesOutcome("later");
+            go(after("fees"));
+          }}
+          onExit={previous ? () => go(previous) : undefined}
+        />
+      ) : null}
+
+      {showsFees ? null : (
       <main key={onRoster ? step : "not-on-roster"} className="ed-guide-body">
         <h1
           ref={questionRef}
@@ -429,6 +472,11 @@ export default function OnboardingFlow({
                   ? fillTemplate(o.doneSigned, { printed: dealerSignerPrintedName(fullName) })
                   : fillTemplate(o.doneUnsigned, { name: fullName })}
               </p>
+              {steps.includes("fees") ? (
+                <p className="ed-fine" data-done-fees={feesOutcome === "saved" ? "saved" : "later"}>
+                  {feesOutcome === "saved" ? o.doneFeesSaved : o.doneFeesLater}
+                </p>
+              ) : null}
               <button type="button" className="ed-btn ed-btn-dark" disabled={pending} onClick={finish}>
                 {pending ? t.chrome.saving : o.startWorking}
               </button>
@@ -442,11 +490,12 @@ export default function OnboardingFlow({
           ) : null}
         </div>
       </main>
+      )}
 
-      {onRoster ? (
+      {onRoster && !showsFees ? (
         <nav className="ed-guide-nav" aria-label={o.nav}>
-          {previous ? (
-            <button type="button" className="ed-guide-back" disabled={pending} onClick={() => go(previous)}>
+          {backStep ? (
+            <button type="button" className="ed-guide-back" disabled={pending} onClick={() => go(backStep)}>
               <ArrowLeft size={15} aria-hidden="true" />
               {t.chrome.back}
             </button>

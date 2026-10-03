@@ -2316,6 +2316,19 @@ html {
   background: var(--tj-invert-hover);
 }
 
+/* A button that cannot be pressed yet says so by looking it: faded, with no
+   hover and the not-allowed cursor (Your Fees' Next, while a figure is
+   refused, read exactly like the live button). */
+.ed-btn:disabled,
+.ed-btn[aria-disabled="true"] {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.ed-btn-dark:disabled:hover {
+  background: var(--tj-invert);
+}
+
 .ed-link {
   display: inline-flex;
   align-items: center;
@@ -6624,6 +6637,21 @@ html[data-tj-route-phase="leaving"] .ed-route-loader {
   font-weight: 700;
 }
 
+/* The documentary fee notice (Tex. Fin. Code §348.006(c)(3)): word for
+   word, in bold capitals, in reasonable proximity to the fee. */
+.bos-doc-fee-notice {
+  margin: 2px 0 5px 12px;
+  font-size: 9px;
+  line-height: 1.38;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #111111;
+}
+
+.bos-doc-fee-notice p + p {
+  margin-top: 3px;
+}
+
 .bos-lien-figure,
 .bos-odometer-alert {
   color: var(--tj-lien);
@@ -7429,7 +7457,22 @@ html[data-tj-route-phase="leaving"] .ed-route-loader {
   }
 
   .bos-print .bos-money-row {
-    padding: 2.5px 0;
+    padding: 2px 0;
+  }
+
+  /* Smaller bold capitals, which stay conspicuous (§348.006(c)(3) asks for
+     bold, capitals, underline or otherwise conspicuous, not a size), set the
+     full width of the column so the notice adds no page to the bill of sale. */
+  .bos-print .bos-doc-fee-notice {
+    margin: 1px 0 3px;
+    font-size: 9.2px;
+    line-height: 1.18;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .bos-print .bos-doc-fee-notice p + p {
+    margin-top: 2px;
   }
 
   .bos-print .bos-money-subtotal {
@@ -8303,6 +8346,152 @@ input.ed-money-input {
 .ed-onboard-reveal {
   justify-self: start;
   margin: 0;
+}
+
+/* Your Fees (DealerFeesWizard): each limit's citation on one quiet line, the
+   statutory notice as it prints, and the running dealer-charges line. */
+.ed-fee-citation {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--tj-muted);
+  font-weight: 450;
+}
+
+.ed-fee-notice {
+  margin-top: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--tj-line);
+  border-radius: 10px;
+}
+
+.ed-fee-notice-text {
+  margin-top: 8px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  font-weight: 700;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.ed-fee-on-top {
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--tj-ink);
+}
+
+.ed-fee-line {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.ed-fee-line dt {
+  min-width: 0;
+}
+
+.ed-fee-line dd {
+  min-width: 0;
+  font-size: 15px;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+/* A fee list under its own sub-heading: the receipt's usual top margin read
+   as a blank gap between the heading and the list's top rule. */
+.ed-fee-receipt {
+  margin-top: 6px;
+  padding-top: 14px;
+}
+
+/* Government Fees (GovernmentFeesForm): a figure the desk decides, and the
+   exemption box beside its sentence. */
+.ed-money-figure {
+  margin: 0 0 4px;
+  font-size: var(--tj-corridor-value, 17px);
+  font-variant-numeric: tabular-nums;
+  color: var(--tj-ink);
+}
+
+.ed-check-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.ed-check-row input {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  accent-color: var(--tj-invert);
+}
+
+.ed-fee-history {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+/* Your Fees on the settings page: the corridor's screens inside the admin
+   chrome rather than across the whole window. */
+.ed-fees-inline {
+  min-height: auto;
+  padding: 24px 16px;
+  background: transparent;
+}
+
+.ed-fee-change {
+  margin-left: 8px;
+  padding: 2px 10px;
+  font-size: 13px;
+}
+
+/* The posted documentary fee notice (Tex. Fin. Code §348.006(d)). */
+.ed-posted-notice {
+  max-width: 7.5in;
+  margin: 24px auto 0;
+  padding: 0.5in;
+  border: 2px solid #111111;
+  background: #ffffff;
+  color: #111111;
+}
+
+.ed-posted-notice-dealer {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.ed-posted-notice-title {
+  margin-top: 18px;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.ed-posted-notice-text {
+  margin-top: 12px;
+  font-size: 22px;
+  line-height: 1.4;
+  font-weight: 800;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.ed-posted-notice-cite {
+  margin-top: 24px;
+  font-size: 12px;
+  color: #444444;
+}
+
+@media print {
+  .ed-posted-notice-actions {
+    display: none;
+  }
+
+  .ed-posted-notice {
+    margin: 0;
+    border-width: 3px;
+  }
 }
 
 /* The typed-lender escape on the search screen: quiet but a real control,

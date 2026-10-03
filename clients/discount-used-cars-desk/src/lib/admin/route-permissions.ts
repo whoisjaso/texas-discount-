@@ -58,6 +58,8 @@ const RULES: Rule[] = [
   // The document corridor is document/title work: either scope opens it.
   rule(`/admin/sales/${ID}/paperwork`, ["sales:manage", "paperwork:manage"]),
   rule(`/admin/sales/${ID}/guide`, ["sales:manage"]),
+  // Recording a sale's government fees from webDEALER: the filing's own roles.
+  rule(`/admin/sales/${ID}/government-fees`, ["sales:manage", "paperwork:manage"]),
   rule(`/admin/sales/${ID}/step`, ["sales:manage"]),
   // Detail and packet are read/print screens; finance and registration
   // must open the deals they process (Codex round 3, finding 1).
@@ -140,6 +142,12 @@ const RULES: Rule[] = [
   rule(`/admin/team/api-keys`, ["team:manage"]),
   rule(`/admin/team`, ["team:manage"]),
   rule(`/admin/dealership/team`, ["team:manage"]),
+  // Your Fees: the dealership's fees are the owner's alone. The posted notice
+  // states no figure, only the law's words, so anyone who reads sales may
+  // print it. More specific first: these sit above the /admin/dealership
+  // catch-all at the bottom.
+  rule(`/admin/dealership/fees/notice`, ["sales:read"]),
+  rule(`/admin/dealership/fees`, ["admin:all"]),
   rule(`/admin/dealership/settings`, ["admin:read"]),
   rule(`/admin/dealership/automation`, ["admin:read"]),
   rule(`/admin/automation`, ["admin:read"]),

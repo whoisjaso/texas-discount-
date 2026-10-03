@@ -9,6 +9,7 @@ import {
   type SalvageSaleData,
 } from "@/lib/documents/salvageSale";
 import { brand, dealership, dealerSignerPrintedName } from "@/lib/dealership-config";
+import DocFeeNotice from "@/components/documents/DocFeeNotice";
 
 /**
  * The three tow-away sheets, one component, because they are one document
@@ -183,6 +184,13 @@ export default function SalvageSaleDocument({
               <Field label={copy.totalLabel} value={dollars(data.total)} />
               <Field label={copy.paidTodayLabel} value={dollars(data.amountPaidToday)} />
             </div>
+            {/* The documentary fee notice, beside the money (Tex. Fin. Code
+                §348.006(c)(3)); only on copies stamped at filing. The
+                Spanish sheet prints the approved Spanish notice with it. */}
+            <DocFeeNotice
+              data={data as unknown as Record<string, unknown>}
+              spanish={language === "es" ? true : undefined}
+            />
             <div className="mt-4">
               <Field label={copy.paymentMethodLabel} value={data.paymentMethod} />
             </div>

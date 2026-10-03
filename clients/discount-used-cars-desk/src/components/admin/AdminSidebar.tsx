@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClockCounterClockwise, DotsThree as MoreHorizontal, PenNib as Settings, SignOut as LogOut, Signature as FileSignature, Handshake as HandshakeIcon, Timer, X } from "@phosphor-icons/react";
+import { ClockCounterClockwise, DotsThree as MoreHorizontal, PenNib as Settings, Receipt, SignOut as LogOut, Signature as FileSignature, Handshake as HandshakeIcon, Timer, X } from "@phosphor-icons/react";
 import type { Icon } from "@phosphor-icons/react";
 import { ROLE_LABELS, type TeamRole } from "@/lib/operations/team";
 import { roleOpensAdminRoute } from "@/lib/admin/route-permissions";
@@ -46,8 +46,14 @@ const PRIMARY: NavItem[] = [
   { label: "Promises", href: "/admin/sales/promises", icon: HandshakeIcon },
 ];
 
-/** The desk is the whole admin for now; nothing else to list. */
-const SECONDARY: NavItem[] = [];
+/**
+ * Everything else, each shown only to a role whose route table opens it.
+ *
+ * "Your Fees" is the owner's (admin:all): the dealer-set fees and their Texas
+ * limits, set at first sign-in and changed here later. Without it a saved
+ * fee had no way back but typing the address.
+ */
+const SECONDARY: NavItem[] = [{ label: "Your Fees", href: "/admin/dealership/fees", icon: Receipt }];
 
 /**
  * The dealer's saved signature: every packet prints it on the dealer line, so

@@ -141,7 +141,7 @@ function Range() {
           })}
         </div>
         <p className="band__fine">
-          *Advertised price. Excludes tax, title, license and dealer fees. Monthly figures are estimates at 15% down, 12.9% APR, 48 months, with approved credit.
+          *Advertised price. Excludes tax, title, license, registration and the documentary fee. Monthly figures are estimates at 15% down, 12.9% APR, 48 months, with approved credit.
         </p>
       </div>
     </section>

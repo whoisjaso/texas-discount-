@@ -4,12 +4,14 @@ description: >-
   End-to-end playbook for onboarding a new car dealership client: research the dealer's real facts,
   build a Porsche-grade public website (fixed hero photo, black-and-white marque design, Title Case,
   real inventory), write the ChatGPT image-generation brief for the team and place the returned
-  images, and port the Handle A Sale admin sale desk (Next.js + Supabase, Texas paperwork, e-signing)
-  in the same theme, verify and deploy, then make the house demo video (short showcase cut plus the
-  narrated walkthrough, via the recordly-demo skill). Use this whenever the user onboards a dealership
-  or auto business, asks to "do what we did for Vega's" or Triple J, wants a luxury dealer site, a
-  sale desk / admin dashboard for a dealer, image prompts for a dealer site, a demo video for a
-  dealer, or to load a dealer's Facebook inventory, even if they only name one of those parts.
+  images, and port the Handle A Sale admin sale desk (Next.js + Supabase, Texas paperwork, e-signing,
+  the dealer's own fees set by the owner at first sign-in and capped by Texas law) in the same theme,
+  verify and deploy, then make the house demo video (short showcase cut plus the narrated
+  walkthrough, via the recordly-demo skill). Use this whenever the user onboards a dealership or auto
+  business, asks to "do what we did for Vega's" or Triple J, wants a luxury dealer site, a sale desk /
+  admin dashboard for a dealer, a dealer's doc fee or Texas fee limits, image prompts for a dealer
+  site, a demo video for a dealer, or to load a dealer's Facebook inventory, even if they only name
+  one of those parts.
 ---
 
 # Premium dealer build
@@ -43,6 +45,58 @@ paper and its customers drive to the address on the site:
 - **Never pass off a generated image as the dealer's.** Generated pictures
   are brand and mood only (no badges, no plates). Vehicles for sale, the lot,
   staff and customers are real photos. See `references/image-brief.md`.
+
+## The sequence (every client, in this order)
+
+Every client goes through these ten steps in this order. Each step ends with
+something sent to the user, who is usually showing it to the dealer: send it
+before starting the next step. The phases below say how to do each one.
+
+1. **Kick-off.** The user pastes `NEW-CLIENT-PROMPT.md` with the logo, the
+   TxDMV screenshot and any collages. Fork the newest build (Start from the
+   last build, below) and add the reference dealer's strings to the desk's
+   guard list. The doc fee is optional there: the owner enters the fees
+   at first sign-in.
+2. **Facts and the fee rulebook (Phase 0).** Research every fact with its
+   source, check the rulebook's as-of date and run `check-fee-module.cjs`.
+   *Send:* the report (facts with sources, facts missing, the hero concept,
+   the stack plan, the rulebook's as-of date, and one question for the
+   owner: did they file a documentary fee above $225.00 with the OCCC?
+   7 TAC §84.205(b)(1), (c), in force since 2024-07-11). **Stop until the
+   user says go.**
+3. **The site (Phase 1).** *Send:* desktop and phone screenshots.
+4. **The image brief (Phase 2).** *Send:* the shared doc's link for the
+   team; then, as images come back, a screenshot of each placed one, and a
+   flag on any generated image standing in for something that must be real.
+5. **Real inventory (Phase 3).** *Send:* the lineup and a vehicle page, the
+   contact sheet, and what was left out because the post did not state it.
+6. **The desk (Phase 4).** The reference dealer's facts out, this client's
+   in, the site's theme on, every Phase 4 standard present, Your Fees left
+   empty for the owner. *Send:* desk screenshots: sign-in, the owner's first
+   sign-in through Your Fees, Handle A Sale.
+7. **Verify (Phase 5).** *Send:* the test, build and walk results (N / N
+   signed, 0 contrast failures, at 1440 and 390), a few walk shots, one
+   packet page read back, and the fees walk.
+8. **Deliver and deploy (Phase 6).** *Send:* the draft PR link, the live
+   site URL, and the owner's list (Supabase project, migrations in filename
+   order, secrets, facts still missing, Your Fees at their first sign-in).
+9. **The short cut (Phase 7, `recordly-demo`).** The house film, about 80 s,
+   no voice, on this client's site and desk. Only `client-inputs.json`
+   changes: address, phone, hours, clock, logos and the measured framing.
+   *Send:* the share MP4 with its length, running order and gates passed.
+10. **The narrated walkthrough (Phase 7, `recordly-demo`).** The house
+    script (`recordly-demo/assets/narration/script-template.md`) filled
+    with this client's variables by `fill-narration.cjs`: the road, the
+    stock, the fees its receipt prints, the legal name as said, the demo
+    people and deal, and the optional lines (Spanish, sell band, seller
+    lien). The wording stays house. Every line is checked against this
+    client's desk, and the paperwork on screen is this dealership's own on
+    a demo deal. *Send:* `script.md` first and voice it only after the user
+    approves it; then the MP4 with its gates.
+
+**Done:** the site is live, the desk is verified on a draft PR with the
+owner's list, and both MP4s are in the chat, with every fact sourced or
+listed as missing.
 
 ## Kicking off a new client
 
@@ -87,9 +141,16 @@ dealer.
 2. Research facts per `references/facts-research.md`: public listings for
    name/address/phone/hours/reviews; the state licence record for legal name,
    GDN and county (ask the user for a screenshot of the TxDMV dealer search).
-3. Report: facts found with sources, facts missing (doc fee, signer, domain
+3. Report: facts found with sources, facts missing (signer, domain
    always), the hero concept, the stack plan. Wait for "go". If the user says
-   "I don't know those, go", proceed with nulls and markers.
+   "I don't know those, go", proceed with nulls and markers. The documentary
+   fee is not a research fact: the owner sets it at first sign-in (Your
+   Fees); ask only whether it is above $225.00, which needs an OCCC filing
+   (7 TAC §84.205(b)(1), (c), in force since 2024-07-11).
+4. Re-check the Texas fee rulebook before every build
+   (`references/texas-dealer-fees.md`, section 6.3, and its as-of date), then
+   run `node scripts/check-fee-module.cjs <desk dir>` so the desk's legal
+   module matches it.
 
 ### Phase 1: Brand and public site
 Apply the design system (`references/design-system.md`) with the client's
@@ -140,37 +201,80 @@ tests; a build missing one is not done):
   Security).
 - **Automatic empty weight** for 130-U box 11 with its source (SOP, Empty
   weight).
+- **Dealer fees at owner onboarding, Texas limits enforced at save and at
+  filing** (Your Fees; SOP, Fees; `references/texas-dealer-fees.md`). The
+  fees are the dealer's, never code; the limits are the rulebook's, through
+  the desk's one legal module:
+  - *Onboarding:* the owner sets the documentary fee once (Your Fees, after
+    the signature, Owner role only; other roles skip it). Texas has no
+    combined cap (rulebook section 4), so each dealer charge is capped on
+    its own and every paperwork charge, whatever its name, is the
+    documentary fee: $225.00 or less (7 TAC §84.205(b)(1), in force since
+    2024-07-11), more only up to a recorded OCCC filing, which counts only
+    once in force. The limits are the same for franchised and independent
+    dealers (rulebook section 2.4); the split is by vehicle, and a Ch. 345
+    vehicle (motorcycle, ATV, moped, towable RV, boat) is refused on this
+    desk's paper (Fin. Code §345.251; 7 TAC §86.201, in force since
+    2024-09-05). No free-form dealer fee line exists.
+  - *Refused, never trimmed,* at the screen, the server action and the
+    database.
+  - *Settings:* the owner changes a fee later under Your Fees
+    (`/admin/dealership/fees`, Owner only, one Change per fee); a stale tab
+    is refused.
+  - *Audit:* every change is logged and listed with who, when, from and to;
+    the posted notice prints from the same page.
+  - *New deals only:* each sale keeps the fees it started with; an open
+    sale takes a change only through Apply Today's Fees, and a filed one
+    only after void and file again.
+  - *Per sale:* each sale's government fees are recorded from webDEALER
+    before its paper files, and the exact notice prints beside the fee on
+    the bill of sale and in the contract's itemization.
 Apply the desk's migrations in filename order on the client's project.
 
 ### Phase 5: Verify
 Everything in `references/verification.md`: builds, tests, site screenshots at
 1440/1920/390, five desk walks at two sizes signed N/N with zero contrast
-failures, one packet PDF read back.
+failures, one packet PDF read back, and the fees walk (owner onboarding
+through Your Fees, a fee over its limit refused, a removed OCCC filing
+refused at filing, a sale's government fees recorded, the sale and its
+paper carrying the saved fee, the notice and the government lines).
 
-### Phase 6: The demo video
-Use the `recordly-demo` skill (install it alongside this one). It makes two
-cuts from the verified site and the desk's preview:
-- **The short cut** (about 80 s, no voice): the site in a macOS window,
-  the Admin click into the desk, first sign-in, a sale to N / N signed, the
-  130-U close-up, the iPhone cut, the facts-only outro. For social and for the
-  owner's first look.
-- **The narrated walkthrough** (about 4 min): the whole Handle A Sale corridor,
-  unhurried, with a voice that tells the dealer what each step makes them or
-  saves them. Write the script in money-made / time-saved terms, fact-check
-  every line against the desk's code before voicing it (never narrate a
-  feature that is not shipped), have the user approve the script, voice it
-  with the free Kokoro-82M model (the user's pick was `af_heart`) and
-  transcribe it back before cutting.
-Demo data is fictional and realistic (no "Example" anywhere on screen);
-identity emails are blurred; only the dealer's confirmed facts appear. Send
-both MP4s in chat.
-
-### Phase 7: Deliver and deploy
+### Phase 6: Deliver and deploy
 Commit on the session branch with clear messages, push, open or update the PR
 (draft), send screenshots, and deploy the public site to Vercel as its own
 project (`references/verification.md`, Deploy). List what only the owner can
-still supply. Don't deploy the desk until it has its own Supabase project and
-secrets.
+still supply (with the fee migration and Your Fees at their first sign-in).
+Don't deploy the desk until it has its own Supabase project and secrets.
+
+### Phase 7: The demo videos
+Use the `recordly-demo` skill (install it alongside this one). It makes two
+cuts from the verified site and the desk's preview, short first:
+- **The short cut** (about 80 s, no voice): the site in a macOS window,
+  the Admin click into the desk, first sign-in (Your Fees included), a sale
+  to N / N signed, the 130-U close-up, the iPhone cut, the facts-only outro.
+  For social and for the owner's first look. The fee typed on screen is the
+  owner's figure or one the user approved, labelled as a demo input. The
+  house desk storyboard predates Your Fees (its onboarding shot ends on
+  Done), so filming the step is a storyboard change: agree it with the user
+  before capture (recordly-demo, Part B).
+- **The narrated walkthrough** (about 4 min): the whole Handle A Sale corridor,
+  unhurried, with a voice that tells the dealer what each step makes them or
+  saves them. The script is the house script, already in money-made /
+  time-saved terms: fill it with this client's variables
+  (recordly-demo `assets/narration/script-template.md` and
+  `scripts/fill-narration.cjs`; the wording changes only as a template
+  change), fact-check every line against this client's desk before voicing
+  it (never narrate a feature that is not shipped), have the user approve
+  the script, voice it with the free Kokoro-82M model (the user's pick was
+  `af_heart`) and transcribe it back before cutting. Your Fees gets the line
+  "set once, used on every sale, and the desk refuses a fee Texas does not
+  allow" only as a template change behind a flag, once the step is walked on
+  the client's desk, checked against the shipped code like every other line.
+Demo data is fictional and realistic (no "Example" anywhere on screen);
+identity emails are blurred; only the dealer's confirmed facts appear, and
+the paperwork on screen is this dealership's own on a demo deal. Send both
+MP4s in chat, then commit the demo projects' inputs (recordly-demo runbook,
+step 10) to the same PR.
 
 ## Things that went wrong once and shouldn't again
 
@@ -206,9 +310,13 @@ secrets.
   unsourced weight is never filed or pasted into webDEALER, and filing writes
   box 11's source into `form_data` (SOP, Empty weight).
 - Demo videos come from the `recordly-demo` skill, exactly as the approved
-  Discount film (Phase 6), not from a fresh edit. The dealer buys on money and
+  Discount film (Phase 7), not from a fresh edit. The dealer buys on money and
   time: a silent showcase is not enough on its own, so the narrated cut ships
   too.
+- Fees are the dealer's, entered at onboarding and capped by law; never
+  hardcode them. The owner types them in Your Fees; the limits come from
+  `references/texas-dealer-fees.md` through the desk's one legal module; a
+  doc fee is never backed out of a quoted total (rulebook section 5.3).
 - Never generate images for the user's team: write the prompts and hand them
   over; the team runs them and sends the files back.
 - A credential pasted into chat is never used: ask for it in the
@@ -227,9 +335,20 @@ secrets.
   with the theme assertion and WCAG contrast audit, the signing ceremony, and
   packet PDF download. A scenario's `expect` map names text a screen must
   show, and a scenario with a `vin` starts the sale through "Not on the lot?"
-  instead of a lot car. Also `onboard.cjs` (first sign-in), `void.cjs` (void
+  instead of a lot car. Also `onboard.cjs` (first sign-in, Your Fees with
+  `FEES=<walk input>|later|none`), `fees.cjs` (Your Fees settings, the
+  per-deal copy, a stale tab, the OCCC filing, the posted notice),
+  `fee-set.cjs` and `try-file.cjs` (set the fee with or without a filing;
+  press File and assert the refusal, `APPLY=1` applies today's fees),
+  `gov.cjs` (a sale's government fees from webDEALER; `EXPECT_REFUSAL=1` on
+  a server with the flag off), `void.cjs` (void
   the filed bill of sale, `VOID_LANG=es` for the Spanish desk;
   `bhph-void.json` with `RESUME_DEAL` files again), `freeze.cjs` (held
   screens refuse, EN and ES) and `reset.cjs` (a reset signs out old devices).
   Every script reads `DESK_BASE` (default `http://localhost:5190`) through
   `desk-base.cjs`, which aborts any request to another local port.
+- `scripts/check-fee-module.cjs [deskDir]`: diffs the desk's
+  `src/lib/legal/texas-dealer-fees.ts` (and its fee migration's caps) against
+  the rulebook's section 5.10 JSON. Run it on every build and every January;
+  it exits 1 with each difference. It never supplies a figure: fix the
+  rulebook first (with the citation and effective date), then the module.

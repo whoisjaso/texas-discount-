@@ -4,6 +4,7 @@ import { readFunding } from "@/lib/sales/deal-type";
 import { nameForForms, readBuyerId, settled } from "@/lib/sales/buyer-id";
 import { readSalePlan } from "@/lib/sales/sale-plan";
 import { readPlate } from "@/lib/sales/webdealer";
+import { feeLinesOf, type DealFeeDisplay } from "@/lib/sales/fee-schedule";
 
 /**
  * The bill of sale holds everything it states (owner's decision 10/02/2026;
@@ -226,14 +227,28 @@ export type BillOfSaleStatement = {
  */
 export function billOfSaleStatement(
   stepData: unknown,
-  context: { advertised: number | null | undefined; rootType?: string | null },
+  context: {
+    advertised: number | null | undefined;
+    rootType?: string | null;
+    /**
+     * The fee lines the filed copy printed (`filedBillOfSaleOn`), for a sale
+     * with no fee copy of its own. A sale's own copy (`step_data.fees`) is
+     * read first: the fees are fixed per sale, so the statement before and
+     * after a change computes with the same three lines.
+     */
+    fees?: Pick<DealFeeDisplay, "titleFee" | "docFee" | "registrationFee"> | null;
+  },
 ): BillOfSaleStatement {
   const rootType: BillOfSaleRoot = context.rootType === "salvageBillOfSale" ? "salvageBillOfSale" : "billOfSale";
   const salvage = rootType === "salvageBillOfSale";
   const funding = readFunding(stepData);
   const bill = readPaperwork(stepData, "billOfSale");
   const answers = readPaperwork(stepData, rootType);
-  const figures = paperworkMoney(context.advertised, bill, readMoney(stepData), funding.type);
+  const lines = feeLinesOf(stepData, context.fees ? { ...context.fees, docFeeSet: true } : null);
+  // A tow-away sale registers nothing, so its figures carry no registration
+  // fee (the same lines the filing computed with; dealership-fees.ts).
+  const fees = salvage ? { ...lines, registrationFee: 0 } : lines;
+  const figures = paperworkMoney(context.advertised, bill, readMoney(stepData), funding.type, fees);
   const money = [
     figures.salePrice,
     figures.tax,
@@ -381,9 +396,11 @@ export const BILL_OF_SALE_PRINTED_KEYS: Readonly<Record<string, string>> = {
   tradeInVin: "fixed:printed empty",
   tradeInPayoff: "fixed:printed as zero; the desk never asks it",
   tax: "frozen:price,priceBasis,tradeIn",
-  titleFee: "fixed:dealer config",
-  docFee: "fixed:dealer config",
-  registrationFee: "fixed:dealer config",
+  titleFee: "fixed:the deal's fee copy (step_data.fees), written at Start A Sale, or its government fees confirmed from webDEALER (step_data.governmentFees), which refuse a change while a bill of sale is filed",
+  docFee: "fixed:the deal's fee copy (step_data.fees), written at Start A Sale",
+  registrationFee: "fixed:the deal's fee copy (step_data.fees), written at Start A Sale, or its government fees confirmed from webDEALER (step_data.governmentFees), which refuse a change while a bill of sale is filed",
+  docFeeNotice: "fixed:statutory notice version, written at filing",
+  docFeeNoticeSpanish: "fixed:the sale's language at filing (the language itself is frozen)",
   total: "frozen:price,priceBasis,tradeIn",
   otherFees: "fixed:printed as zero",
   otherFeesDescription: "fixed:printed empty",
@@ -413,4 +430,14 @@ export const BILL_OF_SALE_PRINTED_KEYS: Readonly<Record<string, string>> = {
   titleOriginState: "fixed:written at Start A Sale",
   language: "frozen:language",
   dealerSignerName: "fixed:the filer, recorded at filing",
+};
+
+/**
+ * Keys the bill of sale prints only on a sale that charges them: the
+ * government lines of their own, once the sale's government fees are
+ * confirmed from webDEALER (government-fees.ts). Classified the same way.
+ */
+export const BILL_OF_SALE_CONDITIONAL_PRINTED_KEYS: Readonly<Record<string, string>> = {
+  inspectionFee: "fixed:the sale's government fees confirmed from webDEALER (step_data.governmentFees), which refuse a change while a bill of sale is filed",
+  plateFee: "fixed:the sale's government fees confirmed from webDEALER (step_data.governmentFees), which refuse a change while a bill of sale is filed",
 };

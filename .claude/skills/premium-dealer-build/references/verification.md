@@ -36,6 +36,62 @@ look at the screenshots yourself, then send the user a few of them.
   legal name, licence, county present, the lienholder right for the funding
   type, the odometer identical across documents, no dev host, no `[Not set]`
   except for facts genuinely still missing.
+- `node scripts/check-fee-module.cjs <desk dir>` (from the skill): the desk's
+  legal fee module and its migration's caps equal the rulebook's section
+  5.10. A difference stops the build until the rulebook and then the module
+  are corrected.
+- The fees walk (SOP, Verification, Fees; A to F), at both sizes, on a
+  fresh server per size (the preview mock keeps what onboarding saved for
+  the server's life). Every server needs `ADMIN_SESSION_SECRET` and
+  `INTERNAL_RENDER_TOKEN` (any long random local values) and `CHROME_PATH`
+  for the PDF renderer, passed on the command line, never written to a file:
+  - start the server as `DESK_PREVIEW_MEMBER=fresh` (its own process group,
+    stopped by its PGID) and run
+    `FEES=<walk input> FEES_TRY=225.01 node onboard.cjs <out> <w> <h> <First> <Last>`:
+    $225.01 refused in English and Spanish, the walk input saved, the
+    review reading "$X of $225.00 allowed", Done to Handle A Sale. The walk
+    input is the owner's figure or one the user approved, never invented;
+  - `STOP_AT=document:billOfSale node sale.cjs ...` for an open sale, then
+    `FEE_NOW=... FEE_CHANGE=... FEE_OVER=... node fees.cjs <out> <w> <h> <deal path>`
+    (settings, history, the open sale keeping its fee until Apply Today's
+    Fees, a stale tab refused, the OCCC filing, the posted notice). Make the
+    open sale one of the run's own scenarios (cash-balance, say) and finish
+    it afterwards with `RESUME_DEAL=<deal path>`: a separate open sale on a
+    car another scenario sells is two open sales on one car, which the
+    database refuses and the mock does not;
+  - the removed filing: `FEE=<over 225> FILING=1 FILED_ON=... EFFECTIVE_ON=...
+    node fee-set.cjs <out> <w> <h>` (both dates on or before today), open a
+    sale with `STOP_AT`, `FEE=<225 or less> FILING=0 node fee-set.cjs ...`,
+    then `APPLY=1 node try-file.cjs <out> <w> <h> <deal path> billOfSale
+    "without an OCCC filing in force"`: refused, the sale page offers
+    today's fees, files once applied;
+  - void a filed cash sale (`void.cjs`) after the fee changed and file it
+    again (`RESUME_DEAL`): the new copy keeps the sale's own fee;
+  - the government fees: open a buy here pay here sale with `STOP_AT`, then
+    `GOV_COUNTY=... GOV_TITLE=33 GOV_REGISTRATION=... GOV_INSPECTION=7.50
+    TRY_TITLE=28 node gov.cjs <out> <w> <h> <deal path>` (figures from a
+    real webDEALER receipt, or the rulebook's worked example 2.2, said so):
+    the wrong county's title fee refused, the save going back to a review
+    that shows the inspection and plate lines, with 0 page errors (a blank
+    review with "removeChild" in the console is the revalidate-and-navigate
+    race; the save must only navigate). Then, on a server with the flag
+    OFF and `NEXT_PUBLIC_SITE_URL` set to it, `EXPECT_REFUSAL=1 node gov.cjs
+    ...` on an open sale: filing refused until they are recorded, its link
+    opening the screen;
+  - file a cash sale, a buy here pay here sale and a Spanish sale to
+    `N / N signed` and read the paper back: the doc fee is the saved one,
+    the notice is the statute word for word directly under it on the bill of
+    sale and under item 3 of the contract's itemization (clause 16 repeats
+    it), Spanish beside it only on the Spanish deal, the inspection and
+    plate fees on lines of their own once recorded, the contract's amount
+    financed equal to the bill of sale's balance, and the page count equal
+    to the same copy without the notice stamp, or the growth reported;
+  - restart as `DESK_PREVIEW_MEMBER=fresh-sales` and run
+    `PREVIEW_ADMIN=sales:<email> FEES=none node onboard.cjs ...`: no fees
+    step, `/admin/dealership/fees` refused, and Your Fees absent from the
+    sidebar and the phone's More sheet (the owner's lists it);
+  - compress the screenshots before committing them (PIL: at most 1600 px
+    wide, 128 colours) and keep signing links out of the evidence.
 - Write the results into the desk's `docs/verification/VERIFICATION.md`.
 
 ## Deploy

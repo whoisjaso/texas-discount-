@@ -15,6 +15,129 @@ passed on the command line and never written to a file:
 
 The desk this one was forked from has the same requirements.
 
+## 0000000. Dealer fees: the review fixes, walked (10/03/2026)
+
+The dealer-fee build (owner sets the fees at onboarding, the Texas limits
+enforced; README "Dealer fees") went through a law review and a code
+review. This section records the fixes and their verification. The walks of
+the build itself, before the reviews, are the screenshots in
+`docs/verification/fees/`; this round's are in
+`docs/verification/fees-fix/{1440,390,paper}` (684 walk screenshots and 5
+paper pages, compressed with PIL to at most 1600 px wide, 128 colours:
+13.5 MB). Every legal figure below is the rulebook's
+(`.claude/skills/premium-dealer-build/references/texas-dealer-fees.md`, as
+of 2026-10-03) with its citation.
+
+**Servers.** The local dev server on port **5190** only, each in its own
+process group (`setsid`), stopped by its PGID and the port checked free
+after each: server A (`DESK_ALLOW_UNSET_FACTS=true`,
+`DESK_PREVIEW_MEMBER=fresh`), one fresh per size; a salesperson server
+(`DESK_PREVIEW_MEMBER=fresh-sales`), one per size; server B (the flag OFF,
+`NEXT_PUBLIC_SITE_URL=http://localhost:5190`), one per size. All on the
+preview mock with throwaway `ADMIN_SESSION_SECRET` and
+`INTERNAL_RENDER_TOKEN` and `CHROME_PATH` for the PDF renderer.
+
+**Walk inputs (never Discount's figures).** Documentary fee $150.00 at
+onboarding, then $175.00; $300.00 under an OCCC filing labelled
+`WALK INPUT` (filed 2026-09-01, effective 2026-09-02); $225.01 typed to
+see it refused. Government fees from the rulebook's worked example 2.2
+(Harris County, gasoline car of 6,000 lb or less, Harris County Tax Office
+MV-065 Rev 08/25): title $33.00, registration side $70.75 (the $78.25
+published registration total less the $7.50 inspection fee, which has its
+own line), inspection program $7.50, plate $10.00.
+
+### Static checks
+
+| Check | Result |
+|---|---|
+| `npx tsc --noEmit` | 0 errors |
+| `npx eslint .` | 0 errors; 4 warnings, all in files this round did not touch (`paper-palette-contrast.test.ts`, `the-photograph-lands-before-it-is-read.test.ts`, `the-price-means-one-thing.test.ts`, `Form130UPreview.tsx`) |
+| `npx vitest run --maxWorkers=2` | 211 files, 2,477 tests, all passed (`test-output.txt`); 209 and 2,472 before this session's two new files |
+| `npx next build` | compiled; `/admin/sales/[dealId]/government-fees` listed; `next-env.d.ts`, rewritten by the build, restored with `git checkout` |
+| public site `npx tsc --noEmit` | 0 errors |
+| `node .claude/skills/premium-dealer-build/scripts/check-fee-module.cjs` | OK, 57 checks agree with rulebook 5.10 |
+
+### What the reviews found, and what was done (a test each)
+
+| Finding (severity) | Fix | Test |
+|---|---|---|
+| The contract's notice was clause 16, two pages from the fee (blocker; Fin. Code §348.006(c)(3)(B) wants it in reasonable proximity on the buyer's order and the contract) | Stamped copies itemize the documentary fee as its own item after the cash price with the notice directly under it; clause 16 kept; unstamped copies print as filed | `the-contract-prints-the-notice-beside-the-fee` |
+| An OCCC filing dated in the future counted at once (major; 7 TAC §84.205(c)(3), (c)(5)(A)) | Screen, action and database refuse a future filing date, an effective date before the filing date, and a fee above $225.00 before the effective date; at filing a filing counts only once filed and in effect | `an-occc-filing-counts-only-once-it-is-in-force` |
+| Government lines were desk defaults ($33 for everyone, $75 "registration" with the $7.50 inspection fee inside it, no plate line) (major; Fin. Code §348.005, OCCC L25-087, B25-1, 43 TAC §215.155(e)) | Per-sale Government Fees screen recorded from webDEALER; filing refused until recorded (lifted by the demo flag alone), on a county change, or on a malformed record; inspection and plate on their own lines on the bill of sale and contract; both new keys frozen with the bill of sale | `the-state-lines-are-webdealers-figures`, `a-forged-registration-line-does-not-file` |
+| A browser session could rewrite a sale's fee copy; two first saves could both log version 1; dates unchecked in the database; roles without sales:read fell back to the seed (major and minors) | `deal_fee_copy_guard` trigger, one advisory lock per save and a unique version index, the date checks in `save_dealer_fee_schedule`, schedule readable by every team role | `the-database-keeps-the-fee-copy-honest` (PGlite, real migrations, `set role authenticated`) |
+| A forged registration line in the copy passed every gate (major) | Filing refuses a copy whose government lines are not the desk's own (`feeRecordTampered`) | `a-forged-registration-line-does-not-file` |
+| Out-the-door with a trade-in taxed the whole price (major; Tax Code §152.021(b), §152.002(b)(5)) | The split taxes price less trade-in; webDEALER's sales price uses the bill of sale's trade-in | `an-out-the-door-trade-in-is-taxed-on-the-difference` |
+| A Ch. 345 vehicle (motorcycle, ATV, moped, towable RV, boat) could file at the Ch. 348 limit (major; 7 TAC §86.201(c)-(e), Fin. Code §345.251) | Bill of sale, salvage bill of sale and contract refused for one (`chapter345Vehicle`), with or without the flag | `a-motorcycle-is-not-this-desks-paperwork` |
+| After a fee was lowered an open sale could still file at the higher one (minor; desk policy on §348.006(c)(1)) | `feeAboveToday` refuses it until today's fees are applied; the sale page says why | `one-documentary-fee-for-every-buyer` |
+| The older agreements routes skipped undecodable links, portal data and PATCH (minor) | Every fee-document payload checked against the deal's fees; undecodable POSTed link refused; filed copies stamped; `/complete` refuses an unstamped documentary fee | `the-older-routes-check-every-fee-document` |
+| Apply Today's Fees reported success without its record, rewrote closed sales, raced a filing; legacy copy unlogged; change-log source from the browser (minor) | Copy and record together (put back on failure or a concurrent filing); closed sales refused; `deal_fees_copied` logged; source derived on the server | `a-fee-change-on-a-sale-keeps-its-record` |
+| A salvage copy filed before the tow-away change was re-figured at $0 registration (minor) | Unstamped salvage copies keep the registration their figures rest on | `a-tow-away-copy-filed-before-keeps-its-figures` |
+| Wording: deputy limit stated as a title-fee ban, LIRAP emissions figure missing, Ch. 345 credited to the statute alone, over-limit message wrong under a filing, desk policy stated as law, "dealer fees" on the public site; UI: no way back to Your Fees, disabled Next looked live, gap under review sub-headings (minors) | Each sentence corrected in both languages; Your Fees in the sidebar for the owner alone; disabled style; gap closed | `the-fee-words-say-what-the-law-says` |
+| The OCCC seed could raise the limit in production (minor) | Ignored in production | `an-occc-filing-counts-only-once-it-is-in-force` ("the environment cannot raise the cap in production") |
+| **Found in this round's walks:** saving the government fees left a blank review with "Failed to execute 'removeChild' on 'Node'" (every time at 390, once at 1440) | The action no longer revalidates (every reading screen is per request), and the form only navigates after a save; the instrumented probe named the node (`.ed-workspace`, removed twice while the chrome swapped to the sale corridor) | `saving-the-government-fees-goes-back-cleanly` (jsdom), `the-government-fees-save-leaves-the-screen-alone`; each fails on the old code |
+
+### Walks (each at 1440×900 and 390×844; 0 page errors, 0 contrast failures)
+
+| Walk | What it asserts | 1440 | 390 |
+|---|---|---|---|
+| Owner onboarding, `FEES=150 FEES_TRY=225.01` | Your Fees after the signature; $225.01 refused in English and Spanish; six screens; Done | pass | pass |
+| Cash out the door, signed, PDFs | filed at $150.00 | pass | pass |
+| Cash with a balance, opened, then `fees.cjs` (150 → 175, 300) | settings $150.00 of $225.00; history "documentary fee $150.00 to $175.00"; the open sale keeps $150.00, Apply Today's Fees shows $175.00; stale tab refused; $300.00 refused without a filing, a filing missing its location refused, $300.00 of $300.00 with one; posted notice word for word in both languages | pass | pass |
+| The same sale finished, signed, PDFs | $175.00 | pass | pass |
+| `fee-set` $300 with a filing, buyer-files sale opened, `fee-set` $175 without it, `try-file` | refused: "above what Texas allows without an OCCC filing in force ($225.00, 7 TAC §84.205(b)(1))"; sale page offers today's $175.00; files once applied | pass | pass |
+| Void the cash out-the-door bill of sale, file again | voided with the reason and name; the new copy keeps $150.00 (today's fee is $175.00) | pass | pass |
+| Bank sale, signed, PDFs | $175.00 | pass | pass |
+| Buy here pay here with a trade, opened, `gov.cjs` with `TRY_TITLE=28`, finished, signed, PDFs | $28.00 refused for Harris County; saved; the review shows Inspection Fee $7.50 and Plate Fee $10.00; the sale page names who recorded them | pass (after the fix) | pass (after the fix) |
+| Spanish sale, signed, PDFs | both notices beside the fee | pass | pass |
+| Flag OFF: onboarding, cash sale, `gov.cjs EXPECT_REFUSAL=1`, finished, signed, PDFs | "Record this sale's government fees from webDEALER first … (Tex. Fin. Code §348.005)"; its link opens the screen; files once recorded | pass | pass |
+| Owner's sidebar | Your Fees listed (under More on a phone) | pass | pass |
+| Salesperson onboarding, `FEES=none` | no fees step; Your Fees refused; not in the sidebar or More | pass | pass |
+
+### The paper, read back (PyMuPDF; the same at both sizes)
+
+| Document | Pages | Read |
+|---|---|---|
+| Cash out the door bill of sale, before and after the void | 3 | Documentary Fee $150.00, total $4,000.00, English notice once |
+| Cash with a balance bill of sale (flag on) | 4 | $175.00, total $4,001.75 |
+| Cash with a balance bill of sale (flag off, government fees recorded) | 4 | a. tax $218.75, b. title $33.00, c. documentary fee $150.00 with the notice directly under it, d. registration $70.75, e. inspection program $7.50, f. license plate $10.00; total $3,990.00 |
+| Buyer-files bill of sale | 3 | $175.00, total $11,000.00 |
+| Bank bill of sale | 4 | $175.00, total $15,689.25 |
+| Buy here pay here bill of sale | 4 | after a $2,000 trade: tax $437.50 on $7,000; e. $7.50, f. $10.00; total $7,733.75; seller lien $6,233.75 |
+| Buy here pay here contract | 5 | 1. $9,000.00; a.-e. tax, title, registration, inspection, plate; 2. $9,558.75; 3. Documentary Fee $175.00 with the notice under it; 4. down $3,500.00 ($2,000 trade, $1,500 cash); 5. Amount Financed $6,233.75 (equals the bill of sale's lien); clause 16 kept |
+| Spanish bill of sale | 4 | $175.00; English and Spanish notices |
+| 130-U, insurance, responsibility forms | 2 each | no fee lines |
+
+`paper/` holds the pages: `bhph-trade-contract-itemization-p2.png`,
+`bhph-trade-bill-of-sale-fee-lines-p2.png`,
+`flag-off-cash-balance-bill-of-sale-p2.png`,
+`spanish-bill-of-sale-notices-p2.png`, `cash-otd-refiled-keeps-150-p2.png`.
+
+### Not done, and why
+
+- A soft ceiling on a very high filed maximum: the rule sets none
+  (§84.205(d) caps the fee at the filed amount); the dates are enforced.
+- Stamping the notice inside `/complete`: an existing test pins the exact
+  data it encodes; `/complete` refuses an unstamped documentary fee instead.
+- A check of the fee version at Start A Sale: the database trigger makes it
+  moot (a copy can only ever be the schedule as it stands).
+- Your Fees in the command palette: the palette is not role-filtered.
+- Moving the Government Fees screen into the sale corridor's chrome: not
+  needed for the fix, and a layout change; it keeps the workspace chrome.
+
+### Open items
+
+- A tow-away salvage sale charges the state title fee but registers
+  nothing; whether its title line should be recorded per sale too is for
+  the owner and counsel.
+- A sale whose bill of sale was filed before this version has no recorded
+  government fees: with the flag off, its remaining documents file only
+  after a void, the record, and a new filing (README, "The migration").
+- Counsel: the advertised price and the FTC's documentary-fee position;
+  the late-handling fee; the contract form; the Spanish notice option.
+- The Harris County figures in the walks are the rulebook's worked example,
+  not a live webDEALER receipt: confirm the screen against a real one on the
+  first sale.
+
 ## 000000. Merge: void, lock and reset with the automatic empty weight (10/03/2026)
 
 This section records the merge of `claude/desk-void-and-freeze` (sections

@@ -7,6 +7,8 @@ import { packetPreviewAgreements, packetPreviewDeals } from "@/lib/supabase/pack
 import { dealership } from "@/lib/dealership-config";
 import { VOIDED_WITH_BILL_OF_SALE, voidEligibility } from "@/lib/sales/void-bill-of-sale";
 import type { AgreementRecord } from "@/lib/sales/filed-documents";
+import { validateFeeSchedule } from "@/lib/sales/fee-schedule";
+import { hasTeamPermission, isTeamRole } from "@/lib/operations/team";
 
 type QueryMode = "rows" | "single";
 
@@ -71,6 +73,13 @@ type MockStore = {
    * session that signed in before it is signed out (password-reset-cutoff.ts).
    */
   previewResetAt?: string | null;
+  /**
+   * The dealership's fee schedule row and its change log
+   * (20261003000000_dealer_fee_schedule.sql). Both start empty, so a fresh
+   * preview owner meets the Your Fees step; no doc fee is ever seeded here.
+   */
+  feeSchedule?: Record<string, unknown> | null;
+  feeChanges?: Array<Record<string, unknown>>;
 };
 const store: MockStore = ((globalThis as { __tjMockStore?: MockStore }).__tjMockStore ??= {
   written: new Map(),
@@ -81,6 +90,7 @@ const store: MockStore = ((globalThis as { __tjMockStore?: MockStore }).__tjMock
 // Added after the store's first shape; a dev server that already holds an
 // older store gains it here rather than on restart.
 const authMetadata = (store.authMetadata ??= new Map());
+store.feeChanges ??= [];
 const written = store.written;
 const uploaded = store.uploaded;
 
@@ -119,6 +129,8 @@ export function resetMockWrites(): void {
   inserted.clear();
   authMetadata.clear();
   store.previewResetAt = null;
+  store.feeSchedule = null;
+  store.feeChanges = [];
 }
 
 /**
@@ -437,6 +449,8 @@ function getPreviewRows(table: string): Array<Record<string, unknown>> {
   if (table === "notification_log") return previewNotificationLog;
   if (table === "sms_messages") return previewSmsMessages;
   if (table === "team_members") return previewTeamMembers();
+  if (table === "dealer_fee_schedule") return store.feeSchedule ? [{ ...store.feeSchedule }] : [];
+  if (table === "dealer_fee_schedule_changes") return (store.feeChanges ?? []).map((row) => ({ ...row }));
   return [];
 }
 
@@ -448,8 +462,10 @@ function getPreviewRows(table: string): Array<Record<string, unknown>> {
  * read here and nowhere else: "fresh" is cleared to sign, "fresh-cannot-sign"
  * is not, and "fresh-temporary-password" is "fresh" on an account still on
  * the temporary password an approval issues (so onboarding starts with
- * "Choose A Password"). Unset, the table is empty and preview is what it
- * always was.
+ * "Choose A Password"). "fresh-sales" is a salesperson cleared to sign, to
+ * prove the Your Fees step is the owner's alone (sign the preview in with the
+ * cookie "sales:<email>" to match). Unset, the table is empty and preview is
+ * what it always was.
  *
  * The name is empty, never invented: the person types it at onboarding. The
  * `onboarding_completed_at` key is present (null), because the layout and the
@@ -464,7 +480,8 @@ function previewTeamMembers(): Array<Record<string, unknown>> {
     flag !== "fresh" &&
     flag !== "fresh-cannot-sign" &&
     flag !== "fresh-temporary-password" &&
-    flag !== "fresh-reset"
+    flag !== "fresh-reset" &&
+    flag !== "fresh-sales"
   ) return [];
   const at = "2026-10-01T15:00:00.000Z";
   return [
@@ -478,7 +495,7 @@ function previewTeamMembers(): Array<Record<string, unknown>> {
       avatar_url: null,
       email: null,
       phone: null,
-      role: "owner",
+      role: flag === "fresh-sales" ? "sales" : "owner",
       language_preference: "en",
       status: "active",
       can_sign_contracts: flag !== "fresh-cannot-sign",
@@ -1463,7 +1480,170 @@ export function createMockSupabaseClient(user: User | null = null): SupabaseClie
       return { data: { vehicle_id: vehicle.id, customer_id: customer.id }, error: null };
     }
     if (name === "void_filed_documents") return voidFiledDocuments(args);
+    if (name === "save_dealer_fee_schedule") return saveDealerFeeSchedule(args);
+    if (name === "dealer_fee_record") return dealerFeeRecord(args);
     return { data: null, error: { message: `mock: no rpc named ${name} in preview` } };
+  }
+
+  /** The caller's active roster row, as the database function reads it from auth.uid(). */
+  function callerMember(): Record<string, unknown> | null {
+    if (!user) return null;
+    const row = allRows("team_members").find(
+      (entry) => (entry as Record<string, unknown>).auth_user_id === user.id && (entry as Record<string, unknown>).status === "active",
+    ) as Record<string, unknown> | undefined;
+    return row ?? null;
+  }
+
+  /** The caller's role: the roster row's, else the preview session's. */
+  function callerRole() {
+    const member = callerMember();
+    const role = typeof member?.role === "string" ? member.role : user?.app_metadata?.desk_role;
+    return typeof role === "string" && isTeamRole(role) ? role : null;
+  }
+
+  /**
+   * The fee save, done the way the database function does it
+   * (20261003000000_dealer_fee_schedule.sql): the owner's own roster row,
+   * the same validator the desk uses (`validateFeeSchedule`, raising the
+   * first problem's code), compare-and-set on the version, then the row, the
+   * change log and the activity event together.
+   */
+  function saveDealerFeeSchedule(args: Record<string, unknown>) {
+    const fail = (message: string) => ({ data: null, error: { code: "P0001", message } });
+    const member = callerMember();
+    if (!user || !member || !hasTeamPermission(callerRole(), "admin:all")) return fail("forbidden");
+    const source = args.p_source;
+    if (source !== "onboarding" && source !== "settings") return fail("bad_source");
+    const next = args.p_next;
+    if (!next || typeof next !== "object" || Array.isArray(next)) return fail("docFeeRequired");
+    const { rulebookAsOf, ...fields } = next as Record<string, unknown>;
+    const [problem] = validateFeeSchedule(fields);
+    if (problem) return fail(problem.code);
+    if (typeof rulebookAsOf !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(rulebookAsOf)) return fail("bad_rulebook");
+
+    const current = store.feeSchedule ?? null;
+    const version = current ? Number(current.version) || 0 : 0;
+    if (args.p_expected_version !== version) return fail("stale");
+
+    const f = fields as {
+      docFeeCents: number;
+      occcFiling: { maxCents: number; filedOn: string; effectiveOn: string; licenseOrNmls: string; location: string } | null;
+      writesFinanceContracts?: boolean | null;
+      nmlsId?: string | null;
+      legacyLicense?: string | null;
+      deputy?: { isDeputy?: boolean; feeCents?: number };
+      vit?: { year?: number | null; inBusinessJan1?: boolean | null; passesThrough?: boolean | null; unitFactor?: number | null };
+      financesCh345?: boolean | null;
+    };
+    const name =
+      typeof member.full_name === "string" && member.full_name.trim() ? member.full_name.trim() : user.email ?? "An owner";
+    const shape = (row: Record<string, unknown> | null) =>
+      row
+        ? {
+            version: row.version,
+            docFeeCents: row.doc_fee_cents,
+            occcFiling:
+              row.occc_filed_max_cents === null || row.occc_filed_max_cents === undefined
+                ? null
+                : {
+                    maxCents: row.occc_filed_max_cents,
+                    filedOn: row.occc_filed_on,
+                    effectiveOn: row.occc_effective_on,
+                    licenseOrNmls: row.occc_license_or_nmls,
+                    location: row.occc_location,
+                  },
+            writesFinanceContracts: row.writes_finance_contracts ?? null,
+            nmlsId: row.nmls_id ?? null,
+            legacyLicense: row.legacy_license ?? null,
+            deputy: { isDeputy: row.is_dealer_deputy === true, feeCents: Number(row.deputy_fee_cents) || 0 },
+            vit: {
+              year: row.vit_year ?? null,
+              inBusinessJan1: row.vit_in_business_jan1 ?? null,
+              passesThrough: row.vit_passes_through ?? null,
+              unitFactor: row.vit_unit_factor ?? null,
+            },
+            financesCh345: row.finances_ch345 ?? null,
+          }
+        : null;
+    const now = new Date().toISOString();
+    const filing = f.occcFiling;
+    const text = (value: unknown) => (typeof value === "string" && value.trim() ? value.trim() : null);
+    const row: Record<string, unknown> = {
+      id: 1,
+      version: version + 1,
+      doc_fee_cents: f.docFeeCents,
+      occc_filed_max_cents: filing ? filing.maxCents : null,
+      occc_filed_on: filing ? filing.filedOn : null,
+      occc_effective_on: filing ? filing.effectiveOn : null,
+      occc_license_or_nmls: filing ? filing.licenseOrNmls.trim() : null,
+      occc_location: filing ? filing.location.trim() : null,
+      writes_finance_contracts: f.writesFinanceContracts ?? null,
+      nmls_id: text(f.nmlsId),
+      legacy_license: text(f.legacyLicense),
+      is_dealer_deputy: f.deputy?.isDeputy === true,
+      deputy_fee_cents: f.deputy?.feeCents ?? 0,
+      vit_year: f.vit?.year ?? null,
+      vit_in_business_jan1: f.vit?.inBusinessJan1 ?? null,
+      vit_passes_through: f.vit?.passesThrough ?? null,
+      vit_unit_factor: f.vit?.unitFactor ?? null,
+      finances_ch345: f.financesCh345 ?? null,
+      rulebook_as_of: rulebookAsOf,
+      updated_by: member.id ?? null,
+      updated_by_name: name,
+      updated_at: now,
+      created_at: current?.created_at ?? now,
+    };
+    const previous = shape(current);
+    const logged = shape(row);
+    store.feeSchedule = row;
+    minted.count += 1;
+    store.feeChanges = [
+      ...(store.feeChanges ?? []),
+      {
+        id: `preview-fee-change-${minted.count}`,
+        changed_at: now,
+        changed_by: member.id ?? null,
+        changed_by_name: name,
+        source,
+        previous,
+        next: logged,
+        rulebook_as_of: rulebookAsOf,
+      },
+    ];
+    const was = current ? `$${(Number(current.doc_fee_cents) / 100).toFixed(2)}` : "not set";
+    applyInsert({
+      table: "team_activity_events",
+      mode: "rows",
+      filters: [],
+      insert: [
+        {
+          actor_id: member.id ?? null,
+          event_type: "dealer_fees_saved",
+          entity_type: "dealer_fee_schedule",
+          entity_id: null,
+          body: `${name} set the documentary fee to $${(f.docFeeCents / 100).toFixed(2)} (was ${was}).`,
+          metadata: { previous, next: logged, source, version: version + 1 },
+        },
+      ],
+    });
+    return { data: version + 1, error: null };
+  }
+
+  /** What a saved version said (the tamper check's read), as the database function returns it. */
+  function dealerFeeRecord(args: Record<string, unknown>) {
+    if (!user) return { data: null, error: { code: "42501", message: "forbidden" } };
+    const role = callerRole();
+    if (!hasTeamPermission(role, "sales:read") && !hasTeamPermission(role, "paperwork:read")) {
+      return { data: null, error: { code: "42501", message: "forbidden" } };
+    }
+    const entry = [...(store.feeChanges ?? [])]
+      .reverse()
+      .find((change) => Number((change.next as Record<string, unknown> | null)?.version) === Number(args.p_version));
+    const next = entry?.next as Record<string, unknown> | undefined;
+    return {
+      data: next ? { version: next.version, docFeeCents: next.docFeeCents, occcFiling: next.occcFiling ?? null } : null,
+      error: null,
+    };
   }
 
   /**

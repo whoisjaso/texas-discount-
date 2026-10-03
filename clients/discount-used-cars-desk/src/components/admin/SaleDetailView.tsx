@@ -36,6 +36,10 @@ import { getFunnelStrings, fillTemplate } from "@/lib/sales/i18n";
 import { affixedEmptyWeight, emptyWeightContext } from "@/lib/vehicles/empty-weight/on-the-sale";
 import { lbs, weightSourceLabel, weightSourceLine } from "@/lib/vehicles/empty-weight/copy";
 import type { WeightEstimate } from "@/lib/vehicles/empty-weight/types";
+import ApplyTodaysFees from "@/components/admin/ApplyTodaysFees";
+import type { DealFeeLines } from "@/lib/sales/fee-schedule";
+import { readGovernmentFees } from "@/lib/sales/government-fees";
+import type { ApplyFeesOffer } from "@/lib/dealership-fees";
 
 /**
  * The car's empty weight in one line, with where it came from: box 11 as
@@ -142,11 +146,17 @@ export default function SaleDetailView({
   sale,
   backLink,
   weightEstimate = null,
+  fees,
+  applyFees = null,
 }: {
   sale: SaleDetail;
   backLink: React.ReactNode;
   /** The car's empty-weight estimate, when the page resolved one in time. */
   weightEstimate?: WeightEstimate | null;
+  /** The sale's own fee lines (dealership-fees.ts); absent, the config's. */
+  fees?: DealFeeLines;
+  /** Set when "Apply Today's Fees" should be offered on this sale. */
+  applyFees?: ApplyFeesOffer | null;
 }) {
   const buyerName = sale.buyer?.name?.trim() || "Buyer not set";
   const completed = sale.status === "completed";
@@ -202,7 +212,7 @@ export default function SaleDetailView({
   );
   const signed = required.length - outstanding.length;
 
-  const handoffFields = buildHandoffFields(sale, factOr(dealership.license, "dealer licence (GDN)"));
+  const handoffFields = buildHandoffFields(sale, factOr(dealership.license, "dealer licence (GDN)"), fees);
 
   /*
     Once a bill of sale is filed it holds the buyer's licence number it
@@ -225,6 +235,7 @@ export default function SaleDetailView({
     readPaperwork(sale.stepData, "billOfSale"),
     readMoney(sale.stepData),
     sale.funding.type,
+    fees,
   ).salePrice;
 
   return (
@@ -258,6 +269,23 @@ export default function SaleDetailView({
           See the whole sale on one page
         </Link>
       </p>
+
+      {/* A sale keeps the fees it started with. Offered only when its copy is
+          over today's Texas limit, higher than today's fee, older than the
+          owner's latest save, or no longer what its record says. */}
+      {applyFees && !completed ? (
+        <ApplyTodaysFees
+          dealId={sale.id}
+          message={applyFeesMessage(applyFees)}
+        />
+      ) : null}
+
+      {/* The state's fees for this sale, as webDEALER computed them
+          (government-fees.ts): recorded, or still to copy. The bill of sale
+          and the contract are not filed until they are recorded. */}
+      {!completed && !(sale.vehicle?.titleStatus === "salvage_unrebuilt" && readSalvagePlan(sale.stepData).path === "towAway") ? (
+        <GovernmentFeesStatus dealId={sale.id} stepData={sale.stepData} />
+      ) : null}
 
       <section aria-label="Buyer" className="ed-admin-panel mt-8 p-6 md:p-7">
         <dl className="ed-fact-row">
@@ -365,5 +393,45 @@ export default function SaleDetailView({
         )}
       </section>
     </div>
+  );
+}
+
+/** The sentence over "Apply Today's Fees", by why it is offered. */
+function applyFeesMessage(offer: ApplyFeesOffer): string {
+  const said = (value: number | null) => (value === null ? "not set" : `$${value.toFixed(2)}`);
+  switch (offer.reason) {
+    case "overLimit":
+      return `This sale's documentary fee (${said(offer.docFee)}) is above what Texas allows today, so its paperwork cannot be filed. Apply today's fees (${said(offer.todaysDocFee)}) to file it.`;
+    case "aboveToday":
+      return `This sale's documentary fee (${said(offer.docFee)}) is higher than today's (${said(offer.todaysDocFee)}). Every buyer pays the same documentary fee, so its paperwork cannot be filed until you apply today's fees.`;
+    case "changed":
+      return `The desk's fee settings changed since this sale started (its documentary fee is ${said(offer.docFee)}; today's is ${said(offer.todaysDocFee)}). Apply today's fees to file its paperwork.`;
+    case "older":
+      return `This sale started with a documentary fee of ${said(offer.docFee)}. Today's is ${said(offer.todaysDocFee)}. The sale keeps its own unless you apply today's.`;
+  }
+}
+
+/** Whether this sale's government fees are recorded from webDEALER, and the way to record them. */
+function GovernmentFeesStatus({ dealId, stepData }: { dealId: string; stepData: unknown }) {
+  const gov = readGovernmentFees(stepData);
+  const saleHref = `/admin/sales/${encodeURIComponent(dealId)}`;
+  const href = `${saleHref}/government-fees?back=${encodeURIComponent(saleHref)}`;
+  const money = (value: number) => `$${value.toFixed(2)}`;
+  return (
+    <section aria-label="Government fees" className="ed-admin-panel mt-6 px-5 py-5" data-government-fees-status={gov.kind}>
+      <p className="ed-fine">
+        {gov.kind === "valid"
+          ? `Government fees from webDEALER, recorded by ${gov.fees.confirmedByName} on ${gov.fees.confirmedAt.slice(0, 10)} for ${gov.fees.county} County: title ${money(gov.fees.titleFee)}, registration ${money(gov.fees.registrationFee)}, inspection program ${money(gov.fees.inspectionFee)}, license plate ${money(gov.fees.plateFee)}.`
+          : gov.kind === "malformed"
+            ? "This sale's government fees are not figures the desk recorded. Record them again from webDEALER."
+            : "Government fees: not recorded yet. The title and registration lines are the desk's defaults until someone copies webDEALER's computed fees for this sale, and the bill of sale and the contract are not filed until then."}
+      </p>
+      <p className="mt-3">
+        <Link href={href} className="ed-link" data-government-fees-link="">
+          {gov.kind === "valid" ? "Change The Government Fees" : "Record The Government Fees"}
+          <ArrowRight size={14} aria-hidden="true" />
+        </Link>
+      </p>
+    </section>
   );
 }

@@ -159,7 +159,7 @@ export async function completeSale(
       const filed = await filedBillOfSaleOn(dealId);
       if (filed) {
         if (salePrice !== null && salePrice !== filed.advertised) {
-          const context = { rootType: filed.type };
+          const context = { rootType: filed.type, fees: filed.printed?.fees ?? null };
           const [field] = frozenFieldsChanged(
             billOfSaleStatement(sale.stepData, { ...context, advertised: filed.advertised }),
             billOfSaleStatement(sale.stepData, { ...context, advertised: salePrice }),

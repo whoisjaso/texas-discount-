@@ -10,6 +10,7 @@ import { readBuyerId } from "@/lib/sales/buyer-id";
 import { SITE_URL } from "@/lib/dealership-config";
 import { getStaffSignature } from "@/lib/actions/staff-signature";
 import { emptyWeightContext } from "@/lib/vehicles/empty-weight/on-the-sale";
+import { dealFeeLinesForSale } from "@/lib/dealership-fees";
 
 /**
  * "Preview The PDF", from any screen of the paperwork corridor.
@@ -59,6 +60,8 @@ export async function previewPaperworkPdf(
       readPaperwork(sale.stepData, "billOfSale"),
       readMoney(sale.stepData),
       sale.funding.type,
+      // The sale's own fee lines, as the filing computes them.
+      await dealFeeLinesForSale(sale),
     );
 
     /*

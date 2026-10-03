@@ -28,6 +28,12 @@
  *   `missingDealerFacts`). The person who signs for the dealer is not a
  *   config fact: it is the filing member's own onboarding name (see
  *   `dealerSignerPrintedName`).
+ * - the documentary fee is the one dealer fact an owner sets in the desk
+ *   itself: at first sign-in (Your Fees) or under /admin/dealership/fees,
+ *   saved in the `dealer_fee_schedule` row with every change logged. The
+ *   environment value below is only the seed and default until then, checked
+ *   against the same Texas limits ($225.00, or a recorded OCCC filing; see
+ *   `src/lib/legal/texas-dealer-fees.ts`).
  *
  * Each value is overridable through an environment variable so the owner can
  * supply it without a code change.
@@ -267,10 +273,18 @@ export const dealership = {
 };
 
 /**
- * Money constants for the sale. Texas statute supplies the tax rate, title fee
- * and registration fee; the documentary fee is the dealer's own and is not
- * known yet. Null means "not set": the receipt shows it as missing and a
- * document cannot be filed until it is supplied.
+ * Money constants for the sale. The tax rate is the state's (Tax Code
+ * §152.021). The title fee is the state's for the buyer's county ($33 in a
+ * nonattainment or affected county such as this one, $28 elsewhere; Transp.
+ * Code §501.138(a)). The $75 registration figure is a desk default, not a
+ * statutory figure: the state's lines (base registration, TexasSure, the
+ * county's local fee, processing and handling, the inspection replacement fee,
+ * emissions and the $10 plate fee) vary by county and vehicle, and webDEALER's
+ * computed figure is confirmed on every sale until the desk computes them by
+ * county (rulebook section 5.3). The documentary fee is the dealer's own: an
+ * owner sets it at onboarding, and this value is only the seed. Null means
+ * "not set": the receipt shows it as missing and a document cannot be filed
+ * until it is supplied.
  */
 /**
  * A dollar amount the owner types into the environment, read the way the
@@ -304,6 +318,37 @@ export const dealerFees = {
   lateHandlingFee: envDollars(process.env.NEXT_PUBLIC_DEALER_LATE_HANDLING_FEE),
 };
 
+/**
+ * A documentary fee maximum the dealer filed with the OCCC (7 TAC
+ * §84.205(c)), seeded from the environment: the five facts a filing needs,
+ * as typed. Null when none is set, which is the default: no filing is ever
+ * assumed. An owner records a real filing at onboarding or under Your Fees;
+ * this seed exists so a fixture (the test suite's $292 doc fee) can carry
+ * one, and it passes through the same validator at filing.
+ *
+ * Never in production: a filing raises the documentary fee limit above
+ * $225.00, and in production only the owner's audited save (who, when, from
+ * what to what) may do that. Whoever controls the deploy environment cannot
+ * raise the cap by setting a variable.
+ */
+export const occcDocFeeFilingSeed: {
+  max: string | null;
+  filedOn: string | null;
+  effectiveOn: string | null;
+  licenseOrNmls: string | null;
+  location: string | null;
+} | null = (() => {
+  if (process.env.NODE_ENV === "production") return null;
+  const seed = {
+    max: env(process.env.NEXT_PUBLIC_DEALER_OCCC_FILED_MAX),
+    filedOn: env(process.env.NEXT_PUBLIC_DEALER_OCCC_FILED_ON),
+    effectiveOn: env(process.env.NEXT_PUBLIC_DEALER_OCCC_EFFECTIVE_ON),
+    licenseOrNmls: env(process.env.NEXT_PUBLIC_DEALER_OCCC_LICENSE),
+    location: env(process.env.NEXT_PUBLIC_DEALER_OCCC_LOCATION),
+  };
+  return Object.values(seed).some((value) => value !== null) ? seed : null;
+})();
+
 /** What prints in place of a fact the owner has not supplied. */
 export function notSet(label: string): string {
   return `[Not set: ${label}]`;
@@ -330,13 +375,19 @@ export function dealerSignerPrintedName(person: string | null | undefined): stri
 /**
  * The facts a filed document cannot go without, in the words the owner is
  * asked for them. Empty when every one is supplied.
+ *
+ * `fees` is where the documentary fee is read from: the config by default
+ * (unchanged), or the fees a sale resolved from the owner's saved schedule
+ * (`dealership-fees.ts`). Only whether it is set is decided here; whether it
+ * is within the Texas limit is a refusal of its own at filing, which
+ * DESK_ALLOW_UNSET_FACTS never lifts.
  */
-export function missingDealerFacts(): string[] {
+export function missingDealerFacts(fees: { docFee: number | null } = dealerFees): string[] {
   const missing: string[] = [];
   if (!dealership.legalName) missing.push("Dealer legal name");
   if (!dealership.license) missing.push("Dealer licence (GDN) number");
   if (!dealership.county) missing.push("County");
-  if (dealerFees.docFee === null || !Number.isFinite(dealerFees.docFee)) missing.push("Documentary fee");
+  if (fees.docFee === null || !Number.isFinite(fees.docFee)) missing.push("Documentary fee");
   // No "Authorised signer" here any more: the dealer line now carries the
   // FILING member's own name and stroke, and `finalizePaperwork` refuses a
   // filer who is not cleared and named (`dealerSignerProblem`; SOP 130-U
@@ -373,8 +424,8 @@ function sameHost(a: string, b: string): boolean {
  * `DESK_ALLOW_UNSET_FACTS=true` lifts the refusal for demos and local walks
  * only; the markers still print, so a demo packet can never pass for a real one.
  */
-export function filingBlockedReason(): string | null {
-  const missing = missingDealerFacts();
+export function filingBlockedReason(fees: { docFee: number | null } = dealerFees): string | null {
+  const missing = missingDealerFacts(fees);
   if (missing.length === 0) return null;
   if (env(process.env.DESK_ALLOW_UNSET_FACTS) === "true") return null;
   return `Add these dealer details before filing: ${missing.join(", ")}.`;
@@ -519,13 +570,13 @@ export const legal = {
   en: {
     inventory: "All vehicles are subject to prior sale.",
     pricing:
-      "Advertised prices do not include applicable tax, title, license, registration, or dealer fees unless expressly stated.",
+      "Advertised prices do not include applicable tax, title, license, registration, or the documentary fee unless expressly stated.",
     financing: "Financing is subject to lender approval and applicable terms.",
   },
   es: {
     inventory: "Todos los vehículos están sujetos a venta previa.",
     pricing:
-      "Los precios anunciados no incluyen impuestos, título, placas, registro ni cargos del concesionario, salvo que se indique expresamente.",
+      "Los precios anunciados no incluyen impuestos, título, placas, registro ni el cargo documental, salvo que se indique expresamente.",
     financing: "El financiamiento está sujeto a la aprobación del prestamista y a los términos aplicables.",
   },
 } as const;

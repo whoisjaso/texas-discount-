@@ -6,6 +6,7 @@ import {
   DEFAULT_REG_FEE,
 } from "@/lib/documents/billOfSale";
 import type { DealType } from "@/lib/sales/deal-type";
+import type { DealFeeLines } from "@/lib/sales/fee-schedule";
 
 /**
  * What the advertised price means, and what is still owed after today.
@@ -86,7 +87,11 @@ export type SaleMoney = {
   titleFee: number;
   docFee: number;
   registrationFee: number;
-  /** The three fee lines together, which is what this lot quotes. */
+  /** The inspection program replacement fee, its own line; only when charged. */
+  inspectionFee?: number;
+  /** The license plate fee, its own line; only when charged. */
+  plateFee?: number;
+  /** The fee lines together, which is what this lot quotes. */
   feeTotal: number;
   tradeInAllowance: number;
   /** Price, less the trade-in, plus tax and fees. */
@@ -106,7 +111,13 @@ export type SaleMoney = {
   lien: number;
 };
 
-/** The three fee lines, as every document should start them. */
+/**
+ * The three fee lines from the config, the default for every caller that
+ * does not pass a sale's own (`fee-schedule.ts`: each sale keeps a copy of
+ * the fees it started with, and the server resolves it). The Texas limits are
+ * never applied here: this module is arithmetic, and the doc fee cap is a
+ * separate check when the owner saves the fees and again at filing.
+ */
 export const FEE_LINES = {
   titleFee: TEXAS_TITLE_FEE,
   docFee: DEFAULT_DOC_FEE,
@@ -139,10 +150,32 @@ const cents = (amount: number) => Math.round(amount * 100) / 100;
  * does not sum to its own total is the kind of thing a customer notices and
  * nobody can explain at the desk. The remainder is exact by construction.
  */
-export function splitOutTheDoor(outTheDoor: number): { salePrice: number; tax: number } {
-  const beforeTax = cents(outTheDoor) - FEE_TOTAL;
+export function splitOutTheDoor(
+  outTheDoor: number,
+  feeTotal: number = FEE_TOTAL,
+  /**
+   * The trade-in allowance, which comes off the tax base (Tax Code
+   * §152.002(b)(5): total consideration does not include "the value of a
+   * motor vehicle taken by a seller as all or a part of the consideration
+   * for sale of another motor vehicle"). An out-the-door figure quoted on a
+   * trade-in deal is the car, the tax on (car - trade-in) and the fees, so
+   * the car is backed out of it with the trade-in inside the tax base:
+   *
+   *   car = (outTheDoor - fees + 6.25% x tradeIn) / 1.0625
+   *
+   * and the tax stays the remainder, so the three lines still sum to the
+   * quoted figure to the cent and the tax is 6.25% of (car - trade-in) to
+   * within a cent: the same tax the 130-U computes and remits. Zero (every
+   * caller before trade-ins were honoured here) is the old split exactly.
+   */
+  tradeIn: number = 0,
+): { salePrice: number; tax: number } {
+  const beforeTax = cents(outTheDoor) - feeTotal;
   if (beforeTax <= 0) return { salePrice: 0, tax: 0 };
-  const salePrice = cents(beforeTax / (1 + TEXAS_TAX_RATE));
+  const allowance = Math.max(0, Number(tradeIn) || 0);
+  // A trade-in worth the whole car or more leaves nothing to tax.
+  if (allowance >= beforeTax) return { salePrice: cents(beforeTax), tax: 0 };
+  const salePrice = cents((beforeTax + TEXAS_TAX_RATE * allowance) / (1 + TEXAS_TAX_RATE));
   return { salePrice, tax: cents(beforeTax - salePrice) };
 }
 
@@ -208,7 +241,32 @@ export function saleMoney(
    * every deal computed before this parameter existed.
    */
   funding: DealType | null = null,
+  /**
+   * The sale's own fee lines (its copy, resolved on the server), or the
+   * config's. Only which three figures are added changes; the arithmetic is
+   * the same either way.
+   */
+  fees: DealFeeLines = FEE_LINES,
 ): SaleMoney {
+  const lines: DealFeeLines = {
+    titleFee: fees.titleFee,
+    docFee: fees.docFee,
+    registrationFee: fees.registrationFee,
+  };
+  /*
+    The inspection program replacement fee and the plate fee, on lines of
+    their own once the sale's government fees are confirmed from webDEALER
+    (government-fees.ts). Untaxed like the other government lines. Carried
+    only when charged, so a sale without them computes, and reports, exactly
+    as before.
+  */
+  const inspectionFee = Math.max(0, Number(fees.inspectionFee) || 0);
+  const plateFee = Math.max(0, Number(fees.plateFee) || 0);
+  const governmentLines = {
+    ...(inspectionFee > 0 ? { inspectionFee } : {}),
+    ...(plateFee > 0 ? { plateFee } : {}),
+  };
+  const feeTotal = lines.titleFee + lines.docFee + lines.registrationFee + inspectionFee + plateFee;
   /**
    * The spoken figure outranks the vehicle row.
    *
@@ -229,16 +287,19 @@ export function saleMoney(
     price and subtracted the trade afterwards, which overtaxed every trade-in
     deal by 6.25% of the allowance. Found by the research pass, verified
     against the Comptroller's own worked example, and fixed on the forward
-    path. The out-the-door split cannot honor it exactly, because the split's
-    contract is that its three lines sum to the quoted figure to the cent; on
-    a trade-in deal quoted out-the-door the tax line stays the remainder.
+    path. The out-the-door split honours it too: the car is backed out of
+    the quoted figure with the trade-in inside the tax base, and the tax
+    stays the remainder, so the lines still sum to the quoted figure to the
+    cent and the tax is the one the 130-U remits (splitOutTheDoor). It used
+    to tax the trade-in on these deals, charging the buyer 6.25% of the
+    allowance as "tax" the state never received (fees review, 2026-10-03).
   */
   const { salePrice, tax } =
     basis === "outTheDoor"
-      ? splitOutTheDoor(listed)
+      ? splitOutTheDoor(listed, feeTotal, allowance)
       : { salePrice: listed, tax: calcTexasTax(Math.max(0, listed - allowance)) };
 
-  const registrationCost = cents(tax + FEE_TOTAL);
+  const registrationCost = cents(tax + feeTotal);
   const total = Math.max(0, cents(salePrice - allowance + registrationCost));
 
   /*
@@ -279,8 +340,9 @@ export function saleMoney(
     advertised: listed,
     salePrice,
     tax,
-    ...FEE_LINES,
-    feeTotal: FEE_TOTAL,
+    ...lines,
+    ...governmentLines,
+    feeTotal,
     tradeInAllowance: allowance,
     total,
     registrationCost,

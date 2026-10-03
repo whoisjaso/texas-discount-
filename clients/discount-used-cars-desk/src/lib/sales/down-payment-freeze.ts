@@ -1,6 +1,7 @@
 import { readMoney, type MoneyAnswers } from "@/lib/sales/money";
 import { paperworkMoney, readPaperwork } from "@/lib/sales/paperwork";
 import { readFunding } from "@/lib/sales/deal-type";
+import { feeLinesOf, type DealFeeLines } from "@/lib/sales/fee-schedule";
 
 /**
  * The down payment is frozen once the bill of sale is filed (owner's decision
@@ -107,11 +108,12 @@ function downPaymentFigure(
   money: MoneyAnswers,
   funding: ReturnType<typeof readFunding>["type"],
   typed: string,
+  fees: DealFeeLines,
 ): number {
   const digits = typed.replace(/[$,\s]/g, "");
   const parsed = digits === "" ? Number.NaN : Number(digits);
   if (Number.isFinite(parsed)) return Math.round(parsed * 100) / 100;
-  return paperworkMoney(advertised, bill, { ...money, paidTodayAmount: typed }, funding).paidToday;
+  return paperworkMoney(advertised, bill, { ...money, paidTodayAmount: typed }, funding, fees).paidToday;
 }
 
 /**
@@ -133,12 +135,18 @@ export function downPaymentChanges(input: {
   money?: MoneyAnswers;
   /** The paid-today answer being written. */
   to: string;
+  /**
+   * The sale's fee lines. Absent: the sale's own copy (`step_data.fees`),
+   * else the config's, the same lines its figures are computed with.
+   */
+  fees?: DealFeeLines;
 }): boolean {
   const money = input.money ?? readMoney(input.stepData);
   const bill = readPaperwork(input.stepData, "billOfSale");
   const funding = readFunding(input.stepData).type;
   const from = readMoney(input.stepData).paidTodayAmount;
-  const before = downPaymentFigure(input.advertised, bill, { ...money, paidTodayAmount: from }, funding, from);
-  const after = downPaymentFigure(input.advertised, bill, { ...money, paidTodayAmount: input.to }, funding, input.to);
+  const fees = input.fees ?? feeLinesOf(input.stepData);
+  const before = downPaymentFigure(input.advertised, bill, { ...money, paidTodayAmount: from }, funding, from, fees);
+  const after = downPaymentFigure(input.advertised, bill, { ...money, paidTodayAmount: input.to }, funding, input.to, fees);
   return before !== after;
 }

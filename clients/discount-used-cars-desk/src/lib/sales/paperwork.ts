@@ -12,6 +12,7 @@ import {
   type SaleMoney,
 } from "@/lib/sales/money";
 import type { DealType } from "@/lib/sales/deal-type";
+import type { DealFeeLines } from "@/lib/sales/fee-schedule";
 import {
   isProblem,
   solveTerms,
@@ -878,10 +879,15 @@ export function paperworkMoney(
   answers: Record<string, string> = {},
   money: Partial<MoneyAnswers> = {},
   funding: DealType | null = null,
+  /**
+   * The sale's own fee lines, resolved on the server from its fee copy
+   * (`dealership-fees.ts`). Absent: the config's, as before.
+   */
+  fees?: DealFeeLines,
 ): PaperworkMoney {
   const allowance =
     answers.tradeIn === "yes" ? Math.max(0, Number(answers.tradeInAllowance) || 0) : 0;
-  const figures = saleMoney(salePrice, money, allowance, funding);
+  const figures = saleMoney(salePrice, money, allowance, funding, fees);
 
   return {
     ...figures,

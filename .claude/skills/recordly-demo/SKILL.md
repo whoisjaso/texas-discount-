@@ -26,6 +26,11 @@ new dealer is to reproduce that film on their site. It is not a new edit:
 - Only the client's facts, logos, measured loader geometry and a few page-dependent framing points change. They all
   live in one `client-inputs.json`, and the tools measure most of them.
 
+**Where this sits in a dealer build:** the last two steps of premium-dealer-build's sequence
+(`premium-dealer-build/SKILL.md`, "The sequence (every client, in this order)", steps 9 and 10, its Phase 7). It runs
+after the site is deployed and the desk verified: the short cut first, then the narrated walkthrough, whose filled
+script the user approves before it is voiced.
+
 Recordly (github.com/webadderallorg/Recordly) is AGPL-3.0 and cannot run headless. **None of its code is used.** Only
 its published tuning numbers are, as reference: zoom depths, 1.5 s / 1.0 s zoom timings, cursor smoothing, click
 bounce and motion blur. Our own capture (`scripts/capture.cjs`) and Remotion composition reproduce the look.
@@ -239,6 +244,11 @@ verification §7.
    (Maria Lopez, James Carter, the mock lot's car); check the demo address does not exist (lesson B13).
 2. **Desk server** on :5190 only: `next dev` with `DESK_PREVIEW_MEMBER=fresh` (the preview mock is off in production;
    the css hides the dev indicator). Restart it to reset the mock before re-capturing 6 or 7. Kill it by PID.
+   - **Your Fees:** this storyboard predates the owner's fee step (premium-dealer-build Phase 4). On a desk that has
+     it, `fresh` is an owner, so the corridor goes on into Your Fees after the signature and `7-desk-onboard` no
+     longer ends on Done. Before capture, agree with the user to film the step (a storyboard change; the fee typed is
+     the owner's figure or one the user approved, labelled as a demo input) or to capture as a salesperson cleared to
+     sign (`DESK_PREVIEW_MEMBER=fresh-sales` with a `sales:` preview cookie), who never sees it. Walk the choice first.
 3. **Storyboard.** `fill-client.cjs storyboard $I $S/assets/storyboard-desk.json` and merge the shots after 4-menu.
 4. **Capture in the storyboard's order** (`partB.notes`): 6, 7, 8, 9, the B4 set-up walk + 11 `--var deal=`, 10, the
    off-camera complete sale (premium-dealer-build desk-walk `sale.cjs` + `ceremony.cjs`, scenario copies in scratch) +
@@ -256,7 +266,8 @@ When the user asks for a narrated, long or explainer version, make the house fil
 cameras, documents, phone and sounds, laid against a voice-over that walks the owner through the site and one whole
 sale (Discount: composition `Narrated`, 3:50, 24 lines; the `Demo` composition is untouched). The edit follows the
 voice: each line's picture shows what it says, the camera on the thing named as the word is said. The full recipe is
-`references/narration.md`; problems and fixes are lessons N1–N12.
+`references/narration.md`; problems and fixes are lessons N1–N12. In a dealer build it is step 10 of
+premium-dealer-build's sequence, after the short cut.
 
 1. **Script: the house script, filled.** Every client gets the same 24 lines. Only the variables change: the dealer's
    name, the road customers drive to, what the lot sells, the legal name as said ("L L C"), the demo people and deal,
@@ -273,6 +284,10 @@ voice: each line's picture shows what it says, the camera on the thing named as 
      narrated.
    - A line the desk cannot back is cut, with its reason (`narration.cut`), never softened.
    - The paperwork on screen is the client's real dealership on a demo deal.
+   - Send `script.md` to the user and voice nothing until they approve it.
+   - A desk feature added since the template (the owner's Your Fees step, say) is narrated only as a template change
+     behind a flag, once it is walked on this client's desk. If the onboarding the capture walks gained a step,
+     re-check lines 05–06 (`script-template.md`, "How to fill and fact-check", rule 3).
    - The fill also refuses: leftover `{{placeholders}}`, abbreviations in spoken values, half a setup/payoff pair, and
      Discount's facts reused for another client.
    - `fill-narration.cjs selftest` proves the template gives Discount's approved 24 lines exactly. A change to the

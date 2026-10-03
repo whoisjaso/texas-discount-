@@ -242,6 +242,9 @@ export function DocumentSheet({
             howLeaving: leaving === 'towTruck' || leaving === 'trailer' || leaving === 'flatbed' ? leaving : '',
             salvageLicense: text(docData.salvageLicense),
             titleOriginState: text(docData.titleOriginState),
+            // Stamped at filing; absent on copies filed before the notice.
+            ...(typeof docData.docFeeNotice === 'number' ? { docFeeNotice: docData.docFeeNotice } : {}),
+            ...(docData.docFeeNoticeSpanish === true ? { docFeeNoticeSpanish: true } : {}),
           }}
           buyerSignature={signatures.buyerSignature || null}
           buyerSignatureDate={signatures.buyerSignatureDate || null}

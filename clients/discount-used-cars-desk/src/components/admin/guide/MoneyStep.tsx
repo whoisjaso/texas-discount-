@@ -1,6 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
 import { ArrowLeft } from "@phosphor-icons/react";
 import { saveSaleMoney } from "@/lib/actions/sale-money";
@@ -9,8 +10,8 @@ import type { DealType } from "@/lib/sales/deal-type";
 import { tapHaptic } from "@/lib/haptics";
 import { useFunnel } from "@/components/admin/funnel/FunnelLocaleProvider";
 import { fillTemplate, funnelDollars } from "@/lib/sales/i18n";
-import { DOC_FEE_SET } from "@/lib/documents/billOfSale";
 import { notSet } from "@/lib/dealership-config";
+import { configFeeLines, type DealFeeDisplay } from "@/lib/sales/fee-schedule";
 import { FreezeWayOut, frozenRefusalText } from "@/components/admin/guide/HeldByBillOfSale";
 
 /**
@@ -52,6 +53,7 @@ export default function MoneyStep({
   initial,
   nextHref,
   onNavigate,
+  fees = configFeeLines(),
 }: {
   dealId: string;
   /** Which of the two questions this page is. */
@@ -65,8 +67,14 @@ export default function MoneyStep({
   initial: MoneyAnswers;
   nextHref: string;
   onNavigate: () => void;
+  /**
+   * The sale's own fee lines: the copy it started with, resolved on the
+   * server (dealership-fees.ts). Absent: the config's, as before.
+   */
+  fees?: DealFeeDisplay;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { t, lang } = useFunnel();
   const [answers, setAnswers] = useState<MoneyAnswers>(initial);
   const [pending, setPending] = useState(false);
@@ -81,7 +89,7 @@ export default function MoneyStep({
 
   const dollars = (amount: number) => funnelDollars(amount, lang);
 
-  const money = saleMoney(advertised, answers, tradeInAllowance, funding);
+  const money = saleMoney(advertised, answers, tradeInAllowance, funding, fees);
 
   /**
    * What is in the box, which starts at the likely figure.
@@ -341,12 +349,25 @@ export default function MoneyStep({
                   <div className="ed-money-line">
                     <dt>{t.money.docFee}</dt>
                     {/* A missing doc fee is not a zero fee: say so. */}
-                    <dd>{DOC_FEE_SET ? dollars(money.docFee) : notSet(t.money.docFee.toLowerCase())}</dd>
+                    <dd>{fees.docFeeSet ? dollars(money.docFee) : notSet(t.money.docFee.toLowerCase())}</dd>
                   </div>
                   <div className="ed-money-line">
                     <dt>{t.money.regFee}</dt>
                     <dd>{dollars(money.registrationFee)}</dd>
                   </div>
+                  {/* The state's own lines, once copied from webDEALER. */}
+                  {(money.inspectionFee ?? 0) > 0 ? (
+                    <div className="ed-money-line">
+                      <dt>{t.money.inspectionFee}</dt>
+                      <dd>{dollars(money.inspectionFee ?? 0)}</dd>
+                    </div>
+                  ) : null}
+                  {(money.plateFee ?? 0) > 0 ? (
+                    <div className="ed-money-line">
+                      <dt>{t.money.plateFee}</dt>
+                      <dd>{dollars(money.plateFee ?? 0)}</dd>
+                    </div>
+                  ) : null}
                   <div className="ed-money-line ed-money-total">
                     <dt>{t.money.total}</dt>
                     <dd>{dollars(money.total)}</dd>
@@ -380,6 +401,19 @@ export default function MoneyStep({
                       : money.lien > 0
                         ? t.money.noteLien
                         : t.money.notePaid}
+                </p>
+                {/* Whether the state's fees above are webDEALER's for this
+                    sale, or the desk's guess until someone copies them. */}
+                <p className="ed-money-note" data-government-fees={fees.governmentConfirmed ? "recorded" : "default"}>
+                  {fees.governmentConfirmed ? t.money.governmentRecorded : t.money.governmentDefault}{" "}
+                  {fees.governmentConfirmed ? null : (
+                    <Link
+                      href={`/admin/sales/${encodeURIComponent(dealId)}/government-fees?back=${encodeURIComponent(pathname ?? "")}`}
+                      className="ed-freeze-link"
+                    >
+                      {t.money.governmentRecord}
+                    </Link>
+                  )}
                 </p>
 
                 {/* The money that crossed the desk today. It is the existing

@@ -1,3 +1,4 @@
+import { dealFeeLinesForSale } from "@/lib/dealership-fees";
 import { notFound } from "next/navigation";
 import FunnelLocaleProvider from "@/components/admin/funnel/FunnelLocaleProvider";
 import SummaryScreen from "@/components/admin/summary/SummaryScreen";
@@ -62,6 +63,8 @@ export default async function SaleSummaryPage({ params, searchParams }: Props) {
     answers,
     tradeIn,
     sale.funding.type,
+    // The sale's own fee lines (the copy it started with; dealership-fees.ts).
+    await dealFeeLinesForSale(sale),
   );
 
   /*

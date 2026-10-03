@@ -50,6 +50,10 @@ import {
 } from "@/lib/sales/bill-of-sale-freeze";
 import { BILL_OF_SALE_TYPES } from "@/lib/sales/down-payment-freeze";
 import { emptyWeightForFiling } from "@/lib/vehicles/empty-weight/on-the-sale";
+import { dealerChargesBlockedReason, filingFees, registersNothing, saleFeeLines } from "@/lib/dealership-fees";
+import { governmentFeesFilingProblem, type GovernmentFeesFilingProblem } from "@/lib/sales/government-fees";
+import { DOC_FEE_DOCUMENTS, isChapter345Vehicle } from "@/lib/legal/chapter-345";
+import { FEE_OVER_FILED_MAX_MESSAGE, overLimitKind, type DealerChargesProblem } from "@/lib/sales/fee-schedule";
 
 /**
  * The paperwork answers, and the document they end up as.
@@ -78,9 +82,15 @@ export type PaperworkState = {
     | typeof BILL_OF_SALE_FROZEN_CODE
     | "billOfSaleAlreadyFiled"
     | "billOfSaleFirst"
-    | "figuresChanged";
+    | "figuresChanged"
+    | DealerChargesProblem
+    | "feeSettingsUnreadable"
+    | GovernmentFeesFilingProblem
+    | "chapter345Vehicle";
   /** On a billOfSaleFrozen refusal: what the filed bill of sale states that this would change. */
   field?: FreezeField | "generic";
+  /** On a feeOverLimit refusal over a filed OCCC maximum (rather than $225.00 with no filing). */
+  limit?: "filedMax";
 };
 
 /**
@@ -175,7 +185,7 @@ export async function savePaperworkAnswer(
       const written = writePaperwork(current, documentType, answers);
       frozenField = null;
       if (billAnswer && frozen !== null) {
-        const context = { advertised: frozen.advertised, rootType: frozen.type };
+        const context = { advertised: frozen.advertised, rootType: frozen.type, fees: frozen.printed?.fees ?? null };
         const [field] = frozenFieldsChanged(billOfSaleStatement(current, context), billOfSaleStatement(written, context));
         if (field) {
           frozenField = field;
@@ -222,8 +232,22 @@ export async function finalizePaperwork(
   const access = await requireAdminActionPermission(["sales:manage", "paperwork:manage"]);
   if (!access.ok) return { ok: false, error: access.error };
 
-  // Never file a legal record over a dealer fact nobody has supplied.
-  const blocked = filingBlockedReason();
+  /*
+    The fees this filing is checked against (dealership-fees.ts): the
+    owner's saved schedule and the sale's own copy resolved against it. Read
+    first, because once an owner has saved a schedule (or the sale holds its
+    own copy) whether the documentary fee is set is theirs to say, not the
+    config's. A read that fails files nothing.
+  */
+  const feeContext = await filingFees(dealId);
+  if (!feeContext.ok) {
+    return { ok: false, code: "feeSettingsUnreadable", error: FILING_GATE_MESSAGES.feeSettingsUnreadable };
+  }
+
+  // Never file a legal record over a dealer fact nobody has supplied. With
+  // no saved schedule and no copy on the sale, the config's facts decide,
+  // exactly as they always have.
+  const blocked = feeContext.fromSaved ? filingBlockedReason(feeContext.resolved.fees) : filingBlockedReason();
   if (blocked) return { ok: false, error: blocked };
   // A fact only this document prints (the Vehicle Responsibility late fee),
   // refused for this document alone (SOP "Legal content each document must
@@ -362,6 +386,8 @@ export async function finalizePaperwork(
       errors refuses the filing.
     */
     let replaces: string | null = null;
+    // The sale's own fee lines: no registration fee on a tow-away sale.
+    const feeLines = sale ? saleFeeLines(feeContext.resolved, sale) : undefined;
     if (sale) {
       const rows = await readDealAgreements(supabase, dealId);
       const owed = requiredDocumentTypes(
@@ -375,6 +401,7 @@ export async function finalizePaperwork(
         readPaperwork(sale.stepData, "billOfSale"),
         readMoney(sale.stepData),
         sale.funding.type,
+        feeLines,
       );
       const storedDown = (readPaperwork(sale.stepData, "financing").downPayment ?? "").trim();
       const downPayment = storedDown !== ""
@@ -405,6 +432,7 @@ export async function finalizePaperwork(
           sale,
           documentType,
           typeof input.formData.countyOfResidence === "string" ? input.formData.countyOfResidence : "",
+          feeLines,
         );
         const serverAnswers = paperworkAnswers(documentType, context);
         const moneyKeys = Object.keys(money);
@@ -448,6 +476,60 @@ export async function finalizePaperwork(
       const weight = emptyWeightForFiling(sale);
       if (!weight.ok) return { ok: false, error: "Settle the empty weight (box 11) first: confirm it, or type it from the title." };
       input = { ...input, formData: { ...input.formData, ...weight.fields } };
+    }
+
+    /*
+      The dealer charges, after every existing refusal (rulebook section 5.4):
+      the sale's fee copy is the one the desk wrote; its documentary fee is
+      within the Texas limit under the law and the OCCC record as they stand
+      now ($225.00, 7 TAC §84.205(b)(1), or a complete filing still recorded
+      under Your Fees); and the paper carries no other dealer fee, the sale's
+      own doc fee and the state's title fee. Refused, never trimmed, and
+      DESK_ALLOW_UNSET_FACTS never lifts it.
+    */
+    const charges = await dealerChargesBlockedReason(feeContext, input.formData);
+    if (charges) {
+      // Over which limit, said plainly: $225.00 with no filing in force, or a filed maximum.
+      const filedMax =
+        charges === "feeOverLimit" &&
+        overLimitKind(input.formData, feeContext.resolved.fees, feeContext.schedule) === "filedMax";
+      return {
+        ok: false,
+        code: charges,
+        error: filedMax ? FEE_OVER_FILED_MAX_MESSAGE : FILING_GATE_MESSAGES[charges],
+        ...(filedMax ? { limit: "filedMax" as const } : {}),
+      };
+    }
+
+    /*
+      A ch. 345 vehicle (a motorcycle, moped, ATV, towable RV or boat) has a
+      documentary fee capped at $200.00 that no filing raises and its own
+      notice (Fin. Code §345.251; 7 TAC §86.201): not this desk's ch. 348
+      paperwork, so no document printing the fee files on it.
+    */
+    if (
+      sale &&
+      (DOC_FEE_DOCUMENTS as readonly string[]).includes(documentType) &&
+      isChapter345Vehicle(sale.vehicle?.bodyStyle)
+    ) {
+      return { ok: false, code: "chapter345Vehicle", error: FILING_GATE_MESSAGES.chapter345Vehicle };
+    }
+
+    /*
+      The government lines must be the amounts paid to the state (Tex. Fin.
+      Code §348.005): a document printing them files only once this sale's
+      government fees are recorded from webDEALER (government-fees.ts). The
+      unrecorded case alone is lifted for demos by DESK_ALLOW_UNSET_FACTS.
+    */
+    if (sale) {
+      const government = governmentFeesFilingProblem({
+        documentType,
+        stepData: sale.stepData,
+        registersNothing: registersNothing(sale),
+        postedCounty: input.formData.countyOfResidence,
+        allowUnset: process.env.DESK_ALLOW_UNSET_FACTS?.trim() === "true",
+      });
+      if (government) return { ok: false, code: government, error: FILING_GATE_MESSAGES[government] };
     }
 
     // The filer's own stroke, and none once their signing is turned off.

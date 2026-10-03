@@ -62,6 +62,10 @@ export interface SalvageSaleData {
   salvageLicense: string;
   /** Two letters when the salvage title came from another state. */
   titleOriginState: string;
+  /** The documentary fee notice's version, stamped at filing (salvage bill of sale). */
+  docFeeNotice?: number;
+  /** The approved Spanish notice beside the English one. */
+  docFeeNoticeSpanish?: boolean;
 }
 
 export interface SalvageSaleCopy {

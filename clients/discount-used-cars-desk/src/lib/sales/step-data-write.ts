@@ -30,7 +30,32 @@ export type StepDataBlob = Record<string, unknown>;
 
 export type StepDataMergeResult =
   | { ok: true; version: number; stepData: StepDataBlob }
-  | { ok: false; error: "not-found" | "conflict-exhausted" | "write-failed" };
+  | { ok: false; error: "not-found" | "conflict-exhausted" | "write-failed" | "fees-protected" };
+
+/**
+ * The sale's fee copy (`step_data.fees`, fee-schedule.ts) is written at Start
+ * A Sale, and after that only by the server paths that say so (`writesFees`:
+ * the money save giving a legacy sale its first copy, "Apply Today's Fees",
+ * and "Confirm Government Fees" for `step_data.governmentFees`). Any other
+ * patch that would change either is refused,
+ * whatever builds it, so no corridor answer can carry a fee. The filing's
+ * check against the fee record is the backstop for a write that skips this
+ * helper altogether.
+ */
+const PROTECTED_KEYS = [
+  "fees",
+  // The sale's government fees confirmed from webDEALER (government-fees.ts):
+  // written only by "Confirm Government Fees", which says so.
+  "governmentFees",
+] as const;
+
+function changesFees(current: StepDataBlob, patch: StepDataBlob): boolean {
+  return PROTECTED_KEYS.some(
+    (key) =>
+      Object.prototype.hasOwnProperty.call(patch, key) &&
+      JSON.stringify(patch[key] ?? null) !== JSON.stringify(current[key] ?? null),
+  );
+}
 
 const MAX_ATTEMPTS = 4;
 
@@ -44,7 +69,7 @@ export async function casMergeStepData(
   supabase: SupabaseClient,
   dealId: string,
   buildPatch: (current: StepDataBlob) => StepDataBlob | null,
-  options?: { language?: "en" | "es" },
+  options?: { language?: "en" | "es"; writesFees?: boolean },
 ): Promise<StepDataMergeResult> {
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const { data, error: readError } = await supabase
@@ -62,6 +87,7 @@ export async function casMergeStepData(
       // Fresh state says there is nothing to change. That is a success.
       return { ok: true, version: Number(row.step_version ?? 0), stepData: current };
     }
+    if (!options?.writesFees && changesFees(current, patch)) return { ok: false, error: "fees-protected" };
 
     /**
      * A schema without the CAS column (the mock client in preview mode,

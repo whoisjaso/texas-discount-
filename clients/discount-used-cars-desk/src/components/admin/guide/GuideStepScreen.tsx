@@ -1,5 +1,6 @@
 "use client";
 
+import type { DealFeeDisplay } from "@/lib/sales/fee-schedule";
 import { type CSSProperties, useEffect, useLayoutEffect, useRef } from "react";
 import TitleWorkChecklist from "@/components/admin/TitleWorkChecklist";
 import SalvagePathStep from "@/components/admin/guide/SalvagePathStep";
@@ -117,7 +118,10 @@ export default function GuideStepScreen({
   nextHref,
   returnHref = null,
   freeze = null,
+  fees,
 }: {
+  /** The sale's own fee lines, resolved on the server (dealership-fees.ts). */
+  fees?: DealFeeDisplay;
   /**
    * Whether the filed bill of sale holds this screen's answer, and whether
    * this viewer may void it (owner's decision 10/02/2026). The server refuses
@@ -449,6 +453,7 @@ export default function GuideStepScreen({
               initial={moneyInitial}
               nextHref={nextHref}
               onNavigate={() => beginNavigation("forward")}
+              fees={fees}
             />
           ) : null}
 

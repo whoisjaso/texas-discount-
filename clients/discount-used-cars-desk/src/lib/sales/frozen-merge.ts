@@ -68,8 +68,8 @@ export async function mergeUnderBillOfSaleFreeze(
         needsLookup = true;
         return null;
       }
-      const statementBefore = billOfSaleStatement(current, { advertised: filed?.advertised ?? null, rootType: filed?.type });
-      const statementAfter = billOfSaleStatement(after, { advertised: filed?.advertised ?? null, rootType: filed?.type });
+      const statementBefore = billOfSaleStatement(current, { advertised: filed?.advertised ?? null, rootType: filed?.type, fees: filed?.printed?.fees ?? null });
+      const statementAfter = billOfSaleStatement(after, { advertised: filed?.advertised ?? null, rootType: filed?.type, fees: filed?.printed?.fees ?? null });
       const fields = frozenFieldsChanged(statementBefore, statementAfter);
       if (powerOfAttorney) {
         const held = fields.find((field) => field === "buyerName" || field === "buyerAddress");

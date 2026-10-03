@@ -19,6 +19,7 @@ import {
   readPaperwork,
 } from "@/lib/sales/paperwork";
 import { readMoney } from "@/lib/sales/money";
+import { dealFeeLinesForSale } from "@/lib/dealership-fees";
 import { readBuyerId } from "@/lib/sales/buyer-id";
 import { resolveCounty } from "@/lib/documents/resolve";
 import { resolveVehicleWeight } from "@/lib/vehicles/empty-weight/ensure";
@@ -71,6 +72,8 @@ export default async function PaperworkQuestionPage({ params, searchParams }: Pr
   if (!sale) notFound();
 
   const answers = readPaperwork(sale.stepData, entry.documentType);
+  // The sale's own fee lines (the copy it started with; dealership-fees.ts).
+  const fees = await dealFeeLinesForSale(sale);
   /**
    * What the price meant and whether the registration is paid, off the deal.
    *
@@ -88,6 +91,7 @@ export default async function PaperworkQuestionPage({ params, searchParams }: Pr
     readPaperwork(sale.stepData, "billOfSale"),
     readMoney(sale.stepData),
     sale.funding.type,
+    fees,
   );
   /*
     The county, looked up when the deal cannot answer it.
@@ -280,6 +284,8 @@ export default async function PaperworkQuestionPage({ params, searchParams }: Pr
         // so the preview showed a price the filing then did not carry. Each
         // document's link builder reads only the figures it prints.
         money={money}
+        // Whether the doc fee is a real figure or a missing one ("Not set").
+        docFeeSet={fees.docFeeSet}
         // The one figure the responsibility form turns on: tax, title,
         // registration and the doc fee, computed rather than typed.
         quotedRegistrationAmount={

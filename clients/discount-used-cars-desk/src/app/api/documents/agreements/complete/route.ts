@@ -8,6 +8,7 @@ import {
 } from '@/lib/documents/customerPortal';
 import { spanishEsignBlocked } from '@/lib/legal/spanish-esign';
 import { createServiceClient } from '@/lib/supabase/service';
+import { FEE_DOCUMENTS, NOTICE_MISSING, carriesUnstampedDocFee, feeDocumentRefusal } from '@/lib/documents/fee-document-gate';
 import { parseValidDateOfBirth } from '@/lib/customers/dob';
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -105,7 +106,7 @@ export async function POST(req: NextRequest) {
   // Verify the agreement exists and is available for signing.
   const { data: existing, error: fetchError } = await supabase
     .from('document_agreements')
-    .select('id, status, buyer_name, document_type, vehicle_description, parent_agreement_id, portal_data, customer_id, expires_at, deleted_at, signing_token, signing_token_expires_at, language, vehicles(year,make,model)')
+    .select('id, status, buyer_name, document_type, vehicle_description, parent_agreement_id, portal_data, customer_id, deal_id, expires_at, deleted_at, signing_token, signing_token_expires_at, language, vehicles(year,make,model)')
     .eq('id', body.id)
     .single();
 
@@ -212,6 +213,25 @@ export async function POST(req: NextRequest) {
       },
       { status: 403 },
     );
+  }
+
+  /*
+    The dealer charges this document will print, checked before anything is
+    written, as the sale's own filing checks them (fee-document-gate.ts):
+    within the Texas limits against the deal's own fees or the current
+    schedule, and never a documentary fee without its notice beside it
+    (Tex. Fin. Code §348.006(c)(3); the POST that prepared it stamps it).
+  */
+  if (FEE_DOCUMENTS.has(existing.document_type)) {
+    const preparedDealerData = asRecord(portalData.d);
+    if (carriesUnstampedDocFee(preparedDealerData)) {
+      return NextResponse.json({ error: NOTICE_MISSING, code: 'docFeeNoticeMissing' }, { status: 409 });
+    }
+    const dealId = (existing as { deal_id?: string | null }).deal_id ?? null;
+    const refused = await feeDocumentRefusal(dealId, [{ ...preparedDealerData }]);
+    if (refused) {
+      return NextResponse.json({ error: refused.error, code: refused.code }, { status: refused.status });
+    }
   }
 
   const acknowledgments = asRecord(body.acknowledgments);

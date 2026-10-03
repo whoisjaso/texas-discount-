@@ -283,6 +283,20 @@ export function decodeCompletedLink(hash: string): CompletedLinkData | null {
   } catch { return null; }
 }
 
+/**
+ * A completed link with keys added to its dealer data (`dd`), everything else
+ * kept exactly as it was: the documentary fee notice's stamp, set where a
+ * fee document is filed. Null when the link cannot be read.
+ */
+export function withCompletedLinkDealerData(url: string, patch: Record<string, unknown>): string | null {
+  const hashIndex = url.indexOf('#completed/');
+  if (hashIndex === -1) return null;
+  const decoded = decodeCompletedLink(url.slice(hashIndex));
+  if (!decoded) return null;
+  const next: CompletedLinkData = { ...decoded, dd: { ...(decoded.dd ?? {}), ...patch } };
+  return `${url.slice(0, hashIndex)}#completed/${compressToEncodedURIComponent(JSON.stringify(next))}`;
+}
+
 // ============================================================
 // Decode a completed_link URL string (used by admin to view docs)
 // ============================================================

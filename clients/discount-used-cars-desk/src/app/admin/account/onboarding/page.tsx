@@ -9,12 +9,16 @@ import { getFunnelBundles } from "@/lib/sales/i18n";
 import { dealership } from "@/lib/dealership-config";
 import { roleOpensAdminRoute } from "@/lib/admin/route-permissions";
 import { DEALERSHIP_HOME } from "@/lib/admin/workspace";
+import { hasTeamPermission } from "@/lib/operations/team";
+import { getDealerFeeSchedule } from "@/lib/dealership-fees";
+import { businessDateToday } from "@/lib/documents/us-date";
 import {
   firstOpenStep,
   onboardingNameParts,
   onboardingSatisfied,
   onboardingSteps,
   nameSettled,
+  withFeesStep,
   type OnboardingStep,
 } from "@/lib/onboarding/staff-name";
 
@@ -67,12 +71,24 @@ export default async function AdminOnboardingPage() {
   // The same reader every dealer line uses, so what the pad shows is what
   // the documents print.
   const signature = member ? (await getStaffSignature()).dataUrl : null;
+  /*
+    Your Fees (rulebook texas-dealer-fees.md section 5.2): the Owner only
+    (admin:all; a manager holds team:manage, not this), only while the
+    dealership has no owner-saved fee schedule, and never for a member who
+    has finished onboarding (a later change is made under Your Fees, never
+    by reopening onboarding). A schedule nobody could read skips the step: it
+    never blocks onboarding, and the filing refusal still stands.
+  */
+  const isOwner = hasTeamPermission(access.role, "admin:all");
+  const feeSchedule = member && isOwner && !finished ? await getDealerFeeSchedule() : null;
+  const setsFees = Boolean(feeSchedule?.ok && feeSchedule.schedule.source !== "owner");
   const open = {
     canSign,
     // A saved name onboarding would now refuse (too long for the seller
     // line, say) reopens the name screen, with what was saved in the boxes.
     hasName: nameSettled(member),
     hasSignature: Boolean(signature),
+    needsFees: setsFees,
   };
 
   /*
@@ -86,7 +102,7 @@ export default async function AdminOnboardingPage() {
 
   const steps = passwordOnly
     ? (["password"] as OnboardingStep[])
-    : onboardingSteps({ canSign, requiresPasswordChange: onTemporaryPassword, finished });
+    : withFeesStep(onboardingSteps({ canSign, requiresPasswordChange: onTemporaryPassword, finished }), setsFees);
   const start = passwordOnly ? "password" : firstOpenStep({ ...open, requiresPasswordChange: onTemporaryPassword });
   // Where the screen goes once the password is saved: the first screen that
   // still has work, or straight to work for an account with nothing else to do.
@@ -107,6 +123,11 @@ export default async function AdminOnboardingPage() {
         initialFirst={parts.first}
         initialLast={parts.last}
         initialSignature={signature}
+        fees={
+          setsFees && feeSchedule?.ok
+            ? { schedule: feeSchedule.schedule, county: dealership.county ?? null, today: businessDateToday() }
+            : null
+        }
       />
     </FunnelLocaleProvider>
   );

@@ -3,6 +3,7 @@ import { paperworkMoney, readPaperwork, type PaperworkContext, type PaperworkMon
 import { readMoney } from "@/lib/sales/money";
 import { readBuyerId } from "@/lib/sales/buyer-id";
 import { emptyWeightContext } from "@/lib/vehicles/empty-weight/on-the-sale";
+import type { DealFeeLines } from "@/lib/sales/fee-schedule";
 
 /**
  * What a document's questions and review screen know about the sale, built
@@ -20,6 +21,8 @@ export function paperworkFilingContext(
   sale: SaleDetail,
   documentType: string,
   buyerCounty: string,
+  /** The sale's own fee lines (dealership-fees.ts); absent, the config's. */
+  fees?: DealFeeLines,
 ): { money: PaperworkMoney; context: PaperworkContext } {
   const answers = readPaperwork(sale.stepData, documentType);
   /*
@@ -32,6 +35,7 @@ export function paperworkFilingContext(
     readPaperwork(sale.stepData, "billOfSale"),
     readMoney(sale.stepData),
     sale.funding.type,
+    fees,
   );
   const mailing = readBuyerId(sale.stepData).mailing;
   const context: PaperworkContext = {

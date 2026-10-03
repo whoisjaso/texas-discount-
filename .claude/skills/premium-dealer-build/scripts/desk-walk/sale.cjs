@@ -1,7 +1,9 @@
 // One full sale through the desk. Usage: node sale.cjs <outDir> <scenario.json> <width> <height>
 // DESK_BASE picks the server (default http://localhost:5190). RESUME_DEAL=<dealPath>
 // skips Start A Sale and walks that deal's corridor from /guide, answering and
-// filing whatever is open (filing again after a void).
+// filing whatever is open (filing again after a void). STOP_AT=<step> stops
+// when the corridor reaches that step (e.g. document:billOfSale), leaving an
+// open sale with nothing filed: the fees walk (fees.cjs) needs one.
 const { chromium } = require(process.env.PWPATH);
 const fs = require('fs');
 const { BASE, guard, at, previewCookies } = require('./desk-base.cjs');
@@ -124,6 +126,7 @@ const failures = [];
     const step = decodeURIComponent((url.match(/\/(guide|paperwork)\/(.+)$/) || [])[2] || '');
     await shot(step || 'screen');
     if (/\/packet$/.test(url) || step === 'packet') break;
+    if (process.env.STOP_AT && step === process.env.STOP_AT) { log('STOPPED AT', step); break; }
     // A scenario may name text a screen must show (e.g. box 11's source on
     // the 130-U review, or the empty-weight question's own state).
     const want = (sc.expect || {})[step];

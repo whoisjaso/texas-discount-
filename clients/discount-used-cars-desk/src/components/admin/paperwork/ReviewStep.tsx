@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { finalizePaperwork } from "@/lib/actions/paperwork";
 import SignaturePad from "@/components/documents/SignaturePad";
@@ -12,6 +12,7 @@ import { useFunnel } from "@/components/admin/funnel/FunnelLocaleProvider";
 import { fillTemplate, funnelDollars, type FunnelStrings } from "@/lib/sales/i18n";
 import { localizeDocumentTitle } from "@/lib/sales/question-i18n";
 import { DOC_FEE_SET } from "@/lib/documents/billOfSale";
+import { DOC_FEE, STATE_FEES_2026, centsAsDollars } from "@/lib/legal/texas-dealer-fees";
 import { notSet } from "@/lib/dealership-config";
 import { sourceLineFromAnswers } from "@/lib/vehicles/empty-weight/copy";
 
@@ -38,6 +39,7 @@ export default function ReviewStep({
   buyerName,
   answers,
   money,
+  docFeeSet = DOC_FEE_SET,
   quotedRegistrationAmount,
   doneHref,
   poa,
@@ -51,6 +53,11 @@ export default function ReviewStep({
   answers: Record<string, string>;
   /** The amounts, on the document that carries them. Null on the others. */
   money: PaperworkMoney | null;
+  /**
+   * Whether the doc fee is a real figure (the sale's own fee copy, resolved on
+   * the server) or a missing one. Absent: the config's answer, as before.
+   */
+  docFeeSet?: boolean;
   /**
    * Tax, title, registration and the doc fee, on the one form that quotes it.
    *
@@ -68,11 +75,14 @@ export default function ReviewStep({
   } | null;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { t, lang } = useFunnel();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   /** A filing refused by the void rules: the packet is where it is fixed. */
   const [openPaperwork, setOpenPaperwork] = useState(false);
+  /** A filing refused for unrecorded government fees: their screen is where it is fixed. */
+  const [recordGovernment, setRecordGovernment] = useState(false);
 
   const dollars = (amount: number) => funnelDollars(amount, lang);
 
@@ -169,6 +179,48 @@ export default function ReviewStep({
             ? result.code
             : null;
         setOpenPaperwork(gate === "billOfSaleAlreadyFiled" || gate === "billOfSaleFirst");
+        /*
+          The government fees and the ch. 345 refusal, said in the screen's
+          language; the first two point at the screen that records the fees.
+        */
+        const government =
+          result.code === "governmentFeesUnconfirmed" ||
+          result.code === "governmentFeesInvalid" ||
+          result.code === "governmentFeesCountyChanged" ||
+          result.code === "chapter345Vehicle"
+            ? result.code
+            : null;
+        setRecordGovernment(government !== null && government !== "chapter345Vehicle");
+        if (government) {
+          setError(t.review[government]);
+          return;
+        }
+        /*
+          The dealer-charges refusals (fee-schedule.ts), said in the screen's
+          language with the limit and its citation filled in from the one
+          module that holds them.
+        */
+        const fee =
+          result.code === "feeOverLimit" ||
+          result.code === "feeAboveToday" ||
+          result.code === "otherDealerFee" ||
+          result.code === "titleFeeNotState" ||
+          result.code === "feeRecordTampered" ||
+          result.code === "feeSettingsUnreadable"
+            ? result.code
+            : null;
+        if (fee) {
+          const key = fee === "feeOverLimit" && result.limit === "filedMax" ? "feeOverFiledMax" : fee;
+          setError(
+            fillTemplate(t.review[key], {
+              limit: centsAsDollars(DOC_FEE.presumedReasonableMaxCents),
+              citation: DOC_FEE.shortCitation,
+              fee33: centsAsDollars(STATE_FEES_2026.titleFee.cents.nonattainmentOrAffectedCounty),
+              fee28: centsAsDollars(STATE_FEES_2026.titleFee.cents.otherCounty),
+            }),
+          );
+          return;
+        }
         setError(gate ? t.review[gate] : result.error ?? t.review.couldNotFile);
         if (gate === "figuresChanged") router.refresh();
         return;
@@ -354,7 +406,7 @@ export default function ReviewStep({
           <div className="ed-paper-line">
             <dt className="ed-fine">{t.review.money.docFee}</dt>
             {/* A missing doc fee is not a zero fee: say so. */}
-            <dd>{DOC_FEE_SET ? dollars(money.docFee) : notSet(t.review.money.docFee.toLowerCase())}</dd>
+            <dd>{docFeeSet ? dollars(money.docFee) : notSet(t.review.money.docFee.toLowerCase())}</dd>
           </div>
           {noRegistration ? null : (
             <div className="ed-paper-line">
@@ -362,6 +414,21 @@ export default function ReviewStep({
               <dd>{dollars(money.registrationFee)}</dd>
             </div>
           )}
+          {/* The government lines of their own, once this sale's government
+              fees are recorded from webDEALER (never inside the registration
+              line: Transp. Code §548.510; OCCC Bulletin B25-1). */}
+          {!noRegistration && (money.inspectionFee ?? 0) > 0 ? (
+            <div className="ed-paper-line">
+              <dt className="ed-fine">{t.review.money.inspectionFee}</dt>
+              <dd>{dollars(money.inspectionFee ?? 0)}</dd>
+            </div>
+          ) : null}
+          {!noRegistration && (money.plateFee ?? 0) > 0 ? (
+            <div className="ed-paper-line">
+              <dt className="ed-fine">{t.review.money.plateFee}</dt>
+              <dd>{dollars(money.plateFee ?? 0)}</dd>
+            </div>
+          ) : null}
           <div className="ed-paper-line ed-paper-total">
             <dt className="ed-fine">{t.review.money.total}</dt>
             <dd>{dollars(shownTotal)}</dd>
@@ -436,6 +503,17 @@ export default function ReviewStep({
       {error ? (
         <p className="ed-paper-error" role="alert">
           {error}
+        </p>
+      ) : null}
+      {error && recordGovernment ? (
+        <p className="ed-freeze-way">
+          <Link
+            href={`/admin/sales/${encodeURIComponent(dealId)}/government-fees?back=${encodeURIComponent(pathname ?? doneHref)}`}
+            className="ed-freeze-link"
+            data-record-government-fees=""
+          >
+            {t.review.recordGovernmentFees}
+          </Link>
         </p>
       ) : null}
       {error && openPaperwork ? (

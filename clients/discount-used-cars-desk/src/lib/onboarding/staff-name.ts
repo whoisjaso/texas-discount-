@@ -155,7 +155,7 @@ export function onboardingSatisfied(member: OnboardingMember | null): boolean {
   return member.can_sign_contracts !== true || Boolean(member.signature_data_url);
 }
 
-export type OnboardingStep = "password" | "name" | "signature" | "done";
+export type OnboardingStep = "password" | "name" | "signature" | "fees" | "done";
 
 /**
  * The screens this member walks, in order.
@@ -167,11 +167,19 @@ export type OnboardingStep = "password" | "name" | "signature" | "done";
  * (`can_sign_contracts`); the SOP has everybody else skip it. A member who
  * already finished onboarding and has everything it asks for (`finished`)
  * is asked only for the password. "Done" is always last.
+ *
+ * "Your Fees" comes after the signature (or the name) and before Done, and
+ * only when `setsFees` says so: an Owner, while the dealership has no
+ * owner-saved fee schedule (rulebook texas-dealer-fees.md section 5.2). It is
+ * a dealership fact, so it follows the person's own name and signature, and
+ * like the signature it is set once and used on every sale. Without the new
+ * argument every list is exactly what it was.
  */
 export function onboardingSteps(input: {
   canSign: boolean;
   requiresPasswordChange?: boolean;
   finished?: boolean;
+  setsFees?: boolean;
 }): OnboardingStep[] {
   const steps: OnboardingStep[] = [];
   if (input.requiresPasswordChange) steps.push("password");
@@ -179,8 +187,19 @@ export function onboardingSteps(input: {
     steps.push("name");
     if (input.canSign) steps.push("signature");
   }
+  if (input.setsFees) steps.push("fees");
   steps.push("done");
   return steps;
+}
+
+/**
+ * A list of screens with "Your Fees" placed where `onboardingSteps` places it
+ * (before Done) when `setsFees` holds; the same list otherwise.
+ */
+export function withFeesStep(steps: OnboardingStep[], setsFees: boolean): OnboardingStep[] {
+  if (!setsFees || steps.includes("fees")) return steps;
+  const done = steps.indexOf("done");
+  return done < 0 ? [...steps, "fees"] : [...steps.slice(0, done), "fees", ...steps.slice(done)];
 }
 
 /**
@@ -192,9 +211,12 @@ export function firstOpenStep(input: {
   hasName: boolean;
   hasSignature: boolean;
   requiresPasswordChange?: boolean;
+  /** An Owner whose dealership has no saved fees yet (the step is theirs to walk). */
+  needsFees?: boolean;
 }): OnboardingStep {
   if (input.requiresPasswordChange) return "password";
   if (!input.hasName) return "name";
   if (input.canSign && !input.hasSignature) return "signature";
+  if (input.needsFees) return "fees";
   return "done";
 }

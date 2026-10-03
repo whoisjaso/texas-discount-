@@ -27,6 +27,9 @@ export interface ContractData {
   tax: number;
   titleFee: number;
   registrationFee: number;
+  /** The inspection program replacement fee and the plate fee, own lines; absent on copies without them. */
+  inspectionFee?: number;
+  plateFee?: number;
   docFee: number;
   apr: number;
   numberOfPayments: number;
@@ -48,6 +51,10 @@ export interface ContractData {
    * amount financed equals the bill of sale's balance).
    */
   tradeInAllowance?: number;
+  /** The documentary fee notice's version, stamped at filing; clause 16 prints it exactly. */
+  docFeeNotice?: number;
+  /** The approved Spanish notice beside the English one (a Spanish sale). */
+  docFeeNoticeSpanish?: boolean;
 }
 
 /**
@@ -59,7 +66,8 @@ export interface ContractData {
  * total - paidToday).
  */
 export function contractFigures(data: ContractData) {
-  const totalCashPrice = data.cashPrice + data.tax + data.titleFee + data.registrationFee + data.docFee;
+  const totalCashPrice =
+    data.cashPrice + data.tax + data.titleFee + data.registrationFee + (data.inspectionFee ?? 0) + (data.plateFee ?? 0) + data.docFee;
   const tradeIn = Math.max(0, Number(data.tradeInAllowance) || 0);
   const cashDown = data.downPayment;
   const totalDown = cashDown + tradeIn;

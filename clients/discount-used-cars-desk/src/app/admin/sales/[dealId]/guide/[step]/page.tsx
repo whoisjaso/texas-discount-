@@ -32,6 +32,7 @@ import { getCurrentAdminAccess } from "@/lib/admin/current-admin";
 import { canVoidDocuments } from "@/lib/sales/void-bill-of-sale";
 import { filedBillOfSaleOn } from "@/lib/sales/filed-bill-of-sale";
 import { isDocumentDone } from "@/lib/admin/sale-desk";
+import { dealFeeLinesForSale } from "@/lib/dealership-fees";
 
 /**
  * The steps whose answer a filed bill of sale states (owner's decision
@@ -278,6 +279,8 @@ export default async function GuideStepPage({ params, searchParams }: Props) {
     : null;
 
   const { lang, userId } = await resolveAdminLanguageWithUser();
+  // The sale's own fee lines: the copy it started with (dealership-fees.ts).
+  const fees = await dealFeeLinesForSale(sale);
 
   const freeze = await (async () => {
     const access = await getCurrentAdminAccess().catch(() => null);
@@ -314,7 +317,8 @@ export default async function GuideStepPage({ params, searchParams }: Props) {
         advertised={sale.vehicle?.salePrice ?? 0}
         lenders={buildLenderDirectory(dealership.lenders)}
         currentLenderId={sale.funding.lenderId}
-        handoffFields={buildHandoffFields(sale, factOr(dealership.license, "dealer licence (GDN)"))}
+        handoffFields={buildHandoffFields(sale, factOr(dealership.license, "dealer licence (GDN)"), fees)}
+        fees={fees}
         webDealerUrl={dealership.webDealerUrl}
         plate={sale.plate}
         salePlan={readSalePlan(sale.stepData)}

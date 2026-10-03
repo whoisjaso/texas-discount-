@@ -34,7 +34,14 @@ Business time zone:            <not provided: ask the owner>
 Owner / authorised signer:     <not provided: ask the owner>
 Funding offered:               <not provided: ask the owner>
 Languages:                     <not provided: ask the owner>
-Documentary fee:               <not provided: ask the owner>
+Documentary fee:               <asked at owner onboarding: $225.00 or less, or an
+                               OCCC-filed maximum recorded with its five facts;
+                               see references/texas-dealer-fees.md>
+NMLS ID / ALECS licence:       <asked at owner onboarding; optional>
+Dealer deputy (county):        <asked at owner onboarding: yes or no, and the
+                               county-approved fee, $10.00 at most>
+Vehicle inventory tax:         <asked at owner onboarding: in business on
+                               January 1? unit property tax factor>
 Logo files:                    <not provided: ask the owner>
 SMS provider for signing texts:<not provided: ask the owner>
 Reference repo attached:       <not provided: ask the owner>
@@ -281,6 +288,77 @@ alter table document_agreements add column if not exists voided_with_id uuid;   
 --   change).
 ```
 
+**Dealer fees (a third additive migration; see "## Fees").** The owner's
+fees are one row per desk (the desk is single-tenant), every change is
+logged, and nothing writes either table but one function:
+
+```sql
+create table dealer_fee_schedule (
+  id smallint primary key default 1 check (id = 1),   -- one row
+  version integer not null,                            -- compare-and-set
+  doc_fee_cents integer not null check (doc_fee_cents >= 0),
+  occc_filed_max_cents integer, occc_filed_on date, occc_effective_on date,
+  occc_license_or_nmls text, occc_location text,       -- all five or none
+  writes_finance_contracts boolean, nmls_id text, legacy_license text,
+  is_dealer_deputy boolean not null default false,
+  deputy_fee_cents integer not null default 0,
+  vit_year integer, vit_in_business_jan1 boolean, vit_passes_through boolean,
+  vit_unit_factor numeric, finances_ch345 boolean,
+  rulebook_as_of date not null,
+  updated_by uuid, updated_by_name text not null, updated_at timestamptz, created_at timestamptz
+  -- CHECKs repeat the legal module's caps: the filing is whole or absent; a
+  -- filed maximum is above the presumed limit; its effective date is on or
+  -- after its filing date; doc_fee_cents is within the presumed limit or the
+  -- filed maximum; a deputy fee only for a deputy and within its cap;
+  -- inventory tax only with January 1 and a factor.
+);
+create table dealer_fee_schedule_changes (
+  id uuid primary key, changed_at timestamptz, changed_by uuid,
+  changed_by_name text not null, source text check (source in ('onboarding','settings')),
+  previous jsonb, next jsonb not null, rulebook_as_of date not null
+);
+-- Triggers: the schedule row is never deleted; a change row is never updated
+--   or deleted. A unique index on the version each change row saved
+--   ((next->>'version')::integer): one row per version.
+-- RLS: SELECT only (the schedule to every active team role, so no role falls
+--   back to a seed; the changes to admin:all); no insert, update or delete
+--   policy for anyone.
+-- Function save_dealer_fee_schedule(p_expected_version, p_next, p_source),
+--   security definer, execute to authenticated only: refuses a caller
+--   without admin:all and an active roster row, validates p_next with the
+--   same codes as the TypeScript validator (the OCCC filing's dates too,
+--   on the dealership's clock: occcFilingInFuture, occcFilingDatesOutOfOrder,
+--   occcFilingNotYetEffective), takes one transaction-scoped advisory lock
+--   (so two first saves cannot both log version 1), refuses a stale version
+--   ('stale'), writes the row and one change row, and writes one
+--   team_activity_events line ("Maria Lopez set the documentary fee to
+--   $150.00 (was not set)."). The desk derives p_source itself
+--   ('settings' once the owner's onboarding is finished), never from the
+--   browser.
+-- Function dealer_fee_record(p_version), security definer: the logged
+--   record of one version, for the filing tamper check, readable by the
+--   filing roles without widening the change log's RLS.
+-- Trigger deal_fee_copy_guard (security definer) before insert or update of
+--   deals.step_data: a sale's fee copy that changes must BE the schedule as
+--   it stands (its version, source 'owner', its doc fee, its OCCC filing),
+--   or version 0 from the config seed while no row exists; removing the copy
+--   is allowed. Otherwise 'fees_protected'. The desk's server writes as the
+--   signed-in session, so the database cannot tell it from a browser holding
+--   the same session; it checks what is written instead.
+```
+
+Each deal keeps its own copy in `step_data.fees` (`titleFee`, `docFee`,
+`registrationFee`, `docFeeCapCents`, `occcFiling`, `scheduleVersion`,
+`source`, `takenAt`, `rulebookAsOf`), written at Start A Sale, and its
+government fees in `step_data.governmentFees` (`titleFee`,
+`registrationFee`, `inspectionFee`, `plateFee`,
+`exemptFromRegistrationFees`, `county`, `source: "webDEALER"`,
+`confirmedAt`, `confirmedByName`, `confirmedById`), written by the
+Government Fees screen ("## Fees"). The generic step-data writer refuses any
+patch that touches either key (`fees-protected`) unless the caller is one of
+the writers that own it, and the database refuses a fee copy that is not the
+schedule (above). The config's fee values are only the seed.
+
 A copy filed again after a void sets the existing `parent_agreement_id` to
 the newest voided copy of its type. `step_data.plateRecordedAt` (ISO) is
 written with the plate when the plate changes: a plate recorded at or after
@@ -355,11 +433,54 @@ corridor styling, the counter counting only the screens this member gets
    (`can_sign_contracts`): the signature pad, saved through the same action
    as `/admin/account/signature` (one stored signature, reused on every
    dealer line). Members not cleared to sign skip it.
-3. **Done.** Sets `onboarding_completed_at` (never moved once set) and goes
+3. **Your Fees (Owner only).** Shown only to the Owner role (the
+   `admin:all` permission; a manager's `team:manage` is not enough) and only
+   while no owner-saved fee schedule exists, so a second owner, or an owner
+   who already finished onboarding, is never sent back into it: they use
+   `/admin/dealership/fees`, which renders the same screens. A schedule that
+   cannot be read skips the step; it never blocks onboarding. Six screens
+   with their own sub-counter ("Your Fees 2 Of 6"), each citation on one
+   quiet line (see "## Fees" and `references/texas-dealer-fees.md`):
+   1. **Do You Write Finance Contracts?** (optional NMLS ID and legacy ALECS
+      licence). Say that one documentary fee for every buyer is the desk's
+      policy; never state it as law (the law: charged to cash and credit
+      buyers alike, Fin. Code §348.006(c)(1)).
+   2. **What Is Your Documentary Fee?** One dollar box, $0 valid. Refused
+      live above $225.00 (7 TAC §84.205(b)(1)) unless "I Filed A Higher
+      Maximum With The OCCC" records all five filing facts. The filing's
+      dates are checked against today on the dealership's clock: a filing
+      date after today, an effective date before the filing date, and a fee
+      above $225.00 before the effective date are refused (a notification is
+      not effective until the OCCC receives it, §84.205(c)(3); charging more
+      first is the violation in §84.205(c)(5)(A)). The date boxes carry
+      `max={today}` and `min={filedOn}`. The notice preview prints the exact
+      English notice and the approved Spanish one.
+   3. **Are You A Dealer Deputy?** The county-approved title convenience
+      fee, refused above $10.00 (43 TAC §217.168(b)(2)). Recorded; charged
+      $0 until a later update charges it. Word the "no" answer as no
+      convenience fee; the state's title fee still applies to every sale.
+   4. **Vehicle Inventory Tax.** In business on January 1? Passed on? The
+      unit property tax factor (Tax Code §23.121-.122). Recorded, not
+      charged yet.
+   5. **Do You Finance Motorcycles, ATVs, Mopeds Or Towable RVs?** A yes is
+      recorded with a warning: the desk's paperwork is not for them (their
+      fee is capped at $200, or $250 for land and watercraft on one
+      contract: 7 TAC §86.201(c)-(e); Fin. Code §345.251), and filing a bill
+      of sale, salvage bill of sale or contract for one is refused
+      (`chapter345Vehicle`, never lifted by the demo flag).
+   6. **Review.** Each dealer fee with its limit and citation; "Dealer
+      charges on top of the price: $X of $Y allowed"; the state's lines for
+      the dealer's county, read-only; what the desk charges today; Save
+      Fees.
+
+   "Set These Later" goes to Done. Done then says documents cannot be filed
+   until the fees are set, and the filing refusal ("Documentary fee") stays
+   in force, so the owner is never locked out of the desk.
+4. **Done.** Sets `onboarding_completed_at` (never moved once set) and goes
    to Handle A Sale (a role that cannot open it goes to its signature page).
    Refused until the saved name is one step 1 would accept and, for a member
    cleared to sign, a signature is saved, and while the account is still on
-   a temporary password (step 0 comes first).
+   a temporary password (step 0 comes first). It never requires the fees.
 
 The writes touch only the signed-in member's own row (the service client
 replaces the RLS check that needs `team:manage`), and every name write is
@@ -399,7 +520,8 @@ website.
 
 Dealer facts live in ONE file, `src/lib/dealership-config.ts`: legal name,
 DBA, address, county, phone, email, licence number, time zone, signer name
-and title, fee lines, tax rate, brand tokens. Add a unit test that fails if
+and title, the fee seeds (the owner's saved fees win; "## Fees"), tax rate,
+brand tokens. Add a unit test that fails if
 any of those values is typed anywhere else in `src/`.
 
 ## Routes
@@ -609,19 +731,28 @@ priceBasis }`:
   or `vehicleOnly` (tax and fees go on top). This screen shows the live
   receipt.
 
-Texas constants (from dealer config): tax 6.25%; title fee $33; registration
-fee $75; doc fee = total fees ($400 at Triple J) minus title minus
-registration ($292). The doc fee absorbs any statutory change so the quoted
-total holds.
+The fee lines come from the deal's own copy (`step_data.fees`, "## Fees")
+and its recorded government fees (`step_data.governmentFees`), never typed
+in code: the doc fee the owner set, and the title, registration, inspection
+program and plate fees webDEALER computed for this sale. Until the
+government fees are recorded the money screens show the desk's defaults
+($33 title, $75 registration) and say so; nothing files on them. Tax is
+6.25% of the price less any trade-in (Tax Code §152.021(b),
+§152.002(b)(5)). A tow-away salvage sale registers nothing, so its
+registration line is $0 and the split and the salvage bill of sale agree.
+The doc fee is the owner's figure, never a remainder: it may not absorb a
+statutory change, and a doc fee above $225.00 needs an OCCC filing in force
+(`references/texas-dealer-fees.md`).
 
 ```
 cents(x) = round(x * 100) / 100
-FEES = title + doc + registration
+FEES = title + doc + registration + inspection + plate   // the last two only once recorded
 
 vehicleOnly:  salePrice = amount
-              tax = cents(0.0625 * max(0, amount - tradeIn))   // Tax Code 152.021: tax after trade-in
+              tax = cents(0.0625 * max(0, amount - tradeIn))   // tax after trade-in
 outTheDoor:   beforeTax = cents(amount) - FEES
-              salePrice = cents(beforeTax / 1.0625)
+              if tradeIn >= beforeTax: salePrice = beforeTax, tax = 0
+              salePrice = cents((beforeTax + 0.0625 * tradeIn) / 1.0625)   // trade-in outside the tax base
               tax = cents(beforeTax - salePrice)               // remainder, so the lines sum exactly
 registrationCost = cents(tax + FEES)
 total = max(0, cents(salePrice - tradeIn + registrationCost))
@@ -638,7 +769,9 @@ Parse money boxes by stripping `$`, `,` and spaces BEFORE testing for empty
 (`Number("")` is 0, which would put the whole deal on the title as a
 balance). Empty means unanswered; a typed 0 is an answer.
 
-Test vectors your unit tests must hit exactly:
+Test vectors your unit tests must hit exactly. They are arithmetic with a
+$292 doc fee fixture (fees $400), filed under a fixture OCCC filing the
+test environment sets (labelled `TEST FIXTURE`, never the dealer's own):
 
 | Case | Result |
 |---|---|
@@ -646,12 +779,152 @@ Test vectors your unit tests must hit exactly:
 | $3,500 vehicle only, cash, nothing else typed | tax $218.75, total $4,118.75, paid $3,500.00, balance $618.75 |
 | $4,000 vehicle only, cash | tax $250.00, total $4,650.00 |
 | $10,000 vehicle only, $3,000 trade | tax $437.50, total $7,837.50 |
+| $10,000 out the door, $258 fees ($33 + $150 + $75), $2,000 trade | sale price $9,286.59, tax $455.41 (never $573.06), total $8,000.00 |
 | any lender deal | balance $0.00 |
 | buy here pay here, no down payment yet | paid $0.00, note = total |
 
 A cash balance becomes the dealer's lien on the 130-U, and the bill of sale
 states it as "Balance owed by the buyer to the seller under this bill of
 sale", in one figure the buyer can point at.
+
+## Fees
+
+The rules and every figure are in `references/texas-dealer-fees.md` (the
+rulebook; its section 5.10 is machine-readable). The desk mirrors them in
+one pure module, `src/lib/legal/texas-dealer-fees.ts`, pinned to the
+rulebook by a test and by `scripts/check-fee-module.cjs`. No legal figure is
+typed anywhere else, and no documentary fee is typed in code at all.
+
+**Dealer-set versus state-set.** The owner sets the dealer's own fees (the
+documentary fee; the dealer-deputy fee; whether the inventory tax is passed
+on) once, at first sign-in or under `/admin/dealership/fees` (Owner only).
+The state's lines (title, registration, TexasSure, the county's local fee,
+processing and handling, inspection, emissions, the $10 plate fee) are shown
+read-only for the dealer's county with their sources and never asked: no
+screen has a box for them.
+
+**No combined cap; each limit on its own.** Texas law has no single cap on
+dealer fees (an absence finding, rulebook section 4). The documentary fee is
+$225.00 or less (7 TAC §84.205(b)(1), in force since 2024-07-11), or up to a
+recorded OCCC-filed maximum (§84.205(c)); the dealer-deputy fee is $10.00 at
+most (43 TAC §217.168(b)(2)); the inventory tax is by formula (Tax Code
+§23.121-.122). Every paperwork charge, whatever it is called, is the
+documentary fee. There is no free-form dealer fee line anywhere; any other
+dealer charge goes into the taxed vehicle price. The screens say "Dealer
+charges on top of the price: $X of $Y allowed".
+
+**Refused, never trimmed, at three layers.** The screen (feedback), the
+server action and the database function each refuse a value over its limit
+with a code; none lowers it.
+
+**The per-deal copy and the freeze.** Start A Sale reads the schedule before
+anything is written (refused if it cannot be read: "Nothing was started")
+and writes the copy into the deal. The money step, the receipt, the bill of
+sale, the contract and the webDEALER hand-off read the copy. A sale that
+started before a change keeps its fees, but never a HIGHER documentary fee
+than today's: one documentary fee for every buyer is the desk's policy, so
+a sale may keep a lower fee it was quoted and is refused at filing above
+today's (`feeAboveToday`). An open sale with nothing filed offers "Apply
+Today's Fees", and says why (above the limit, above today's fee, changed):
+it is refused on a closed sale, writes only the copy (compare-and-set), puts
+the copy back if a bill of sale was filed in the same moment or the
+activity record (`deal_fees_applied`) fails, and reports nothing applied
+then. A sale from before the copy existed gets one written once, on its
+next money save, only while nothing is filed (logged as `deal_fees_copied`);
+otherwise it reads the fees its filed bill of sale printed (a salvage copy
+filed before the notice stamp keeps the registration line its figures rest
+on).
+
+**The freeze.** A filed bill of sale (or salvage bill of sale) freezes
+every fee it printed: `titleFee`, `docFee`, `registrationFee`, and, when it
+printed them, `inspectionFee` and `plateFee` (classified separately in
+`BILL_OF_SALE_CONDITIONAL_PRINTED_KEYS`, so the test that every printed key
+is classified holds for every sale). Applying today's fees and recording the
+government fees are both refused once a bill of sale is filed (`voidFirst`);
+void it, change them, and file again. A refiled copy keeps the sale's own
+fee copy, not today's schedule: a sale filed at $150.00 refiles at $150.00
+after the owner moved to $175.00 (walked).
+
+**Settings and audit.** `/admin/dealership/fees` shows the current fees with
+a Change button per fee, the history of every change (who, when, from, to),
+and the posted notice. A stale second tab is refused (`feesStale`). A
+salesperson or manager is refused the page and the save (`notOwner`).
+
+**Government fees, per sale.** Every government line on paper must be the
+amount paid to the state (Fin. Code §348.005; OCCC Agreed Order L25-087).
+The state's lines vary by county and vehicle, so a person copies webDEALER's
+computed fees for the sale into **Government Fees**
+(`/admin/sales/[dealId]/government-fees`, `sales:manage` or
+`paperwork:manage`; linked from the review's refusal and the sale page):
+the buyer's county; the title fee as a choice of the state's two figures
+($33.00 or $28.00 by county, Transp. Code §501.138(a)); the registration
+side typed (registration with TexasSure, local fees, processing and
+handling, emissions where it applies), checked against the cited range; the
+inspection program replacement fee as a choice ($7.50 or $0, its own line,
+OCCC Bulletin B25-1); the plate fee ($10.00, or $0 with "exempt from
+registration fees", 43 TAC §215.155(e)). The desk's estimate sits beside
+each as a check; webDEALER's figure is the one saved, and every save is
+logged (`deal_government_fees_confirmed`). A figure outside the cited lines
+is refused, never trimmed. The save does not revalidate the path: it only
+navigates (every reading screen is rendered per request), because a
+revalidation re-rendered the screen being left while the navigation swapped
+the workspace chrome for the corridor's, and React removed the workspace
+twice (a blank review; walked at 390).
+
+**The gates (filing).** Additive to every existing refusal; none is
+loosened. `DESK_ALLOW_UNSET_FACTS` lifts one of them alone
+(`governmentFeesUnconfirmed`, for demos), never a limit:
+
+- `feeOverLimit`: the copy's doc fee is above $225.00 with no OCCC filing in
+  force (filed and in effect on or before today), or above the filed
+  maximum (each with its own sentence);
+- `feeAboveToday`: the copy's doc fee is above today's;
+- `otherDealerFee`: a dealer fee line other than the doc fee reached the
+  form;
+- `feeRecordTampered`: the copy differs from the logged record of the
+  version it names, or its title and registration are not the desk's own
+  (a forged line in the copy);
+- `titleFeeNotState`: the title fee is neither of the state's figures;
+- `feeSettingsUnreadable`: the fee record could not be read;
+- `chapter345Vehicle`: a motorcycle, ATV, moped, scooter, towable RV, boat
+  or personal watercraft on a bill of sale, salvage bill of sale or
+  contract (match the body style; never "camper" alone, which catches a
+  camper van);
+- `governmentFeesUnconfirmed`, `governmentFeesInvalid`,
+  `governmentFeesCountyChanged`: on the bill of sale, contract and vehicle
+  responsibility form, the sale's government fees are not recorded, are
+  malformed, or the 130-U names another county. A tow-away sale is never
+  asked.
+
+The older document routes (`/api/documents/agreements`, its PATCH and
+`/complete`) check every fee-document payload against the deal's own fees,
+refuse an undecodable link, stamp the notice on what they file, and refuse
+a documentary fee completed without the stamp.
+
+**The notice.** The exact statutory text (Fin. Code §348.006(c)(3)(B)),
+never paraphrased, in bold capitals directly under the documentary fee on
+the bill of sale and the salvage bill of sale, and on the finance contract
+directly under the documentary fee in the itemization: the contract lists
+"1. Cash Price of Vehicle", its lettered tax and government lines, "2. Cash
+Price (Including Tax And Government Fees)", "3. Documentary Fee" with the
+notice under it, "4. Down Payment", "5. Amount Financed (2 plus 3, minus
+4)", amounts unchanged; clause 16 repeats it. The statute wants it in
+reasonable proximity to the fee on the buyer's order AND the contract; a
+notice two pages away is not. The OCCC-approved Spanish notice (Bulletin
+B09-3) prints beside it on a Spanish deal. It is stamped at filing (`docFeeNotice: 1`), so a copy
+filed before it existed prints exactly as filed. In print it is set in
+smaller bold capitals across the full column so it adds no page to a cash
+bill of sale. The posted notice (English and Spanish) prints from
+`/admin/dealership/fees/notice` for every desk where sales close
+(§348.006(d)).
+
+**Known gaps (later phases).** The desk does not compute the registration
+side by county itself; it records webDEALER's figures per sale and shows an
+estimate beside them. Charging the dealer-deputy fee and the inventory tax
+as their own lines comes later (recorded today, charged $0). A sale whose
+bill of sale was filed before government fees existed files its remaining
+documents only after a void, the record, and a new filing (with the flag
+off).
 
 ## The sale plan (the prescreen)
 
@@ -1444,6 +1717,68 @@ Sales** beneath it (and **Sale Times** and **Promises** if built).
   estimate; the lookup silent on failure and never writing `weight_lbs`; the
   public site never seeing a weight column; every weight string in both
   languages with no banned dash.
+- Fees ("## Fees"): the documentary fee stops at $225.00 without an OCCC
+  filing, and a filing is whole (five facts) or refused; every paperwork
+  charge, under any name, is the documentary fee; a dealer deputy charges
+  $10.00 at most, and only a deputy; the inventory tax needs January 1 and a
+  factor; there is no combined cap, only each limit; the legal limits carry
+  their citations and equal the rulebook's section 5.10 (and the
+  migration's CHECKs repeat them); the notice is the statute word for word
+  (equality, not "contains") and prints beside the fee, only on stamped
+  copies; the owner meets the fees at first sign-in and nobody else does;
+  only the owner sets the fees (action and database function); every fee
+  change is on record (append-only, against the real migration in PGlite);
+  a sale keeps the fees it started with; a filed bill of sale keeps its own
+  fees; the browser cannot write the fees (`fees-protected`); filing
+  refuses a fee over its limit and never trims it; the title fee is a state
+  figure; no other dealer fee reaches paper; no documentary fee is typed in
+  code; the fee screens speak both languages (usted); the state fees are
+  shown, not asked; a tow-away sale totals what was agreed.
+  And, from the reviews (one test each, named for the rule):
+  - *an OCCC filing counts only once it is in force*: a filing dated after
+    today, or effective before it was filed, is refused at save (desk and
+    database); a fee above $225.00 waits for the effective date; at filing
+    the cap is $225.00 until then; the environment's OCCC seed is ignored in
+    production;
+  - *the contract prints the notice beside the fee*: on a stamped copy the
+    notice is the very next thing after the documentary fee's line in the
+    itemization, word for word (and the Spanish one on a Spanish sale), the
+    fee its own item after the cash price, the amounts unchanged, clause 16
+    kept; an unstamped copy prints as filed;
+  - *one documentary fee for every buyer*: a sale may keep a lower fee it
+    started with, never a higher one after the owner lowers it
+    (`feeAboveToday`), and the sale page offers today's fees;
+  - *an out-the-door trade-in is taxed on the difference*: the review's
+    probe ($10,000 out the door, $258 fees, $2,000 trade: tax $455.41, never
+    $573.06), agreement with the 130-U's tax, and webDEALER's sales price;
+  - *a motorcycle is not this desk's paperwork*: each Ch. 345 body style is
+    refused on the three fee documents, with the flag on, and a camper van
+    is not;
+  - *the state lines are webDEALER's figures*: unrecorded, malformed and
+    county-changed refusals; the flag lifts the first alone; the inspection
+    and plate fees on lines of their own on the bill of sale and the
+    contract, inside the totals; the record logged; a failed log puts it
+    back; refused once the bill of sale is filed;
+  - *a forged registration line does not file*, and every key the bill of
+    sale prints (the conditional ones included) is classified for the
+    freeze;
+  - *the database keeps the fee copy honest* (PGlite, the real migrations,
+    `set role authenticated`): a browser-written copy that is not the
+    schedule is refused, two first saves log one version, the dates are
+    refused, every team role reads the schedule;
+  - *a fee change on a sale keeps its record*: Apply Today's Fees puts the
+    copy back when its record fails or a bill of sale was filed meanwhile,
+    refuses a closed sale; the legacy copy is logged; the change log's
+    source is the server's;
+  - *the older routes check every fee document*;
+  - *a tow-away copy filed before keeps its figures*;
+  - *the fee words say what the law says* (deputy, LIRAP emissions, Ch. 345
+    citation, desk policy, the over-limit sentence under a filing, the
+    public site's disclaimer, Your Fees in the owner's sidebar only);
+  - *saving the government fees goes back cleanly* (jsdom: one router push,
+    no refresh, nothing set after it; a refusal stays and re-enables the
+    button) and *leaves the screen alone* (the action never revalidates;
+    the reading pages are per request).
 - Guards: dealer facts only in the config file; no untranslated literal in
   corridor components; every requirable document type has a question set or
   review screen, a renderer, and is allowed by the database check constraint.
@@ -1492,6 +1827,51 @@ Sales** beneath it (and **Sale Times** and **Promises** if built).
    two must agree, and the source must be the one the review named),
    the bill of sale's figures summing to its total, the odometer identical on
    every document, and today's business date on every signature.
+5. **Fees** ("## Fees"; `scripts/desk-walk/onboard.cjs` and `fees.cjs`), at
+   both sizes, 0 page errors and 0 contrast failures. The doc fee typed in a
+   walk is a walk input (the owner's figure, or one the user approved,
+   labelled as a demo input), never invented:
+   - **A, owner onboarding** (`DESK_PREVIEW_MEMBER=fresh`, or
+     `fresh-temporary-password` for the password first): name, signature,
+     Your Fees. $225.01 is refused in English and, after the toggle, in
+     Spanish (`FEES_TRY=225.01`); the walk input saves with the notice
+     preview showing; the review reads "$X of $225.00 allowed" with the
+     state's lines read-only; Done goes to Handle A Sale. Again with
+     `FEES=later`: Done works and Handle A Sale names "Documentary fee".
+   - **B, a salesperson** (`DESK_PREVIEW_MEMBER=fresh-sales`,
+     `PREVIEW_ADMIN=sales:<email>`, `FEES=none`): name, signature, Done, no
+     fees step; `/admin/dealership/fees` shows "Permission Needed".
+   - **C, settings and the per-deal copy** (`fees.cjs`, after `sale.cjs`
+     with `STOP_AT=document:billOfSale` started an open sale): change the fee
+     under Your Fees; the history names who, when, from and to; the open
+     sale still shows the old fee until "Apply Today's Fees"; a stale second
+     tab's save is refused.
+   - **D, the OCCC filing**: a fee above $225.00 is refused until a complete
+     filing (all five facts, labelled WALK INPUT) is recorded, then the limit
+     reads the filed maximum; removing the filing refuses it again. Then the
+     open sale relying on a removed filing (`fee-set.cjs` with `FILING=1`,
+     an open sale, `fee-set.cjs` with `FILING=0`, `try-file.cjs` with
+     `APPLY=1`): refused at filing "without an OCCC filing in force", with
+     `DESK_ALLOW_UNSET_FACTS` on; the sale page offers today's fees; files
+     once applied. A void and refile after a fee change keeps the sale's own
+     fee.
+   - **G, government fees** (`gov.cjs`, figures from a webDEALER receipt or
+     the rulebook's worked example 2.2, said so): on an open buy here pay
+     here sale, the wrong county's title fee refused, the save going back to
+     the review with the inspection and plate lines and 0 page errors, the
+     sale page naming who recorded them; on a server with the flag off
+     (`EXPECT_REFUSAL=1`), filing refused until they are recorded and its
+     link opening the screen.
+   - **E, paper**: file a cash sale, a Spanish sale and a buy here pay here
+     sale and read the PDFs back: the English notice word for word directly
+     under the doc fee on every bill of sale and under item 3 of the
+     contract's itemization (clause 16 repeats it), the Spanish notice only
+     on the Spanish deal, the doc fee the walk saved, the inspection and
+     plate lines once recorded, the contract's amount financed equal to the
+     bill of sale's balance, and the page count compared with the same filed
+     copy with the notice stamp removed (`POST /api/documents/agreements`
+     with the decoded `completed_link`, then the PDF route).
+   - **F**: `/admin/dealership/fees/notice` prints English and Spanish.
 
 ## Delivery
 

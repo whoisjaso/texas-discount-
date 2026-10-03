@@ -1,4 +1,6 @@
 import { createAdminDataClient } from "@/lib/supabase/admin-data";
+import { printsDocFeeNotice } from "@/lib/legal/doc-fee-notice";
+import { dealerFees } from "@/lib/dealership-config";
 import { filedBillOfSale, isFiledAgreement, type FiledAgreementRow } from "@/lib/sales/down-payment-freeze";
 import { decodeCompletedLinkFromUrl } from "@/lib/documents/customerPortal";
 
@@ -32,7 +34,18 @@ export type FiledBillOfSale = {
   /** The language it was filed in. */
   language?: string | null;
   /** What the filed copy printed, for the facts compared against the paper. */
-  printed?: { plate: string; buyerLicense: string; salePrice?: number | null };
+  printed?: {
+    plate: string;
+    buyerLicense: string;
+    salePrice?: number | null;
+    /**
+     * The three fee lines it printed, for a sale started before each sale
+     * kept its own copy of its fees (`dealership-fees.ts`, resolveDealFees):
+     * voiding and filing again keeps the figures the paper stated. Null when
+     * the copy printed none.
+     */
+    fees?: { titleFee: number; docFee: number; registrationFee: number } | null;
+  };
 };
 
 type Row = FiledAgreementRow & {
@@ -89,11 +102,37 @@ export async function filedBillOfSaleOn(dealId: string): Promise<FiledBillOfSale
     const decoded = typeof link === "string" ? decodeCompletedLinkFromUrl(link) : null;
     const dd = (decoded?.dd ?? {}) as Record<string, unknown>;
     const price = typeof dd.salePrice === "number" ? dd.salePrice : Number(text(dd.salePrice).replace(/[$,\s]/g, ""));
+    const figure = (value: unknown): number | null => {
+      if (value === null || value === undefined || text(value).trim() === "") return null;
+      const parsed = typeof value === "number" ? value : Number(text(value).replace(/[$,\s]/g, ""));
+      return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+    };
+    const titleFee = figure(dd.titleFee);
+    const docFee = figure(dd.docFee);
+    /*
+      The salvage bill of sale prints no registration line: nothing is
+      registered. A copy filed since the tow-away sale's split stopped
+      counting one (stamped with the documentary fee notice at the same
+      change) was computed with $0. A copy filed before was computed with
+      the desk's registration line inside its out-the-door split, so that is
+      the figure its own price and tax rest on, and the one that keeps the
+      rest of its packet agreeing with it.
+    */
+    const registrationFee =
+      copy.document_type === "salvageBillOfSale"
+        ? printsDocFeeNotice(dd)
+          ? 0
+          : dealerFees.registrationFee
+        : figure(dd.registrationFee);
     printed = {
       plate: text(dd.vehiclePlate),
       buyerLicense: text(dd.buyerLicense || dd.buyerIdNumber),
       // The price the paper states, which the car is marked sold at.
       salePrice: text(dd.salePrice).trim() !== "" && Number.isFinite(price) ? price : null,
+      fees:
+        titleFee !== null && docFee !== null && registrationFee !== null
+          ? { titleFee, docFee, registrationFee }
+          : null,
     };
   }
 

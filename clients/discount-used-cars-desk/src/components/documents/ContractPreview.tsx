@@ -6,7 +6,14 @@ import SignatureLinePreview from '@/components/documents/SignatureLinePreview';
 import { getDocStrings, type DocStrings } from '@/lib/documents/i18n';
 import SmsConsentSection from '@/components/documents/SmsConsentSection';
 import DocumentLetterhead from '@/components/documents/DocumentLetterhead';
+import DocFeeNotice from '@/components/documents/DocFeeNotice';
 import { dealership, dealerSignerPrintedName } from '@/lib/dealership-config';
+import {
+  DOC_FEE_NOTICE_EN,
+  DOC_FEE_NOTICE_ES,
+  printsDocFeeNotice,
+  printsSpanishDocFeeNotice,
+} from '@/lib/legal/doc-fee-notice';
 
 interface Props {
   data: ContractData;
@@ -42,6 +49,16 @@ export default function ContractPreview({ data, signatures, copyLabel, strings: 
     financeCharge,
   } = contractFigures(data);
   const hasShorterLast = Math.abs(lastPaymentAmount - paymentAmount) >= 0.01;
+  // A copy filed with the documentary fee notice prints the itemization with
+  // the doc fee as its own item and the notice beside it.
+  const stamped = printsDocFeeNotice(data as unknown as Record<string, unknown>);
+  const cashPriceItems = [
+    { key: 'tax', label: c.itemSalesTax, amount: data.tax },
+    { key: 'titleFee', label: c.itemTitleFee, amount: data.titleFee },
+    { key: 'registrationFee', label: c.itemRegFee, amount: data.registrationFee },
+    ...((data.inspectionFee ?? 0) > 0 ? [{ key: 'inspectionFee', label: c.itemInspectionFee, amount: data.inspectionFee ?? 0 }] : []),
+    ...((data.plateFee ?? 0) > 0 ? [{ key: 'plateFee', label: c.itemPlateFee, amount: data.plateFee ?? 0 }] : []),
+  ];
   const hasCoBuyer = Boolean(
     data.coBuyerName ||
     data.coBuyerAddress ||
@@ -222,54 +239,109 @@ export default function ContractPreview({ data, signatures, copyLabel, strings: 
         <div className="grid grid-cols-2 gap-12 mb-12 print-section">
           <div>
             <h3 className="doc-section-heading mb-4">{c.itemization}</h3>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span>{c.cashPriceVehicle}</span>
-                <span>{formatCurrency(data.cashPrice)}</span>
-              </div>
-              <div className="flex justify-between text-[color:var(--tj-ink)]">
-                <span>&nbsp;&nbsp;&nbsp;{c.salesTaxLine}</span>
-                <span>{formatCurrency(data.tax)}</span>
-              </div>
-              <div className="flex justify-between text-[color:var(--tj-ink)]">
-                <span>&nbsp;&nbsp;&nbsp;{c.titleFeeLine}</span>
-                <span>{formatCurrency(data.titleFee)}</span>
-              </div>
-              <div className="flex justify-between text-[color:var(--tj-ink)]">
-                <span>&nbsp;&nbsp;&nbsp;{c.docFeeLine}</span>
-                <span>{formatCurrency(data.docFee)}</span>
-              </div>
-              <div className="flex justify-between text-[color:var(--tj-ink)]">
-                <span>&nbsp;&nbsp;&nbsp;{c.regFeeLine}</span>
-                <span>{formatCurrency(data.registrationFee)}</span>
-              </div>
-              <div className="flex justify-between font-semibold border-t border-[#1a1a1a]/10 pt-2">
-                <span>{c.totalCashPrice}</span>
-                <span>{formatCurrency(totalCashPrice)}</span>
-              </div>
-              <div className={`flex justify-between${tradeIn > 0 ? '' : ' border-b border-[#1a1a1a]/20 pb-3'}`}>
-                <span>{c.downPaymentLine}</span>
-                <span className="text-[#8A3A1C]">- {formatCurrency(totalDown)}</span>
-              </div>
-              {/* The split, only when a trade-in is part of the down payment,
-                  so line 4 stays "2 minus 3" on the paper. */}
-              {tradeIn > 0 ? (
-                <>
-                  <div className="flex justify-between text-[color:var(--tj-ink)]">
-                    <span>&nbsp;&nbsp;&nbsp;{c.tradeInLine}</span>
-                    <span>{formatCurrency(tradeIn)}</span>
+            {stamped ? (
+              /*
+                A copy filed with the documentary fee notice: the doc fee is
+                its own item after the cash price, not part of it (Tex. Fin.
+                Code §348.004(c) lists what the cash price may include, and
+                §348.006(a)(1)(C) adds the doc fee to the principal on its
+                own), and the statute's notice prints directly beside the
+                amount (§348.006(c)(3)(B)). The government lines of their own
+                sit with the other government fees inside the cash price.
+                The amounts are those of the older layout below, which a
+                copy filed before the notice still prints exactly as filed.
+              */
+              <div className="space-y-3 text-sm" data-contract-itemization="stamped">
+                <div className="flex justify-between">
+                  <span>{c.cashPriceVehicle}</span>
+                  <span>{formatCurrency(data.cashPrice)}</span>
+                </div>
+                {cashPriceItems.map((item, index) => (
+                  <div key={item.key} className="flex justify-between text-[color:var(--tj-ink)]" data-item={item.key}>
+                    <span>&nbsp;&nbsp;&nbsp;{`${String.fromCharCode(97 + index)}. ${item.label}`}</span>
+                    <span>{formatCurrency(item.amount)}</span>
                   </div>
-                  <div className="flex justify-between text-[color:var(--tj-ink)] border-b border-[#1a1a1a]/20 pb-3">
-                    <span>&nbsp;&nbsp;&nbsp;{c.cashDownLine}</span>
-                    <span>{formatCurrency(data.downPayment)}</span>
-                  </div>
-                </>
-              ) : null}
-              <div className="flex justify-between font-bold pt-1 text-lg font-[family-name:var(--font-display)]">
-                <span>{c.amountFinancedLine}</span>
-                <span>{formatCurrency(amountFinanced)}</span>
+                ))}
+                <div className="flex justify-between font-semibold border-t border-[#1a1a1a]/10 pt-2">
+                  <span>{c.itemCashPriceSubtotal}</span>
+                  <span>{formatCurrency(totalCashPrice - data.docFee)}</span>
+                </div>
+                <div className="flex justify-between font-semibold" data-item="docFee">
+                  <span>{c.itemDocFee}</span>
+                  <span>{formatCurrency(data.docFee)}</span>
+                </div>
+                <DocFeeNotice data={data as unknown as Record<string, unknown>} />
+                <div className={`flex justify-between${tradeIn > 0 ? '' : ' border-b border-[#1a1a1a]/20 pb-3'}`}>
+                  <span>{c.itemDownPayment}</span>
+                  <span className="text-[#8A3A1C]">- {formatCurrency(totalDown)}</span>
+                </div>
+                {tradeIn > 0 ? (
+                  <>
+                    <div className="flex justify-between text-[color:var(--tj-ink)]">
+                      <span>&nbsp;&nbsp;&nbsp;{c.tradeInLine}</span>
+                      <span>{formatCurrency(tradeIn)}</span>
+                    </div>
+                    <div className="flex justify-between text-[color:var(--tj-ink)] border-b border-[#1a1a1a]/20 pb-3">
+                      <span>&nbsp;&nbsp;&nbsp;{c.cashDownLine}</span>
+                      <span>{formatCurrency(data.downPayment)}</span>
+                    </div>
+                  </>
+                ) : null}
+                <div className="flex justify-between font-bold pt-1 text-lg font-[family-name:var(--font-display)]">
+                  <span>{c.itemAmountFinanced}</span>
+                  <span>{formatCurrency(amountFinanced)}</span>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span>{c.cashPriceVehicle}</span>
+                  <span>{formatCurrency(data.cashPrice)}</span>
+                </div>
+                <div className="flex justify-between text-[color:var(--tj-ink)]">
+                  <span>&nbsp;&nbsp;&nbsp;{c.salesTaxLine}</span>
+                  <span>{formatCurrency(data.tax)}</span>
+                </div>
+                <div className="flex justify-between text-[color:var(--tj-ink)]">
+                  <span>&nbsp;&nbsp;&nbsp;{c.titleFeeLine}</span>
+                  <span>{formatCurrency(data.titleFee)}</span>
+                </div>
+                <div className="flex justify-between text-[color:var(--tj-ink)]">
+                  <span>&nbsp;&nbsp;&nbsp;{c.docFeeLine}</span>
+                  <span>{formatCurrency(data.docFee)}</span>
+                </div>
+                <div className="flex justify-between text-[color:var(--tj-ink)]">
+                  <span>&nbsp;&nbsp;&nbsp;{c.regFeeLine}</span>
+                  <span>{formatCurrency(data.registrationFee)}</span>
+                </div>
+                <div className="flex justify-between font-semibold border-t border-[#1a1a1a]/10 pt-2">
+                  <span>{c.totalCashPrice}</span>
+                  <span>{formatCurrency(totalCashPrice)}</span>
+                </div>
+                <div className={`flex justify-between${tradeIn > 0 ? '' : ' border-b border-[#1a1a1a]/20 pb-3'}`}>
+                  <span>{c.downPaymentLine}</span>
+                  <span className="text-[#8A3A1C]">- {formatCurrency(totalDown)}</span>
+                </div>
+                {/* The split, only when a trade-in is part of the down payment,
+                    so line 4 stays "2 minus 3" on the paper. */}
+                {tradeIn > 0 ? (
+                  <>
+                    <div className="flex justify-between text-[color:var(--tj-ink)]">
+                      <span>&nbsp;&nbsp;&nbsp;{c.tradeInLine}</span>
+                      <span>{formatCurrency(tradeIn)}</span>
+                    </div>
+                    <div className="flex justify-between text-[color:var(--tj-ink)] border-b border-[#1a1a1a]/20 pb-3">
+                      <span>&nbsp;&nbsp;&nbsp;{c.cashDownLine}</span>
+                      <span>{formatCurrency(data.downPayment)}</span>
+                    </div>
+                  </>
+                ) : null}
+                <div className="flex justify-between font-bold pt-1 text-lg font-[family-name:var(--font-display)]">
+                  <span>{c.amountFinancedLine}</span>
+                  <span>{formatCurrency(amountFinanced)}</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* The disclaimer stays bold: a warranty disclaimer must be
@@ -360,7 +432,20 @@ export default function ContractPreview({ data, signatures, copyLabel, strings: 
 
           <p><strong>15. VEHICLE CONDITION ACKNOWLEDGMENT:</strong> Buyer acknowledges that: (a) Buyer has inspected the Vehicle or has had the opportunity to have the Vehicle inspected by an independent mechanic; (b) Buyer is purchasing the Vehicle based on Buyer&apos;s own inspection and judgment, not in reliance upon any oral representations by Seller; (c) the Vehicle is a used motor vehicle and may have undiscoverable defects; (d) ALL REPRESENTATIONS REGARDING THE VEHICLE ARE CONTAINED IN THIS CONTRACT. NO ORAL REPRESENTATIONS OR WARRANTIES HAVE BEEN MADE THAT ARE NOT CONTAINED HEREIN.</p>
 
-          <p><strong>16. DOCUMENTARY FEE:</strong> A DOCUMENTARY FEE IS NOT AN OFFICIAL FEE. A DOCUMENTARY FEE IS NOT REQUIRED BY LAW BUT MAY BE CHARGED TO BUYERS FOR HANDLING DOCUMENTS RELATING TO THE SALE. A DOCUMENTARY FEE MAY NOT EXCEED A REASONABLE AMOUNT AGREED TO BY THE PARTIES.</p>
+          {/* Clause 16 is the statute's notice word for word (Tex. Fin. Code
+              §348.006(c)(3)(B)), with the approved Spanish one on a Spanish
+              sale (OCCC Bulletin B09-3). A copy filed before the notice was
+              stamped re-renders exactly as it was filed. */}
+          {printsDocFeeNotice(data as unknown as Record<string, unknown>) ? (
+            <div data-doc-fee-notice="">
+              <p><strong>16. DOCUMENTARY FEE:</strong> <strong>{DOC_FEE_NOTICE_EN}</strong></p>
+              {printsSpanishDocFeeNotice(data as unknown as Record<string, unknown>) ? (
+                <p lang="es"><strong>{DOC_FEE_NOTICE_ES}</strong></p>
+              ) : null}
+            </div>
+          ) : (
+            <p><strong>16. DOCUMENTARY FEE:</strong> A DOCUMENTARY FEE IS NOT AN OFFICIAL FEE. A DOCUMENTARY FEE IS NOT REQUIRED BY LAW BUT MAY BE CHARGED TO BUYERS FOR HANDLING DOCUMENTS RELATING TO THE SALE. A DOCUMENTARY FEE MAY NOT EXCEED A REASONABLE AMOUNT AGREED TO BY THE PARTIES.</p>
+          )}
 
           <p><strong>17. PAYMENT RECORDS:</strong> Holder&apos;s records of payments received shall be presumed accurate unless Buyer provides written evidence demonstrating otherwise. Buyer shall retain all payment receipts. Payment disputes must be raised in writing within sixty (60) days of the disputed payment.</p>
 

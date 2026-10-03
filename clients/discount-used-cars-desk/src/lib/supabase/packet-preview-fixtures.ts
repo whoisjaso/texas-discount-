@@ -1,4 +1,5 @@
 import { encodeCompletedLink } from "@/lib/documents/customerPortal";
+import { dealerFees } from "@/lib/dealership-config";
 
 /** Synthetic local-preview records only. No delivery provider or real buyer is used. */
 const cases = ["mobile", "desktop", "official-rebuilt-mobile", "official-rebuilt-desktop", "official-130u-mobile", "official-130u-desktop"] as const;
@@ -32,7 +33,7 @@ export const packetPreviewAgreements = cases.flatMap((device) => {
     }];
   }
   return [
-    { ...common, id: `preview-signing-bill-${device}`, document_type: "billOfSale", completed_link: encodeCompletedLink("billOfSale", { saleDate: "2026-09-08", vehicleYear: "2019", vehicleMake: "Toyota", vehicleModel: "Camry", vehicleVin: "4T1B11HK0KU123456", vehicleMileage: "65000", odometerReading: "65000", odometerStatus: "actual", salePrice: 14500, tradeInAllowance: 0, tradeInPayoff: 0, tax: 906.25, titleFee: 33, docFee: 292, registrationFee: 75, otherFees: 0, paymentMethod: "Cash", conditionType: "as_is" }, buyer, "http://localhost") },
+    { ...common, id: `preview-signing-bill-${device}`, document_type: "billOfSale", completed_link: encodeCompletedLink("billOfSale", { saleDate: "2026-09-08", vehicleYear: "2019", vehicleMake: "Toyota", vehicleModel: "Camry", vehicleVin: "4T1B11HK0KU123456", vehicleMileage: "65000", odometerReading: "65000", odometerStatus: "actual", salePrice: 14500, tradeInAllowance: 0, tradeInPayoff: 0, tax: 906.25, titleFee: dealerFees.titleFee, docFee: dealerFees.docFee ?? 0, registrationFee: dealerFees.registrationFee, otherFees: 0, paymentMethod: "Cash", conditionType: "as_is" }, buyer, "http://localhost") },
     { ...common, id: `preview-signing-responsibility-${device}`, document_type: "vehicleResponsibility", completed_link: encodeCompletedLink("vehicleResponsibility", { vehicleDescription: "2019 Toyota Camry", vin: "4T1B11HK0KU123456", saleDate: "2026-09-08", quotedRegistrationAmount: "0" }, buyer, "http://localhost") },
   ];
 });

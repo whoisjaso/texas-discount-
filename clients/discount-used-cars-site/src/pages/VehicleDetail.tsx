@@ -132,7 +132,7 @@ export function VehicleDetail() {
                 ))}
               </dl>
               <p className="fine">
-                Price excludes tax, title, license and dealer fees. Vehicle history report available on request. Please confirm availability before visiting.
+                Price excludes tax, title, license, registration and the documentary fee. Vehicle history report available on request. Please confirm availability before visiting.
               </p>
             </div>
             <div className="form-card reveal">

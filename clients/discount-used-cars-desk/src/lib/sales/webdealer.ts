@@ -22,6 +22,7 @@
  * someone to fill in from memory.
  */
 
+import { feeLinesOf, type DealFeeLines } from "@/lib/sales/fee-schedule";
 import type { SaleDetail } from "@/lib/admin/sale-desk";
 import { readBuyerId } from "@/lib/sales/buyer-id";
 import { readMoney, saleMoney } from "@/lib/sales/money";
@@ -141,6 +142,8 @@ function emptyWeightSourceFor(sale: SaleDetail): HandoffField["source"] {
 export function buildHandoffFields(
   sale: SaleDetail,
   dealerLicense: string | null,
+  /** The sale's own fee lines (dealership-fees.ts); absent, the sale's copy or the config's. */
+  fees?: DealFeeLines,
 ): HandoffField[] {
   const vehicle = sale.vehicle;
   const buyer = sale.buyer;
@@ -250,8 +253,16 @@ export function buildHandoffFields(
         webDEALER on a deal the operator had just closed at $6,000.
       */
       value: formatPrice(
-        saleMoney(vehicle?.salePrice, readMoney(sale.stepData), 0, sale.funding.type)
-          .salePrice,
+        saleMoney(
+          vehicle?.salePrice,
+          readMoney(sale.stepData),
+          // The trade-in the bill of sale took: an out-the-door price backs
+          // the car out with it outside the tax base (money.ts), so the sales
+          // price webDEALER is given is the one the bill of sale prints.
+          tradeInOf(sale.stepData),
+          sale.funding.type,
+          fees ?? feeLinesOf(sale.stepData),
+        ).salePrice,
       ),
     },
     {
@@ -401,4 +412,10 @@ export function writePlateLater(stepData: unknown): Record<string, unknown> {
       : {};
   base[PLATE_ASKED_KEY] = true;
   return base;
+}
+
+/** The trade-in allowance the bill of sale's answers hold, as the money screens read it. */
+function tradeInOf(stepData: unknown): number {
+  const bill = readPaperwork(stepData, "billOfSale");
+  return bill.tradeIn === "yes" ? Math.max(0, Number(bill.tradeInAllowance) || 0) : 0;
 }

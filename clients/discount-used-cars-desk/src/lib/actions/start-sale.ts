@@ -18,6 +18,8 @@ import {
 } from "@/lib/vehicles/title-status";
 import { isSalvagePath, writeSalvagePlan } from "@/lib/sales/salvage-plan";
 import { writeTitleOrigin } from "@/lib/vehicles/title-kinds";
+import { getDealerFeeSchedule } from "@/lib/dealership-fees";
+import { dealFeesFromSchedule, writeDealFees } from "@/lib/sales/fee-schedule";
 
 /**
  * Start a sale.
@@ -232,6 +234,18 @@ export async function startSale(
     } = await supabase.auth.getUser();
     if (authError || !user) {
       return { success: false, error: "Unauthorized" };
+    }
+
+    /*
+      The sale keeps the fees it starts with (fee-schedule.ts): the owner's
+      saved schedule, or the config seed until one is saved, copied into the
+      deal below so a later change applies to new sales only. Read before
+      anything is written: a schedule nobody could read starts nothing,
+      rather than leave a deal behind with no fees on it.
+    */
+    const feeSchedule = await getDealerFeeSchedule();
+    if (!feeSchedule.ok) {
+      return { success: false, error: "The fee settings could not be read. Nothing was started. Try again." };
     }
 
     // The car is settled before anything is written. A title-blocked sale
@@ -476,6 +490,8 @@ export async function startSale(
     if (/^[A-Z]{2}$/.test(origin) && origin !== "TX") {
       stepData = writeTitleOrigin(stepData, { state: origin });
     }
+    // The fees this sale started with, in the same insert as the deal.
+    stepData = writeDealFees(stepData, dealFeesFromSchedule(feeSchedule.schedule));
 
     const { data: deal, error: dealError } = await supabase
       .from("deals")

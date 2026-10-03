@@ -1,4 +1,7 @@
 import type { PaperworkMoney } from "@/lib/sales/paperwork";
+import { DEALER_CHARGES_MESSAGES, type DealerChargesProblem } from "@/lib/sales/fee-schedule";
+import { GOVERNMENT_FEES_FILING_MESSAGES, type GovernmentFeesFilingProblem } from "@/lib/sales/government-fees";
+import { CHAPTER_345_MESSAGE } from "@/lib/legal/chapter-345";
 import {
   PRINTS_BILL_OF_SALE_FIGURES,
   currentCopy,
@@ -22,12 +25,28 @@ import {
  *                           before a change files nothing.
  */
 
-export type FilingGateCode = "billOfSaleAlreadyFiled" | "billOfSaleFirst" | "figuresChanged";
+export type FilingGateCode =
+  | "billOfSaleAlreadyFiled"
+  | "billOfSaleFirst"
+  | "figuresChanged"
+  /*
+    The dealer charges (rulebook, texas-dealer-fees.md section 5.4;
+    fee-schedule.ts and dealership-fees.ts decide them). Each only refuses.
+  */
+  | DealerChargesProblem
+  | "feeSettingsUnreadable"
+  /* The sale's government fees, recorded from webDEALER (government-fees.ts). */
+  | GovernmentFeesFilingProblem
+  /* A ch. 345 vehicle (chapter-345.ts): not this desk's paperwork. */
+  | "chapter345Vehicle";
 
 export const FILING_GATE_MESSAGES: Record<FilingGateCode, string> = {
   billOfSaleAlreadyFiled: "This sale already has a filed bill of sale. Void it from the paperwork before filing it again.",
   billOfSaleFirst: "File the bill of sale first. This document prints its figures.",
   figuresChanged: "The figures changed since this screen opened. Look at the document again before filing.",
+  ...DEALER_CHARGES_MESSAGES,
+  ...GOVERNMENT_FEES_FILING_MESSAGES,
+  chapter345Vehicle: CHAPTER_345_MESSAGE,
 };
 
 const ROOTS = ["billOfSale", "salvageBillOfSale"] as const;
@@ -44,6 +63,9 @@ export const FILED_MONEY_KEYS = [
   "paidToday",
   "sellerLienAmount",
 ] as const;
+
+/** The government lines on lines of their own, carried only when a sale charges them. */
+export const OWN_LINE_MONEY_KEYS = ["inspectionFee", "plateFee"] as const;
 
 /** The documents that must carry every money key: the ones that print the figures. */
 export const MONEY_REQUIRED_FOR = ["billOfSale", "salvageBillOfSale", "financing", "form130U"] as const;
@@ -78,6 +100,18 @@ export function figuresDiffer(
       continue;
     }
     if (!same(formData[key], Number(money[key]) || 0)) return true;
+  }
+  /*
+    The government lines of their own (government-fees.ts) are carried only
+    when the sale charges them, so they are compared both ways: one the
+    server charges must be posted at its figure, and one posted must be the
+    server's.
+  */
+  for (const key of OWN_LINE_MONEY_KEYS) {
+    const wanted = Number(money[key]) || 0;
+    const has = Object.prototype.hasOwnProperty.call(formData, key);
+    if (wanted > 0 && !has && required) return true;
+    if (has && !same(formData[key], wanted)) return true;
   }
   if (Object.prototype.hasOwnProperty.call(formData, "sellerLienEnabled")) {
     if (Boolean(formData.sellerLienEnabled) !== Boolean(expected.money.sellerLienEnabled)) return true;
@@ -165,6 +199,8 @@ export function figuresDisagreeWithBillOfSale(
     ["titleFee", "titleFee"],
     ["docFee", "docFee"],
     ["registrationFee", "registrationFee"],
+    ["inspectionFee", "inspectionFee"],
+    ["plateFee", "plateFee"],
     ["paidToday", "amountPaidToday"],
   ];
   if (printed.sellerLienEnabled === true) pairs.push(["sellerLienAmount", "sellerLienAmount"]);
