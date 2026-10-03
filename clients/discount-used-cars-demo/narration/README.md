@@ -4,7 +4,7 @@ A guided tour of the site and one whole sale on the desk, laid against the appro
 24 lines, Kokoro-82M `af_heart` at speed 0.95). Composition **`Narrated`** (`src/narrated/`); the approved `Demo` film
 is untouched. Recipe: `.claude/skills/recordly-demo/references/narration.md`.
 
-- **Master:** `out/discount-demo-narrated.mp4`: 1920×1080, 30 fps, 6901 frames (3:50.0), h264 CRF 17 + AAC 192k,
+- **Master:** `out/discount-demo-narrated.mp4`: 1920×1080, 30 fps, 6916 frames (3:50.5), h264 CRF 17 + AAC 192k,
   +faststart, SIZE_MASTER.
 - **Share copy:** `out/discount-demo-narrated-share.mp4`: same picture size and sound, +faststart, SIZE_SHARE (under
   40 MB).
@@ -21,8 +21,8 @@ is untouched. Recipe: `.claude/skills/recordly-demo/references/narration.md`.
 | 5 · The money | 107.5–147.4 s | 14-16 | Cash, the price (No: tax and fees on top), the receipt and the balance owed; the bill of sale and the 130-U naming the dealership as lienholder |
 | 6 · The plan | 147.4–169.3 s | 17-18 | Who files (We Do), plate, signer, the inspection's three answers, insurance |
 | 7 · The payoff | 169.3–198.6 s | 19-21 | The 130-U: box 19's county, the seller line with Maria Lopez's printed name and signature, the caption |
-| 8 · Signed and stored | 198.6–219.2 s | 22-23 | The packet's code, the buyer signing on the phone, 2 / 2 signed, Past Sales → Carter → the signed PDF |
-| 9 · Close | 218.7–230.0 s | 24 | The outro (facts only), fade to black |
+| 8 · Signed and stored | 198.6–219.7 s | 22-23 | The packet's code, the buyer signing on the phone, 2 / 2 signed, Past Sales → Carter → the signed PDF |
+| 9 · Close | 219.2–230.5 s | 24 | The outro (facts only), fade to black |
 
 ## Timing: every line and what is on screen
 
@@ -55,7 +55,7 @@ prints this table from the code.
 | 21-payoff-c | 192.57–196.63 | 0.60 | signed @ 193.67 | Back to the whole block, signed and named, on "signed"; caption "Signed Once. On Every Title Application." |
 | 22-stored-a | 199.50–203.20 | 2.87 | code @ 200.40 | The packet: 2.82x on Scan To Sign (the code, Open here) on "code"; the phone slides in on "signs every page": Begin, the bill of sale read and signed |
 | 23-stored-b | 205.60–217.10 | 2.40 | search @ 213.83 | The phone: the 130-U signed, Sign And Finish, All Signed. on "every signed document"; the desk: Ready To Print 2 / 2 signed at 1.62x on "stays with the sale"; Finish; Past Sales; "Carter" typed on "search their name"; the sale opened on "pull up the paperwork"; Open / Print |
-| 24-close | 218.70–226.13 | 1.60 | discount @ 223.81 | The signed bill of sale (page 4: buyer's and seller's signatures) dissolves into the outro: the logo, www.discountusedcarsandtrucks.com, (713) 900-5050 · 8108 Gulf Fwy, Houston, Tue – Sat 10 AM – 7 PM |
+| 24-close | 219.20–226.63 | 2.10 | discount @ 224.31 | The signed bill of sale (page 4), pushed onto the buyer's and the seller's signatures, dissolves into the outro: the logo, www.discountusedcarsandtrucks.com, (713) 900-5050 · 8108 Gulf Fwy, Houston, Tue – Sat 10 AM – 7 PM |
 
 Gaps over 1 s sit on a picture beat of its own, a tap or a page landing in silence: 05 (the sign-in card), 07 (Start
 Working, Start A Sale), 08 (the Camry's step), 10 (Next, Clean title, Next), 12 (the push onto the county), 13 (a
@@ -117,8 +117,8 @@ rule is the word first, then the action within about 0.3 s; the exceptions are m
 | 23 | signed document | 206.11 | All Signed. on the phone | 205.63 |
 | 23 | stays with the sale | 206.91 | Ready To Print · 2 / 2 signed at 1.62x | 207.07 (+0.16) |
 | 23 | search | 213.83 | Past Sales: "Carter" typed | typing 213.76 (−0.07) |
-| 23 | paperwork | 215.73 | The sale opened from Past Sales | row click 215.60 (−0.13); Open / Print 217.16, the PDF 217.3 |
-| 24 | Discount Used Cars and Trucks | 223.81 | The outro: logo, URL, phone, address, hours | outro from 218.7 |
+| 23 | paperwork | 215.73 | The sale opened from Past Sales | row click 215.60 (−0.13); Open / Print 217.16, the PDF 217.3, its signatures landed 218.75 |
+| 24 | Discount Used Cars and Trucks | 224.31 | The outro: logo, URL, phone, address, hours | outro from 219.2 |
 
 ## Shown another way than the line says
 

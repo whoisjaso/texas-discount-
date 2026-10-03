@@ -117,7 +117,7 @@ Timeline (film frames): A 0–1099 (the Admin click drawn at 1093) · 6 1099–1
 
 ## The narrated long cut (2026-10-03)
 
-`clients/discount-used-cars-demo`, composition `Narrated` (3:50, 6901 frames): the approved film's part A and desk
+`clients/discount-used-cars-demo`, composition `Narrated` (3:50, 6916 frames): the approved film's part A and desk
 sign-in reused, eight new desk captures (20-car … 27-desk-stored, in `narration/storyboard-long.json`), the deal's own
 bill of sale and 130-U pages, the phone ceremony, and 24 Kokoro lines anchored by key word. Recipe:
 `references/narration.md`; lessons N1–N12; timing and lip-to-picture tables: the project's `narration/README.md`.

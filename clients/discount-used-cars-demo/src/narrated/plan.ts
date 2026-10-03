@@ -308,8 +308,9 @@ const docC = (len: number): DocSpec => ({
   privacy: [[1543, 365, 404, 52]],
   openAt: 0,
   closeAt: len + 1,
-  keys: [{ at: 0.45, x: 1276, y: 2120, ds: 0.6, dur: 1.5 }],
-  spots: [{ from: 0.45, to: len + 1, box: [170, 1950, 2220, 280] }],
+  // a 1.1 s push that lands on the two signatures 0.45 s before the dissolve to the outro starts
+  keys: [{ at: 0.35, x: 1276, y: 2120, ds: 0.6, dur: 1.1 }],
+  spots: [{ from: 0.35, to: len + 1, box: [170, 1950, 2220, 280] }],
 });
 
 const PHONE: PhoneSpec = {
@@ -369,7 +370,7 @@ export const buildNarrated = () => {
   // the desk under the phone cuts to 27a as the phone starts to drop away
   byKey("24h").durationInFrames = partFrames + phoneTail;
   // doc C
-  const docCLen = 1.9;
+  const docCLen = 2.4;
   byKey("27h").durationInFrames = sec(docCLen);
 
   const { m, end: deskEnd } = starts();

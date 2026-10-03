@@ -552,7 +552,9 @@ plan that anchors each line's key word on its picture, then a stills pass and a 
 
 **N10. Keys closer than their push never land.**
 - *Rule:* Space document keys at least `dur` + 0.3 s apart, or accept that the camera passes through the first.
-- *Symptom:* The bill of sale's total row is held for 5 frames before the camera moves on to the lien section.
+- *Symptom:* The bill of sale's total row is held for 5 frames before the camera moves on to the lien section. The
+  last document (the signed bill of sale) was still pushing, motion-blurred, when the outro dissolved it: its push
+  was cut to 1.1 s and its hold lengthened 0.5 s so the signatures rest sharp before the dissolve.
 
 **N11. The transcribe-back check is a prompt to listen.**
 - *Rule:* Every difference between `speak` and what faster-whisper heard is listed and decided.
