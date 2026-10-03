@@ -6,6 +6,7 @@ import { setDealLanguage } from "@/lib/actions/deal-language";
 import type { DealLanguage } from "@/lib/sales/deal-language";
 import { tapHaptic } from "@/lib/haptics";
 import { useFunnel } from "@/components/admin/funnel/FunnelLocaleProvider";
+import { FreezeWayOut, useFreezeRefusal } from "@/components/admin/guide/HeldByBillOfSale";
 
 /**
  * What language the sale is conducted in — asked of deals that predate the
@@ -28,6 +29,8 @@ export default function LanguageStep({
   const [pending, startTransition] = useTransition();
   const [choosing, setChoosing] = useState<DealLanguage | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // A refusal from the filed bill of sale names what it holds and the way out.
+  const freezeRefusal = useFreezeRefusal();
 
   function choose(language: DealLanguage) {
     tapHaptic();
@@ -36,7 +39,8 @@ export default function LanguageStep({
     startTransition(async () => {
       const result = await setDealLanguage(dealId, language);
       if (!result.ok) {
-        setError(t.chrome.couldNotSave);
+        // The filed bill of sale was filed in the sale's language.
+        setError(freezeRefusal.text(result) ?? t.chrome.couldNotSave);
         setChoosing(null);
         return;
       }
@@ -73,6 +77,7 @@ export default function LanguageStep({
           {error}
         </p>
       ) : null}
+      {error ? <FreezeWayOut heldBy={freezeRefusal.heldBy} /> : null}
     </div>
   );
 }

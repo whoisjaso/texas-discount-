@@ -12,6 +12,7 @@ import { destinationAfterSignIn } from "@/lib/auth/destination";
 import {
   isLocalAdminPreviewEnabled,
   LOCAL_ADMIN_SESSION_COOKIE,
+  LOCAL_ADMIN_SIGNED_IN_COOKIE,
   localAdminSessionCookieOptions,
 } from "@/lib/auth/local-admin";
 import { issueCode, mayReceiveSignInCode, verifyCode } from "@/lib/auth/code-store";
@@ -102,6 +103,8 @@ export async function completeSignInCode(
   if (isLocalAdminPreviewEnabled()) {
     const cookieStore = await cookies();
     cookieStore.set(LOCAL_ADMIN_SESSION_COOKIE, identifier, localAdminSessionCookieOptions);
+    // When this browser signed in (password-reset cutoff, preview).
+    cookieStore.set(LOCAL_ADMIN_SIGNED_IN_COOKIE, String(Date.now()), localAdminSessionCookieOptions);
     redirect(await destinationAfterSignIn());
   }
 
@@ -129,6 +132,7 @@ export async function completeSignInCode(
     code. Supabase issues the session; we add the device cookie every
     other sign-in path adds.
   */
+  let deviceCookie: string;
   try {
     const { createServiceClient } = await import("@/lib/supabase/service");
     const service = createServiceClient();
@@ -143,19 +147,17 @@ export async function completeSignInCode(
       };
     }
     const supabase = await createClient();
-    const { error: sessionError } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "magiclink" });
+    const { data: session, error: sessionError } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "magiclink" });
     if (sessionError) {
       return { ok: false, stage: "email", email: identifier, error: "The code was right but the session could not start. Try again." };
     }
+    // Bound to the account that signed in (admin-device-session.ts).
+    deviceCookie = await createAdminDeviceSessionCookie(session?.user?.id ?? null);
     const cookieStore = await cookies();
-    cookieStore.set(
-      ADMIN_DEVICE_SESSION_COOKIE,
-      await createAdminDeviceSessionCookie(),
-      adminDeviceSessionCookieOptions,
-    );
+    cookieStore.set(ADMIN_DEVICE_SESSION_COOKIE, deviceCookie, adminDeviceSessionCookieOptions);
   } catch {
     return { ok: false, stage: "email", email: identifier, error: "Auth service unavailable. Try again." };
   }
 
-  redirect(await destinationAfterSignIn());
+  redirect(await destinationAfterSignIn({ deviceCookie }));
 }

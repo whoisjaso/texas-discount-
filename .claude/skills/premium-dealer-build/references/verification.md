@@ -23,7 +23,10 @@ look at the screenshots yourself, then send the user a few of them.
 - `next build`.
 - Dev server on 5190 with `DESK_ALLOW_UNSET_FACTS=true` (production builds need
   Supabase; the in-memory preview mock is dev only), then the five walks at
-  1440×900 and 390×844 with `scripts/desk-walk/`:
+  1440×900 and 390×844 with `scripts/desk-walk/`. On another port, start the
+  server with `PORT` and `NEXT_PUBLIC_SITE_URL` set to it and run every walk
+  with `DESK_BASE` pointing at it (signing and QR links follow
+  `NEXT_PUBLIC_SITE_URL`; the walks refuse any other local port):
   `node sale.cjs <out> scenarios/<name>.json <w> <h>` then
   `node ceremony.cjs <out>-cer "$(cat <out>/deal.txt)" <w> <h>`.
   Set THEME_ACCENT / THEME_GROUND / THEME_FONT to the client's computed values:

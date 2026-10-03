@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { verifySigningToken } from "@/lib/sales/signing-token";
 import { render130UPdf } from "@/lib/documents/render130U";
 import { createServiceClient } from "@/lib/supabase/service";
+import { signingSessionRevoked } from "@/lib/sales/void-bill-of-sale";
 
 /**
  * The real 130-U, for the buyer's screen.
@@ -33,12 +34,22 @@ export async function GET(
   const supabase = createServiceClient();
   const { data: row } = await supabase
     .from("document_agreements")
-    .select("id, deal_id, document_type")
+    .select("id, deal_id, document_type, voided_at")
     .eq("id", agreementId)
     .maybeSingle();
-  const agreement = row as { id: string; deal_id: string | null; document_type: string | null } | null;
-  if (!agreement || agreement.deal_id !== session.dealId || agreement.document_type !== "form130U") {
+  const agreement = row as { id: string; deal_id: string | null; document_type: string | null; voided_at?: string | null } | null;
+  // A voided 130-U is a record now, never a sheet to sign (owner's decision 10/02/2026).
+  if (!agreement || agreement.deal_id !== session.dealId || agreement.document_type !== "form130U" || agreement.voided_at) {
     return NextResponse.json({ error: "notFound" }, { status: 404 });
+  }
+  // And a link minted before the deal's paperwork was voided is gone.
+  const { data: voids, error: voidsError } = await supabase
+    .from("document_agreements")
+    .select("voided_at")
+    .eq("deal_id", session.dealId);
+  if (voidsError) return NextResponse.json({ error: "unavailable" }, { status: 503 });
+  if (signingSessionRevoked(session.issuedAt, (voids ?? []) as Array<{ voided_at?: string | null }>)) {
+    return NextResponse.json({ error: "replaced" }, { status: 410 });
   }
 
   const filled = await render130UPdf(agreement.id);

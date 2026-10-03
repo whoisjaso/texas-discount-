@@ -12,6 +12,7 @@ import { AdminButton, AdminLinkButton } from "@/components/admin/ui";
 import AuthShell from "@/components/admin/AuthShell";
 import CodeBoxes from "@/components/admin/CodeBoxes";
 import { brand } from "@/lib/dealership-config";
+import { getFunnelStrings } from "@/lib/sales/i18n";
 
 /**
  * Team Access.
@@ -111,6 +112,14 @@ function LoginScreen() {
         ) : notice === "oauth-preview" ? (
           <div className="mb-6">
             <Notice tone="quiet">Preview: Google sign-in runs on the live site only.</Notice>
+          </div>
+        ) : notice === "signed-out-reset" ? (
+          // The password was reset, so this device was signed out (owner's
+          // decision 10/02/2026). One quiet line, in both languages.
+          <div className="mb-6">
+            <Notice tone="quiet">
+              {getFunnelStrings("en").onboarding.signedOutReset} · {getFunnelStrings("es").onboarding.signedOutReset}
+            </Notice>
           </div>
         ) : null}
 

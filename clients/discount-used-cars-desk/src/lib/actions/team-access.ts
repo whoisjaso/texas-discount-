@@ -1,6 +1,7 @@
 "use server";
 
 import { randomBytes } from "crypto";
+import { endSessionsBefore } from "@/lib/auth/end-sessions";
 import { revalidatePath } from "next/cache";
 import type { User } from "@supabase/supabase-js";
 import { requireCurrentAdminPermission } from "@/lib/admin/current-admin";
@@ -568,6 +569,9 @@ async function reviewAuthOnlyAccess(
   }
 
   const temporaryPassword = generatedTemporaryPassword();
+  // Every device signed in before this moment is signed out (owner's
+  // decision 10/02/2026; password-reset-cutoff.ts).
+  const passwordResetAt = new Date().toISOString();
   const { error: updateError } = await service.auth.admin.updateUserById(user.id, {
     password: temporaryPassword,
     email_confirm: true,
@@ -577,6 +581,7 @@ async function reviewAuthOnlyAccess(
       desk_role: role,
       requires_password_change: true,
       can_sign_contracts: canRoleSignContracts(role),
+      password_reset_at: passwordResetAt,
     },
     user_metadata: {
       ...(user.user_metadata ?? {}),
@@ -584,12 +589,14 @@ async function reviewAuthOnlyAccess(
     },
   });
   if (updateError) return { ok: false, error: updateError.message };
+  // And the database ends the sessions it started before now (best effort).
+  await endSessionsBefore(service, user.id, passwordResetAt);
 
   await logTeamActivity({
     actorId,
     eventType: "team_access_approved",
     body: `${fullName} was approved as ${ROLE_LABELS[role]}.`,
-    metadata: { member_id: user.id, email, role, auth_only: true },
+    metadata: { member_id: user.id, email, role, auth_only: true, password_reset_at: passwordResetAt },
   });
 
   const emailResult = await sendTeamApprovalEmail({
@@ -673,6 +680,9 @@ export async function reviewTeamAccessAction(
   }
 
   const temporaryPassword = generatedTemporaryPassword();
+  // Every device signed in to this account before now is signed out (owner's
+  // decision 10/02/2026; password-reset-cutoff.ts).
+  const passwordResetAt = new Date().toISOString();
   let authUserId = member.auth_user_id;
 
   if (authUserId) {
@@ -684,6 +694,7 @@ export async function reviewTeamAccessAction(
         desk_role: role,
         requires_password_change: true,
         can_sign_contracts: canRoleSignContracts(role),
+        password_reset_at: passwordResetAt,
       },
       user_metadata: { full_name: member.full_name },
     });
@@ -699,6 +710,7 @@ export async function reviewTeamAccessAction(
           desk_role: role,
           requires_password_change: true,
           can_sign_contracts: canRoleSignContracts(role),
+          password_reset_at: passwordResetAt,
         },
         user_metadata: { full_name: member.full_name },
       });
@@ -713,6 +725,7 @@ export async function reviewTeamAccessAction(
           desk_role: role,
           requires_password_change: true,
           can_sign_contracts: canRoleSignContracts(role),
+          password_reset_at: passwordResetAt,
         },
         user_metadata: { full_name: member.full_name },
       });
@@ -720,6 +733,9 @@ export async function reviewTeamAccessAction(
       authUserId = data.user?.id ?? null;
     }
   }
+
+  // The database ends the account's sessions started before now (best effort).
+  await endSessionsBefore(access.service, authUserId, passwordResetAt);
 
   const { error: updateError } = await access.service
     .from("team_members")
@@ -747,7 +763,7 @@ export async function reviewTeamAccessAction(
     actorId: access.member?.id ?? null,
     eventType: "team_access_approved",
     body: `${member.full_name} was approved as ${ROLE_LABELS[role]}.`,
-    metadata: { member_id: member.id, email, role },
+    metadata: { member_id: member.id, email, role, password_reset_at: passwordResetAt },
   });
 
   revalidatePath("/admin/team");
@@ -777,6 +793,7 @@ async function resetApprovedMemberAccess({
       fullName: string;
       temporaryPassword: string;
       emailResult: ApprovalEmailResult;
+      passwordResetAt: string;
     }
   | { ok: false; error: string }
 > {
@@ -798,6 +815,14 @@ async function resetApprovedMemberAccess({
 
   const fullName = member.display_name || member.full_name;
   const temporaryPassword = generatedTemporaryPassword();
+  /*
+    The reset signs out every device signed in before it (owner's decision
+    10/02/2026): the account records the moment, and the proxy, the admin
+    layout and every action refuse a session that signed in earlier
+    (password-reset-cutoff.ts). supabase-js has no sign-out by user id, so
+    this time is the guarantee.
+  */
+  const passwordResetAt = new Date().toISOString();
   const appMetadata = {
     ...(existingUser?.app_metadata ?? {}),
     access_status: "active",
@@ -806,6 +831,7 @@ async function resetApprovedMemberAccess({
     // A reset is not an approval: the person's own clearance, as an owner
     // left it on their row, never the role's starting value.
     can_sign_contracts: member.can_sign_contracts === true,
+    password_reset_at: passwordResetAt,
   };
   const userMetadata = {
     ...(existingUser?.user_metadata ?? {}),
@@ -827,6 +853,8 @@ async function resetApprovedMemberAccess({
       user_metadata: userMetadata,
     });
     if (error) return { ok: false, error: error.message };
+    // The database ends the sessions it started before the reset (best effort).
+    await endSessionsBefore(service, authUserId, passwordResetAt);
   } else {
     const { data, error } = await service.auth.admin.createUser({
       email,
@@ -864,6 +892,7 @@ async function resetApprovedMemberAccess({
     fullName,
     temporaryPassword,
     emailResult,
+    passwordResetAt,
   };
 }
 
@@ -895,7 +924,7 @@ export async function resetTeamMemberAccessAction(
     actorId: access.member?.id ?? null,
     eventType: "team_access_reset",
     body: `${reset.fullName} was sent a fresh setup email.`,
-    metadata: { member_id: member.id, email: reset.email, role: member.role },
+    metadata: { member_id: member.id, email: reset.email, role: member.role, password_reset_at: reset.passwordResetAt },
   });
 
   revalidatePath("/admin/team");
@@ -950,7 +979,7 @@ export async function resetAcceptedTeamAccessAction(
         actorId: access.member?.id ?? null,
         eventType: "team_access_reset",
         body: `${reset.fullName} was sent a fresh setup email.`,
-        metadata: { member_id: member.id, email: reset.email, role: member.role, bulk: true },
+        metadata: { member_id: member.id, email: reset.email, role: member.role, bulk: true, password_reset_at: reset.passwordResetAt },
       });
     } else {
       failedNames.push(member.full_name);

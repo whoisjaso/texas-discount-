@@ -16,6 +16,16 @@ import {
   INSPECTION_NOTICE_VERSION,
   type PlanQuestionId,
 } from "@/lib/sales/sale-plan";
+import { filedBillOfSaleOn } from "@/lib/sales/filed-bill-of-sale";
+import { BILL_OF_SALE_TYPES } from "@/lib/sales/down-payment-freeze";
+import {
+  BILL_OF_SALE_FROZEN_CODE,
+  FREEZE_MESSAGES,
+  PLAN_FROZEN_CODE,
+  planHeldMessage,
+  type FreezeField,
+} from "@/lib/sales/bill-of-sale-freeze";
+import { getFunnelStrings } from "@/lib/sales/i18n";
 
 /**
  * Recording ONE answer about how this sale works.
@@ -39,7 +49,37 @@ import {
 
 export type SalePlanState =
   | { ok: true; complete: boolean; next: PlanQuestionId | null }
-  | { ok: false; error: string };
+  | { ok: false; error: string; code?: undefined }
+  | { ok: false; error: string; code: typeof BILL_OF_SALE_FROZEN_CODE; field: FreezeField }
+  | {
+      ok: false;
+      error: string;
+      code: typeof PLAN_FROZEN_CODE;
+      /** The filed documents holding the answer, by type, for the screen to name in its language. */
+      blockedBy: string[];
+      heldBy: "billOfSale" | "powerOfAttorney";
+    };
+
+/**
+ * The plan answers the bill of sale prints in its Still To Do, and the field a
+ * refusal names for each (owner's decision 10/02/2026). Who signs the title
+ * application and whether the price includes registration are not printed on
+ * it; the documents that do print them hold them (planEditRefusal).
+ */
+const PRINTED_PLAN_FIELDS: Partial<Record<PlanQuestionId, FreezeField>> = {
+  registrationBy: "registration",
+  inspectionBy: "inspection",
+  insuranceShown: "insurance",
+};
+
+/** The bill of sale's Still To Do, as it prints from a plan. */
+function printedStillToDo(plan: ReturnType<typeof readSalePlan>) {
+  return {
+    registration: plan.registrationBy === "buyer" ? "buyer" : "dealer",
+    inspection: plan.inspectionBy ?? "",
+    insurance: plan.insuranceShown === null ? "" : String(plan.insuranceShown),
+  };
+}
 
 /** The wire shape: a question id and its answer, nothing else. */
 export type PlanAnswer = {
@@ -98,13 +138,17 @@ export async function saveSalePlanAnswer(
       changed underneath it. Reopening is a real feature that does not exist
       yet, so the honest answer is to refuse and name what is holding it.
     */
-    const { data: finalized } = await supabase
+    const { data: finalized, error: finalizedError } = await supabase
       .from("document_agreements")
-      .select("document_type")
+      .select("document_type, voided_at")
       .eq("deal_id", dealId)
       .not("finalized_at", "is", null);
+    // Fail closed: a plan answer never moves past documents nobody could read.
+    if (finalizedError) throw new Error("Filed documents could not be checked.");
 
-    const finalizedTypes = ((finalized ?? []) as Array<{ document_type: string | null }>)
+    // A voided copy holds nothing (owner's decision 10/02/2026).
+    const finalizedTypes = ((finalized ?? []) as Array<{ document_type: string | null; voided_at?: string | null }>)
+      .filter((row) => !row.voided_at)
       .map((row) => row.document_type)
       .filter((type): type is string => Boolean(type));
 
@@ -122,9 +166,22 @@ export async function saveSalePlanAnswer(
         JSON.stringify(applyPlanAnswer(stored, questionId, value as Parameters<typeof applyPlanAnswer>[2])) !==
           JSON.stringify(stored);
       if (wouldChange) {
+        /*
+          Named, with the way out (owner's decision 10/02/2026): voiding the
+          bill of sale voids every one of these but the power of attorney,
+          ink on the county's form, which needs a new one instead.
+        */
+        const byPowerOfAttorney = frozen.blockedBy.includes("powerOfAttorney");
+        const titles = getFunnelStrings("en").documents as Record<string, string>;
         return {
           ok: false,
-          error: `This cannot change now: ${frozen.blockedBy.join(", ")} already signed. Void that document first.`,
+          code: PLAN_FROZEN_CODE,
+          blockedBy: [...frozen.blockedBy],
+          heldBy: byPowerOfAttorney ? "powerOfAttorney" : "billOfSale",
+          error: planHeldMessage(
+            frozen.blockedBy.map((type) => titles[type] ?? type),
+            byPowerOfAttorney,
+          ),
         };
       }
     }
@@ -140,59 +197,103 @@ export async function saveSalePlanAnswer(
     */
     let refusal: string | null = null;
 
-    const merged = await casMergeStepData(supabase, dealId, (current) => {
-      // Read fresh on every attempt, including retries.
-      const stored = readSalePlan(current);
-      const owed = planQuestions(stored);
+    /*
+      The filed bill of sale prints the plan's Still To Do: who files the
+      title and registration, where the inspection stands and whether proof
+      of insurance was shown (owner's decision 10/02/2026). An answer that
+      would print differently is refused, an open row included (it printed
+      as open). Known from the read above when a bill of sale filed at the
+      desk is among it; otherwise looked up, between two passes of the merge,
+      only when the printed Still To Do would actually change, which also
+      finds one the older e-sign path completed. Fails closed.
+    */
+    const printedField = PRINTED_PLAN_FIELDS[questionId] ?? null;
+    let billFiled: boolean | undefined = finalizedTypes.some((type) =>
+      (BILL_OF_SALE_TYPES as readonly string[]).includes(type),
+    )
+      ? true
+      : undefined;
+    let needsLookup: boolean = false;
+    let frozenField: FreezeField | null = null;
+    let merged: Awaited<ReturnType<typeof casMergeStepData>> = { ok: false, error: "write-failed" };
 
-      /*
-        A question this sale no longer asks.
+    for (let pass = 0; pass < 2; pass += 1) {
+      needsLookup = false;
+      frozenField = null;
+      merged = await casMergeStepData(supabase, dealId, (current) => {
+        // Read fresh on every attempt, including retries.
+        const stored = readSalePlan(current);
+        const owed = planQuestions(stored);
 
-        An operator who walked back and switched registration to the dealer
-        may still have the price screen mounted; its save must not land.
-      */
-      if (!owed.includes(questionId)) {
-        refusal = "That question is not part of this sale any more.";
-        return null;
-      }
+        /*
+          A question this sale no longer asks.
 
-      /*
-        And a question it has not reached.
+          An operator who walked back and switched registration to the dealer
+          may still have the price screen mounted; its save must not land.
+        */
+        if (!owed.includes(questionId)) {
+          refusal = "That question is not part of this sale any more.";
+          return null;
+        }
 
-        Membership alone is not enough: with registration unanswered the
-        chain still contains inspection and insurance, so a hand-built
-        request could answer them out of order and leave the branch question
-        hanging. Everything before this one must be answered first.
-      */
-      const position = owed.indexOf(questionId);
-      const unansweredBefore = owed
-        .slice(0, position)
-        .find((id) => !isPlanQuestionAnswered(stored, id));
-      if (unansweredBefore) {
-        refusal = "Answer the questions in order.";
-        return null;
-      }
+        /*
+          And a question it has not reached.
 
-      refusal = null;
-      const next = applyPlanAnswer(
-        stored,
-        questionId,
-        value as Parameters<typeof applyPlanAnswer>[2],
-      );
-      if (questionId === "inspectionBy" && value === "buyer") {
-        next.inspectionAcknowledgment = {
-          at: new Date().toISOString(),
-          by: access.user!.id,
-          version: INSPECTION_NOTICE_VERSION,
-        };
-      }
-      // ONLY the plan key. casMergeStepData spreads the patch over current,
-      // so returning the whole blob would defeat the narrow-patch contract
-      // that keeps a retry from erasing a sibling answer.
-      return { [SALE_PLAN_KEY]: next };
-    });
+          Membership alone is not enough: with registration unanswered the
+          chain still contains inspection and insurance, so a hand-built
+          request could answer them out of order and leave the branch question
+          hanging. Everything before this one must be answered first.
+        */
+        const position = owed.indexOf(questionId);
+        const unansweredBefore = owed
+          .slice(0, position)
+          .find((id) => !isPlanQuestionAnswered(stored, id));
+        if (unansweredBefore) {
+          refusal = "Answer the questions in order.";
+          return null;
+        }
+
+        refusal = null;
+        const next = applyPlanAnswer(
+          stored,
+          questionId,
+          value as Parameters<typeof applyPlanAnswer>[2],
+        );
+        if (questionId === "inspectionBy" && value === "buyer") {
+          next.inspectionAcknowledgment = {
+            at: new Date().toISOString(),
+            by: access.user!.id,
+            version: INSPECTION_NOTICE_VERSION,
+          };
+        }
+        if (printedField) {
+          const before = printedStillToDo(stored);
+          const after = printedStillToDo(next);
+          if (JSON.stringify(before) !== JSON.stringify(after)) {
+            if (billFiled === undefined) {
+              needsLookup = true;
+              return null;
+            }
+            if (billFiled) {
+              frozenField = printedField;
+              return null;
+            }
+          }
+        }
+        // ONLY the plan key. casMergeStepData spreads the patch over current,
+        // so returning the whole blob would defeat the narrow-patch contract
+        // that keeps a retry from erasing a sibling answer.
+        return { [SALE_PLAN_KEY]: next };
+      });
+      if (!needsLookup) break;
+      billFiled = (await filedBillOfSaleOn(dealId)) !== null;
+    }
 
     if (refusal) return { ok: false, error: refusal };
+    if (frozenField) {
+      const field: FreezeField = frozenField;
+      return { ok: false, code: BILL_OF_SALE_FROZEN_CODE, field, error: FREEZE_MESSAGES[field] };
+    }
     if (!merged.ok) throw new Error("Could not save that. Try again.");
 
     /*

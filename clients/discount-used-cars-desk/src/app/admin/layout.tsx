@@ -72,6 +72,11 @@ export default async function AdminLayout({
   }
 
   const access = await getCurrentAdminAccess();
+  // A device signed in before the account's password reset is signed out,
+  // and told why (owner's decision 10/02/2026).
+  if (access.signedOut === "passwordReset") {
+    redirect("/admin/login?notice=signed-out-reset");
+  }
   if (!access.user) {
     redirect("/admin/login");
   }

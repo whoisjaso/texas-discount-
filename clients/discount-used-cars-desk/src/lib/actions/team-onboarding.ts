@@ -20,6 +20,13 @@ import {
   type NewPasswordProblem,
 } from "@/lib/auth/password-rules";
 import type { TeamMember } from "@/lib/operations/types";
+import { cookies } from "next/headers";
+import { createClient } from "@/lib/supabase/server";
+import {
+  ADMIN_DEVICE_SESSION_COOKIE,
+  adminDeviceSessionCookieOptions,
+  createAdminDeviceSessionCookie,
+} from "@/lib/auth/admin-device-session";
 
 /**
  * First sign-in: a password of their own when the account is still on a
@@ -55,6 +62,7 @@ export type OnboardingErrorCode =
   | NewPasswordProblem["code"]
   | "passwordNotNeeded"
   | "passwordSaveFailed"
+  | "signedInBeforeReset"
   | "signInAgain"
   | "notOnRoster"
   | "notActive"
@@ -138,6 +146,17 @@ async function currentOnboardee(): Promise<Onboardee> {
  */
 export async function chooseOnboardingPasswordAction(formData: FormData): Promise<OnboardingPasswordResult> {
   const access = await getCurrentAdminAccess();
+  /*
+    Only a session that signed in after the reset chooses the password
+    (owner's decision 10/02/2026): a device that was already signed in when an
+    owner reset the account is signed out, never handed the new password.
+  */
+  if (access.signedOut === "passwordReset") {
+    return refuse(
+      "signedInBeforeReset",
+      "This device signed in before the password was reset. Sign in again first.",
+    );
+  }
   if (!access.user) return refuse("signInAgain", "Sign in again first.");
   if (access.user.app_metadata?.requires_password_change !== true) {
     return refuse(
@@ -170,8 +189,32 @@ export async function chooseOnboardingPasswordAction(formData: FormData): Promis
   }
 
   if (access.member) await logPasswordChosen(access.member.id, access.member.full_name ?? null);
+  await signBackIn(access.user.email ?? null, password as string);
   revalidatePath("/admin", "layout");
   return { ok: true };
+}
+
+/**
+ * The admin password write ends every session of the account, this one
+ * included, so the member is signed straight back in with the password they
+ * just chose, on the server, and this device gets a new device cookie dated
+ * now (after the reset). Best effort: if it fails, the next page sends them
+ * to sign in, which is where they would be anyway.
+ */
+async function signBackIn(email: string | null, password: string) {
+  if (!email) return;
+  try {
+    const { data, error } = await (await createClient()).auth.signInWithPassword({ email, password });
+    if (error) return;
+    (await cookies()).set(
+      ADMIN_DEVICE_SESSION_COOKIE,
+      // Bound to the account that signed in (admin-device-session.ts).
+      await createAdminDeviceSessionCookie(data?.user?.id ?? null),
+      adminDeviceSessionCookieOptions,
+    );
+  } catch {
+    // The password is saved; signing back in is the convenience.
+  }
 }
 
 /**

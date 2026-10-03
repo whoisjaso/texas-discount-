@@ -10,6 +10,7 @@ import {
 import {
   isLocalAdminPreviewEnabled,
   LOCAL_ADMIN_SESSION_COOKIE,
+  LOCAL_ADMIN_SIGNED_IN_COOKIE,
   localAdminSessionCookieOptions,
 } from "@/lib/auth/local-admin";
 import { createClient } from "@/lib/supabase/server";
@@ -97,6 +98,9 @@ export async function loginAdmin(
   if (isLocalAdminPreviewEnabled()) {
     const cookieStore = await cookies();
     cookieStore.set(LOCAL_ADMIN_SESSION_COOKIE, email, localAdminSessionCookieOptions);
+    // When this browser signed in: preview's stand-in for the device
+    // cookie's issue time, read by the password-reset cutoff.
+    cookieStore.set(LOCAL_ADMIN_SIGNED_IN_COOKIE, String(Date.now()), localAdminSessionCookieOptions);
     // The same one answer every other way in asks, so a preview member who
     // has not onboarded lands on onboarding directly rather than through a
     // chained layout redirect (a blank page). With no preview member it is
@@ -116,37 +120,37 @@ export async function loginAdmin(
     return { success: false, error: "Invalid email or password." };
   }
 
+  let deviceCookie: string;
   try {
     const supabase = await createClient();
-    const { error: firstError } = await supabase.auth.signInWithPassword({
+    const first = await supabase.auth.signInWithPassword({
       email: signInEmail,
       password,
     });
-    const error =
+    const firstError = first.error;
+    const second =
       firstError && (await resyncConfiguredAdminPassword(signInEmail, password))
-        ? (
-            await supabase.auth.signInWithPassword({
-              email: signInEmail,
-              password,
-            })
-          ).error
-        : firstError;
+        ? await supabase.auth.signInWithPassword({
+            email: signInEmail,
+            password,
+          })
+        : null;
+    const error = second ? second.error : firstError;
+    // The device cookie names the account it vouches for (admin-device-session.ts).
+    const signedInId = (second ?? first)?.data?.user?.id ?? null;
 
     if (error) {
       return { success: false, error: "Invalid email or password." };
     }
 
+    deviceCookie = await createAdminDeviceSessionCookie(signedInId);
     const cookieStore = await cookies();
-    cookieStore.set(
-      ADMIN_DEVICE_SESSION_COOKIE,
-      await createAdminDeviceSessionCookie(),
-      adminDeviceSessionCookieOptions,
-    );
+    cookieStore.set(ADMIN_DEVICE_SESSION_COOKIE, deviceCookie, adminDeviceSessionCookieOptions);
   } catch {
     return { success: false, error: "Auth service unavailable. Try again." };
   }
 
-  redirect(await destinationAfterSignIn());
+  redirect(await destinationAfterSignIn({ deviceCookie }));
 }
 
 export async function logoutAdmin(): Promise<void> {
@@ -158,5 +162,6 @@ export async function logoutAdmin(): Promise<void> {
   cookieStore.delete("admin-session");
   cookieStore.delete(ADMIN_DEVICE_SESSION_COOKIE);
   cookieStore.delete(LOCAL_ADMIN_SESSION_COOKIE);
+  cookieStore.delete(LOCAL_ADMIN_SIGNED_IN_COOKIE);
   redirect("/admin/login");
 }

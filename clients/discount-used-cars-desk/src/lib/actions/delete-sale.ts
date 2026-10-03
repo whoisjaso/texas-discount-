@@ -72,11 +72,28 @@ export async function deleteSaleAction(
 
   const { data: agreements, error: readError } = await service
     .from("document_agreements")
-    .select("id, has_buyer_signature, signature_svg, signed_at")
+    .select("id, has_buyer_signature, signature_svg, signed_at, voided_at")
     .eq("deal_id", dealId);
 
   if (readError) {
     return { ok: false, error: "Could not check the paperwork on that sale." };
+  }
+
+  /*
+    Voided paperwork is a record that is kept (owner's decision 10/02/2026):
+    who voided what, when and why, and the copy itself. Deleting the sale
+    would take it with it, so nobody deletes such a sale, the owner
+    included; the database refuses it too (the voided row is final).
+  */
+  const holdsVoided = (agreements ?? []).some(
+    (raw) => Boolean((raw as unknown as { voided_at?: string | null }).voided_at),
+  );
+  if (holdsVoided) {
+    return {
+      ok: false,
+      error:
+        "This sale has voided paperwork on record. Voided records are kept, so the sale cannot be deleted. Abandon it instead.",
+    };
   }
 
   // Three ways a buyer's signature is recorded, depending on which path

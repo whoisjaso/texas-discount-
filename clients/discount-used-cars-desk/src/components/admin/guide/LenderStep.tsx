@@ -7,6 +7,7 @@ import { saveDealFunding } from "@/lib/actions/sale-funding";
 import { lenderTag, searchLenders, type Lender } from "@/lib/sales/lenders";
 import { tapHaptic } from "@/lib/haptics";
 import { useFunnel } from "@/components/admin/funnel/FunnelLocaleProvider";
+import { FreezeWayOut, useFreezeRefusal } from "@/components/admin/guide/HeldByBillOfSale";
 import { fillTemplate } from "@/lib/sales/i18n";
 
 /**
@@ -40,6 +41,8 @@ export default function LenderStep({
   const [query, setQuery] = useState("");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  // A refusal from the filed bill of sale names what it holds and the way out.
+  const freezeRefusal = useFreezeRefusal();
   const searchId = useId();
 
   const results = useMemo(() => searchLenders(lenders, query), [lenders, query]);
@@ -54,7 +57,7 @@ export default function LenderStep({
     startTransition(async () => {
       const result = await saveDealFunding(dealId, data);
       if (!result.ok) {
-        setError(result.error ?? t.chrome.couldNotSave);
+        setError(freezeRefusal.text(result) ?? result.error ?? t.chrome.couldNotSave);
         return;
       }
       onNavigate();
@@ -165,6 +168,7 @@ export default function LenderStep({
           {error}
         </p>
       ) : null}
+      {error ? <FreezeWayOut heldBy={freezeRefusal.heldBy} /> : null}
     </div>
   );
 }

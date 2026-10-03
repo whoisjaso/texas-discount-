@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { FILING_GATE_MESSAGES } from '@/lib/sales/refile-gates';
+import { isFiledAgreement, type FiledAgreementRow } from '@/lib/sales/down-payment-freeze';
 import { requireAdmin } from '@/lib/admin-auth';
 import {
   computeSigningTokenExpiresAt,
@@ -112,6 +114,32 @@ export async function POST(req: NextRequest) {
 
   const status = body.status || 'pending';
   const isPending = status === 'pending';
+
+  /*
+    One current bill of sale per sale, here as in the sale's own filing
+    (owner's decision 10/02/2026; refile-gates.ts, billOfSaleAlreadyFiled):
+    this older route cannot file a second bill of sale on a deal that holds
+    a current one. A second copy is filed only after the first is voided.
+  */
+  if (
+    body.deal_id &&
+    !isPending &&
+    (body.document_type === 'billOfSale' || body.document_type === 'salvageBillOfSale')
+  ) {
+    const { data: rows, error: rowsError } = await supabase
+      .from('document_agreements')
+      .select('id, document_type, status, finalized_at, completed_at, voided_at')
+      .eq('deal_id', body.deal_id);
+    if (rowsError) {
+      return NextResponse.json({ error: 'Filed documents could not be checked.' }, { status: 500 });
+    }
+    const current = ((rows ?? []) as FiledAgreementRow[]).some(
+      (row) => (row.document_type === 'billOfSale' || row.document_type === 'salvageBillOfSale') && isFiledAgreement(row),
+    );
+    if (current) {
+      return NextResponse.json({ error: FILING_GATE_MESSAGES.billOfSaleAlreadyFiled }, { status: 409 });
+    }
+  }
   const signingToken = body.signing_token || generateSigningToken();
   const signingTokenExpiresAt =
     body.signing_token_expires_at || computeSigningTokenExpiresAt();
@@ -172,6 +200,14 @@ export async function PATCH(req: NextRequest) {
 
   // Trash / Restore actions
   if (body.action === 'trash') {
+    // A sale's filed or voided document stays on the sale's record.
+    const held = await saleDocumentIsFiled(supabase, body.id);
+    if (held === 'unknown') {
+      return NextResponse.json({ error: 'The document could not be checked.' }, { status: 500 });
+    }
+    if (held) {
+      return NextResponse.json({ error: FILED_DOCUMENT_IS_FIXED }, { status: 409 });
+    }
     const { data, error } = await supabase
       .from('document_agreements')
       .update({ deleted_at: new Date().toISOString() })
@@ -212,6 +248,22 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
   }
 
+  /*
+    A sale's filed document is never rewritten in place (owner's decision
+    10/02/2026): its printed payload and its status are what was agreed, and
+    a correction is a void and a new filing. Checked only when this patch
+    would change either.
+  */
+  if (updates.completed_link !== undefined || updates.status !== undefined) {
+    const held = await saleDocumentIsFiled(supabase, body.id);
+    if (held === 'unknown') {
+      return NextResponse.json({ error: 'The document could not be checked.' }, { status: 500 });
+    }
+    if (held) {
+      return NextResponse.json({ error: FILED_DOCUMENT_IS_FIXED }, { status: 409 });
+    }
+  }
+
   const { data, error } = await supabase
     .from('document_agreements')
     .update(updates)
@@ -223,4 +275,26 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
   return NextResponse.json(data);
+}
+
+const FILED_DOCUMENT_IS_FIXED =
+  "This document is filed on a sale and is kept as it was filed. Void the bill of sale from the sale's paperwork and file it again instead.";
+
+/**
+ * Whether a row is a sale's filed (or voided) document: deal-linked, and
+ * filed by the desk's own rule or voided. "unknown" when it cannot be read.
+ */
+async function saleDocumentIsFiled(
+  supabase: ReturnType<typeof createServiceClient>,
+  id: string,
+): Promise<boolean | 'unknown'> {
+  const { data, error } = await supabase
+    .from('document_agreements')
+    .select('id, deal_id, document_type, status, finalized_at, completed_at, voided_at')
+    .eq('id', id)
+    .single();
+  if (error) return 'unknown';
+  const row = data as (FiledAgreementRow & { deal_id?: string | null; voided_at?: string | null }) | null;
+  if (!row || !row.deal_id) return false;
+  return Boolean(row.voided_at) || isFiledAgreement(row);
 }

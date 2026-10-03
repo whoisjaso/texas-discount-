@@ -18,6 +18,7 @@ import LenderStep from "@/components/admin/guide/LenderStep";
 import MoneyStep from "@/components/admin/guide/MoneyStep";
 import WebDealerHandoff from "@/components/admin/WebDealerHandoff";
 import PlateStep from "@/components/admin/guide/PlateStep";
+import HeldByBillOfSale, { FreezeProvider, FreezeWayOut } from "@/components/admin/guide/HeldByBillOfSale";
 import FunnelLanguageToggle from "@/components/admin/funnel/FunnelLanguageToggle";
 import { useFunnel } from "@/components/admin/funnel/FunnelLocaleProvider";
 import { fillTemplate } from "@/lib/sales/i18n";
@@ -115,7 +116,14 @@ export default function GuideStepScreen({
   badge = null,
   nextHref,
   returnHref = null,
+  freeze = null,
 }: {
+  /**
+   * Whether the filed bill of sale holds this screen's answer, and whether
+   * this viewer may void it (owner's decision 10/02/2026). The server refuses
+   * a change either way; this only lets the screen say so before and after.
+   */
+  freeze?: { canVoid: boolean; held: boolean } | null;
   dealId: string;
   vehicle: string;
   buyerName: string;
@@ -354,7 +362,10 @@ export default function GuideStepScreen({
           {question}
         </h1>
 
+        <FreezeProvider value={freeze ? { dealId, stepKey: currentKey, canVoid: freeze.canVoid, held: freeze.held } : null}>
         <div className="ed-guide-answer">
+          {/* On the filed bill of sale: said before anything is changed. */}
+          <HeldByBillOfSale />
           {current.key === "language" ? (
             <LanguageStep dealId={dealId} nextHref={nextHref} onNavigate={() => beginNavigation("forward")} />
           ) : null}
@@ -465,6 +476,12 @@ export default function GuideStepScreen({
                     : t.chrome.filed}
                 </p>
               ) : null}
+              {/* A filed bill of sale can be voided and filed again, from
+                  the packet; a quiet way there from its own step. */}
+              {current.done &&
+              (current.documentType === "billOfSale" || current.documentType === "salvageBillOfSale") ? (
+                <FreezeWayOut />
+              ) : null}
             </div>
           ) : null}
 
@@ -497,6 +514,7 @@ export default function GuideStepScreen({
             />
           ) : null}
         </div>
+        </FreezeProvider>
       </main>
 
       <nav className="ed-guide-nav" aria-label={t.chrome.walkthroughNav}>

@@ -15,6 +15,8 @@ import {
 } from "@/lib/sales/buyer-id";
 import { verifyCaptureToken } from "@/lib/sales/capture-token";
 import { casMergeStepData } from "@/lib/sales/step-data-write";
+import { mergeUnderBillOfSaleFreeze } from "@/lib/sales/frozen-merge";
+import type { BillOfSaleFrozenRefusal } from "@/lib/sales/bill-of-sale-freeze";
 
 /**
  * Writing the buyer's licence onto a deal.
@@ -36,7 +38,7 @@ import { casMergeStepData } from "@/lib/sales/step-data-write";
  * whole-column write would drop them.
  */
 
-export type BuyerIdState = { ok: boolean; error?: string };
+export type BuyerIdState = { ok: boolean; error?: string; code?: undefined } | BillOfSaleFrozenRefusal;
 
 type AnyClient =
   | Awaited<ReturnType<typeof createClient>>
@@ -172,17 +174,40 @@ export async function saveConfirmedId(
     mailing[key] = text(`mailing.${key}`);
   }
 
-  await mergeBuyerId(supabase, dealId, (current) =>
-    applyConfirmation(current, {
-      fields,
-      ...(sentMailing ? { mailing } : {}),
-      // Only a literal "true" from the confirm control counts. Absence is not
-      // a confirmation, and neither is any other value.
-      ...(formData.has("mailingConfirmed")
-        ? { mailingConfirmed: formData.get("mailingConfirmed") === "true" }
-        : {}),
-    }),
-  );
+  /*
+    The filed bill of sale prints the buyer's confirmed name, ID number and
+    mailing address (owner's decision 10/02/2026; SOP Freeze): a change to
+    any of them is refused until it is voided and filed again, and a filed
+    power of attorney, ink on the county's form, holds the name and address
+    on its own. The capture paths above write only images and what a reader
+    saw (`read`), which nothing prints, so they are not held.
+  */
+  let saved: Awaited<ReturnType<typeof mergeUnderBillOfSaleFreeze>>;
+  try {
+    saved = await mergeUnderBillOfSaleFreeze(
+      supabase,
+      dealId,
+      (current) =>
+        writeBuyerId(
+          current,
+          applyConfirmation(readBuyerId(current), {
+            fields,
+            ...(sentMailing ? { mailing } : {}),
+            // Only a literal "true" from the confirm control counts. Absence is not
+            // a confirmation, and neither is any other value.
+            ...(formData.has("mailingConfirmed")
+              ? { mailingConfirmed: formData.get("mailingConfirmed") === "true" }
+              : {}),
+          }),
+        ),
+      { holdForPowerOfAttorney: true },
+    );
+  } catch {
+    // The filed documents could not be read: nothing is written (fail closed).
+    return { ok: false, error: "Could not save that. Try again." };
+  }
+  if (!saved.ok) return saved;
+  if (!saved.merged.ok) throw new Error(saved.merged.error);
   revalidatePath(`/admin/sales/${dealId}`);
   return { ok: true };
 }

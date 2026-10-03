@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { finalizePaperwork } from "@/lib/actions/paperwork";
@@ -69,6 +70,8 @@ export default function ReviewStep({
   const { t, lang } = useFunnel();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  /** A filing refused by the void rules: the packet is where it is fixed. */
+  const [openPaperwork, setOpenPaperwork] = useState(false);
 
   const dollars = (amount: number) => funnelDollars(amount, lang);
 
@@ -152,7 +155,21 @@ export default function ReviewStep({
         signature: buyerSignature || null,
       });
       if (!result.ok) {
-        setError(result.error ?? t.review.couldNotFile);
+        /*
+          Filing again goes through three more gates (owner's decision
+          10/02/2026): one current bill of sale, the bill of sale first, and
+          the figures this screen shows still being the sale's. Said in the
+          screen's language; a screen opened before a change reloads.
+        */
+        const gate =
+          result.code === "billOfSaleAlreadyFiled" ||
+          result.code === "billOfSaleFirst" ||
+          result.code === "figuresChanged"
+            ? result.code
+            : null;
+        setOpenPaperwork(gate === "billOfSaleAlreadyFiled" || gate === "billOfSaleFirst");
+        setError(gate ? t.review[gate] : result.error ?? t.review.couldNotFile);
+        if (gate === "figuresChanged") router.refresh();
         return;
       }
       router.push(doneHref);
@@ -380,6 +397,13 @@ export default function ReviewStep({
       {error ? (
         <p className="ed-paper-error" role="alert">
           {error}
+        </p>
+      ) : null}
+      {error && openPaperwork ? (
+        <p className="ed-freeze-way">
+          <Link href={`/admin/sales/${encodeURIComponent(dealId)}/packet`} className="ed-freeze-link">
+            {t.review.openPaperwork}
+          </Link>
         </p>
       ) : null}
     </div>

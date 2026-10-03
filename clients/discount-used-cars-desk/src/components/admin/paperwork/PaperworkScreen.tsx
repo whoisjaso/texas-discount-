@@ -14,6 +14,7 @@ import {
   localizeQuestion,
 } from "@/lib/sales/question-i18n";
 import type { AskedQuestion, PaperworkMoney } from "@/lib/sales/paperwork";
+import HeldByBillOfSale, { FreezeProvider } from "@/components/admin/guide/HeldByBillOfSale";
 
 /**
  * The paperwork corridor's chrome, on the client so the toggle can swap
@@ -40,7 +41,14 @@ export default function PaperworkScreen({
   money,
   quotedRegistrationAmount,
   poa,
+  freeze = null,
 }: {
+  /**
+   * Whether the filed bill of sale holds this answer, and whether this viewer
+   * may void it (owner's decision 10/02/2026). The server refuses a change
+   * either way; this only lets the screen say so.
+   */
+  freeze?: { canVoid: boolean; held: boolean } | null;
   dealId: string;
   documentType: string;
   documentTitle: string;
@@ -117,7 +125,11 @@ export default function PaperworkScreen({
         </p>
         <h1 className="ed-guide-question">{heading}</h1>
 
+        <FreezeProvider
+          value={freeze ? { dealId, stepKey: `document:${documentType}`, canVoid: freeze.canVoid, held: freeze.held } : null}
+        >
         <div className="ed-guide-answer">
+          {!reviewing ? <HeldByBillOfSale /> : null}
           {reviewing ? (
             <ReviewStep
               dealId={dealId}
@@ -142,6 +154,7 @@ export default function PaperworkScreen({
             />
           ) : null}
         </div>
+        </FreezeProvider>
       </main>
 
       <nav className="ed-guide-nav" aria-label={t.chrome.paperworkNav}>

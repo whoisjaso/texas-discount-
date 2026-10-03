@@ -4,8 +4,17 @@ import {
   createLocalAdminUser,
   isLocalAdminPreviewEnabled,
   LOCAL_ADMIN_SESSION_COOKIE,
+  LOCAL_ADMIN_SIGNED_IN_COOKIE,
   parseLocalAdminPreviewValue,
 } from "@/lib/auth/local-admin";
+import { ADMIN_DEVICE_SESSION_COOKIE, adminDeviceSessionIssuedAt } from "@/lib/auth/admin-device-session";
+import {
+  earliestAuthenticationMs,
+  passwordResetAtMs,
+  previewSignedInAtMs,
+  sessionPredatesReset,
+  SIGNED_OUT_RESET_MESSAGE,
+} from "@/lib/auth/password-reset-cutoff";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import {
@@ -24,7 +33,18 @@ export type CurrentAdminAccess = {
   role: TeamRole | null;
   service: ServiceClient | null;
   isConfiguredOwner: boolean;
+  /**
+   * Set when this session signed in before the account's last password
+   * reset (owner's decision 10/02/2026): the session is treated as signed
+   * out, and the layout sends it to sign in again with a one-line notice.
+   */
+  signedOut?: "passwordReset";
 };
+
+/** A session the account's password reset ended. */
+function signedOutByReset(): CurrentAdminAccess {
+  return { user: null, member: null, role: null, service: null, isConfiguredOwner: false, signedOut: "passwordReset" };
+}
 
 function normalizedEmail(value: string | null | undefined): string | null {
   const email = value?.trim().toLowerCase();
@@ -126,7 +146,17 @@ async function previewAppMetadata(user: User): Promise<Record<string, unknown>> 
   }
 }
 
-export async function getCurrentAdminAccess(): Promise<CurrentAdminAccess> {
+export async function getCurrentAdminAccess(
+  options: {
+    /**
+     * The device cookie this very request is minting, for a sign-in path that
+     * checks the team before the response carries it (the OAuth callback).
+     * Without it, a reset account's first OAuth sign-in read the request's old
+     * or missing cookie and was signed straight back out as "not on team".
+     */
+    deviceCookie?: string;
+  } = {},
+): Promise<CurrentAdminAccess> {
   if (isLocalAdminPreviewEnabled()) {
     const cookieStore = await cookies();
     const previewValue = cookieStore.get(LOCAL_ADMIN_SESSION_COOKIE)?.value;
@@ -137,6 +167,21 @@ export async function getCurrentAdminAccess(): Promise<CurrentAdminAccess> {
         ...built,
         app_metadata: { ...built.app_metadata, ...(await previewAppMetadata(built)) },
       };
+      /*
+        Preview's stand-in for the device cookie: when this browser signed in
+        (tj-local-admin-signed-in). Read only when the preview account has a
+        password reset recorded (DESK_PREVIEW_MEMBER=fresh-reset).
+      */
+      const resetAtMs = passwordResetAtMs(user.app_metadata);
+      if (
+        resetAtMs !== null &&
+        sessionPredatesReset({
+          resetAtMs,
+          deviceIssuedAtMs: previewSignedInAtMs(cookieStore.get(LOCAL_ADMIN_SIGNED_IN_COOKIE)?.value),
+        })
+      ) {
+        return signedOutByReset();
+      }
       return {
         user,
         member: await previewTeamMember(user),
@@ -160,6 +205,37 @@ export async function getCurrentAdminAccess(): Promise<CurrentAdminAccess> {
       service: null,
       isConfiguredOwner: false,
     };
+  }
+
+  /*
+    A password reset signs out every device signed in before it (owner's
+    decision 10/02/2026; password-reset-cutoff.ts). Only when the account has
+    a reset recorded are the device cookie and the session's claims read, so
+    every other request costs nothing more. The device cookie's issue time is
+    the guarantee; the earliest authentication time in the session's claims
+    only ever adds a refusal, and when it cannot be read the cookie decides.
+    The local sign-out is the revocation the SDK offers, best effort.
+  */
+  const resetAtMs = passwordResetAtMs(user.app_metadata);
+  if (resetAtMs !== null) {
+    const deviceCookie = options.deviceCookie ?? (await cookies()).get(ADMIN_DEVICE_SESSION_COOKIE)?.value;
+    // Bound to this account: another account's cookie never vouches for it.
+    const deviceIssuedAtMs = await adminDeviceSessionIssuedAt(deviceCookie, user.id);
+    let authenticatedAtMs: number | null = null;
+    try {
+      const { data } = await authClient.auth.getClaims();
+      authenticatedAtMs = earliestAuthenticationMs((data?.claims as { amr?: unknown } | undefined)?.amr);
+    } catch {
+      authenticatedAtMs = null;
+    }
+    if (sessionPredatesReset({ resetAtMs, deviceIssuedAtMs, authenticatedAtMs })) {
+      try {
+        await authClient.auth.signOut({ scope: "local" });
+      } catch {
+        // The time check is the guarantee; the sign-out is best effort.
+      }
+      return signedOutByReset();
+    }
   }
 
   const email = normalizedEmail(user.email);
@@ -213,6 +289,7 @@ export async function requireCurrentAdminPermission(
 > {
   const access = await getCurrentAdminAccess();
 
+  if (access.signedOut === "passwordReset") return { ok: false, error: SIGNED_OUT_RESET_MESSAGE };
   if (!access.user || !access.service) {
     return { ok: false, error: "Not signed in." };
   }
@@ -240,14 +317,18 @@ export async function requireAdminActionPermission(
   anyOf: TeamPermission | TeamPermission[],
 ): Promise<
   | (CurrentAdminAccess & { ok: true })
-  | { ok: false; error: string }
+  | { ok: false; error: string; code?: "signIn" | "role" | "passwordReset" }
 > {
   const access = await getCurrentAdminAccess();
-  if (!access.user) return { ok: false, error: "Sign in first." };
+  // A replayed action from a device the password reset signed out.
+  if (access.signedOut === "passwordReset") {
+    return { ok: false, error: SIGNED_OUT_RESET_MESSAGE, code: "passwordReset" };
+  }
+  if (!access.user) return { ok: false, error: "Sign in first.", code: "signIn" };
 
   const wanted = Array.isArray(anyOf) ? anyOf : [anyOf];
   if (!wanted.some((permission) => hasTeamPermission(access.role, permission))) {
-    return { ok: false, error: "This role is not allowed to do that." };
+    return { ok: false, error: "This role is not allowed to do that.", code: "role" };
   }
   return { ...access, ok: true };
 }

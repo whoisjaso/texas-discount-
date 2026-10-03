@@ -3,6 +3,53 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { generatePdf } from '@/lib/documents/pdf-generator';
 import { createServiceClient } from '@/lib/supabase/service';
+import { stampVoided } from '@/lib/documents/void-stamp';
+import { usDate } from '@/lib/documents/us-date';
+
+/**
+ * A voided copy is printed marked void (owner's decision 10/02/2026): the
+ * stored row and its payload are never touched; the bytes handed out carry a
+ * diagonal VOID and a band saying when, by whom and why, and the file name
+ * says VOIDED with the date it was voided.
+ */
+type VoidFacts = {
+  voided_at?: string | null;
+  voided_by_name?: string | null;
+  void_reason?: string | null;
+  language?: string | null;
+};
+
+function voidedFileName(filename: string, voidedAt: string): string {
+  const date = usDate(voidedAt).replace(/^(\d{2})\/(\d{2})\/(\d{4})$/, '$3$1$2');
+  return filename.replace(/(\.pdf)?$/i, `_VOIDED_${date}.pdf`);
+}
+
+/**
+ * The Content-Disposition header for a file name that may carry a buyer's
+ * accented name. Header values are bytes, so a raw "Hernández" reached the
+ * browser as "HernÃ¡ndez" (the verify walk's Spanish deal). An ASCII name is
+ * sent exactly as before; any other gets the RFC 6266 UTF-8 form, which every
+ * current browser reads, with an accent-stripped plain name beside it.
+ */
+function contentDisposition(kind: 'inline' | 'attachment', name: string): string {
+  const plain = name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\x20-\x7E]/g, '_')
+    .replace(/["\\]/g, '');
+  if (plain === name) return `${kind}; filename="${name}"`;
+  return `${kind}; filename*=UTF-8''${encodeURIComponent(name)}; filename="${plain}"`;
+}
+
+async function markedIfVoided(bytes: Uint8Array, agreement: VoidFacts): Promise<Uint8Array> {
+  if (!agreement.voided_at) return bytes;
+  return stampVoided(bytes, {
+    voidedAt: agreement.voided_at,
+    byName: agreement.voided_by_name,
+    reason: agreement.void_reason,
+    language: agreement.language,
+  });
+}
 
 // GET /api/documents/agreements/[id]/pdf?copy=BUYER+COPY
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -19,7 +66,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const supabase = createServiceClient();
   const { data: agreement, error } = await supabase
     .from('document_agreements')
-    .select('id, vehicle_description, buyer_name, document_type, deal_id, form_data')
+    .select('id, vehicle_description, buyer_name, document_type, deal_id, form_data, voided_at, voided_by_name, void_reason, language')
     .eq('id', id)
     .single();
 
@@ -76,16 +123,23 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     if (!filled.ok) {
       return NextResponse.json({ error: filled.error }, { status: filled.status });
     }
-    return new NextResponse(new Uint8Array(filled.bytes), {
+    const voided = agreement as VoidFacts;
+    const bytes = await markedIfVoided(new Uint8Array(filled.bytes), voided);
+    const name = voided.voided_at ? voidedFileName(filled.filename, voided.voided_at) : filled.filename;
+    return new NextResponse(new Uint8Array(bytes), {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="${filled.filename}"`,
+        "Content-Disposition": contentDisposition(inline ? "inline" : "attachment", name),
       },
     });
   }
 
   try {
-    const pdfBytes = await generatePdf({ agreementId: id, copyLabel: copy, includeSignatures });
+    const voided = agreement as VoidFacts;
+    const pdfBytes = await markedIfVoided(
+      new Uint8Array(await generatePdf({ agreementId: id, copyLabel: copy, includeSignatures })),
+      voided,
+    );
 
     const docTypeLabels: Record<string, string> = {
       billOfSale: 'BillOfSale',
@@ -101,17 +155,21 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       buyerResponsibilityStatement: 'BuyerResponsibilityStatement',
     };
     const docLabel = docTypeLabels[agreement.document_type] || 'Document';
+    // Accents folded rather than dropped: "Lucía Hernández" is Lucia_Hernandez, not Luca_Hernndez.
     const safeName = (agreement.buyer_name || 'Customer')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-zA-Z0-9 ]/g, '')
       .replace(/\s+/g, '_');
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const filename = `${brand.filePrefix}_${docLabel}_${safeName}_${dateStr}.pdf`;
+    const filed = `${brand.filePrefix}_${docLabel}_${safeName}_${dateStr}.pdf`;
+    const filename = voided.voided_at ? voidedFileName(filed, voided.voided_at) : filed;
 
     const disposition = inline ? 'inline' : 'attachment';
     return new NextResponse(new Uint8Array(pdfBytes), {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `${disposition}; filename="${filename}"`,
+        'Content-Disposition': contentDisposition(disposition, filename),
       },
     });
   } catch (e) {

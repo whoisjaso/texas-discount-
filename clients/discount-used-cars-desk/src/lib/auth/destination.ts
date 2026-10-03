@@ -23,10 +23,19 @@ import { DEALERSHIP_HOME } from "@/lib/admin/workspace";
  * looked up has still authenticated, and stranding them on a blank screen
  * is the failure this exists to prevent.
  */
-export async function destinationAfterSignIn(): Promise<string> {
+export async function destinationAfterSignIn(
+  options: {
+    /**
+     * The device cookie this sign-in just minted. Handed on so an account
+     * whose password was reset is judged by its new sign-in, not by the
+     * cookie the browser arrived with (password-reset-cutoff.ts).
+     */
+    deviceCookie?: string;
+  } = {},
+): Promise<string> {
   try {
     const { getCurrentAdminAccess } = await import("@/lib/admin/current-admin");
-    const access = await getCurrentAdminAccess();
+    const access = await getCurrentAdminAccess(options);
 
     // The other reason the layout bounces, and the same blank page when it
     // does: somebody signed in on a password we issued them.

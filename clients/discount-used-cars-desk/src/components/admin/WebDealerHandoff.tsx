@@ -6,6 +6,7 @@ import { ArrowSquareOut, Copy, Check } from "@phosphor-icons/react";
 import { saveSalePlate } from "@/lib/actions/sale-funding";
 import { handoffClipboardText, type HandoffField } from "@/lib/sales/webdealer";
 import { useFunnel } from "@/components/admin/funnel/FunnelLocaleProvider";
+import { FreezeWayOut, useFreezeRefusal } from "@/components/admin/guide/HeldByBillOfSale";
 import { fillTemplate, type FunnelStrings } from "@/lib/sales/i18n";
 import "@/styles/webdealer-handoff.css";
 
@@ -112,6 +113,8 @@ export default function WebDealerHandoff({
   const [copiedAll, setCopiedAll] = useState(false);
   const [value, setValue] = useState(plate ?? "");
   const [error, setError] = useState<string | null>(null);
+  // A refusal from the filed bill of sale names what it holds and the way out.
+  const freezeRefusal = useFreezeRefusal();
   const [pending, startTransition] = useTransition();
   const plateId = useId();
 
@@ -131,7 +134,8 @@ export default function WebDealerHandoff({
     data.set("plate", value);
     startTransition(async () => {
       const result = await saveSalePlate(dealId, data);
-      if (!result.ok) setError(result.error ?? t.handoff.couldNotSavePlate);
+      // A plate the filed bill of sale printed is held (owner's decision 10/02/2026).
+      if (!result.ok) setError(freezeRefusal.text(result) ?? result.error ?? t.handoff.couldNotSavePlate);
     });
   }
 
@@ -199,6 +203,7 @@ export default function WebDealerHandoff({
               {error}
             </p>
           ) : null}
+          {error ? <FreezeWayOut heldBy={freezeRefusal.heldBy} /> : null}
         </div>
       </div>
     </section>

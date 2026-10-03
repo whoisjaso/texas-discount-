@@ -10,6 +10,9 @@ import {
 } from "@/lib/sales/deal-type";
 import { writePlate, writePlateLater } from "@/lib/sales/webdealer";
 import { casMergeStepData } from "@/lib/sales/step-data-write";
+import { mergeUnderBillOfSaleFreeze } from "@/lib/sales/frozen-merge";
+import { billOfSaleFrozen, platePrintedConflict, type BillOfSaleFrozenRefusal } from "@/lib/sales/bill-of-sale-freeze";
+import { readPlate } from "@/lib/sales/webdealer";
 
 /**
  * Recording how a sale is paid for, and the plate it ends up with.
@@ -19,7 +22,9 @@ import { casMergeStepData } from "@/lib/sales/step-data-write";
  * answer that landed between this screen's read and its write.
  */
 
-export type FundingState = { ok: boolean; error?: string };
+export type FundingState =
+  | { ok: boolean; error?: string; code?: undefined }
+  | BillOfSaleFrozenRefusal;
 
 function isDealType(value: unknown): value is DealType {
   return value === "cash" || value === "inHouse" || value === "lender";
@@ -64,10 +69,17 @@ export async function saveDealFunding(
 
   try {
     const supabase = await createClient();
-    const merged = await casMergeStepData(supabase, dealId, (current) =>
+    /*
+      The filed bill of sale states how the buyer pays and the lender it
+      names (owner's decision 10/02/2026; SOP Freeze): a change to either is
+      refused until the bill of sale is voided and filed again. The same
+      answer saved again goes through.
+    */
+    const saved = await mergeUnderBillOfSaleFreeze(supabase, dealId, (current) =>
       writeFunding(current, funding),
     );
-    if (!merged.ok) throw new Error("Could not save that. Try again.");
+    if (!saved.ok) return saved;
+    if (!saved.merged.ok) throw new Error("Could not save that. Try again.");
   } catch (error) {
     return {
       ok: false,
@@ -95,10 +107,25 @@ export async function saveSalePlate(
 
   try {
     const supabase = await createClient();
-    const merged = await casMergeStepData(supabase, dealId, (current) =>
-      writePlate(current, plate),
+    /*
+      The plate against the plate the filed bill of sale PRINTED: a bill of
+      sale filed with "no plate yet" lets the title step record the issued
+      plate, and one that printed a plate refuses any other. A plate that
+      changes is recorded with its time (plateRecordedAt), the desk's evidence
+      that the title application went to the county.
+    */
+    const at = new Date().toISOString();
+    const saved = await mergeUnderBillOfSaleFreeze(
+      supabase,
+      dealId,
+      (current) => writePlate(current, plate, { at }),
+      {
+        checkPrinted: (filed, _current, after) =>
+          platePrintedConflict(filed.printed?.plate, readPlate(after)) ? billOfSaleFrozen("plate") : null,
+      },
     );
-    if (!merged.ok) throw new Error("Could not save the plate. Try again.");
+    if (!saved.ok) return saved;
+    if (!saved.merged.ok) throw new Error("Could not save the plate. Try again.");
   } catch (error) {
     return {
       ok: false,

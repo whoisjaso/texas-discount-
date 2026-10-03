@@ -34,6 +34,9 @@ export default async function AdminTemplate({
   if (verdict.kind === "exempt") return <>{children}</>;
 
   const access = await getCurrentAdminAccess();
+  // Every navigation, not only a hard load: a password reset signs out a
+  // device signed in before it (owner's decision 10/02/2026).
+  if (access.signedOut === "passwordReset") redirect("/admin/login?notice=signed-out-reset");
   if (!access.user) redirect("/admin/login");
 
   if (verdict.kind === "deny") redirect("/admin/home");

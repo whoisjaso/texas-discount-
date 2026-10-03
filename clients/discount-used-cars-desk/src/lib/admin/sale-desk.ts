@@ -78,9 +78,15 @@ export type SaleVehicle = {
  * own signature is on it. Both count as done for the corridor's progress,
  * because filing IS the step; only the wording stops overstating.
  */
-export type SaleDocumentState = "signed" | "filed" | "finalized" | "draft" | "none";
+export type SaleDocumentState = "signed" | "filed" | "finalized" | "draft" | "voided" | "none";
 
-/** Both finished states, for the many callers that only care whether it exists. */
+/**
+ * Both finished states, for the many callers that only care whether it exists.
+ *
+ * "voided" is not done: every copy of the document on this sale was voided
+ * with the bill of sale (owner's decision 10/02/2026), so its guide step opens
+ * again and the document is filed and signed again.
+ */
 export function isDocumentDone(state: SaleDocumentState): boolean {
   return state === "signed" || state === "filed" || state === "finalized";
 }
@@ -175,13 +181,15 @@ export async function getSaleDetail(dealId: string): Promise<SaleDetail | null> 
   const { data: agreements, error: agreementError } = await supabase
     .from("document_agreements")
     .select(
-      "document_type, status, completed_at, finalized_at, has_buyer_signature, signature_svg, signed_at",
+      "document_type, status, completed_at, finalized_at, has_buyer_signature, signature_svg, signed_at, voided_at",
     )
     .eq("deal_id", dealId);
 
   if (agreementError) throw agreementError;
 
   const documents: Record<string, SaleDocumentState> = {};
+  /** Types with a voided copy: "voided" when nothing current replaced it. */
+  const voidedTypes = new Set<string>();
   for (const raw of agreements ?? []) {
     const agreement = raw as unknown as {
       document_type: string | null;
@@ -191,9 +199,19 @@ export async function getSaleDetail(dealId: string): Promise<SaleDetail | null> 
       has_buyer_signature: boolean | null;
       signature_svg: string | null;
       signed_at: string | null;
+      voided_at?: string | null;
     };
     const type = agreement.document_type;
     if (!type) continue;
+    /*
+      A voided copy is a record, not a document of the sale any more: its
+      signature stops counting and its step opens again (owner's decision
+      10/02/2026). It is kept, and shown, under the packet's Voided Copies.
+    */
+    if (agreement.voided_at) {
+      voidedTypes.add(type);
+      continue;
+    }
 
     const finished =
       Boolean(agreement.finalized_at) ||
@@ -222,11 +240,15 @@ export async function getSaleDetail(dealId: string): Promise<SaleDetail | null> 
       furthest one: a superseded draft must never hide a signed copy, and a
       filed copy must never hide a signed one either.
     */
-    const rank = { none: 0, draft: 1, filed: 2, finalized: 2, signed: 3 } as const;
+    const rank = { none: 0, voided: 0, draft: 1, filed: 2, finalized: 2, signed: 3 } as const;
     const held = documents[type];
     if (held === undefined || rank[state] > rank[held]) {
       documents[type] = state;
     }
+  }
+  for (const type of voidedTypes) {
+    const held = documents[type];
+    if (held === undefined || held === "draft") documents[type] = "voided";
   }
 
   const profile = readBuyerProfile(row.customers?.profile_data);
@@ -447,6 +469,7 @@ export function describeDocumentState(
   if (state === "signed") return "Signed and on file";
   if (state === "filed" || state === "finalized") return "Filed. No signature yet";
   if (state === "draft") return "Draft saved. Not signed yet";
+  if (state === "voided") return "Voided. File it again";
   return entry.optional ? "Not needed yet" : "Not started";
 }
 

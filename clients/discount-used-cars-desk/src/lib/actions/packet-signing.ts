@@ -7,6 +7,7 @@ import { decodeCompletedLinkFromUrl, encodeCompletedLink } from "@/lib/documents
 import { spanishEsignBlocked } from "@/lib/legal/spanish-esign";
 import { businessDateToday } from "@/lib/documents/us-date";
 import { SITE_URL } from "@/lib/dealership-config";
+import { signingSessionRevoked } from "@/lib/sales/void-bill-of-sale";
 
 /**
  * The buyer's stroke, landing on the document it signs.
@@ -64,7 +65,7 @@ export async function signPacketDocument(
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("document_agreements")
-    .select("id, deal_id, document_type, language, completed_link, form_data, finalized_at, completed_at, status")
+    .select("id, deal_id, document_type, language, completed_link, form_data, finalized_at, completed_at, status, voided_at")
     .eq("id", agreementId)
     .maybeSingle();
   if (error || !data) return { ok: false, error: "notFound" };
@@ -79,9 +80,28 @@ export async function signPacketDocument(
     finalized_at: string | null;
     completed_at: string | null;
     status: string | null;
+    voided_at?: string | null;
   };
 
   if (row.deal_id !== session.dealId) return { ok: false, error: "notFound" };
+  // A voided copy is a record: its signature stopped counting when it was
+  // voided, and nobody signs it again (owner's decision 10/02/2026).
+  if (row.voided_at) return { ok: false, error: "voided" };
+
+  /*
+    A session minted before the deal's paperwork was voided was opened for
+    documents that no longer count, so it signs nothing, the new copies
+    included: they are signed through a link minted after the void. Read
+    fail closed.
+  */
+  const { data: voids, error: voidsError } = await supabase
+    .from("document_agreements")
+    .select("voided_at")
+    .eq("deal_id", session.dealId);
+  if (voidsError) return { ok: false, error: "notFound" };
+  if (signingSessionRevoked(session.issuedAt, (voids ?? []) as Array<{ voided_at?: string | null }>)) {
+    return { ok: false, error: "replaced" };
+  }
 
   /*
     A stroke reused across documents needs the signer's say-so, each time.

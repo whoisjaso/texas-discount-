@@ -12,6 +12,7 @@ import {
   type SummaryFacts,
   type SummaryValue,
 } from "@/lib/sales/sale-summary";
+import "@/styles/void-freeze.css";
 
 /**
  * The whole sale on one page, for the dealer who does this ten times a day.
@@ -38,10 +39,13 @@ export default function SummaryScreen({
   facts,
   saleHref,
   guideHref,
+  voided = false,
 }: {
   facts: SummaryFacts;
   saleHref: string;
   guideHref: string;
+  /** Arrived here straight after voiding the bill of sale (owner's decision 10/02/2026). */
+  voided?: boolean;
 }) {
   const { t, lang } = useFunnel();
   const s = t.summary;
@@ -107,6 +111,11 @@ export default function SummaryScreen({
         <p className="ed-guide-car">{facts.vehicleLabel ?? ""}</p>
         <h1 className="ed-guide-question ed-sum-title">{s.title}</h1>
         <p className="ed-sum-lead">{s.lead}</p>
+        {voided ? (
+          <p className="ed-void-banner" role="status" data-void-banner>
+            {t.void.summaryBanner}
+          </p>
+        ) : null}
 
         {groups.map((group) => (
           <section key={group.id} className="ed-sum-group">

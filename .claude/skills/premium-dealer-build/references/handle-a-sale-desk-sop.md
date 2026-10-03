@@ -208,6 +208,68 @@ create table document_agreements (
 create index on document_agreements (deal_id);
 ```
 
+**Voiding (a second additive migration, owner's decision 10/02/2026).** A
+filed document is never deleted or rewritten; a filed bill of sale can be
+voided, which marks rows rather than removing them:
+
+```sql
+alter table document_agreements add column if not exists voided_at timestamptz;
+alter table document_agreements add column if not exists voided_by uuid;           -- auth user id
+alter table document_agreements add column if not exists voided_by_member_id uuid; -- team_members.id
+alter table document_agreements add column if not exists voided_by_name text;      -- name snapshot
+alter table document_agreements add column if not exists void_reason text;         -- 10 to 500 chars
+alter table document_agreements add column if not exists void_group_id uuid;       -- one per void
+alter table document_agreements add column if not exists voided_with_id uuid;     -- the bill of sale; null on it
+-- No foreign keys on these: no foreign-key action may ever write a voided row.
+-- Check: all null, or voided_at + void_reason (10..500 after trim) + void_group_id set.
+-- Partial index (deal_id, document_type) where voided_at is null.
+-- Trigger (BEFORE UPDATE OR DELETE, named to fire after the null-expiry one):
+--   a voided row is final (never updated, never deleted, so a deal holding
+--   one cannot be deleted either); setting voided_at needs documents:manage,
+--   may change only the void columns (plus expires_at), is refused to a
+--   signed-in session writing it straight through the API (current_user
+--   authenticated or anon: only the function below voids), and is refused
+--   for the power of attorney.
+-- Trigger (BEFORE INSERT): no row is ever inserted already voided.
+-- Trigger (BEFORE INSERT): a filed financing, form130U, vehicleResponsibility
+--   or towAwayAcknowledgment needs a current filed bill of sale on the deal;
+--   it locks the deal FOR SHARE (security definer), so it serialises with a
+--   void's FOR UPDATE and a dependent can never be filed across a void.
+-- Function void_filed_documents(p_deal_id, p_root_id, p_types, p_reason,
+--   p_at, p_detail), security definer, execute to authenticated only: one
+--   transaction that checks documents:manage and an active roster row (who
+--   voided comes from auth.uid(), never the caller; a memberId or memberName
+--   in p_detail is overwritten with the session's own), voids a FIXED set
+--   (p_types must equal every corridor type but the power of attorney, else
+--   'not_voidable'), refuses a reason outside 10..500 characters after
+--   dropping control and invisible format characters, p_at more than 5
+--   minutes off the database clock, a missing 'Not Yet' attestation
+--   (p_detail.titleApplication; 'title_question'), a closed sale (deal
+--   locked FOR UPDATE), a stale or non-bill-of-sale root, and the plate
+--   evidence below; locks the rows it voids before reading whether they were
+--   signed; dates the void greatest(p_at, clock_timestamp()); voids every
+--   current filed row of the set with one group id; deactivates
+--   packet_signing_texts; revokes active paperwork_invites (a 'revoked'
+--   event each); and writes one team_activity_events row
+--   'sale_documents_voided' with the reason, the attestation, the documents
+--   and how many were signed.
+-- Function end_sessions_before(p_user, p_at), service role only: deletes
+--   the account's auth.sessions started before the reset (their refresh
+--   tokens go with them).
+-- private.current_team_role() gives no role to a request whose session
+--   first authenticated (earliest amr time in its JWT) more than 3 seconds
+--   before the account's password_reset_at, so every policy and the void
+--   function refuse it (no amr time, no reset, or an unreadable reset: no
+--   change).
+```
+
+A copy filed again after a void sets the existing `parent_agreement_id` to
+the newest voided copy of its type. `step_data.plateRecordedAt` (ISO) is
+written with the plate when the plate changes: a plate recorded at or after
+the bill of sale was filed is the desk's evidence that the title application
+went to the county (no recorded time counts as evidence). The auth account's
+`app_metadata.password_reset_at` (ISO) records an owner's reset (Security).
+
 Signature evidence is written onto the document's own row, inside
 `form_data`: `signature` (the PNG data URL), `signedAt`, `signedVia`
 (`desk` or `ceremony`), `signedUserAgent` (first 240 characters),
@@ -252,11 +314,16 @@ corridor styling, the counter counting only the screens this member gets
    from the name). There is no Back to it once saved. A member who had already finished onboarding (a reset) gets
    this screen and Done only. Choosing a password through the emailed
    recovery link clears the flag too, so the invite link is not followed by
-   a second password screen. A reset does not sign out a device already
-   signed in to the account, and that device can choose the new password
-   without the old one; the screen refuses a roster row that is not active,
-   so an owner who suspects a device sets the member inactive rather than
-   resetting them.
+   a second password screen. **A reset signs out every device signed in
+   before it** (owner's decision 10/02/2026; Security): only a session that
+   signed in after the reset reaches this screen, a stale one is refused
+   ("This device signed in before the password was reset. Sign in again
+   first."), and after the save the member is signed straight back in on
+   the server with a new device cookie, because the auth server's admin
+   password write ends every session, this one included. The screen also
+   refuses a roster row that is not active; a reset does not change the
+   password of an account that already has one, so an owner who suspects
+   the password itself is known sets the member inactive.
 1. **What Is Your Name?** First name and last name, two fields, required.
    Saved as `full_name` ("First Last") and `display_name` (first name). This
    is the name that prints in parentheses on the 130-U and under the dealer
@@ -330,7 +397,7 @@ All under the site's existing admin sign-in.
 | `/admin/sales/[dealId]/guide/[step]` | One corridor question. `step` is the step key, URL-encoded (`plan%3Aregistration`, `document%3AbillOfSale`). |
 | `/admin/sales/[dealId]/paperwork/[doc]/[q]` | One question inside one document, then `.../[doc]/review` for read-back, pad and preview. |
 | `/admin/sales/[dealId]/summary` | Check Answers: the whole sale on one page, every row a link back into its question. |
-| `/admin/sales/[dealId]/packet` | Everything filed: open, print, download, start the signing ceremony, text the buyer. |
+| `/admin/sales/[dealId]/packet` | Everything filed: open, print, download, start the signing ceremony, text the buyer; void the filed bill of sale (`?void=billOfSale&return=<step>` opens the dialog from a refusal) and the Voided Copies history. |
 | `/admin/sales/past` | Completed sales, newest first, searchable. |
 | `/admin/sales/times` | Optional: sale times board (see Sale clock). |
 | `/admin/sales/promises` | Optional: balances promised and due, soonest first. |
@@ -345,7 +412,8 @@ Server actions, one per decision: `startSale`, `setDealLanguage`,
 `saveBuyerId`, `setFunding`, `saveMoney`, `answerPlanQuestion`,
 `setSalvagePath`, `setPlate`, `answerPaperwork`, `finalizeDocument`,
 `signDocumentAtDesk`, `openSigningCeremony`, `signPacketDocument`,
-`completeSale`, `deleteSale`. Each: verify the session (or token), validate
+`voidBillOfSale` (owner or manager; calls the `void_filed_documents`
+function), `completeSale`, `deleteSale`. Each: verify the session (or token), validate
 the value against the pure module's `isValidAnswer`, read the current
 `step_data`, merge ONE key, write with an `updated_at` compare-and-swap
 (retry once on conflict), revalidate the route.
@@ -606,13 +674,61 @@ homes store the down payment as one plain figure ("$1,500.00" is saved as
 balance, the contract's itemisation and the note's payment read the same
 text; a figure below zero or one that is not a dollar amount is refused
 outright, filed or not. "Filed" is the packet's own rule: finalized at the
-desk, or completed through the older e-sign path. The check fails closed when
-the filed documents cannot be read. The freeze names the down payment only:
-the price, its basis, the funding and the bill of sale's trade-in are not
-frozen by it (an open decision for the owner). So the down payment belongs on the money
-step, before anything is filed: that is what makes the bill of sale's
-balance and the contract's amount financed one figure. A signed document
-must never silently reattach to changed terms.
+desk, or completed through the older e-sign path, and never a voided copy.
+The check fails closed when the filed documents cannot be read.
+
+**The filed bill of sale holds everything it states** (owner's decision
+10/02/2026). Besides the down payment (which keeps its own code and
+sentence), every server action that can write something the bill of sale
+prints refuses a change with code `billOfSaleFrozen`, the field, and "The
+bill of sale is already filed with … Void the bill of sale and file it
+again before changing …" (Spanish: "… Anule la factura de venta y vuelva a
+archivarla antes de …"); the screens only display it, with **Void The Bill
+Of Sale** for an owner or a manager and "Only an owner or a manager can void
+it." for everyone else. Held, and the writers that hold them:
+
+- the price and whether it includes tax and fees (`saveSaleMoney`);
+- how the buyer pays and the lender (`saveDealFunding`);
+- the trade-in (yes/no, the vehicle, the allowance), how the money was paid
+  on a cash deal, the mileage statement, the warranty, the bill of sale's
+  licence-state answer, and how a salvage car leaves (`savePaperworkAnswer`,
+  every bill-of-sale and salvage-bill-of-sale answer);
+- the buyer's confirmed name and name parts, ID number and mailing address
+  (`saveConfirmedId`); while a power of attorney is filed it holds the name
+  and address on its own (it is ink and is never voided at the desk);
+- the plan's Still To Do as printed: who files the title and registration,
+  where the inspection stands, whether proof of insurance was shown, an
+  open row included (`saveSalePlanAnswer`);
+- the plate, against the plate the filed copy PRINTED (a bill of sale filed
+  with no plate lets the title step record the issued one;
+  `saveSalePlate`);
+- the language of the sale (`setDealLanguage`);
+- at Close The Sale, the ID number against the printed licence, and the
+  price: through the vehicle row on a deal with no typed amount (the row is
+  what the figures are drawn from), and against the price the bill of sale
+  printed on a deal whose amount was typed (the car is marked sold at the
+  paper's price; the panel starts from it) (`completeSale`);
+- at Start A Sale, the buyer's customer row while another open sale of that
+  customer has current filed paperwork: the same buyer starts a second sale
+  without the row being rewritten, and a different name with the same phone
+  number is refused, naming the other buyer (`startSale`).
+
+Measured as the paper prints it (`billOfSaleStatement`): the same answer
+saved again goes through, the same figure typed another way is not a
+change, an answer that does not print (a payment method on a financed deal,
+who signs the title, whether the price includes registration) is not held.
+Pass 1 compares the raw inputs with no lookup; only when one moved is the
+filed bill of sale looked up and pass 2 compares what prints, inside the
+same version-checked merge. Every lookup fails closed. A guard test
+classifies every key the bill of sale's renderer prints as frozen or fixed.
+A plan answer held by another filed document (the 130-U, the
+acknowledgments, the power of attorney) is refused with code `planFrozen`,
+naming the documents and the same way out (a power of attorney needs a new
+one). So the down payment, and the rest, belong on their screens before
+anything is filed: that is what makes the bill of sale's balance and the
+contract's amount financed one figure. A signed document must never
+silently reattach to changed terms; the way out is the void below (The
+documents, Voiding and filing again).
 
 ## Salvage
 
@@ -675,6 +791,87 @@ preview of the exact sheet that will print, the signature pad for the buyer
 writes `form_data` (answers and computed figures), builds `completed_link`
 (the render payload every print path reads), and sets `finalized_at`. Filing unsigned and printing for ink is always
 allowed; that is how a sale closes on the day the pad breaks.
+
+### Voiding and filing again
+
+The owner's decision of 10/02/2026: a filed bill of sale can be voided and
+filed again; nothing is ever deleted.
+
+- **Who and where.** An Owner or a Manager (`documents:manage`), from the
+  packet's **Void** on the filed bill of sale (also linked beside a freeze
+  refusal, on the desk page and on the bill of sale's own step). Other roles
+  see it disabled with "Only an owner or a manager can void it." The record
+  must name a person, so an `ADMIN_EMAIL` owner with no roster row is
+  refused.
+- **The dialog** (a native dialog like the desk's other confirmations; a
+  full-width sheet at 390px): the buyer and the car, "These are voided with
+  it:" with each one's state, "These stay on file:" (the power of attorney),
+  that nothing is deleted, how many signatures stop counting, the required
+  reason (10 to 500 characters, cleaned, kept), the title question **Has
+  The Title Application Gone To The County?** (only **Not Yet** goes ahead;
+  "Yes" is refused), **Keep It** focused, and **Hold To Void** (the hold
+  only arms once the reason and Not Yet are given).
+- **What a void takes:** every current filed copy of the bill of sale (or
+  salvage bill of sale) and of every document its figures, plan or buyer
+  reached: `financing`, `form130U`, `vehicleResponsibility`,
+  `insuranceAcknowledgment`, `rebuiltDisclosure`, `towAwayAcknowledgment`,
+  `buyerResponsibilityStatement`, all with one group id and the same
+  reason. Never the power of attorney (ink on a state form). A guard test
+  keeps every document type in exactly one of the two lists.
+- **Refused** (each writes nothing): not an owner or manager; no roster
+  row; reason outside 10 to 500 characters (counted in characters as the
+  database counts them, after dropping control characters and invisible
+  format characters such as zero-width spaces and bidi overrides, the same
+  rule in the dialog, the action and the database); title question unanswered or
+  "Yes"; a plate recorded at or after the bill of sale was filed (the
+  desk's evidence the title application went to the county; a plate with no
+  recorded time counts too); a completed or abandoned sale; nothing current
+  filed or a stale copy; the documents could not be read (fail closed). The
+  database function re-checks them under the deal's lock. The safer rule
+  was chosen over a stronger warning: once the county or the buyer has the
+  paperwork, the correction starts there, with the owner.
+- **The record.** Voided rows stay readable under **Voided Copies (n)**,
+  grouped by void ("Voided {date} by {name}: {reason}"), each "Was signed by
+  the buyer {date}" or "Was filed, not signed", with Open and Print handing
+  out the stored document stamped **VOID** (**VOID · ANULADO** on a Spanish
+  copy) on every page with that line across the top; the file name carries
+  `_VOIDED_<date>`. The row, its payload and its signature are never
+  changed. A re-filed copy says "Replaces the copy voided {date}." Every
+  date the packet shows (filed, signed, voided, replaces) is the business
+  date on the dealership's clock (`dealership.timeZone`), the same day the
+  band prints; a void at 7:30 pm in Houston once read as the next day.
+- **Counting.** `isFiledAgreement` answers false for a voided row, so every
+  reader (the packet, the desk, the sales list, the guide, the texted
+  copies, the ceremony) skips it; its guide step opens again ("Voided. File
+  it again"). The packet's `refile` count holds what must be filed again (a
+  voided type the sale still owes with no current copy, and a document
+  printing the bill of sale's figures filed before the current bill of
+  sale, or filed while no bill of sale of its kind was current); it reads
+  **Waiting For The New Copies** and is never "Ready To Print" while it is
+  above zero.
+- **Filing again** goes through the corridor's normal steps and three more
+  refusals: `billOfSaleAlreadyFiled` (one current bill of sale per sale; the
+  older agreements route enforces it too), `billOfSaleFirst` (the documents
+  that print its figures, `financing`, `form130U` and
+  `vehicleResponsibility`, or `financing` and `towAwayAcknowledgment` on a
+  tow-away sale, wait for it; the rebuilt disclosure never does; the
+  database refuses the same filing while no bill of sale is current, which
+  closes the race with a void) and `figuresChanged`. That last one covers
+  three things: the server recomputes the figures and refuses a review
+  screen's that differ; it resolves the answers the way the review screen
+  does (`paperworkAnswers`, through `paperworkFilingContext`) and refuses a
+  posted answer that differs or one the sale does not hold, filling any left
+  out with the sale's own, so the mileage statement, trade-in, payment
+  method, warranty, how a salvage car leaves and the contract's rate, count
+  and payments are the sale's; and a document printing the bill of sale's
+  figures must state the figures the current bill of sale PRINTED (read off
+  its own completed link). After the void the summary opens with a banner,
+  or the screen the void was asked from opens again with `?from=summary`.
+- **A filed document is never rewritten in place** anywhere: the older
+  agreements route refuses (409) rewriting a sale's filed or voided row's
+  payload or status, and trashing it.
+- **Complete Sale** is refused while anything voided is not filed again,
+  and a sale holding voided records cannot be deleted (abandon it).
 
 ### How the paper looks
 
@@ -779,8 +976,19 @@ When every required document is filed, the packet screen offers **Sign The
 Packet**:
 
 1. `openSigningCeremony(dealId)` mints an HMAC-signed token
-   `{dealId, purpose:"packet-signing", exp}` valid **20 minutes**, stateless,
-   revoked by re-minting. It lets its holder read that one deal's filed
+   `{dealId, purpose:"packet-signing", exp}` valid **20 minutes**,
+   stateless. Minting a new one does not revoke the old one; a **void**
+   does: the token's issue time is its expiry less the 20 minutes, and a
+   token issued at or before the deal's latest void is refused everywhere
+   (the ceremony page says "This link was replaced" in both languages, the
+   buyer's document routes answer 410, `signPacketDocument` answers
+   `replaced`), and a voided row is never shown or signed (404 /
+   `voided`). The void is dated the later of the app's time and the
+   database's clock at the moment of voiding, so a link minted while the
+   void was on its way is dated before it and dies too; a link minted after
+   a void is dated just after it (`signingIssueTime`), so it is never born
+   revoked. The void also switches off the texted link, so Text It sends
+   a new one. It lets its holder read that one deal's filed
    documents and sign them. It cannot edit anything, see another deal, or
    reach the admin.
 2. The desk shows three ways in: a large QR code, **Open Here** (turn the
@@ -825,7 +1033,12 @@ Spanish ceremony shows the sheets and ends with Print For Ink.
   Buyer's Guide in both languages, and Text The Buyer Their Copies (consented
   numbers only). Never cached.
 - **Complete Sale** marks the deal completed, sets `completed_at`, marks the
-  vehicle sold, and moves it to Past Sales.
+  vehicle sold, and moves it to Past Sales. It is refused while anything
+  voided with the bill of sale is not filed again ("Some paperwork was
+  voided and has not been filed again: … File it before closing the
+  sale."), and once a bill of sale is filed it keeps the price and the ID
+  number the bill of sale printed (the ID box starts from the printed
+  licence). The check reads the documents fail closed.
 - **Summary (the expert lane).** A second RENDERING of the same step list,
   never a second way to store answers. Grouped (Buyer, Money, Plan,
   Documents, Title); each row shows what it was answered with and links into
@@ -899,6 +1112,42 @@ Sales** beneath it (and **Sale Times** and **Promises** if built).
 - Rate-limit `/api/capture` and `signPacketDocument` per token.
 - No secret, key or licence data in client bundles, logs or URLs other than
   the opaque token.
+- **A password reset signs out every device** (owner's decision
+  10/02/2026). Every owner path that resets an account or issues it a
+  temporary password stamps `app_metadata.password_reset_at` (ISO) and logs
+  it. From then on a session counts only if it signed in after that
+  moment. The guarantee is the desk's own HMAC device cookie
+  (`<issuedAtMs>.<userId>.<sig>`, minted by every sign-in path and by
+  nothing else, and bound to the account that signed in): missing, invalid,
+  issued before the reset, or minted for another account means signed out
+  (so a fresh cookie from one's own account can never carry another
+  member's pre-reset session past the cutoff; the older two-part form is
+  still read, and every one of those predates any reset). The
+  session's EARLIEST authentication time (`amr` from `getClaims()`, 3 s of
+  skew) can only add a refusal; when it cannot be read the cookie decides.
+  The JWT's `iat` is never used (a refresh re-issues it). Checked only when
+  a reset is recorded, in the proxy (a local `signOut`, the best effort the
+  SDK offers since it has no sign-out by user id; the auth cookies and the
+  device cookie cleared; a redirect to `/admin/login?notice=signed-out-reset`,
+  never a bounce from the sign-in page), in the current-admin check
+  (`signedOut: "passwordReset"`; the layout and template redirect, actions
+  refuse with "Your password was reset, so this device was signed out. Sign
+  in again."), in the API guard (401) and at Choose A Password. Every
+  sign-in path mints the cookie BEFORE it asks whether the person is on the
+  team and hands it to that check (the OAuth callback once judged a reset
+  account's new sign-in by the old cookie and signed it straight back out
+  as "not on the team", for good). The database holds the line as well:
+  every stamping path calls `end_sessions_before` (best effort), which ends
+  the account's older auth sessions and their refresh tokens, and
+  `private.current_team_role()` gives no role to a session whose earliest
+  amr time predates the reset, so RLS and the void function refuse a stale
+  device that goes around the desk with the public key. A reset time nobody
+  can read signs nobody out and is logged as an error. The preview mock
+  supports it (`DESK_PREVIEW_MEMBER=fresh-reset`, with the preview's own
+  signed-in-time cookie standing in for the device cookie). Left: an access
+  token with no amr time (an older format) is refused by the desk and ends
+  at its expiry; a signing link a stale session minted lives out its 20
+  minutes (it signs one deal's documents, it is not admin access).
 
 ## Tests you must write (pure modules, no database)
 
@@ -913,6 +1162,50 @@ Sales** beneath it (and **Sale Times** and **Promises** if built).
   with nothing down, go through, stored as the plain figure with the note's
   principal and payment unchanged; "-500" and "abc" are refused with no
   write; a bill of sale completed through the older e-sign path freezes too.
+- The bill of sale holds everything it states: the statement changes for
+  every held field and not for the same figure typed differently, an empty
+  amount that resolves to the same figures, or an answer that does not
+  print; every writer returns `billOfSaleFrozen` with the field and writes
+  nothing once filed, saves the same answer, moves freely before filing and
+  after a void, and fails closed when the lookup throws; a filed power of
+  attorney holds the name and address; every key the renderer prints is
+  classified; the refusal exists in both languages with the way out.
+- Void and file again: the cascade covers every document type exactly once
+  and never the power of attorney; each refusal writes nothing; the void
+  marks rows with one group and deletes nothing; the mock and the database
+  (a real Postgres run of the migration) refuse any write to a voided row;
+  voided rows stop counting and their steps reopen; an old signing link is
+  refused once the deal has a later void; the voided PDF is stamped and the
+  stored bytes are not; the three filing refusals; Complete Sale and delete.
+  And on the database (a real Postgres run): a row inserted already voided
+  is refused; a signed-in session writing voided_at through the API is
+  refused, even an owner's; the power of attorney is never voided; the
+  function refuses a shorter or longer list of types and a missing "Not
+  Yet", writes the session's own name whatever the caller passes, drops
+  invisible characters from the reason, and dates the void no earlier than
+  now; a dependent document cannot be filed while no bill of sale is
+  current. In the app: the reason rule counts code points and ignores
+  format characters; a filing posted with an answer the sale does not hold
+  is refused and a left-out answer filled; a dependent whose figures the
+  current bill of sale did not print is refused; Close The Sale's price on a
+  typed-amount deal must be the printed one; Start A Sale refuses a
+  different name on a held customer's phone and never rewrites the row; the
+  older agreements route never rewrites, trashes or duplicates a sale's
+  filed document; an accented buyer name reaches the file name intact;
+  the packet's dates are formatted on the dealership's clock.
+- Password reset: the cutoff's truth table (no reset, no cookie, cookie
+  before, after, amr before beyond the skew, within it); the earliest amr;
+  every reset and approval path stamps the time; the current-admin check,
+  the API guard and the preview sign out a stale session and let a fresh
+  one in; Choose A Password refuses a stale device, keeps its single pinned
+  write, and signs the member back in. The device cookie names its account
+  and never vouches for another (a stale session paired with a fresh cookie
+  from another account is signed out even with no claims to read); every
+  sign-in path mints it with the account; the OAuth callback lets a reset
+  account back in with a new cookie and still turns away a stranger; every
+  stamping path ends the older sessions at the database; on Postgres, a
+  session whose earliest amr predates the reset holds no team role, and an
+  unreadable reset changes nothing and is logged.
 - Onboarding: "Choose A Password" only with `requires_password_change`; the
   10-character floor and the confirmation; the write goes to the session's
   own account and clears the flag; Done refuses until it is cleared; signing

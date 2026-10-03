@@ -8,6 +8,7 @@ import { PLAN_STEP_KEY, type PlanQuestionId } from "@/lib/sales/sale-plan";
 import { tapHaptic } from "@/lib/haptics";
 import { DeskConfirm, useDeskConfirm } from "@/components/admin/DeskConfirm";
 import { useFunnel } from "@/components/admin/funnel/FunnelLocaleProvider";
+import { FreezeWayOut, useFreezeRefusal } from "@/components/admin/guide/HeldByBillOfSale";
 
 /**
  * One question. One page. Answer it and the corridor moves.
@@ -104,6 +105,9 @@ export default function PlanQuestionStep({
   const { ask, pending: inspectionPending, answer: answerInspection } = useDeskConfirm();
   const [chosen, setChosen] = useState<string | boolean | null>(current);
   const [error, setError] = useState<string | null>(null);
+  // A refusal from the filed bill of sale names what it holds and the way out.
+  const freezeRefusal = useFreezeRefusal();
+  const freezeText = freezeRefusal.text;
   const [busy, setBusy] = useState(false);
 
   /** Synchronous, so a second tap in the same frame cannot get through. */
@@ -162,7 +166,7 @@ export default function PlanQuestionStep({
           // The move is cancelled, the stored answer is restored, and the
           // lock is released so it can be tried again.
           setChosen(current);
-          setError(result.error);
+          setError(freezeText(result) ?? result.error);
           setBusy(false);
           locked.current = false;
           return;
@@ -191,7 +195,7 @@ export default function PlanQuestionStep({
         );
       })();
     },
-    [ask, current, dealId, onNavigate, packetHref, questionId, returnHref, router, stepBase, t.plan, t.holdConfirmation],
+    [ask, current, dealId, onNavigate, packetHref, questionId, returnHref, router, stepBase, t.plan, t.holdConfirmation, freezeText],
   );
 
   return (
@@ -243,6 +247,7 @@ export default function PlanQuestionStep({
           {error}
         </p>
       ) : null}
+      {error ? <FreezeWayOut heldBy={freezeRefusal.heldBy} /> : null}
       <DeskConfirm pending={inspectionPending} onAnswer={answerInspection} />
     </div>
   );

@@ -164,20 +164,110 @@ financed one figure. The desk stores the down payment as a plain figure
 change, and it refuses a figure below zero or one that is not a dollar
 amount, filed or not. "Filed" here is what the packet shows as filed or
 signed, including a bill of sale completed through the older e-sign path.
-The freeze covers the down payment only, as decided: changing the price,
-what it includes, the funding or the bill of sale's trade-in after the bill
-of sale is filed still moves the balance it states. Whether those should be
-frozen too is a decision for the owner.
+**Once the bill of sale is filed it holds everything it states** (owner's
+decision 10/02/2026). Besides the down payment, a change to any of these is
+refused, on the screen and in the server, with "The bill of sale is already
+filed with ... Void the bill of sale and file it again before changing ..."
+in English or Spanish: the price and whether it includes tax and fees, how
+the buyer pays (cash, buy here pay here, a bank) and the lender, the
+trade-in (whether there is one, the vehicle and the allowance; the payoff is
+never asked and prints as zero), how the money was paid on a cash deal, the
+mileage statement, the warranty, how a salvage car leaves the lot, the
+buyer's name, ID number, licence state and mailing address, the plan's Still
+To Do (who files the title and registration, where the inspection stands,
+whether proof of insurance was shown), the plate the bill of sale printed,
+and the language of the sale. Close The Sale keeps the price and the ID
+number the bill of sale printed (on a deal whose amount was typed at the
+money step, the car is marked sold at the price the bill of sale states).
+Start A Sale never renames a buyer another open sale's filed paperwork names:
+the same buyer can start a second sale, but a different name typed with the
+same phone number is refused with the other buyer's name and the way out. The same answer saved again goes through,
+a figure typed another way is not a change, and a bill of sale filed with
+"no plate yet" still lets the title step record the issued plate. Every
+check reads the filed documents first and refuses if they cannot be read.
+A filed 130-U, power of attorney or acknowledgment holds the plan answers it
+depends on in the same way, and a filed power of attorney (ink on the
+county's form, never voided at the desk) also holds the buyer's name and
+address. The way out is to void the bill of sale and file it again (below).
+
+### Voiding a filed bill of sale
+
+An **Owner or a Manager** voids the filed bill of sale from the packet
+(**Void** on the bill of sale's row, or **Void The Bill Of Sale** beside a
+refusal or on the sale's page). Other roles see the control disabled with
+"Only an owner or a manager can void it." The dialog reads back the buyer
+and the car, what is voided and what stays on file, and asks two things:
+**why** (10 to 500 characters, kept on the record) and **Has The Title
+Application Gone To The County?** Only **Not Yet** lets it go ahead (the
+answer is recorded); then **Hold To Void**.
+
+- **What is voided:** every current filed copy of the bill of sale (or the
+  salvage bill of sale) and of every document its figures, its plan or its
+  buyer reached: the financing contract, the 130-U, vehicle responsibility,
+  the insurance acknowledgment, the rebuilt disclosure and the tow-away
+  sheets, each with the same reason. **What stays:** the power of attorney,
+  which is ink on the county's form.
+- **The reason must say something:** invisible characters (zero-width
+  spaces, direction overrides) are dropped before the 10 characters are
+  counted, by the desk and by the database alike.
+- **Nothing is deleted.** Each voided copy stays in the packet under
+  **Voided Copies**, with who voided it, when and why; Open and Print hand
+  it out stamped VOID across every page with that line on top. The stored
+  record is never changed. One `sale_documents_voided` event is written to
+  `team_activity_events`.
+- **Signatures on the voided copies stop counting,** and the packet's
+  "N / N signed" counts the current copies only. The old signing link stops
+  working (the buyer sees "This link was replaced" in both languages) and
+  a texted copy of the old paperwork is revoked; the packet shows a new
+  link, and Text It sends the new one.
+- **Then change what needed changing and file again.** The summary opens
+  with a banner, and a void asked from a refused screen lands back on that
+  screen. The corridor files the documents again through its normal steps:
+  the bill of sale first (the documents that print its figures wait for
+  it), with the figures AND the answers the server works out itself: a
+  review screen left open while something changed, or a request made by
+  hand, is refused with "The figures changed since this screen opened". The
+  contract, the 130-U and the other documents that print the bill of sale's
+  figures must state the figures the current bill of sale printed, and the
+  database refuses filing one while no bill of sale is current (so one
+  filed at the very moment of a void can never stay current). The packet reads
+  **Waiting For The New Copies** until every voided document the sale still
+  owes is filed again, and **Close The Sale is refused** until then.
+- **When it is refused:** the sale is closed (completed or abandoned); a
+  plate was recorded on the sale after the bill of sale was filed (the desk
+  reads that as the title application having gone to the county); the
+  answer to the title question is "Yes"; or the person has no team row (the
+  record must name who voided). Those corrections go through the county
+  first; ask the owner.
+- **A sale holding voided records cannot be deleted** (abandon it instead).
+- **Only the desk's void function voids.** The database refuses a row
+  written already voided, a voided_at written straight through the API (even
+  by an owner), a void of the power of attorney, and a direct call that names
+  fewer documents than the full set or skips the "Not Yet" answer; who voided
+  is always the signed-in session's own team row. The older document routes
+  cannot rewrite, trash or duplicate a sale's filed bill of sale either.
 
 ## Owner's manual steps before going live
 
 1. **Create a new Supabase project for Discount Used Cars and Trucks.** Do not
    reuse another dealership's database.
-2. **Review and apply the migration:** `supabase/migrations/20260926000000_discount_sale_desk.sql`
-   (`supabase db push`). It is additive. It creates the tables, RLS, the
-   role-permission map, the step-data merge and complete-sale functions,
-   the public inventory view, realtime on `deals`, and the three **private**
-   buckets (`buyer-ids`, `documents`, `title-work`).
+2. **Review and apply both migrations, in order:**
+   `supabase/migrations/20260926000000_discount_sale_desk.sql`, then
+   `supabase/migrations/20261002000000_void_filed_documents.sql`
+   (`supabase db push`). Both are additive. The first creates the tables,
+   RLS, the role-permission map, the step-data merge and complete-sale
+   functions, the public inventory view, realtime on `deals`, and the three
+   **private** buckets (`buyer-ids`, `documents`, `title-work`). The second
+   adds the void columns to `document_agreements` (who, when, why, the
+   group), triggers that make a voided row final (never updated, never
+   deleted, never inserted already voided, voided only through the
+   function), a trigger that refuses filing a contract, 130-U, vehicle
+   responsibility or tow-away sheet while no bill of sale is current, and
+   the `void_filed_documents` function the desk calls (it voids a fixed set
+   and names who voided from the session). It also adds the reset's
+   database half: `end_sessions_before` (service role only), and a
+   `private.current_team_role` that gives no role to a session first signed
+   in before the account's last password reset.
 3. **Confirm the languages.** The desk prints English and Spanish from the
    dealer's historic sign. The phone, the hours and the public website were
    confirmed by the owner on 10/01/2026.
@@ -227,12 +317,40 @@ frozen too is a decision for the owner.
      account recovery); saving it replaces the temporary password and clears
      the flag for that account only. Nobody else sees that screen, and a
      password chosen through the emailed invite link clears the flag too.
-     A reset does not sign out a device that is still signed in to the
-     account: that device is taken to Choose A Password and can set a new
-     one without the old password. Reset an account only for the person it
-     belongs to; if a signed-in device may be in the wrong hands, set that
+     **A reset signs out every device** that signed in to the account
+     before it (owner's decision 10/02/2026): the account records the
+     moment (`password_reset_at`), and on its next request such a device is
+     signed out and sent to sign in with "Your password was reset, so this
+     device was signed out. Sign in again." (English and Spanish). Only a
+     device that signs in after the reset reaches Choose A Password, and
+     choosing it keeps that device signed in. A reset does not change the
+     password of an account that already has one (the emailed link does),
+     so if the old password itself may be known to someone else, set that
      member's `team_members.status` to something other than `active` first
-     (the password screen refuses an inactive member).
+     (the password screen refuses an inactive member). To sign out every
+     device of a member without the team screen, run in the SQL editor,
+     with that member's auth user id:
+
+     ```sql
+     update auth.users
+        set raw_app_meta_data = raw_app_meta_data
+            || jsonb_build_object('password_reset_at', now())
+      where id = '<auth user id>';
+     ```
+
+     That snippet only records the time; to end the member's older sessions
+     at the database as the team screen does, also run
+     `select public.end_sessions_before('<auth user id>', now());`.
+
+     The database holds the line too: the reset ends the account's older
+     auth sessions (so their refresh tokens stop working), and a request
+     whose session first signed in before the reset holds no team role, so
+     row-level security and the void function refuse it. An old access token
+     that carries no sign-in time (an older token format) is refused by the
+     desk on its next page, action or document, and ends when it expires
+     (an hour, by Supabase's default).
+     Google and Apple sign-in work again right after a reset (the new
+     sign-in is what is checked).
      Then **What Is Your Name?** (first and last
      name, their legal name as on their ID, kept exactly as typed),
      **Draw Your Signature** (cleared members only; the same stored

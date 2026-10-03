@@ -35,12 +35,16 @@ export async function saveSalvagePath(dealId: string, rawPath: string): Promise<
   try {
     const supabase = await createClient();
 
-    const { data: finalized } = await supabase
+    const { data: finalized, error: finalizedError } = await supabase
       .from("document_agreements")
-      .select("document_type")
+      .select("document_type, voided_at")
       .eq("deal_id", dealId)
       .not("finalized_at", "is", null);
-    const filed = ((finalized ?? []) as Array<{ document_type: string | null }>)
+    // Fail closed: the path never moves past documents nobody could read.
+    if (finalizedError) throw new Error("Filed documents could not be checked.");
+    // A voided copy holds nothing (owner's decision 10/02/2026).
+    const filed = ((finalized ?? []) as Array<{ document_type: string | null; voided_at?: string | null }>)
+      .filter((row) => !row.voided_at)
       .map((row) => row.document_type)
       .filter((type): type is string => Boolean(type));
 

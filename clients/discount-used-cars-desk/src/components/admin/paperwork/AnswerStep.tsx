@@ -6,6 +6,7 @@ import { savePaperworkAnswer } from "@/lib/actions/paperwork";
 import type { AskedQuestion } from "@/lib/sales/paperwork";
 import { tapHaptic } from "@/lib/haptics";
 import { useFunnel } from "@/components/admin/funnel/FunnelLocaleProvider";
+import { FreezeWayOut, useFreezeRefusal } from "@/components/admin/guide/HeldByBillOfSale";
 import { localizeQuestion } from "@/lib/sales/question-i18n";
 
 /**
@@ -41,6 +42,8 @@ export default function AnswerStep({
   const [choosing, setChoosing] = useState<string | null>(null);
   const [value, setValue] = useState(current);
   const [error, setError] = useState<string | null>(null);
+  // A refusal from the filed bill of sale names what it holds and the way out.
+  const freezeRefusal = useFreezeRefusal();
 
   // The question arrives in English (the spine's language) and is localized
   // here, where the toggle can change it mid-screen. Values are untouched —
@@ -57,12 +60,15 @@ export default function AnswerStep({
       if (!result.ok) {
         // The down payment after the bill of sale is filed has words of its
         // own in both languages (SOP Freeze); anything else is the action's.
+        // And every other answer the filed bill of sale prints (owner's
+        // decision 10/02/2026), named in the screen's language.
         setError(
-          result.code === "downPaymentFrozen"
-            ? t.money.downPaymentFrozen
-            : result.code === "paidTodayInvalid"
-              ? t.money.paidTodayInvalid
-              : result.error ?? t.chrome.couldNotSave,
+          freezeRefusal.text(result) ??
+            (result.code === "downPaymentFrozen"
+              ? t.money.downPaymentFrozen
+              : result.code === "paidTodayInvalid"
+                ? t.money.paidTodayInvalid
+                : result.error ?? t.chrome.couldNotSave),
         );
         setChoosing(null);
         return;
@@ -103,6 +109,7 @@ export default function AnswerStep({
             {error}
           </p>
         ) : null}
+        {error ? <FreezeWayOut heldBy={freezeRefusal.heldBy} /> : null}
       </div>
     );
   }
@@ -165,6 +172,7 @@ export default function AnswerStep({
           {error}
         </p>
       ) : null}
+      {error ? <FreezeWayOut heldBy={freezeRefusal.heldBy} /> : null}
     </form>
   );
 }

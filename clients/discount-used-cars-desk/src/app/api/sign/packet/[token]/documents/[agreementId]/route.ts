@@ -4,6 +4,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { ceremonyDocuments } from "@/lib/sales/signing-ceremony";
 import { readSalePlan } from "@/lib/sales/sale-plan";
 import { generatePdf } from "@/lib/documents/pdf-generator";
+import { signingSessionRevoked } from "@/lib/sales/void-bill-of-sale";
 
 export const dynamic = "force-dynamic";
 const privateHeaders = { "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer", "X-Robots-Tag": "noindex, nofollow" };
@@ -16,12 +17,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
   const service = createServiceClient();
   const [deal, agreements] = await Promise.all([
     service.from("deals").select("step_data").eq("id", verified.dealId).maybeSingle(),
-    service.from("document_agreements").select("id, document_type, status, finalized_at, completed_at, completed_link, has_buyer_signature, signed_at, form_data").eq("deal_id", verified.dealId).order("created_at", { ascending: false }),
+    service.from("document_agreements").select("id, document_type, status, finalized_at, completed_at, completed_link, has_buyer_signature, signed_at, form_data, voided_at").eq("deal_id", verified.dealId).order("created_at", { ascending: false }),
   ]);
   if (deal.error || agreements.error) return NextResponse.json({ error: "Please try again." }, { status: 503, headers: privateHeaders });
   if (!deal.data) return NextResponse.json({ error: "No such document." }, { status: 404, headers: privateHeaders });
+  // A link minted before the paperwork was voided is gone, not merely expired.
+  if (signingSessionRevoked(verified.issuedAt, agreements.data ?? [])) {
+    return NextResponse.json({ error: "This signing link was replaced. Ask the dealer for the new link." }, { status: 410, headers: privateHeaders });
+  }
   const current = ceremonyDocuments((agreements.data ?? []).map((row) => ({
-    id: row.id, documentType: row.document_type,
+    id: row.id, documentType: row.document_type, voided: Boolean(row.voided_at),
     finalized: Boolean(row.finalized_at || row.completed_at || row.status === "finalized" || row.status === "completed"),
     hasCompletedLink: Boolean(row.completed_link),
     signed: Boolean(row.has_buyer_signature || row.signed_at || row.form_data?.signature),
