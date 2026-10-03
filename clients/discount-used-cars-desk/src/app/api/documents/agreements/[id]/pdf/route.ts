@@ -1,3 +1,5 @@
+import { poaFormFieldsFromPrinted } from '@/lib/documents/poa-fields';
+import { fillPowerOfAttorney } from '@/lib/documents/powerOfAttorneyForm';
 import { brand } from "@/lib/dealership-config";
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-auth';
@@ -95,6 +97,28 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         },
         { status: 409 },
       );
+    }
+    /*
+      A copy filed with its printed boxes reprints them: the county, the plate
+      and the name as they were signed, whatever the sale says now. Only a
+      copy filed before the stamp is rebuilt from the sale, as it always was.
+    */
+    const signedFields = poaFormFieldsFromPrinted(form.printed);
+    if (signedFields) {
+      try {
+        const bytes = await fillPowerOfAttorney(signedFields);
+        const who = (signedFields.grantorName.trim().split(/\s+/).pop() || 'owner').replace(/[^A-Za-z0-9._-]/g, '_');
+        return new NextResponse(Buffer.from(bytes), {
+          headers: {
+            'Cache-Control': 'no-store',
+            'Content-Disposition': `${inline ? 'inline' : 'attachment'}; filename="VTR-271_${who}_${signedFields.vin.slice(-6).toUpperCase()}.pdf"`,
+            'Content-Type': 'application/pdf',
+          },
+        });
+      } catch (fillError) {
+        console.error('[agreements/pdf] power of attorney reprint failed:', fillError);
+        return NextResponse.json({ error: 'Power of attorney generation failed.' }, { status: 500 });
+      }
     }
     const dealId = typeof agreement.deal_id === 'string' ? agreement.deal_id : '';
     if (!dealId) {

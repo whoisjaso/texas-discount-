@@ -93,6 +93,17 @@ function phoneShotId() {
   return m ? m[1] : null;
 }
 
+/** A capture's cursor.json, or one line naming the missing capture and the runbook step that makes it (exit 2). */
+const readCursor = (project, id) => {
+  const f = require('path').join(project, 'public', 'shots', id, 'cursor.json');
+  if (!require('fs').existsSync(f)) {
+    const n = parseInt(id, 10);
+    const step = n <= 5 ? 'A6, capture-all.sh' : n < 20 ? 'B4, capture-desk.sh' : 'N9, capture-narrated.sh';
+    console.error(`no capture ${id}: ${f} is missing; capture it first (runbook ${step})`);
+    process.exit(2);
+  }
+  return JSON.parse(require('fs').readFileSync(f, 'utf8'));
+};
 function buildPlan() {
   const M = loadProjectModule();
   const { theme, toFrames } = M;
@@ -100,7 +111,7 @@ function buildPlan() {
   const sec = (s) => toFrames(s, fps);
   const T = M.buildTimeline(M.partBSegments);
   const shots = {};
-  const loadShot = (id) => (shots[id] = shots[id] || JSON.parse(fs.readFileSync(path.join(PROJECT, 'public', 'shots', id, 'cursor.json'), 'utf8')));
+  const loadShot = (id) => (shots[id] = shots[id] || readCursor(PROJECT, id));
   const phoneId = phoneShotId();
 
   // desktop segments laid out in film frames: parts A and B play in ONE DesktopScene (Demo.tsx joins them, adding the

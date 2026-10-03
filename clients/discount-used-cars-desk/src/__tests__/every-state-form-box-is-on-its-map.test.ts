@@ -13,7 +13,10 @@ import { VTR_61_COMPONENT_FIELDS } from "@/lib/documents/field-maps/vtr-61";
 
 function covered(documentType: string) {
   const map = fieldMapFor(documentType)!;
-  const onMap = new Set(map.pages.flatMap((page) => page.fields.map((field) => field.acroField).filter(Boolean)));
+  // A row's own box and the same answer's other boxes (box 13's five kinds).
+  const onMap = new Set(
+    map.pages.flatMap((page) => page.fields.flatMap((field) => [field.acroField, ...(field.acroFields ?? [])]).filter(Boolean)),
+  );
   return { onMap, notOnThisDesk: map.notOnThisDesk ?? {} };
 }
 

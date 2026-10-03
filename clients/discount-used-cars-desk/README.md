@@ -527,6 +527,53 @@ file has no URL or its bytes changed. Commit the regenerated table (and the
 fixture when it was rebuilt). Stored estimates made against an older table
 are worked out again on their own.
 
+## Paperwork, page by page
+
+Every document is a field map (`src/lib/documents/field-maps/`): its pages,
+and on each page every box the paper prints with its one source (the
+dealership, the fees, the car, the licence step, Start A Sale, an answer, a
+worked-out figure, a date, a signature). The corridor asks only what the
+pages leave open, once per sale, as taps unless the answer is free-form
+(`src/lib/sales/deal-facts.ts`). The review reads the page back before it is
+filed, and the filing refuses a box the sale could fill and left blank
+(`fieldMissing`). Screens that changed for anyone filming or scripting the
+desk are listed in `docs/verification/paperwork-pages/corridor-changes.md`.
+The SOP section "Document templates, page by page" is the full rule.
+
+What the review and the paper do now (the fix round of 10/03/2026, each with
+a test; `docs/verification/VERIFICATION.md`, section 00000000):
+
+- **The co-buyer** typed at Start A Sale ("Add a co-buyer") is kept on the
+  sale and prints on the bill of sale, the contract and the 130-U's box 17;
+  the co-buyer signs in ink. A sale with no co-buyer prints no co-buyer box,
+  on the contract's printed page too.
+- **Conditions are predicates** (`field-maps/conditions.ts`): a business
+  applicant's name and FEIN, a limited warranty's shares and a trade-in's
+  lines are required exactly on the sales they apply to, and a cash sale's
+  review lists no co-buyer or lien rows.
+- **Total Paid**: on a new bill of sale it is what was paid today on a
+  balance sale, and the total due with the lender's line on a bank deal. A
+  copy filed before this change still prints its total due (the `pageLayout`
+  stamp tells them apart), and its ink lines keep the date they had.
+- **The review reads back what files**: the filer's printed name and
+  signature, an unset documentary fee as its `[Not set: …]` marker (never
+  $0.00), the 130-U in the form's words, the chips' real sources, Spanish
+  headings and chips on a Spanish screen.
+- **Taps for real cases**: the licence state list takes a typed place, the
+  payment method has "Another Way", the county starts only from the intake's
+  address lookup (a city's usual county is offered, filed only when tapped), a
+  first payment before the contract date is refused, every paperwork screen
+  has Back, and the tap cards fill the column as Handle A Sale's do.
+- **Reprints**: a filed power of attorney reprints what was signed; the
+  130-U's printed name keeps the suffix, as box 16 and the bill of sale do; a
+  Buyer's Guide is refused when its sale cannot be read.
+
+Still the owner's: the late-handling fee (`NEXT_PUBLIC_DEALER_LATE_HANDLING_FEE`)
+prints `[Not set: late-handling fee]` on the buyer-files Vehicle
+Responsibility sheet until it is set, and the documentary fee is set at the
+owner's first sign-in (Your Fees). With `DESK_ALLOW_UNSET_FACTS=true` (demos
+only) the markers print instead of a refusal.
+
 ## Owner's manual steps before going live
 
 1. **Create a new Supabase project for Discount Used Cars and Trucks.** Do not

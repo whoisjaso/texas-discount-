@@ -13,8 +13,12 @@
  *   node fill-client.cjs scenario   <client-inputs.json> <assets/desk-scenarios/X.json> --out <scratch>/X.json
  *   node fill-client.cjs send-note  <client-inputs.json> --film <master.mp4> --share <chat.mp4> [--report <verify
  *                                   report.json>] [--out send-note.md]
+ *   node fill-client.cjs decisions  <client-inputs.json> --out <project>/partB-decisions.json   (runbook B0: the part-B
+ *                                   decisions the user approves, as one file whose hash the approval is bound to)
  *
- * check stages (runbook A1 / A3 / B0 / B5 / N7): `facts` what the person fills before anything is measured; `pre` the site film's inputs (what new-project.sh needs); `desk` adds part B's
+ * check stages (runbook A1 / A3 / B0 / B5 / N7): `facts` what the person fills before anything is measured, compared
+ * with the site's own business.ts (siteDir) and refused when it reads like a placeholder (Example, Test, Lorem, TBD, a
+ * .example host); `pre` the site film's inputs (what new-project.sh needs); `desk` adds part B's
  * decisions before any desk capture: partB.onboarding (owner-fees | sales, the user's answer, never chosen for them),
  * partB.demoFee {cents, source owner|user-approved} on the owner path, deskClock (today 14:00 with the zone offset: the
  * date the server stamps on the documents), demo.phone and demo.addressPartB; `post` adds what the captures measured
@@ -36,10 +40,11 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const SKILL_ROOT = path.resolve(__dirname, '..');
 
 const args = process.argv.slice(2);
 const cmd = args[0];
-const VALUE_FLAGS = new Set(['--out', '--into', '--stage', '--template', '--film', '--share', '--report']);
+const VALUE_FLAGS = new Set(['--out', '--into', '--stage', '--template', '--film', '--share', '--report', '--project']);
 const flags = {};
 const positional = [];
 for (let i = 1; i < args.length; i++) {
@@ -130,7 +135,74 @@ function problems(inp) {
   need(typeof inp.introKey === 'string' && /intro/.test(inp.introKey), 'introKey: the SEEN_KEY in the site\'s Loader.tsx (measure-site.cjs finds it)');
   if (filled('clock')) need(typeof inp.clock === 'string' && !Number.isNaN(Date.parse(inp.clock)) && /T14:00:00[+-]\d\d:\d\d$/.test(inp.clock),
     'clock: 2 PM local with the dealer\'s UTC offset that day: Wednesday 2026-09-30T14:00:00-05:00 for Central time, or the next open weekday at 14:00 if closed on Wednesdays');
+  for (const m of placeholderWords(inp)) p.push(m);
+  for (const m of siteFactsProblems(inp)) p.push(m);
+  const tile = String((inp.storyboard || {}).SERVICE_TILE || '');
+  if (/financ|credit|loan|payment|lease/i.test(tile) && !String((inp.storyboard || {}).SERVICE_TILE_CHECK || '').trim()) {
+    p.push(`storyboard.SERVICE_TILE "${tile}" names financing: its tile probably carries class (a) text (a payment, an APR, a %, a term; house-recipe §14), which never enters the frame. Read the tile on the served site and record what it prints in storyboard.SERVICE_TILE_CHECK; if it carries class (a) text, ask the user before A5 (the house cut has no recipe for it)`);
+  }
   return p;
+}
+
+/** Words that mark a value nobody confirmed: refused in every fact, outro line, demo value and said variable. */
+const PLACEHOLDER_WORD = /\bexample\b|\.example\b|\btest\b|\blorem\b|\bipsum\b|\btbd\b|\bto be confirmed\b|\bplaceholder\b|\bxxx+\b|\bfoo\b|\bacme\b/i;
+function placeholderWords(inp) {
+  const out = [];
+  const scan = (value, at) => {
+    if (typeof value === 'string') { if (PLACEHOLDER_WORD.test(value)) out.push(`${at} reads like a placeholder (${JSON.stringify(value)}): a fact on screen is the owner's or TxDMV's, never made up`); }
+    else if (Array.isArray(value)) value.forEach((x, i) => scan(x, `${at}[${i}]`));
+    else if (value && typeof value === 'object') for (const [k, v] of Object.entries(value)) if (!k.startsWith('_')) scan(v, `${at}.${k}`);
+  };
+  scan(inp.domain, 'domain');
+  scan(inp.facts, 'facts');
+  scan(inp.outroLines, 'outroLines');
+  scan(inp.client, 'client');
+  if (inp.demo) scan({ addressPartB: (inp.demo || {}).addressPartB, addressNarrated: (inp.demo || {}).addressNarrated }, 'demo');
+  if (inp.narration) for (const [k, v] of Object.entries(inp.narration)) if (/_SAID$|^DEMO_|^CLOSE_TAGLINE$|^LEGAL_NAME$|^SELL_BAND_NAME$/.test(k)) scan(v, `narration.${k}`);
+  return out;
+}
+
+const repoRoot = () => process.env.REPO || path.resolve(SKILL_ROOT, '..', '..', '..');
+/** The site's business.ts: the facts the film shows are copied from it, field for field. */
+function siteBusiness(inp) {
+  if (!inp.siteDir || /\{\{/.test(String(inp.siteDir))) return { problem: 'siteDir: the client site folder (clients/<slug>-site): the facts are checked against its business.ts' };
+  const dir = path.isAbsolute(inp.siteDir) ? inp.siteDir : path.join(repoRoot(), inp.siteDir);
+  if (!fs.existsSync(dir)) return { problem: `siteDir ${inp.siteDir}: no such folder under ${repoRoot()} (set REPO, or source demo.env): the facts are checked against the site's business.ts` };
+  const found = [];
+  const walk = (d, depth) => {
+    if (depth > 4) return;
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      if (e.name === 'node_modules' || e.name.startsWith('.')) continue;
+      const f = path.join(d, e.name);
+      if (e.isDirectory()) walk(f, depth + 1);
+      else if (e.name === 'business.ts') found.push(f);
+    }
+  };
+  walk(path.join(dir, 'src'), 0);
+  if (!found.length) return { problem: `no business.ts under ${dir}/src: the facts have no source to be checked against` };
+  return { file: found[0], text: fs.readFileSync(found[0], 'utf8') };
+}
+function siteFactsProblems(inp) {
+  if (process.env.RECORDLY_SKIP_SITE_FACTS === '1') return [];
+  if (!Array.isArray(inp.facts) || inp.facts.length !== 4 || placeholders(inp.facts).length) return [];
+  const b = siteBusiness(inp);
+  if (b.problem) return [b.problem];
+  const field = (name) => { const m = b.text.match(new RegExp(`\\b${name}:\\s*'([^']*)'`)) || b.text.match(new RegExp(`\\b${name}:\\s*"([^"]*)"`)); return m ? m[1] : null; };
+  const squash = (x) => String(x || '').toLowerCase().replace(/[\s,.–—-]+/g, '');
+  const out = [];
+  const where = path.relative(repoRoot(), b.file);
+  const phone = field('phoneDisplay'), street = field('street'), cityLine = field('cityLine'), hours = field('hoursShort'), url = field('siteUrl');
+  if (!phone) out.push(`${where} has no phoneDisplay: the phone on screen has no source (ask the owner)`);
+  else if (inp.facts[1] !== phone) out.push(`facts[1] is ${JSON.stringify(inp.facts[1])}, but ${where} prints phoneDisplay ${JSON.stringify(phone)}: copy it character for character`);
+  if (!street) out.push(`${where} has no street: the address on screen has no source`);
+  else {
+    const city = (cityLine || '').split(',')[0].trim();
+    if (!inp.facts[2].startsWith(street) || (city && !inp.facts[2].includes(city))) out.push(`facts[2] is ${JSON.stringify(inp.facts[2])}, but ${where} prints street ${JSON.stringify(street)} in ${JSON.stringify(cityLine)}: "<street>, <city>"`);
+  }
+  if (!hours) out.push(`${where} has no hoursShort: the hours on screen have no source`);
+  else if (squash(inp.facts[3]) !== squash(hours)) out.push(`facts[3] is ${JSON.stringify(inp.facts[3])}, but ${where} prints hoursShort ${JSON.stringify(hours)}: the same days and times (split days as the site writes them, e.g. "Mon – Fri 9 AM – 7 PM, Sat 9 AM – 5 PM")`);
+  if (url && inp.domain && !url.replace(/^https?:\/\/(www\.)?/, '').startsWith(inp.domain)) out.push(`domain is ${JSON.stringify(inp.domain)}, but ${where} prints siteUrl ${JSON.stringify(url)}`);
+  return out;
 }
 
 /** Part B's decisions, before any desk capture (runbook B0). */
@@ -147,12 +219,36 @@ function deskProblems(inp) {
   }
   need(typeof inp.deskClock === 'string' && /^\d{4}-\d\d-\d\dT14:00:00[+-]\d\d:\d\d$/.test(inp.deskClock) && !Number.isNaN(Date.parse(inp.deskClock)),
     'deskClock: the capture day at 14:00 with the zone offset, e.g. 2026-10-02T14:00:00-05:00 (the date the desk server stamps on the documents; the site\'s clock is never used for the desk)');
+  // The desk stamps its real date on the paper: the clock must be today at the dealer, not a day the run began.
+  if (typeof inp.deskClock === 'string' && /^\d{4}-\d\d-\d\dT14:00:00([+-])(\d\d):(\d\d)$/.test(inp.deskClock)) {
+    const [, sign, hh, mm] = inp.deskClock.match(/([+-])(\d\d):(\d\d)$/);
+    const offsetMin = (sign === '-' ? -1 : 1) * (Number(hh) * 60 + Number(mm));
+    const today = process.env.RECORDLY_TODAY || new Date(Date.now() + offsetMin * 60000).toISOString().slice(0, 10);
+    need(inp.deskClock.slice(0, 10) === today, `deskClock is ${inp.deskClock.slice(0, 10)}, but today at the dealer is ${today}: the desk stamps today's date on the documents, so the clock must be today 14:00 (set it on the day you capture)`);
+  }
+  need(Object.prototype.hasOwnProperty.call(inp, 'partBDomain') && typeof B.domainDecision === 'string' && B.domainDecision.trim().length > 3,
+    'partB.domainDecision: the user\'s answer to "May the desk\'s own host be shown in the URL pill on the desk frames?" (partBDomain: that host, or null to show the site\'s domain), in their words');
   const D = inp.demo || {};
   need(/^\d{3}555\d{4}$/.test(String(D.phone || '')), 'demo.phone: ten digits, a 555 number in the dealer\'s area code (e.g. 7135550142): fictional by construction');
+  const area = String((inp.facts || [])[1] || '').match(/^\((\d{3})\)/);
+  if (area && /^\d{10}$/.test(String(D.phone || ''))) need(String(D.phone).slice(0, 3) === area[1], `demo.phone ${D.phone} is not in the dealer's area code (${area[1]}, from facts[1]): ${area[1]}555xxxx`);
   const A = D.addressPartB || {};
   need(A.street && A.city && /^\d{5}$/.test(String(A.zip || '')) && A.county && A.checkedOn && A.how,
     'demo.addressPartB: { street, city, zip, county, checkedOn, how } — a street number that does NOT exist on a real street (lesson B13), with how it was checked');
+  if (A.street && A.how) need(String(A.how).toLowerCase().includes(String(A.street).toLowerCase().split(/\s+/).slice(1).join(' ').slice(0, 12)),
+    `demo.addressPartB.how must say how THIS street was checked (it names ${JSON.stringify(A.street)}): ${JSON.stringify(String(A.how).slice(0, 80))}`);
+  for (const m of copiedFromExample(inp, ['demo.phone', 'demo.addressPartB.street', 'demo.addressNarrated.street'])) p.push(m);
   return p;
+}
+
+/** A value copied from the worked example (another client's data) is refused, as fill-narration refuses its facts. */
+function copiedFromExample(inp, keys) {
+  const exFile = path.join(SKILL_ROOT, 'examples', 'discount-used-cars', 'client-inputs.json');
+  if (!fs.existsSync(exFile)) return [];
+  const ex = readJson(exFile);
+  if (ex.slug === inp.slug) return [];
+  const at = (o, k) => k.split('.').reduce((x, y) => (x == null ? x : x[y]), o);
+  return keys.filter((k) => at(inp, k) != null && at(inp, k) === at(ex, k)).map((k) => `${k} is ${ex.client}'s (${JSON.stringify(at(ex, k))}), copied from the worked example: choose and check this client's own`);
 }
 
 /** What the desk captures measured (runbook B5). */
@@ -170,8 +266,18 @@ function postProblems(inp) {
 /** The narrated cut's demo address (runbook N7): the geocoder must know the street, and it must not be a household. */
 function narratedProblems(inp) {
   const A = (inp.demo || {}).addressNarrated || {};
-  return A.street && A.city && /^\d{5}$/.test(String(A.zip || '')) && A.county && A.checkedOn && A.how ? []
-    : ['demo.addressNarrated: { street, city, zip, county, checkedOn, how } — a block number on a commercial road the Census geocoder resolves (so the autofill happens) and no listed home (lessons N2, B13); record the geocoder URL and date in how / checkedOn'];
+  if (!(A.street && A.city && /^\d{5}$/.test(String(A.zip || '')) && A.county && A.checkedOn && A.how)) {
+    return ['demo.addressNarrated: { street, city, zip, county, checkedOn, how } — a block number on a commercial road the Census geocoder resolves (so the autofill happens) and no listed home (lessons N2, B13); scripts/check-address.cjs records the geocoder URL, match and date'];
+  }
+  const p = [];
+  // The narrated address is the one the script says and the screen shows: one address, one county.
+  const N = inp.narration || {};
+  const key = (x) => String(x || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (typeof N.DEMO_ADDRESS === 'string' && !key(N.DEMO_ADDRESS).startsWith(key(A.street))) p.push(`narration.DEMO_ADDRESS ${JSON.stringify(N.DEMO_ADDRESS)} is not demo.addressNarrated (${JSON.stringify(`${A.street}, ${A.city} ${A.zip}`)}): the script says the address the screen types`);
+  if (typeof N.DEMO_COUNTY === 'string' && key(N.DEMO_COUNTY) !== key(A.county)) p.push(`narration.DEMO_COUNTY ${JSON.stringify(N.DEMO_COUNTY)} is not demo.addressNarrated.county (${JSON.stringify(A.county)}): the county the desk looks up for that address`);
+  if (!/geocoding\.geo\.census\.gov|check-address|census geocoder/i.test(String(A.how))) p.push('demo.addressNarrated.how: record the Census geocoder call that matched it (scripts/check-address.cjs writes how and checkedOn)');
+  for (const m of copiedFromExample(inp, ['demo.addressNarrated.street'])) p.push(m);
+  return p;
 }
 
 function stageProblems(inp, stage) {
@@ -372,7 +478,7 @@ function readmeValues(inp) {
   return { FACTS_LINE: inp.facts.join(', '), ZOOM_COPY: zoomCopy, OVERRIDES: ov };
 }
 
-const SKILL = path.resolve(__dirname, '..');
+const SKILL = SKILL_ROOT;
 const fail = (msg, code = 1) => { console.error(msg); process.exit(code); };
 const bail = (bad, label = 'client-inputs incomplete') => { if (bad.length) fail(`${label}:\n  - ${bad.join('\n  - ')}`); };
 
@@ -424,7 +530,12 @@ function mergeDesk(inp, intoFile, tplFile) {
 
 function injectLong(inp, intoFile, tplFile) {
   bail(stageProblems(inp, 'desk').concat(narratedProblems(inp)), 'client-inputs not ready for the narrated captures');
-  const project = path.dirname(path.dirname(path.resolve(intoFile)));
+  // 22-money types an amount handed over below the price and carter-balance files the seller lien: the house cut has
+  // no paid-in-full variant, so SELLER_LIEN false cannot be filmed from these files without a template change.
+  if ((inp.narration || {}).SELLER_LIEN === false) fail('long-storyboard: narration.SELLER_LIEN is false, but the house long storyboard (22-money) and assets/desk-scenarios/carter-balance.json film a balance owed with a seller lien. A paid-in-full variant is a template change: agree it with the user first (script-template.md, Kickoff answers to flags)', 2);
+  // The project the card images live in: --project, else $P, else the folder above the storyboard's narration/.
+  const project = path.resolve(flag('project') || process.env.P || path.dirname(path.dirname(path.resolve(intoFile))));
+  if (!fs.existsSync(path.join(project, 'src'))) fail(`long-storyboard: ${project} is not a demo project (no src/): pass --project <P> (the default --into is <P>/narration/storyboard-long.json)`, 2);
   const card = (side) => {
     const f = path.join(project, 'public', 'narrated', `card-${side}.png`);
     if (!fs.existsSync(f)) fail(`long-storyboard: no ${f}: run scripts/make-demo-card.mjs --inputs <client-inputs.json> --out ${path.dirname(f)} first`);
@@ -438,9 +549,25 @@ function injectLong(inp, intoFile, tplFile) {
     CAMERA_FEED_JS: fs.readFileSync(path.join(SKILL, 'assets/narrated/camera-feed.js'), 'utf8').replace('__FRONT__', card('front')).replace('__BACK__', card('back')),
   });
   const missing = new Set();
-  const out = fillDeep(readJson(tplFile), v, missing);
+  const out = dropByFlags(fillDeep(readJson(tplFile), v, missing), inp.narration || {});
   if (missing.size) fail(`long-storyboard: values missing for ${[...missing].sort().join(', ')}`);
   write(intoFile, JSON.stringify(out, null, 1) + '\n');
+}
+
+/**
+ * A narration flag set false drops the lines it gates (fill-narration.cjs) AND what the camera does for them: a shot
+ * or an action carrying "when": "<flag>" is left out of the filled storyboard (SPANISH_DOCS false: 20-car never
+ * opens the language menu). "when" is removed from what is kept.
+ */
+function dropByFlags(sb, N) {
+  const off = (x) => x && typeof x === 'object' && typeof x.when === 'string' && N[x.when] === false;
+  const strip = (x) => { const { when, ...rest } = x; void when; return rest; };
+  sb.shots = (sb.shots || []).filter((shot) => !off(shot)).map((shot) => {
+    const s = shot.when ? strip(shot) : shot;
+    if (Array.isArray(s.actions)) s.actions = s.actions.filter((a) => !off(a)).map((a) => (a && a.when ? strip(a) : a));
+    return s;
+  });
+  return sb;
 }
 
 function sendNote(inp) {
@@ -457,7 +584,7 @@ function sendNote(inp) {
   const decisions = path.join(project, 'verify-decisions.md');
   const { rows: decisionRows } = require('./decisions.cjs');
   const recorded = decisionRows(project);
-  const allow = recorded.filter((r) => /^allow-/.test(r.kind)).map((r) => `| ${[r.step, r.kind, r.what, r.why, r.who, r.when].join(' | ')} |`);
+  const allow = recorded.filter((r) => /^allow-|^forced$|^declined$/.test(r.kind)).map((r) => `| ${[r.step, r.kind, r.what, r.why, r.who, r.when].join(' | ')} |`);
   const looks = recorded.filter((r) => r.kind === 'by-eye' || r.kind === 'by-ear');
   if (!looks.some((r) => r.kind === 'by-eye')) fail(`send-note: no by-eye look is recorded in ${decisions} (runbook A8 / B6v / N11: mark the stills you or the user looked at). Nothing is sent unlooked-at.`);
   const LOOKS = `${looks.map((r) => `${r.step} ${r.kind} by ${r.who.replace(/:.*$/, '')}`).join(', ')}${looks.some((r) => r.kind === 'by-ear') ? '' : '. **The full watch with sound is not recorded yet**'}`;
@@ -514,6 +641,7 @@ function main() {
   }
   if (cmd === 'desk-storyboard') {
     if (!flag('into')) fail('desk-storyboard: --into <project>/storyboard.json', 2);
+    if (!fs.existsSync(flag('into'))) fail(`desk-storyboard merges the desk shots INTO an existing site storyboard, and ${flag('into')} does not exist: use $P/storyboard.json (made at A4, preflighted at A5)`, 2);
     mergeDesk(inp, flag('into'), flag('template') || path.join(SKILL, 'assets/storyboard-desk.json'));
     return;
   }
@@ -523,6 +651,15 @@ function main() {
     return;
   }
   if (cmd === 'send-note') { bail(problems(inp)); sendNote(inp); return; }
+  if (cmd === 'decisions') {
+    // The part-B decisions the user approves at B0, as one file: the approval is bound to its hash (runbook.cjs).
+    bail(stageProblems(inp, 'desk'), 'client-inputs not ready for the desk (check --stage desk)');
+    const B = inp.partB || {};
+    const out = { onboarding: B.onboarding, demoFee: B.onboarding === 'owner-fees' ? B.demoFee : null, deskClock: inp.deskClock, partBDomain: inp.partBDomain ?? null, domainDecision: B.domainDecision, demo: { phone: inp.demo.phone, addressPartB: inp.demo.addressPartB } };
+    write(flag('out'), JSON.stringify(out, null, 1) + '\n');
+    console.log('PART B DECISIONS WRITTEN');
+    return;
+  }
   if (cmd === 'scenario') {
     const tpl = positional[1];
     if (!tpl) fail('scenario: give the scenario template (assets/desk-scenarios/<name>.json)', 2);

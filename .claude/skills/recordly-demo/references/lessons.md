@@ -17,7 +17,7 @@ IDs in "Source": F1–F20 are critic LOOK round 2, F21–F34 critic RULES round 
 - [Code](#code) (D1–D5)
 - [Review](#review) (R1–R7)
 - [Operations](#operations) (O1–O2)
-- [Part B: the desk](#part-b-the-desk) (B1–B13)
+- [Part B: the desk](#part-b-the-desk) (B1–B14)
 - [The narrated long cut](#the-narrated-long-cut) (N1–N12)
 - [Running it under any model](#running-it-under-any-model) (M1–M5)
 - [Decisions kept: do not "fix" these](#decisions-kept-do-not-fix-these)
@@ -494,7 +494,19 @@ Part B (the sale desk) went through a desk build/verify pass, captures 6-12, two
 
 **B13. Check a demo address does not exist.**
 - *Rule:* A fictional buyer address on screen must not be a real household: search it before capture.
+  `scripts/check-address.cjs --inputs $I --which addressPartB --write` asks the Census geocoder and records the URL,
+  the result and the date (no match is necessary, not sufficient); a listing search for the number is a person's job,
+  and without web access the user gives the address.
 - *Note:* 1418 Belrose Dr, Houston 77034 was checked (the real Belrose Dr is in 77035 and numbered 55xx–59xx).
+
+**B14. A scenario goes stale on a screen nobody filmed.**
+- *Rule:* Before an off-camera walk, run `validate-scenario.cjs --strict` (the capture scripts do), and after the desk
+  moves, walk each scenario once to its end and `--stamp` it. Answer box 11 with the desk's own estimate (`{ "button":
+  "Confirm This Weight" }`) unless a document is on file; a typed weight needs the document it was read from.
+- *Why:* The empty-weight change made a typed weight ask "Which document is it from?". The demo scenarios typed 3340
+  and pressed Next, so the off-camera sale stopped on box 11 with every capture before it spent.
+- *Symptom:* `STUCK AT form130U/emptyWeight`, "Say which document the figure is from." (fixed 10/03/2026; the
+  validator now refuses a typed weight without its document).
 
 ## The narrated long cut
 
@@ -510,7 +522,8 @@ plan that anchors each line's key word on its picture, then a stills pass and a 
 
 **N2. The demo address must be one the geocoder knows, and must not be a household.**
 - *Rule:* Pick a real street the Census geocoder resolves (Discount: 10418 Almeda Genoa Rd, Houston 77034, Harris
-  County), and check it is not a listed home (B13).
+  County), and check it is not a listed home (B13). `check-address.cjs --which addressNarrated --write` records the
+  match and refuses a county other than the one the script says.
 - *Why:* An invented address is not found, so the autofill the line promises does not happen.
 
 **N3. A licence scan is filmed through a test camera feed, never a photo of a real licence.**

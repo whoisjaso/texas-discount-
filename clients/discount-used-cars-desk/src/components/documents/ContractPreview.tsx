@@ -7,7 +7,7 @@ import { getDocStrings, type DocStrings } from '@/lib/documents/i18n';
 import SmsConsentSection from '@/components/documents/SmsConsentSection';
 import DocumentLetterhead from '@/components/documents/DocumentLetterhead';
 import DocFeeNotice from '@/components/documents/DocFeeNotice';
-import { dealership, dealerSignerPrintedName } from '@/lib/dealership-config';
+import { dealership, dealerSignerPrintedName, notSet } from '@/lib/dealership-config';
 import { printedPhone } from '@/lib/forms/phone';
 import {
   DOC_FEE_NOTICE_EN,
@@ -50,6 +50,10 @@ export default function ContractPreview({ data, signatures, copyLabel, strings: 
     financeCharge,
   } = contractFigures(data);
   const hasShorterLast = Math.abs(lastPaymentAmount - paymentAmount) >= 0.01;
+  // The owner has not set the doc fee (a demo filing): the line says so
+  // rather than printing $0.00 as a fee the owner chose.
+  const docFeeText =
+    (data as unknown as Record<string, unknown>).docFeeUnset === true ? notSet('doc fee') : formatCurrency(data.docFee);
   // A copy filed with the documentary fee notice prints the itemization with
   // the doc fee as its own item and the notice beside it.
   const stamped = printsDocFeeNotice(data as unknown as Record<string, unknown>);
@@ -135,13 +139,17 @@ export default function ContractPreview({ data, signatures, copyLabel, strings: 
             <p className="text-sm text-[color:var(--tj-ink)] min-h-[1.25rem]">{printedPhone(data.buyerPhone)}</p>
             <p className="text-sm text-[color:var(--tj-ink)] min-h-[1.25rem]">{data.buyerEmail}</p>
           </div>
-          <div className="p-6" data-mobile-empty={!hasCoBuyer ? 'true' : undefined}>
+          {/* No co-buyer, no box: the empty "Co-Buyer Information" printed on
+              every contract, hidden only on a phone screen, never on paper. */}
+          {hasCoBuyer ? (
+          <div className="p-6" data-co-buyer="">
             <h3 className="doc-section-heading mb-4">{s.coBuyerInfo}</h3>
             <p className="font-[family-name:var(--font-display)] text-xl mb-1 min-h-[1.75rem]">{data.coBuyerName}</p>
             <p className="text-sm text-[color:var(--tj-ink)] min-h-[1.25rem]">{data.coBuyerAddress}</p>
             <p className="text-sm text-[color:var(--tj-ink)] min-h-[1.25rem]">{printedPhone(data.coBuyerPhone)}</p>
             <p className="text-sm text-[color:var(--tj-ink)] min-h-[1.25rem]">{data.coBuyerEmail}</p>
           </div>
+          ) : null}
         </div>
 
         {/* Vehicle */}
@@ -269,7 +277,7 @@ export default function ContractPreview({ data, signatures, copyLabel, strings: 
                 </div>
                 <div className="flex justify-between font-semibold" data-item="docFee">
                   <span>{c.itemDocFee}</span>
-                  <span>{formatCurrency(data.docFee)}</span>
+                  <span>{docFeeText}</span>
                 </div>
                 <DocFeeNotice data={data as unknown as Record<string, unknown>} />
                 <div className={`flex justify-between${tradeIn > 0 ? '' : ' border-b border-[#1a1a1a]/20 pb-3'}`}>
@@ -309,7 +317,7 @@ export default function ContractPreview({ data, signatures, copyLabel, strings: 
                 </div>
                 <div className="flex justify-between text-[color:var(--tj-ink)]">
                   <span>&nbsp;&nbsp;&nbsp;{c.docFeeLine}</span>
-                  <span>{formatCurrency(data.docFee)}</span>
+                  <span>{docFeeText}</span>
                 </div>
                 <div className="flex justify-between text-[color:var(--tj-ink)]">
                   <span>&nbsp;&nbsp;&nbsp;{c.regFeeLine}</span>
@@ -497,7 +505,9 @@ export default function ContractPreview({ data, signatures, copyLabel, strings: 
 
           <div className="grid grid-cols-2 gap-16">
             <SignatureLinePreview label={s.buyerSignature} signatureImage={signatures.buyerSignature} signatureDate={signatures.buyerSignatureDate} printedName={data.buyerName} />
-            <SignatureLinePreview label={s.coBuyerSignature} signatureImage={signatures.coBuyerSignature} signatureDate={signatures.coBuyerSignatureDate} printedName={data.coBuyerName} />
+            {hasCoBuyer ? (
+              <SignatureLinePreview label={s.coBuyerSignature} signatureImage={signatures.coBuyerSignature} signatureDate={signatures.coBuyerSignatureDate} printedName={data.coBuyerName} />
+            ) : null}
           </div>
 
           <div className="grid grid-cols-2 gap-16 mt-8">

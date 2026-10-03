@@ -173,6 +173,26 @@ export const ROUTES: Record<string, SaleDetail> = {
       },
     },
   }),
+  /*
+    The two intake gaps the corridor fills: a licence whose issuing state
+    the intake did not record (asked on the bill of sale), and a mailing
+    address with no county (asked on the 130-U, where the city's county is
+    only a guess: south Amarillo is Randall, not Potter).
+  */
+  noIntakeState: routeSale("no-intake-state", {
+    buyer: { idState: "" },
+    stepData: {
+      money: { amount: "9000", priceBasis: "vehicleOnly", paidTodayAmount: "" },
+      paperwork: { billOfSale: { ...WALKED.billOfSale, buyerLicenseState: "OK" }, form130U: WALKED.form130U },
+    },
+  }),
+  noIntakeCounty: routeSale("no-intake-county", {
+    stepData: {
+      buyerId: { ...BUYER_ID, mailing: { street: "2100 S Polk St", city: "Amarillo", state: "TX", postal: "79109" } },
+      money: { amount: "9000", priceBasis: "vehicleOnly", paidTodayAmount: "" },
+      paperwork: { billOfSale: WALKED.billOfSale, form130U: { ...WALKED.form130U, countyOfResidence: "Randall" } },
+    },
+  }),
   warranty: routeSale("warranty", {
     stepData: {
       money: { amount: "9000", priceBasis: "vehicleOnly", paidTodayAmount: "" },

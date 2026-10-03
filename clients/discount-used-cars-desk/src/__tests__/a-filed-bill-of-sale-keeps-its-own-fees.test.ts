@@ -62,7 +62,9 @@ describe("after the owner changes the fees", () => {
     const printed = printedOf(bill.agreementId);
     expect(printed).toMatchObject({ docFee: 150, titleFee: 33, registrationFee: 75 });
     expect(figuresDisagreeWithBillOfSale("form130U", { ...money }, printed)).toBe(false);
-    const title = await file("form130U", { ...money });
+    // Posted with the county the operator tapped: a city's county is a guess
+    // the 130-U never files unseen (deal-facts.ts countyOfResidence).
+    const title = await file("form130U", { ...money, countyOfResidence: "Harris" });
     expect(title, JSON.stringify(title)).toMatchObject({ ok: true });
   });
 

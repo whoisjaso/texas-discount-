@@ -84,6 +84,10 @@ const failures = [];
     await btn('Next', true).click(); await p.waitForTimeout(600);
     await p.locator('input[name=buyerFirstName]').fill(sc.first);
     await p.locator('input[name=buyerLastName]').fill(sc.last);
+    if (sc.coBuyer) { // "Add a co-buyer": the name the bill of sale, the contract and the 130-U print
+      await btn('Add a co-buyer', true).click(); await p.waitForTimeout(300);
+      await p.locator('input[name=coBuyerName]').fill(sc.coBuyer);
+    }
     await shot('start-buyer');
     await btn('Next', true).click(); await p.waitForTimeout(600);
     await p.locator('input[name=buyerPhone]').fill(sc.phone);
@@ -121,12 +125,15 @@ const failures = [];
   }
 
   // ---- The corridor: answer whatever question is on screen, per the scenario's answer map.
+  let ended = 'guard';
+  const walked = [];
   for (let guard = 0; guard < 60; guard++) {
     const url = p.url();
     const step = decodeURIComponent((url.match(/\/(guide|paperwork)\/(.+)$/) || [])[2] || '');
     await shot(step || 'screen');
-    if (/\/packet$/.test(url) || step === 'packet') break;
-    if (process.env.STOP_AT && step === process.env.STOP_AT) { log('STOPPED AT', step); break; }
+    if (step) walked.push(step);
+    if (/\/packet$/.test(url) || step === 'packet') { ended = 'packet'; break; }
+    if (process.env.STOP_AT && step === process.env.STOP_AT) { log('STOPPED AT', step); ended = `stopped at ${step}`; break; }
     // A scenario may name text a screen must show (e.g. box 11's source on
     // the 130-U review, or the empty-weight question's own state).
     const want = (sc.expect || {})[step];
@@ -166,7 +173,7 @@ const failures = [];
       await settle();
       if (p.url() !== url) continue;
     }
-    if (a === undefined) { log('NO ANSWER FOR', step); break; }
+    if (a === undefined) { log('NO ANSWER FOR', step); ended = `no answer for ${step}`; break; }
     for (const act of [].concat(a)) {
       if (act.fill) { await p.locator(act.fill).first().fill(String(act.value)); await p.waitForTimeout(300); }
       else if (act.button) { await btn(act.button, act.exact ?? false).click(); }
@@ -177,9 +184,22 @@ const failures = [];
     }
     await p.waitForURL((u) => u.href !== url, { timeout: 90000 }).catch(() => {});
     await settle();
-    if (p.url() === url && !(Array.isArray(a) && a.some(x => x.stay))) { log('STUCK AT', step); await shot('stuck'); break; }
+    if (p.url() === url && !(Array.isArray(a) && a.some(x => x.stay))) { log('STUCK AT', step); await shot('stuck'); ended = `stuck at ${step}`; break; }
   }
   fs.writeFileSync(`${out}/deal.txt`, dealUrl.replace(BASE, ''));
+  /*
+    What this walk proves, for whoever relies on it (recordly-demo's narration fact-check reads it): the desk's
+    corridor commit it ran on (and its uncommitted changes), the scenario, how far it got and every screen it
+    answered. DESK_DIR names the desk checkout; without it the commit is "unknown" and the report proves less.
+  */
+  const git = (a) => { try { return require('child_process').execFileSync('git', ['-C', process.env.DESK_DIR || '.', ...a], { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); } catch { return ''; } };
+  const corridor = ['--', 'src/lib/sales', 'src/components/admin'];
+  fs.writeFileSync(`${out}/walk-report.json`, JSON.stringify({
+    deskCommit: (process.env.DESK_DIR && git(['log', '-1', '--format=%h', ...corridor])) || 'unknown',
+    dirty: process.env.DESK_DIR ? git(['status', '--porcelain', ...corridor]).split('\n').filter(Boolean).length : null,
+    scenario: scenarioPath, deal: dealUrl.replace(BASE, ''), viewport: [Number(W), Number(H)],
+    ended, screens: walked, contrastFailures: failures.length, at: new Date().toISOString(),
+  }, null, 1) + '\n');
   log('CONTRAST FAILURES', failures.length); for (const f of [...new Set(failures)].slice(0, 15)) log('  ', f);
   await b.close();
 })().catch(e => { console.error('FAIL', e.message.split('\n')[0]); process.exit(1); });

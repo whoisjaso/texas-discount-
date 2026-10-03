@@ -442,6 +442,10 @@ no government line can carry dealer margin.
 
 ### 5.2 Owner onboarding: the Dealer Fees step
 
+The desk's specification of this step, with everything else onboarding
+includes, is the SOP's "First sign-in: onboarding" (item 3, built as one
+unit at premium-dealer-build step 4.3); this section is the law behind it.
+
 Fees are dealership facts, not personal ones. The step therefore appears in
 the first sign-in corridor **only for the Owner role**:
 

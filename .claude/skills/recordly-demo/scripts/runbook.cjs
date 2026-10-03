@@ -7,9 +7,17 @@
  *   node runbook.cjs next                the next step's full card: why, command (variables resolved), outputs, PASS
  *                                        gate, on-FAIL rule
  *   node runbook.cjs show <id>           one step's card
- *   node runbook.cjs run <id> [--force]  run it: refuses until its `needs` PASS (and, for the desk captures, until the
- *                                        desk has not moved since its clean preflight). Short steps run here and are
- *                                        judged at once; long steps start through bg.sh (then `check <id>`)
+ *   node runbook.cjs run <id>            run it: refuses until its `needs` PASS and are not STALE (and, for the desk
+ *                                        captures, until the desk has not moved since its clean preflight). Short steps
+ *                                        run here and are judged at once; long steps start through bg.sh (then
+ *                                        `check <id>`). Every step runs from $REPO, whatever the caller's directory.
+ *   node runbook.cjs run <id> --force --why "<reason>" --by-user "<the user's words>"
+ *                                        run past unmet needs. Only with the user's own words; recorded as a forced
+ *                                        row in verify-decisions.md, shown as PASS* and carried into the send note.
+ *   node runbook.cjs run A4 --pass-force re-create an existing project (new-project.sh --force; backs up the plan,
+ *                                        the voice lines and the storyboard first)
+ *   node runbook.cjs skip <id> --by-user "<their words>"
+ *                                        an optional step the user declined (N0: no narrated cut)
  *   node runbook.cjs check <id>          judge a long step once bg.sh says DONE / FAILED (or re-judge any step's log)
  *   node runbook.cjs mark <id> --by-user "<their words>" | --by-agent "<what you looked at>" [--why "…"]
  *                                        close a by-eye / by-ear / approval / send step. An approval needs the
@@ -20,6 +28,10 @@
  *   node runbook.cjs selftest            validate runbook.json (ids, needs, scripts, gates) and that references/runbook.md
  *                                        is its current rendering — no run needed
  *   node runbook.cjs doc                 print references/runbook.md from runbook.json
+ *
+ * STALE: a PASS is only as good as what it was built from. When a step runs (or passes) again, every step that needs
+ * it, directly or through others, reads STALE until it is run again; an approval or a look is bound to the hash of what
+ * was approved (its `approves` files) and reads STALE when that file changes. STALE is not done: `next` returns it.
  *
  * Needs SCRATCH (source $SCRATCH/demo.env; runbook S2 writes it) except for S0-S2 and selftest. State:
  * $SCRATCH/runbook-state.json; logs: $SCRATCH/runbook/<id>.log (long steps: $SCRATCH/jobs/<id>.log); decisions:
@@ -65,6 +77,8 @@ function selftest() {
     }
     for (const m of s.command.matchAll(/\$S\/((?:scripts|assets|template)\/[\w./-]+)/g)) ok(fs.existsSync(path.join(SKILL, m[1])), `${s.id}: ${m[1]} does not exist in the skill`);
     if (s.long) ok(!s.preEnv || s.id === 'S1', `${s.id}: a long step runs through bg.sh, which needs SCRATCH (only S1 may be long before demo.env)`);
+    if (s.kind === 'approval') ok(Array.isArray(s.approves) && s.approves.length, `${s.id}: an approval names the files it approves (approves), so a change asks again`);
+    if (s.optional) ok(/<their words>|user/.test(s.onFail) || s.kind === 'manual', `${s.id}: an optional step says the user decides`);
   });
   ok(RB.steps.some((s) => s.deskGuard), 'no desk capture step carries deskGuard');
   for (const p of ['all', 'nodesk', 'desk', 'narrated']) ok(RB.steps.some((s) => s.path === p), `no step on path ${p}`);
@@ -80,13 +94,18 @@ function doc() {
     'Every step has one command, its outputs, a PASS gate and a written rule for a FAIL. `node $S/scripts/runbook.cjs next` prints',
     'the next step with the variables resolved; `run <id>` runs and judges it; long steps start through `bg.sh` and are',
     'judged with `check <id>`; looked-at, listened-to, approval and send steps close only with `mark <id>` (references/harness.md).',
-    'Every command assumes `source $SCRATCH/demo.env` first (S0-S2 come before it exists).', ''];
+    'Every command assumes `source $SCRATCH/demo.env` first (S0-S2 come before it exists), and every step runs from $REPO.', '',
+    'A PASS holds only while what it was built from holds: a step that runs again makes every step after it STALE, and an',
+    'approval is bound to the files it approved (a changed script.md asks again). STALE is not done; `next` returns it.',
+    '`run <id> --force` needs `--why` and the user\'s own words (`--by-user`); it is recorded, shows as PASS* and goes into',
+    'the send note. An optional step is declined only with the user\'s words (`skip <id> --by-user … --source …`).', ''];
   for (const p of ['all', 'nodesk', 'desk', 'narrated']) {
     const list = RB.steps.filter((x) => x.path === p);
     md.push(`## ${p === 'all' ? 'Every film' : p === 'nodesk' ? 'A site with no desk (rare: the house cut ends on the desk\'s Admin row; ask the user first)' : p === 'desk' ? 'With the sale desk: part B, render, verify, send' : 'The narrated long cut (on request, after the short film is sent)'}`, '');
     for (const x of list) {
       md.push(`### ${x.id} · ${x.title}`, '');
-      md.push(`- **Kind:** ${x.kind} (${kinds[x.kind]})${x.long ? '; long: runs through bg.sh' : ''}${x.deskGuard ? '; refused while the desk has moved since its clean preflight' : ''}`);
+      md.push(`- **Kind:** ${x.kind} (${kinds[x.kind]})${x.long ? '; long: runs through bg.sh' : ''}${x.deskGuard ? '; refused while the desk has moved since its clean preflight' : ''}${x.optional ? '; optional: the user may decline it (skip)' : ''}`);
+      if (x.approves) md.push(`- **Approves:** ${x.approves.map((a) => `\`${a}\``).join(', ')} (a change makes it STALE)`);
       if (x.needs && x.needs.length) md.push(`- **Needs:** ${x.needs.join(', ')}`);
       md.push('- **Command:**', '', '  ```bash', `  ${x.command}`, '  ```', '');
       if (x.outputs) md.push(`- **Outputs:** ${x.outputs.map((o) => `\`${o}\``).join(', ')}`);
@@ -125,13 +144,61 @@ const HAS_DESK = !!(ENV.DESK_DIR && ENV.DESK_DIR.trim());
 const NARRATED = !!(inputs && inputs.narration);
 const onPath = (s) => s.path === 'all' || (s.path === 'nodesk' && !HAS_DESK) || (s.path === 'desk' && HAS_DESK) || (s.path === 'narrated' && NARRATED);
 const resolve = (t) => t.replace(/\$\{?([A-Z_][A-Z0-9_]*)\}?/g, (m, k) => (ENV[k] !== undefined && ENV[k] !== '' ? ENV[k] : m));
-const status = (s) => (STATE.steps[s.id] && STATE.steps[s.id].status) || '-';
-const isDone = (s) => status(s) === 'PASS' || !onPath(s);
+const rawStatus = (s) => (STATE.steps[s.id] && STATE.steps[s.id].status) || '-';
+const crypto = require('crypto');
+/** The hash of the files an approval or a look approved, as they stand now (missing files hash as absent). */
+function approvedHash(s) {
+  if (!Array.isArray(s.approves) || !s.approves.length) return null;
+  const h = crypto.createHash('sha256');
+  for (const pattern of s.approves) {
+    const f = resolve(pattern);
+    const files = /\*/.test(f) ? globFiles(f) : [f];
+    for (const one of files) {
+      h.update(one + '\0');
+      h.update(fs.existsSync(one) && fs.statSync(one).isFile() ? fs.readFileSync(one) : Buffer.from('absent'));
+    }
+  }
+  return h.digest('hex').slice(0, 16);
+}
+function globFiles(pattern) {
+  const dir = path.dirname(pattern);
+  const re = new RegExp('^' + path.basename(pattern).replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$');
+  try { return fs.readdirSync(dir).filter((n) => re.test(n)).sort().map((n) => path.join(dir, n)); } catch { return []; }
+}
+const staleMemo = new Map();
+/** Why a PASS no longer holds, or null: an upstream step ran again after it, or what it approved changed. */
+function staleWhy(s) {
+  if (staleMemo.has(s.id)) return staleMemo.get(s.id);
+  staleMemo.set(s.id, null);
+  const st = STATE.steps[s.id];
+  let why = null;
+  if (st && (st.status === 'PASS' || st.status === 'SKIPPED')) {
+    for (const n of s.needs || []) {
+      const up = byId[n];
+      if (!up || !onPath(up)) continue;
+      const ust = STATE.steps[n];
+      if (staleWhy(up)) { why = `${n} is stale`; break; }
+      if (ust && ust.at && st.at && ust.at > st.at) { why = `${n} ran again after it (${ust.at} > ${st.at})`; break; }
+      if (ust && ust.status !== 'PASS' && ust.status !== 'SKIPPED') { why = `${n} is ${ust.status}`; break; }
+    }
+    if (!why && st.approvedHash && approvedHash(s) !== st.approvedHash) why = `what was approved changed since (${(s.approves || []).join(', ')})`;
+  }
+  staleMemo.set(s.id, why);
+  return why;
+}
+const status = (s) => {
+  const raw = rawStatus(s);
+  if (raw === 'PASS' && staleWhy(s)) return 'STALE';
+  if (raw === 'PASS' && STATE.steps[s.id] && STATE.steps[s.id].forced) return 'PASS*';
+  return raw;
+};
+const isDone = (s) => !onPath(s) || ((rawStatus(s) === 'PASS' || rawStatus(s) === 'SKIPPED') && !staleWhy(s));
 
 function card(s) {
   const st = STATE.steps[s.id] || {};
   return [
-    `== ${s.id}  ${s.title}   [${s.kind}${s.long ? ', long: runs through bg.sh' : ''}; state ${st.status || '-'}]`,
+    `== ${s.id}  ${s.title}   [${s.kind}${s.long ? ', long: runs through bg.sh' : ''}${s.optional ? ', optional: skip it only with the user\'s words' : ''}; state ${status(s)}]`,
+    staleWhy(s) ? `STALE:    ${staleWhy(s)}: run it again` : null,
     s.needs && s.needs.length ? `needs:    ${s.needs.map((n) => `${n} (${status(byId[n])})`).join(', ')}` : null,
     `command:  ${resolve(s.command)}`,
     s.outputs ? `outputs:  ${s.outputs.map(resolve).join(', ')}` : null,
@@ -150,13 +217,18 @@ function judge(s, rc, out) {
   return why;
 }
 function record(s, fields) {
-  STATE.steps[s.id] = Object.assign({}, STATE.steps[s.id], fields, { at: new Date().toISOString().slice(0, 19) + 'Z' });
+  // Milliseconds, so a step run straight after another still sorts after it (STALE compares these).
+  STATE.steps[s.id] = Object.assign({}, STATE.steps[s.id], fields, { at: new Date().toISOString() });
+  if (fields.status === 'PASS' && Array.isArray(s.approves)) STATE.steps[s.id].approvedHash = approvedHash(s);
+  if (fields.status && fields.status !== 'PASS' && !fields.forced) delete STATE.steps[s.id].forced;
   writeState(STATE);
+  staleMemo.clear();
 }
 function settle(s, rc, out, log) {
   const why = judge(s, rc, out);
   const status = why.length ? 'FAIL' : s.pass.mark ? 'CHECKED' : 'PASS';
-  record(s, { status, rc, log, why });
+  const forced = STATE.steps[s.id] && STATE.steps[s.id].forced;
+  record(s, { status, rc, log, why, ...(forced && !why.length ? { forced: true } : {}) });
   if (why.length) { console.log(`\n${s.id} FAIL: ${why.join('; ')}\non FAIL: ${s.onFail}`); process.exit(1); }
   console.log(status === 'PASS' ? `\n${s.id} PASS` : `\n${s.id} CHECKED: now the ${s.kind} part — ${s.onFail}\nthen: runbook.cjs mark ${s.id} ${s.kind === 'approval' ? '--by-user "<their words>"' : '--by-user "<their words>" | --by-agent "<what you looked at>"'}`);
 }
@@ -181,7 +253,16 @@ function needsOk(s) {
 function run(s) {
   if (!onPath(s)) die(`${s.id} is not on this run's path (${s.path}; desk ${HAS_DESK ? 'yes' : 'no'}, narrated ${NARRATED ? 'yes' : 'no'})`);
   const open = needsOk(s);
-  if (open.length && !argv.includes('--force')) die(`${s.id} needs ${open.map((n) => `${n.id} (${status(n)})`).join(', ')} to PASS first`);
+  const forcing = argv.includes('--force');
+  if (open.length && !forcing) die(`${s.id} needs ${open.map((n) => `${n.id} (${status(n)}${staleWhy(n) ? `: ${staleWhy(n)}` : ''})`).join(', ')} to PASS first`);
+  if (forcing) {
+    const words = opt('--by-user'), why = opt('--why');
+    if (!words || !why) die(`--force skips ${open.map((n) => n.id).join(', ') || 'nothing'}: it needs --why "<the reason>" and --by-user "<the user's own words allowing it>". A model never forces a gate on its own (SKILL.md rule 5).`);
+    if (!ENV.P) die('P is not set: source your demo.env');
+    const { add } = require('./decisions.cjs');
+    add(ENV.P, { step: s.id, kind: 'forced', what: `ran past ${open.map((n) => `${n.id} (${status(n)})`).join(', ') || 'no open need'}`, why, who: `user: "${words}"` });
+    STATE.steps[s.id] = Object.assign({}, STATE.steps[s.id], { forced: true });
+  }
   if (!s.preEnv && !fs.existsSync(envFile || '')) die('source your demo.env first (runbook S2 writes it; SCRATCH must be set)');
   deskGuard(s);
   if (s.kind === 'manual' && /<[a-z][^>]*>/.test(s.command)) {
@@ -190,20 +271,27 @@ function run(s) {
     if (!SCRATCH) { console.log(why.length ? `${s.id} FAIL: ${why.join('; ')}` : `${s.id} PASS (not recorded: SCRATCH is not set yet; source demo.env)`); process.exit(why.length ? 1 : 0); }
     return settle(s, 0, '', null);
   }
-  const script = `set -o pipefail; ${s.preEnv && !fs.existsSync(envFile || '') ? `export S=${JSON.stringify(SKILL)}; ` : `source ${JSON.stringify(envFile)}; `}${s.command}`;
+  const command = s.id === 'A4' && argv.includes('--pass-force') ? `${s.command} --force` : s.command;
+  /*
+    Every step runs from the repo root ($REPO), whatever directory the agent's shell is in: inputs hold repo-relative
+    paths (siteDir, brand files), and a step run from elsewhere failed with a doubled path that blamed npm ci.
+  */
+  const cwd = ENV.REPO && fs.existsSync(ENV.REPO) ? ENV.REPO : process.cwd();
+  const script = `set -o pipefail; ${s.preEnv && !fs.existsSync(envFile || '') ? `export S=${JSON.stringify(SKILL)}; ` : `source ${JSON.stringify(envFile)}; `}cd ${JSON.stringify(cwd)}; ${command}`;
+  console.log(`(running from ${cwd})`);
   if (s.long) {
     if (!SCRATCH) die('long steps run through bg.sh, which needs SCRATCH: source demo.env');
-    const r = spawnSync('bash', [path.join(SKILL, 'scripts', 'bg.sh'), 'start', s.id, '--', 'bash', '-c', script], { encoding: 'utf8', env: Object.assign({}, process.env, { SCRATCH }) });
+    const r = spawnSync('bash', [path.join(SKILL, 'scripts', 'bg.sh'), 'start', s.id, '--', 'bash', '-c', script], { encoding: 'utf8', cwd, env: Object.assign({}, process.env, { SCRATCH }) });
     process.stdout.write(r.stdout); process.stderr.write(r.stderr);
     if (r.status !== 0) process.exit(r.status);
-    record(s, { status: 'RUNNING', log: path.join(SCRATCH, 'jobs', `${s.id}.log`) });
+    record(s, { status: 'RUNNING', log: path.join(SCRATCH, 'jobs', `${s.id}.log`), ...(forcing ? { forced: true } : {}) });
     console.log(`\n${s.id} RUNNING in the background. Poll: bash ${path.join(SKILL, 'scripts', 'bg.sh')} wait ${s.id} 540   then: node ${__filename} check ${s.id}`);
     return;
   }
   const logDir = path.join(SCRATCH || '/tmp', 'runbook');
   fs.mkdirSync(logDir, { recursive: true });
   const log = path.join(logDir, `${s.id}.log`);
-  const r = spawnSync('bash', ['-c', script], { encoding: 'utf8', maxBuffer: 1 << 28, env: Object.assign({}, process.env, ENV) });
+  const r = spawnSync('bash', ['-c', script], { encoding: 'utf8', maxBuffer: 1 << 28, cwd, env: Object.assign({}, process.env, ENV) });
   const out = (r.stdout || '') + (r.stderr || '');
   fs.writeFileSync(log, out);
   process.stdout.write(out.length > 6000 ? `… (${out.length} chars; full log ${log})\n` + out.slice(-6000) : out);
@@ -245,29 +333,50 @@ function mark(s) {
   }
   if (!s.pass.mark) die(`${s.id} is a scripted step: its gate decides (runbook.cjs run ${s.id})`);
   if (s.kind === 'approval' && !user) die(`${s.id} is the user's approval: --by-user "<their words>"`);
+  if (user) {
+    // The user's own words, and where they said them: never a stand-in typed by the agent.
+    const source = opt('--source');
+    if (!source || source.trim().length < 4) die('--by-user needs --source "<where the user said it: the chat message (date and time, or its id), or the pasted text>"');
+    if (/dry.?run|stand.?in|placeholder|test only/i.test(`${user} ${source}`)) die('--by-user records the user\'s own decision; a dry-run stand-in is not one. Ask the user.');
+    if (user.trim().length < 4) console.log(`WARN "${user}" is a very short approval: make sure it answers this step (${s.title}), not another question.`);
+  }
   if (agent && agent.trim().length < 12) die('--by-agent must say what you looked at (which stills, which file, what you checked)');
   const auto = s.pass.exit !== undefined || s.pass.match || s.pass.files || s.long;
   if (auto && status(s) !== 'CHECKED' && status(s) !== 'PASS') die(`${s.id}: run its command first (runbook.cjs run ${s.id}${s.long ? `, then check ${s.id}` : ''}); state is ${status(s)}`);
-  add(ENV.P, { step: s.id, kind: s.kind, what: opt('--what') || s.title, why: opt('--why') || (user ? 'the user decided' : 'looked at by the agent'), who: user ? `user: "${user}"` : `agent: ${agent}` });
+  const hash = approvedHash(s);
+  add(ENV.P, { step: s.id, kind: s.kind, what: `${opt('--what') || s.title}${hash ? ` (files ${hash})` : ''}`, why: opt('--why') || (user ? 'the user decided' : 'looked at by the agent'), who: user ? `user: "${user}" (${opt('--source')})` : `agent: ${agent}` });
   record(s, { status: 'PASS', by: user ? 'user' : 'agent' });
   console.log(`${s.id} PASS (recorded in ${path.join(ENV.P, 'verify-decisions.md')})`);
+}
+
+function skip(s) {
+  if (!s.optional) die(`${s.id} is not optional: run it (runbook.cjs run ${s.id})`);
+  const user = opt('--by-user');
+  if (!user || !opt('--source')) die(`skip ${s.id} --by-user "<the user's own words declining it>" --source "<where they said it>"`);
+  if (!ENV.P) die('P is not set: source your demo.env');
+  const { add } = require('./decisions.cjs');
+  add(ENV.P, { step: s.id, kind: 'declined', what: s.title, why: 'the user declined it', who: `user: "${user}" (${opt('--source')})` });
+  record(s, { status: 'SKIPPED', by: 'user' });
+  console.log(`${s.id} SKIPPED (recorded in ${path.join(ENV.P, 'verify-decisions.md')})`);
 }
 
 const steps = RB.steps.filter(onPath);
 if (cmd === 'status') {
   console.log(`path: site${HAS_DESK ? ' + desk' : ' only'}${NARRATED ? ' + narrated' : ''}  (state ${stateFile || 'not recorded: SCRATCH unset'})`);
-  for (const s of steps) console.log(`  ${status(s).padEnd(8)} ${s.id.padEnd(4)} ${s.kind.padEnd(8)} ${s.title}`);
+  for (const s of steps) console.log(`  ${status(s).padEnd(8)} ${s.id.padEnd(4)} ${s.kind.padEnd(8)} ${s.title}${staleWhy(s) ? `   (stale: ${staleWhy(s)})` : ''}`);
+  if (steps.some((s) => status(s) === 'PASS*')) console.log('\nPASS* = forced past an open need with the user\'s words (verify-decisions.md); the send note lists it.');
   const nx = steps.find((s) => !isDone(s));
   console.log(nx ? `\nnext: ${nx.id} (node ${__filename} next)` : '\nevery step on this path is PASS');
 } else if (cmd === 'next') {
   const nx = steps.find((s) => !isDone(s));
   if (!nx) console.log('every step on this path is PASS');
   else console.log(card(nx));
-} else if (['show', 'run', 'check', 'mark'].includes(cmd)) {
+} else if (['show', 'run', 'check', 'mark', 'skip'].includes(cmd)) {
   const s = byId[id];
   if (!s) die(`usage: runbook.cjs ${cmd} <step id> (ids: ${RB.steps.map((x) => x.id).join(' ')})`, 2);
   if (cmd === 'show') console.log(card(s));
   else if (cmd === 'run') run(s);
   else if (cmd === 'check') check(s);
+  else if (cmd === 'skip') skip(s);
   else mark(s);
-} else die('usage: runbook.cjs status | next | show <id> | run <id> | check <id> | mark <id> … | selftest', 2);
+} else die('usage: runbook.cjs status | next | show <id> | run <id> | check <id> | mark <id> … | skip <id> … | selftest', 2);

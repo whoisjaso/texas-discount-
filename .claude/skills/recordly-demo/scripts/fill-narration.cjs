@@ -41,7 +41,7 @@ const cmd = args[0];
 const flags = {};
 const positional = [];
 for (let i = 1; i < args.length; i++) {
-  if (args[i] === '--out' || args[i] === '--template') flags[args[i].slice(2)] = args[++i];
+  if (args[i] === '--out' || args[i] === '--template' || args[i] === '--desk') flags[args[i].slice(2)] = args[++i];
   else if (args[i].startsWith('--')) flags[args[i].slice(2)] = true;
   else positional.push(args[i]);
 }
@@ -80,6 +80,17 @@ const UNSAID = [
   [/&/, '& -> and'],
 ];
 const CLAIM = /\$\s?\d|\d+(\.\d+)?\s?%|\bAPR\b|\bfree\b|\bbest\b|\bcheapest\b|\blowest\b|#\s?1\b|\bnumber one\b|\bguarantee/i;
+/** The words a line says, for comparing speak with text: spoken forms canonical, then letters and digits only. */
+const SPOKEN = [
+  [/\bone[\s-]+thirty[\s-]+u\b/g, '130u'], [/\b130[\s-]*u\b/g, '130u'], [/\bl\s+l\s+c\b/g, 'llc'], [/\bl\s+l\s+p\b/g, 'llp'],
+  [/\bv\s+i\s+n\b/g, 'vin'], [/\bfreeway\b/g, 'fwy'], [/\bhighway\b/g, 'hwy'], [/\bboulevard\b/g, 'blvd'], [/\bparkway\b/g, 'pkwy'],
+  [/\bexpressway\b/g, 'expy'], [/\bavenue\b/g, 'ave'], [/\broad\b/g, 'rd'], [/\bstreet\b/g, 'st'], [/\bdrive\b/g, 'dr'], [/\blane\b/g, 'ln'], [/&/g, ' and '],
+];
+const speakKey = (text) => {
+  let t = String(text).toLowerCase().replace(/[\u2010-\u2015]/g, '-');
+  for (const [re, rep] of SPOKEN) t = t.replace(re, rep);
+  return t.replace(/[^a-z0-9]+/g, '');
+};
 /** "Discount Used Cars And Trucks, LLC" and "…, L L C" compare equal: letters and digits only, "&" as "and". */
 const nameKey = (s) => String(s).toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]/g, '');
 const at = (obj, dotted) => dotted.split('.').reduce((o, k) => (o == null ? undefined : o[k]), obj);
@@ -125,7 +136,7 @@ function build(inp, tpl) {
     if (v.kind === 'derived') {
       let x = at(inp, v.from);
       if (Array.isArray(x)) x = x.join(' · ');
-      if (typeof x !== 'string' || !x.trim() || HOLE.test(x)) { problems.push(`${k} comes from client-inputs.json ${v.from}: fill that first (SKILL.md runbook step 2)`); bad.add(k); continue; }
+      if (typeof x !== 'string' || !x.trim() || HOLE.test(x)) { problems.push(`${k} comes from client-inputs.json ${v.from}: fill that first (runbook A1, or B0 for the part-B demo data)`); bad.add(k); continue; }
       values[k] = x;
       continue;
     }
@@ -146,6 +157,7 @@ function build(inp, tpl) {
   }
   for (const k of Object.keys(N)) {
     if (k.startsWith('_') || META_KEYS.has(k)) continue;
+    if (k === 'SERVICE_BAND') { problems.push('narration.SERVICE_BAND is now narration.SELL_BAND_NAME: the site\'s SELL band as it names itself (e.g. We Buy Cars). The storyboard\'s service band is a different thing (storyboard.SERVICE_TILE)'); continue; }
     if (!V[k] || V[k].kind === 'derived') problems.push(`narration.${k} is not a variable of the template (a typo?): the variables are in assets/narration/script-template.md`);
   }
 
@@ -188,12 +200,40 @@ function build(inp, tpl) {
       if (!tpl.features[f]) problems.push(`narration.checked.features: "${f}" is not a feature of the template (${Object.keys(tpl.features).join(', ')})`);
       else confirmed.add(f);
     }
-    // the desk changed since the walk: the corridor lines (the money, who files, the inspection) may now be untrue
-    const desk = process.env.DESK_DIR || (flags.desk && flags.desk !== true ? flags.desk : '');
-    if (desk && typeof C.on === 'string') {
-      let last = '';
-      try { last = require('child_process').execFileSync('git', ['-C', desk, 'log', '-1', '--format=%cs', '--', 'src/lib/sales', 'src/components/admin'], { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); } catch { last = ''; }
-      if (last && last > C.on) problems.push(`narration.checked.on is ${C.on}, but the desk's sale corridor changed on ${last} (git log src/lib/sales): walk the desk again (desk-server.sh + desk-walk sale.cjs), re-check every line, then set checked.on`);
+    if (typeof C.how === 'string' && /dry.?run|not walked|nothing was walked|stand.?in|placeholder|to do\b|tbd/i.test(C.how)) {
+      problems.push(`narration.checked.how says the desk was not walked (${JSON.stringify(C.how.slice(0, 80))}): walk it (desk-server.sh + desk-walk sale.cjs) and record that`);
+    }
+    // The desk changed since the walk: the corridor lines (the money, who files, the inspection) may now be untrue.
+    // Compared by commit, not by date: a corridor change on the walk's own day used to pass.
+    const desk = flags.desk && flags.desk !== true ? flags.desk : process.env.DESK_DIR || '';
+    if (desk) {
+      const git = (a) => { try { return require('child_process').execFileSync('git', ['-C', desk, ...a], { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); } catch { return ''; } };
+      const head = git(['log', '-1', '--format=%h', '--', 'src/lib/sales', 'src/components/admin']);
+      const dirty = git(['status', '--porcelain', '--', 'src/lib/sales', 'src/components/admin']).split('\n').filter(Boolean).length;
+      const commitAt = git(['log', '-1', '--format=%cI', '--', 'src/lib/sales', 'src/components/admin']);
+      if (!head) problems.push(`--desk ${desk}: not a git checkout, so the walk cannot be tied to the desk it checked`);
+      else {
+        if (typeof C.commit !== 'string' || !C.commit.trim()) problems.push(`narration.checked.commit: the desk's corridor commit when it was walked (now ${head}${dirty ? ` +${dirty} uncommitted` : ''}); the desk walk's walk-report.json records it`);
+        else if (!head.startsWith(C.commit.trim().slice(0, 7)) && !C.commit.trim().startsWith(head)) problems.push(`narration.checked.commit is ${C.commit}, but the desk's sale corridor is now at ${head} (git log src/lib/sales src/components/admin): walk the desk again, re-check every line, then record the new commit`);
+        if (Number.isInteger(C.dirty) ? C.dirty !== dirty : dirty > 0) problems.push(`narration.checked.dirty is ${JSON.stringify(C.dirty ?? null)}, but the desk's corridor has ${dirty} uncommitted change(s) now: walk it again on what is there`);
+        // The evidence: the walk's own report (premium-dealer-build desk-walk sale.cjs writes walk-report.json).
+        const ev = typeof C.evidence === 'string' && C.evidence.trim() ? path.resolve(C.evidence.trim()) : '';
+        const report = ev && (fs.existsSync(path.join(ev, 'walk-report.json')) ? path.join(ev, 'walk-report.json') : ev.endsWith('.json') && fs.existsSync(ev) ? ev : '');
+        if (!report) problems.push('narration.checked.evidence: the folder of the desk walk (it holds walk-report.json, written by desk-walk sale.cjs), or that file');
+        else {
+          let w = null;
+          try { w = readJson(report); } catch { w = null; }
+          if (!w || typeof w.deskCommit !== 'string') problems.push(`narration.checked.evidence: ${report} is not a desk walk report`);
+          else {
+            if (!head.startsWith(w.deskCommit.slice(0, 7)) && !w.deskCommit.startsWith(head)) problems.push(`narration.checked.evidence: the walk in ${report} was on desk ${w.deskCommit}, not today's ${head}: walk again`);
+            if (commitAt && w.at && Date.parse(w.at) < Date.parse(commitAt)) problems.push(`narration.checked.evidence: the walk (${w.at}) is older than the desk's last corridor commit (${commitAt}): walk again`);
+          }
+        }
+      }
+      if (typeof C.on === 'string') {
+        const last = git(['log', '-1', '--format=%cs', '--', 'src/lib/sales', 'src/components/admin']);
+        if (last && last > C.on) problems.push(`narration.checked.on is ${C.on}, but the desk's sale corridor changed on ${last} (git log src/lib/sales): walk the desk again (desk-server.sh + desk-walk sale.cjs), re-check every line, then set checked.on`);
+      }
     }
   }
 
@@ -237,6 +277,7 @@ function build(inp, tpl) {
     else if (!plays.has(id)) problems.push(`narration.speak: ${id} does not play (${dropped.find((d) => d.id === id).why})`);
     if (typeof s !== 'string' || !s.trim() || HOLE.test(s)) problems.push(`narration.speak.${id}: the whole line as the voice should say it, no placeholders`);
   }
+  const speakTexts = speak && typeof speak === 'object' && !Array.isArray(speak) ? speak : {};
 
   // Fill.
   const lines = playing.map((l) => {
@@ -246,6 +287,15 @@ function build(inp, tpl) {
       out[f] = l[f].replace(VAR, (m, k) => (typeof values[k] === 'string' ? values[k] : m));
     }
     if (speak && typeof speak[l.id] === 'string') out.speak = speak[l.id];
+    /*
+      speak is how a line is SPELLED for the voice, never other words: the approved script is the user's. It must
+      equal the text after normalising case, punctuation, hyphens and the spoken forms (one-thirty-U = 130-U,
+      L L C = LLC, Freeway = Fwy), so only punctuation and spelling may move ("walking in, knowing").
+    */
+    if (typeof out.speak === 'string' && typeof out.text === 'string' && speakKey(out.speak) !== speakKey(out.text)) {
+      problems.push(`${l.id}: speak says other words than the line (${JSON.stringify(out.speak)} vs ${JSON.stringify(out.text)}): change only punctuation and spelling; a new wording is a new script for the user to approve`);
+    }
+    void speakTexts;
     for (const f of LINE_FIELDS) {
       if (out[f] == null) continue;
       const left = [...out[f].matchAll(VAR)].map((m) => m[1]).filter((k) => !bad.has(k));
@@ -384,8 +434,12 @@ function selftest(tplFile) {
   const pair = mut((x) => { x.narration.cut = [{ id: '12-buyer-c', why: 'test' }, { id: '19-payoff-a', why: 'test' }]; });
   ok('cutting a setup and its payoff together is allowed', pair.problems.length === 0 && pair.lines.length === 22, pair.problems.join('; '));
   ok('a cut without its reason is refused', has(mut((x) => { x.narration.cut = [{ id: '18-plan-b' }]; }), /needs its reason/));
-  const sp = mut((x) => { x.narration.speak = { '20-payoff-b': 'The seller line.' }; });
-  ok('a speak override reaches lines.json', sp.problems.length === 0 && JSON.parse(linesJson(sp.lines)).find((l) => l.id === '20-payoff-b').speak === 'The seller line.');
+  const line02 = r.lines.find((l) => l.id === '02-site-b');
+  const comma = line02 && line02.text.replace('walking in knowing', 'walking in, knowing');
+  const sp = mut((x) => { x.narration.speak = { '02-site-b': comma }; });
+  ok('a punctuation-only speak override reaches lines.json', comma && sp.problems.length === 0 && JSON.parse(linesJson(sp.lines)).find((l) => l.id === '02-site-b').speak === comma, sp.problems.join('; '));
+  ok('a speak override that says other words is refused', has(mut((x) => { x.narration.speak = { '20-payoff-b': 'The seller line.' }; }), /speak says other words than the line/));
+  ok('a desk check that says nothing was walked is refused', has(mut((x) => { x.narration.checked.how = 'DRY RUN ONLY: nothing was walked'; }), /says the desk was not walked/));
   const badTpl = clone(tpl);
   badTpl.lines[0].text += ' {{NOPE}}';
   ok('a template placeholder with no variable is refused', has(build(clone(ex), badTpl), /\{\{NOPE\}\} is not in variables/));

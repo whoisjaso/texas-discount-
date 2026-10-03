@@ -41,7 +41,7 @@ attempt() {
   cap 23-plan --var "$dv" || return 1
   mkdir -p "$SCRATCH/scenarios"
   run node "$S/scripts/fill-client.cjs" scenario "$I" "$S/assets/desk-scenarios/carter-balance.json" --out "$SCRATCH/scenarios/carter-balance.json" || return 1
-  run node "$S/scripts/desk/validate-scenario.cjs" "$SCRATCH/scenarios/carter-balance.json" --desk "$DESK_DIR" || return 1
+  run node "$S/scripts/desk/validate-scenario.cjs" "$SCRATCH/scenarios/carter-balance.json" --desk "$DESK_DIR" --strict || return 1
   run env RESUME_DEAL="$deal" node "$PDB/scripts/desk-walk/sale.cjs" "$SCRATCH/n-sale" "$SCRATCH/scenarios/carter-balance.json" 1440 900 || return 1
   run node "$PDB/scripts/desk-walk/pdfs.cjs" "$SCRATCH/n-pdf-pre" "$deal" || return 1
   cap 24-desk-qr --var "$dv" || return 1

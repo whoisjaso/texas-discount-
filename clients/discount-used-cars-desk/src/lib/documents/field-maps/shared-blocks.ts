@@ -24,7 +24,7 @@ export function buyerAndVehicleBlock(licenceStateOwner: "billOfSale" | "salvageB
     { id: "buyerName", label: "Buyer: Name", source: buyer("name"), blank: NEVER },
     { id: "buyerIdNumber", label: "Buyer: ID Number", source: buyer("idNumber"), blank: NEVER },
     { id: "buyerIdKind", label: "Buyer: ID Kind", source: buyer("idKind"), blank: NEVER },
-    { id: "buyerIdIssuer", label: "Buyer: ID Issued By", source: answer(`${licenceStateOwner}.buyerLicenseState`), blank: when("the ID is issued by a state or a country") },
+    { id: "buyerIdIssuer", label: "Buyer: ID Issued By", source: answer(`${licenceStateOwner}.buyerLicenseState`), fallback: buyer("idIssuer"), blank: when("the ID is issued by a state or a country") },
     { id: "buyerPhone", label: "Buyer: Phone", source: buyer("phone"), blank: NEVER },
     { id: "buyerAddress", label: "Buyer: Address", source: buyer("address"), blank: NEVER },
     { id: "vehicleDescription", label: "Vehicle", source: vehicle("model"), blank: NEVER },

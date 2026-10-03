@@ -9,6 +9,7 @@ import {
   when,
   type DocumentMap,
 } from "@/lib/documents/field-maps/types";
+import { limitedWarranty, warranty } from "@/lib/documents/field-maps/conditions";
 
 /**
  * The FTC Buyers Guide (16 C.F.R. 455, 2016 template), printed and never
@@ -34,10 +35,11 @@ export const BUYERS_GUIDE_MAP: DocumentMap = {
         { id: "dealerWarranty", label: "DEALER WARRANTY", source: answer("billOfSale.conditionType"), blank: when("sold with a warranty") },
         { id: "fullWarranty", label: "FULL WARRANTY", source: answer("billOfSale.warrantyKind"), blank: when("a full warranty") },
         { id: "limitedWarranty", label: "LIMITED WARRANTY", source: answer("billOfSale.warrantyKind"), blank: when("a limited warranty") },
-        { id: "laborPercent", label: "The dealer will pay ___% of the labor", source: answer("billOfSale.warrantyLaborPercent"), blank: when("a limited warranty") },
-        { id: "partsPercent", label: "___% of the parts", source: answer("billOfSale.warrantyPartsPercent"), blank: when("a limited warranty") },
-        { id: "systemsCovered", label: "SYSTEMS COVERED", source: answer("billOfSale.warrantySystems"), blank: when("a warranty") },
-        { id: "duration", label: "DURATION", source: answer("billOfSale.warrantyDuration"), blank: when("a warranty") },
+        { id: "warrantyKind", label: "FULL WARRANTY Or LIMITED WARRANTY (the one ticked)", source: answer("billOfSale.warrantyKind"), on: warranty, blank: NEVER },
+        { id: "laborPercent", label: "The dealer will pay ___% of the labor", source: answer("billOfSale.warrantyLaborPercent"), blank: when("a limited warranty", limitedWarranty) },
+        { id: "partsPercent", label: "___% of the parts", source: answer("billOfSale.warrantyPartsPercent"), blank: when("a limited warranty", limitedWarranty) },
+        { id: "systemsCovered", label: "SYSTEMS COVERED", source: answer("billOfSale.warrantySystems"), blank: when("a warranty", warranty) },
+        { id: "duration", label: "DURATION", source: answer("billOfSale.warrantyDuration"), blank: when("a warranty", warranty) },
         { id: "serviceContract", label: "SERVICE CONTRACT", source: dealer("sellsServiceContracts"), blank: marker("sellsServiceContracts") },
       ],
     },
@@ -49,7 +51,9 @@ export const BUYERS_GUIDE_MAP: DocumentMap = {
         { id: "dealerAddress", label: "Address", source: dealer("address"), blank: NEVER },
         { id: "dealerPhone", label: "Telephone", source: dealer("phone"), blank: NEVER },
         { id: "dealerEmail", label: "Email", source: dealer("email"), blank: marker("email") },
-        { id: "complaintsContact", label: "For Complaints After Sale, Contact", source: dealer("complaintsContact"), blank: marker("complaintsContact") },
+        // The desk's own words until the owner names a contact (D-01): printed
+        // as "Sales Office", never read back as a fact the owner gave.
+        { id: "complaintsContact", label: "For Complaints After Sale, Contact", source: statik("Sales Office (the desk's wording until the owner answers D-01)"), blank: NEVER },
         { id: "defectsList", label: "Major Defects List", source: statik("printed by the FTC"), blank: allowed("printed by the FTC"), printed: false },
       ],
     },

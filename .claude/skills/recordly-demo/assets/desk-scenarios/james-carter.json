@@ -1,7 +1,8 @@
 {
  "_note": "Part B's off-camera complete sale for 12-desk-signed and B6 (runbook B4): the whole corridor to the packet; then ceremony-hand.cjs signs it with assets/sig/buyer-j-carter.json and pdfs.cjs downloads the 130-U. The demo address must NOT exist (lesson B13). Filled by `fill-client.cjs scenario <client-inputs.json> <this file> --out $SCRATCH/<name>.json` ({{DEMO_*}} from client-inputs.json → demo). Read by premium-dealer-build scripts/desk-walk/sale.cjs (unknown keys like these notes are ignored). Before every run: `node $S/scripts/desk/validate-scenario.cjs <filled file>` refuses an answer key the desk no longer asks (the paperwork corridor changes; see the desk's docs/verification/paperwork-pages/corridor-changes.md).",
- "deskCommit": "2b7bb85",
- "walked": "2026-10-02 (part B run 2) and 2026-10-03 (narrated captures), Discount desk",
+ "deskCorridor": "16c80f4cffcce9c4",
+ "deskCommit": "bec3e0f",
+ "walked": "2026-10-02 (part B run 2) and 2026-10-03 (narrated captures); re-walked 2026-10-03 on the page-by-page corridor to the packet (desk bec3e0f +10 uncommitted, corridor 16c80f4cffcce9c4), Discount desk",
  "car": "2019 Toyota Camry SE",
  "language": "en",
  "title": "Clean title",
@@ -76,11 +77,7 @@
   },
   "emptyWeight": [
    {
-    "fill": "main input",
-    "value": "3340"
-   },
-   {
-    "button": "Next",
+    "button": "Confirm This Weight",
     "exact": true
    }
   ],

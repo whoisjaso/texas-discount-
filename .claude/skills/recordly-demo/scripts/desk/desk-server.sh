@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# desk-server.sh start|stop|restart|status [--member fresh|fresh-sales] [--dry-run] [--force]
+# desk-server.sh start|stop|restart|status [--member fresh|fresh-sales] [--wait <seconds>] [--dry-run] [--force]
 #
 # The client's sale desk for capture: `next dev` (the preview mock runs only outside production) on :5190, never any
 # other port, in its own process group, stopped by that group. Needs DESK_DIR and SCRATCH (source demo.env).
 #
 # start   refuses when :5190 is already taken (stop YOUR server with `stop`; never start on another port, never kill a
-#         server you did not start). Saves next-env.d.ts (next dev rewrites it) to $SCRATCH/next-env.d.ts.saved, then:
+#         server you did not start). --wait N polls a port held by someone else every 30 s for up to N seconds (the
+#         runbook's rule: --wait 1800, then ask the user), naming the holder (pid, its directory, when it started). Saves next-env.d.ts (next dev rewrites it) to $SCRATCH/next-env.d.ts.saved, then:
 #           setsid env PORT=5190 DESK_PREVIEW_MEMBER=<member> DESK_ALLOW_UNSET_FACTS=true [NODE_USE_ENV_PROXY=1]
 #             ADMIN_SESSION_SECRET=<random> INTERNAL_RENDER_TOKEN=<random> CHROME_PATH=<chromium>
 #             npx next dev -p 5190  > $SCRATCH/desk.log        (as the Discount captures were made: no SITE_URL, so the
@@ -31,10 +32,11 @@ FROM_INPUTS=""
 if [ -n "${I:-}" ] && [ -f "${I:-}" ]; then
   FROM_INPUTS="$(node -e 'const o=(require(process.argv[1]).partB||{}).onboarding; console.log(o==="sales"?"fresh-sales":o==="owner-fees"?"fresh":"")' "$I" 2>/dev/null)"
 fi
-MEMBER="${MEMBER:-${FROM_INPUTS:-fresh}}"; DRY=0; FORCE=0
+MEMBER="${MEMBER:-${FROM_INPUTS:-fresh}}"; DRY=0; FORCE=0; WAIT=0
 while [ $# -gt 0 ]; do
-  case "$1" in --member) MEMBER="$2"; shift 2 ;; --dry-run) DRY=1; shift ;; --force) FORCE=1; shift ;; *) echo "unknown $1" >&2; exit 2 ;; esac
+  case "$1" in --member) MEMBER="$2"; shift 2 ;; --wait) WAIT="$2"; shift 2 ;; --dry-run) DRY=1; shift ;; --force) FORCE=1; shift ;; *) echo "unknown $1" >&2; exit 2 ;; esac
 done
+case "$WAIT" in ''|*[!0-9]*) echo "--wait takes whole seconds, not $WAIT" >&2; exit 2 ;; esac
 case "$MEMBER" in fresh|fresh-sales) ;; *) echo "--member must be fresh or fresh-sales, not $MEMBER" >&2; exit 2 ;; esac
 PORT=5190
 PGIDF="$SCRATCH/desk.pgid"; LOG="$SCRATCH/desk.log"; SAVED="$SCRATCH/next-env.d.ts.saved"; MEMF="$SCRATCH/desk.member"
@@ -44,14 +46,29 @@ taken() {
   else grep -qiE "^ *[0-9]+: [0-9A-F]+:$(printf '%04X' $PORT) [0-9A-F]+:[0-9A-F]+ 0A" /proc/net/tcp /proc/net/tcp6 2>/dev/null; fi
 }
 ours() { local g; g="$(cat "$PGIDF" 2>/dev/null)"; [ -n "$g" ] && kill -0 -- "-$g" 2>/dev/null; }
+# who holds the port: pid, its working directory and when it started (so a model can see it is not its own)
+holder() {
+  local pid=""
+  if command -v ss >/dev/null 2>&1; then pid="$(ss -ltnpH 2>/dev/null | awk -v p=":$PORT\$" '$4 ~ p' | grep -o 'pid=[0-9]*' | head -1 | cut -d= -f2)"; fi
+  if [ -z "$pid" ] && command -v lsof >/dev/null 2>&1; then pid="$(lsof -t -iTCP:$PORT -sTCP:LISTEN 2>/dev/null | head -1)"; fi
+  [ -n "$pid" ] || { echo "unknown process"; return; }
+  echo "pid $pid ($(ps -o args= -p "$pid" 2>/dev/null | cut -c1-60)), cwd $(readlink "/proc/$pid/cwd" 2>/dev/null || echo '?'), started $(ps -o lstart= -p "$pid" 2>/dev/null | sed 's/  */ /g')"
+}
 code() { curl -s -o /dev/null -w '%{http_code}' --max-time 5 "http://localhost:$PORT/admin/login" 2>/dev/null || echo 000; }
 
 start() {
   : "${DESK_DIR:?DESK_DIR is empty: this client has no desk at clients/<slug>-desk (env.sh --desk <dir>)}"
   [ -f "$DESK_DIR/package.json" ] && [ -d "$DESK_DIR/node_modules/next" ] || { echo "no Next.js desk with node_modules at $DESK_DIR (the desk build installs it; never npm install here)" >&2; return 1; }
   if taken; then
-    if ours; then echo "already running (pgid $(cat "$PGIDF")): use restart for a fresh desk" >&2; else echo "refusing: :$PORT is taken by a server this run did not start (ss -ltnp). Never use another port; ask whoever owns it, or wait." >&2; fi
-    return 1
+    if ours; then echo "already running (pgid $(cat "$PGIDF")): use restart for a fresh desk" >&2; return 1; fi
+    local waited=0
+    while taken && [ "$waited" -lt "$WAIT" ]; do
+      echo "waiting: :$PORT is held by $(holder) (${waited}s of ${WAIT}s)"; sleep 30; waited=$((waited + 30))
+    done
+    if taken; then
+      echo "refusing: :$PORT is taken by a server this run did not start: $(holder). Never use another port and never kill it. Wait (--wait 1800), then ask the user who owns it." >&2
+      return 1
+    fi
   fi
   local chrome="${CHROME_PATH:-$(ls -d "${PLAYWRIGHT_BROWSERS_PATH:-/opt/pw-browsers}"/chromium-*/chrome-linux/chrome 2>/dev/null | head -1)}"
   [ -x "$chrome" ] || { echo "no chromium for the desk's PDF renderer (CHROME_PATH); run setup.sh --check" >&2; return 1; }
@@ -95,7 +112,7 @@ case "$cmd" in
   restart) MEMBER="$(cat "$MEMF" 2>/dev/null || echo "$MEMBER")"; stop && start ;;
   status)
     if ours; then echo "RUNNING pgid $(cat "$PGIDF") member $(cat "$MEMF" 2>/dev/null) /admin/login -> $(code)"
-    elif taken; then echo "STOPPED (ours); :$PORT is taken by another server"
+    elif taken; then echo "STOPPED (ours); :$PORT is taken by another server: $(holder)"
     else echo "STOPPED; :$PORT free"; fi ;;
-  *) sed -n '2,32p' "${BASH_SOURCE[0]}"; exit 2 ;;
+  *) sed -n '2,34p' "${BASH_SOURCE[0]}"; exit 2 ;;
 esac

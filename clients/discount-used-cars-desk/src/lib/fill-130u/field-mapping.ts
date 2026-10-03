@@ -43,6 +43,11 @@ export interface AgreementData {
   buyer_middle_name?: string;
   buyer_last_name: string;
   buyer_suffix?: string;
+  /**
+   * Whether the Applicant/Owner printed name carries the suffix, as box 16
+   * does: true on a copy filed under the page-by-page paperwork.
+   */
+  printed_name_has_suffix?: boolean;
   /** The complete entity name; separate from an individual's name parts. */
   buyer_entity_name?: string;
   buyer_address: string;
@@ -505,7 +510,10 @@ export const FIELD_MAPPINGS: FieldMapping[] = [
     type: 'text',
     getValue: (d) => {
       if (d.applicant_type !== 'individual' && d.buyer_entity_name) return d.buyer_entity_name;
-      const parts = [d.buyer_first_name, d.buyer_middle_name, d.buyer_last_name].filter(Boolean);
+      // The whole name, suffix included, as box 16 prints it and as the bill
+      // of sale and the VTR-271 print it: "Avery J Collins Jr" on all three.
+      // A copy filed before this keeps the line it was signed with.
+      const parts = [d.buyer_first_name, d.buyer_middle_name, d.buyer_last_name, d.printed_name_has_suffix ? d.buyer_suffix : undefined].filter(Boolean);
       return parts.join(' ');
     },
   },

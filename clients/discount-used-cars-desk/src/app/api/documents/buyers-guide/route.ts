@@ -1,3 +1,4 @@
+import { buyersGuideSaleProblem } from "@/lib/documents/buyers-guide-sale";
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import {
@@ -90,7 +91,23 @@ export async function GET(req: NextRequest) {
   const language: BuyersGuideLanguage = textParam(req, "lang") === "es" ? "es" : "en";
   // Printed for a sale: the sale's warranty answer marks its boxes.
   const dealId = textParam(req, "dealId");
-  const sale = dealId ? await getSaleDetail(dealId).catch(() => null) : null;
+  let sale: Awaited<ReturnType<typeof getSaleDetail>> = null;
+  let readFailed = false;
+  if (dealId) {
+    try {
+      sale = await getSaleDetail(dealId);
+    } catch (error) {
+      console.error("[buyers-guide] sale read failed:", error);
+      readFailed = true;
+    }
+  }
+  const saleProblem = buyersGuideSaleProblem({ dealId, vehicleId, sale, readFailed });
+  if (saleProblem) {
+    return NextResponse.json(
+      { error: saleProblem.error, ...(saleProblem.missing ? { missing: saleProblem.missing } : {}) },
+      { status: saleProblem.status },
+    );
+  }
 
   try {
     const full = await generateBuyersGuidePdf(

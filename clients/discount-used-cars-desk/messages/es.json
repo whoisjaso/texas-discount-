@@ -346,6 +346,7 @@
       "outstandingOnFile": "Archivado",
       "outstandingBringIt": "Tráiganoslo",
       "paidToday": "Pagado Hoy",
+      "financedBy": "Financiado por {lender}",
       "balanceOwed": "Saldo Pendiente",
       "payCash": "Efectivo",
       "payZelle": "Zelle",
@@ -738,7 +739,9 @@
       "search": "Buscar",
       "useTyped": "Usar {value}",
       "done": "Listo",
-      "another": "Otro"
+      "another": "Otro",
+      "useTypedPlace": "Otro estado o país: {value}",
+      "firstPaymentTooEarly": "El primer pago no puede ser antes de la fecha del contrato."
     },
     "rail": {
       "home": "Inicio",
@@ -878,6 +881,9 @@
             "Check": {
               "label": "Cheque"
             }
+          },
+          "other": {
+            "label": "Otra forma"
           }
         },
         "tradeIn": {
@@ -1159,6 +1165,9 @@
             "Check": {
               "label": "Cheque"
             }
+          },
+          "other": {
+            "label": "Otra forma"
           }
         },
         "howLeaving": {
@@ -1324,13 +1333,59 @@
           "date": "Fecha de venta",
           "signature": "Firma",
           "static": "Impreso por el formulario",
-          "none": "No aplica a esta venta"
+          "none": "No aplica a esta venta",
+          "intake": "De Empezar la venta"
         },
         "statuses": {
           "ink": "Para firmar con tinta",
           "office": "Para la oficina de impuestos",
           "marker": "Sin definir por el dueño",
           "blankAllowed": "En blanco"
+        },
+        "carriedHeading": "Se pregunta aquí, se imprime en {document}",
+        "quotesEnglish": "Las casillas citan el papel, que se imprime en inglés.",
+        "values": {
+          "registrationByDealer": "Nosotros tramitamos el registro",
+          "registrationByBuyer": "El comprador tramita el registro",
+          "insuranceOnFile": "Seguro en archivo",
+          "insuranceOwed": "Falta el seguro",
+          "inspectionPassed": "Inspección aprobada",
+          "weInspect": "Nosotros hacemos la inspección",
+          "buyerInspects": "El comprador hace la inspección",
+          "yes": "Sí"
+        },
+        "notSetMarker": "[Sin definir: {what}]",
+        "documents": {
+          "buyersGuide": "la Guía del comprador",
+          "towAwayAcknowledgment": "el Reconocimiento de retiro en grúa"
+        },
+        "titles": {
+          "The Transaction": "La operación",
+          "Trade-In, Itemization And Statements": "Intercambio, desglose y declaraciones",
+          "Liens, Still To Do And Terms": "Gravámenes, pendientes y condiciones",
+          "Buyer Acknowledgment And Signatures": "Reconocimiento del comprador y firmas",
+          "Vehicle, Buyer And What Is The Buyer's From Here": "Vehículo, comprador y lo que queda a cargo del comprador",
+          "Clauses 4 And 5 And Signatures": "Cláusulas 4 y 5 y firmas",
+          "Buyers Guide (Front)": "Guía del comprador (frente)",
+          "Buyers Guide (Back)": "Guía del comprador (reverso)",
+          "Parties, Vehicle And Truth In Lending": "Partes, vehículo y divulgación de crédito",
+          "Itemization Of Amount Financed": "Desglose del monto financiado",
+          "Signatures": "Firmas",
+          "Application For Texas Title And/Or Registration": "Solicitud de título y/o registro de Texas",
+          "TxDMV Instructions": "Instrucciones del TxDMV",
+          "The Buyer, The Vehicle And What The Buyer Acknowledges": "El comprador, el vehículo y lo que el comprador reconoce",
+          "Clause 5 And Signatures": "Cláusula 5 y firmas",
+          "Limited Power Of Attorney": "Poder notarial limitado",
+          "Rebuilt Motor Vehicle Written Disclosure": "Divulgación escrita de vehículo reconstruido",
+          "Parties, Vehicle And Summary": "Partes, vehículo y resumen",
+          "Vehicle, Buyer And Money": "Vehículo, comprador y dinero",
+          "Clauses And Signatures": "Cláusulas y firmas",
+          "Vehicle, How It Leaves, Buyer": "Vehículo, cómo sale, comprador",
+          "Clauses 3 To 5 And Signatures": "Cláusulas 3 a 5 y firmas",
+          "The Buyer, The Vehicle And What The Buyer Agrees To": "El comprador, el vehículo y lo que el comprador acepta",
+          "If It Comes Back To Us, And Signatures": "Si nos regresa, y firmas",
+          "Vehicle, Owner, Rebuilder And Work": "Vehículo, dueño, reconstructor y trabajo",
+          "Component Parts": "Partes componentes"
         }
       },
       "mustAnswer": "Responda esto primero; es una declaración que el documento jura y nunca se llena por usted:",

@@ -1,4 +1,4 @@
-import { NEVER, computed, fees, marker, answer, type DocumentMap } from "@/lib/documents/field-maps/types";
+import { NEVER, computed, dealer, marker, answer, type DocumentMap } from "@/lib/documents/field-maps/types";
 import { SIGNATURE_BLOCK, buyerAndVehicleBlock } from "@/lib/documents/field-maps/shared-blocks";
 
 /** The Vehicle Responsibility Acknowledgment (buyer files their own title): two pages. */
@@ -13,7 +13,9 @@ export const VEHICLE_RESPONSIBILITY_MAP: DocumentMap = {
       fields: [
         ...buyerAndVehicleBlock("billOfSale"),
         { id: "quotedRegistrationAmount", label: "Quoted Registration", source: computed("money.registrationCost"), blank: NEVER },
-        { id: "lateHandlingFee", label: "Late-Handling Fee", source: fees("lateHandlingFee"), blank: marker("lateHandlingFee") },
+        // The dealer's own figure (NEXT_PUBLIC_DEALER_LATE_HANDLING_FEE), not a
+        // line of the owner's fee schedule; stamped at filing with its total.
+        { id: "lateHandlingFee", label: "Late-Handling Fee", source: dealer("lateHandlingFee"), blank: marker("lateHandlingFee") },
         { id: "registrationBy", label: "(who files the registration)", source: answer("guide:plan.registrationBy"), blank: NEVER, printed: false },
       ],
     },

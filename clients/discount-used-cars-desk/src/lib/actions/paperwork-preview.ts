@@ -54,6 +54,7 @@ export async function previewPaperworkPdf(
     if (!sale) return { ok: false, error: "That sale could not be found." };
 
     const answers = readPaperwork(sale.stepData, documentType);
+    const feeLines = await dealFeeLinesForSale(sale);
     const money = paperworkMoney(
       sale.vehicle?.salePrice,
       // The bill of sale's answers, where the trade-in is asked, for every
@@ -62,7 +63,7 @@ export async function previewPaperworkPdf(
       readMoney(sale.stepData),
       sale.funding.type,
       // The sale's own fee lines, as the filing computes them.
-      await dealFeeLinesForSale(sale),
+      feeLines,
     );
 
     /*
@@ -112,7 +113,7 @@ export async function previewPaperworkPdf(
       dealerSignature: null,
       dealerSignatureDate: null,
       dealerSignerName: viewer?.signerName ?? null,
-    });
+    }, { docFeeSet: feeLines.docFeeSet });
     if (!completedLink) {
       return { ok: false, error: "No preview is drawn for this document yet." };
     }

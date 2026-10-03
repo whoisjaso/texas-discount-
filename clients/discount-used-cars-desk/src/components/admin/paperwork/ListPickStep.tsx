@@ -12,7 +12,8 @@ import { useFunnel } from "@/components/admin/funnel/FunnelLocaleProvider";
  * answer was then dropped anyway. A list is a tap: the likely answer first
  * as a big card, a search box that narrows the rest, and every row a button.
  * A county the region list does not carry is still one tap away: the search
- * itself becomes the answer ("Use Lubbock").
+ * itself becomes the answer ("Use Lubbock"), and so does a licence from a
+ * place the state list does not carry.
  */
 
 type Row = { value: string; label: string };
@@ -47,7 +48,14 @@ export default function ListPickStep({
   const { t } = useFunnel();
   const [search, setSearch] = useState("");
   const rows = useMemo(() => listRows(list), [list]);
-  const likely = rows.find((row) => row.value.toLowerCase() === current.trim().toLowerCase());
+  /*
+    The likely answer as the first big card, even when it is not on the list
+    (a county the regional list does not carry, a typed state answered
+    before): a guess the screen cannot show is a guess nobody can confirm.
+  */
+  const likely =
+    rows.find((row) => row.value.toLowerCase() === current.trim().toLowerCase()) ??
+    (current.trim() ? { value: current.trim(), label: current.trim() } : undefined);
   const needle = search.trim().toLowerCase();
   const shown = rows
     .filter((row) => row.value !== likely?.value)
@@ -55,6 +63,12 @@ export default function ListPickStep({
   // A county outside the region list: what was typed is the answer.
   const exact = rows.some((row) => row.value.toLowerCase() === needle || row.label.toLowerCase() === needle);
   const typedCounty = list === "texasCounties" && needle.length > 2 && !exact ? search.trim() : "";
+  /*
+    A licence from somewhere the list does not carry (Puerto Rico, Guam, a
+    Mexican licence) is typed: the search becomes the answer, offered after
+    the rows so a partial match ("Mexico" finds New Mexico) is still a tap.
+  */
+  const typedPlace = list === "usStates" && needle.length >= 2 && !exact ? search.trim() : "";
 
   return (
     <div className="ed-list-pick">
@@ -103,6 +117,11 @@ export default function ListPickStep({
             {pending && choosing === row.value ? t.chrome.saving : row.label}
           </button>
         ))}
+        {typedPlace ? (
+          <button type="button" role="listitem" className="ed-list-row" data-typed="" disabled={pending} onClick={() => onPick(typedPlace)}>
+            {t.chrome.useTypedPlace.replace("{value}", typedPlace)}
+          </button>
+        ) : null}
       </div>
     </div>
   );

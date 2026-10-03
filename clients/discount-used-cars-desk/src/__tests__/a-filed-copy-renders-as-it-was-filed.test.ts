@@ -5,6 +5,7 @@ import { DocumentSheet } from "@/components/documents/DocumentSheet";
 import { corridorCompletedLink } from "@/lib/sales/corridor-link";
 import { decodeCompletedLinkFromUrl, type CompletedLinkData } from "@/lib/documents/customerPortal";
 import { ROUTES, filedFormData, owedDocuments } from "./fixtures/sales";
+import { calculateBillOfSale, formatCurrency, type BillOfSaleData } from "@/lib/documents/billOfSale";
 
 /**
  * A copy filed before the page-by-page change carries none of the values
@@ -26,9 +27,11 @@ const STAMPS = [
   "warrantySystems",
   "renewalReminders",
   "balanceOwed",
-  "amountPaidToday",
-  "stockNumber",
-  "tradeInVin",
+  // Filing's own stamp of the page-by-page readings (documents/page-layout.ts).
+  // Not here: amountPaidToday, stockNumber and tradeInVin, which every
+  // corridor copy carried before the change, so an old copy has them.
+  "pageLayout",
+  "docFeeUnset",
 ];
 
 const DESIGNED = new Set([
@@ -84,6 +87,8 @@ describe("a filed copy renders as it was filed", () => {
     const paid = (markup: string) => /data-total-paid="">([^<]+)</.exec(markup)?.[1];
     expect(paid(now)).toBe("$3,500.00");
     expect(paid(old)).not.toBe("$3,500.00");
+    // Exactly the total due, the figure every copy printed before the change.
+    expect(paid(old)).toBe(formatCurrency(calculateBillOfSale(filedBefore(decoded).dd as unknown as BillOfSaleData).totalDue));
     expect(old).not.toContain('data-paid-today=""');
   });
 });

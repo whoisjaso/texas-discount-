@@ -2,8 +2,8 @@
  RUN  v4.1.6 /home/user/texas-discount-/clients/discount-used-cars-desk
 
 
- Test Files  211 passed (211)
-      Tests  2477 passed (2477)
-   Start at  11:23:12
-   Duration  79.13s (transform 7.50s, setup 0ms, import 49.74s, tests 59.42s, environment 8.29s)
+ Test Files  268 passed (268)
+      Tests  2936 passed (2936)
+   Start at  21:56:07
+   Duration  109.80s (transform 8.69s, setup 0ms, import 90.15s, tests 69.93s, environment 8.86s)
 

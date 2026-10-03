@@ -92,7 +92,13 @@ export function lateFeeText(lateFee: number | null = LATE_HANDLING_FEE): string 
 }
 
 /** Quoted plus the fee, or the marker while the fee is not set. */
-export function lateFeeTotalText(quoted: number, lateFee: number | null = LATE_HANDLING_FEE): string {
+export function lateFeeTotalText(
+  quoted: number,
+  lateFee: number | null = LATE_HANDLING_FEE,
+  /** The total stamped at filing, when the copy carries one: what was signed. */
+  stampedTotal?: number | null,
+): string {
+  if (typeof stampedTotal === "number" && Number.isFinite(stampedTotal)) return formatUsd(stampedTotal);
   return lateFee !== null && Number.isFinite(lateFee) ? formatUsd(quoted + lateFee) : notSet("late-handling fee");
 }
 
@@ -255,12 +261,13 @@ export function buildReturnClause(
   language: VehicleResponsibilityLanguage,
   quotedRegistrationAmount: number,
   lateFee: number | null = LATE_HANDLING_FEE,
+  stampedTotal?: number | null,
 ): string {
   const body = getLegalBody(language);
   return body.returnClauseTemplate
     .replace("{quoted}", formatUsd(quotedRegistrationAmount))
     .replace("{fee}", lateFeeText(lateFee))
-    .replace("{total}", lateFeeTotalText(quotedRegistrationAmount, lateFee));
+    .replace("{total}", lateFeeTotalText(quotedRegistrationAmount, lateFee, stampedTotal));
 }
 
 export const ADMIN_WARNING_BANNER_EN =

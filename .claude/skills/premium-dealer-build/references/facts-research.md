@@ -39,6 +39,11 @@ report until supplied:
   only whether the dealer filed one. See `references/texas-dealer-fees.md`.
 - **Authorised signer** (name and title on the dealer signature line; the licence holder is the usual answer, but confirm)
 - **Website domain** (prints on documents)
+- **Late-handling fee** (the figure the Vehicle Responsibility sheet quotes
+  when a buyer who files their own title brings it back to the dealer late;
+  the desk's `NEXT_PUBLIC_DEALER_LATE_HANDLING_FEE`, stamped at filing). Until
+  the owner gives it the sheet prints `[Not set: late-handling fee]`; ask for
+  it in the Phase 0 report, so it is never found missing at the walks.
 - Email, payment destinations (Zelle, Cash App…), SMS provider for signing texts
 - Salvage dealer licence, if held
 

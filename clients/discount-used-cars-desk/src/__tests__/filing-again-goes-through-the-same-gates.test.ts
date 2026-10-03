@@ -45,7 +45,9 @@ const STEP_DATA = {
   money: { amount: "9000", priceBasis: "vehicleOnly", paidTodayAmount: "2000" },
   salePlan: { registrationBy: "dealer", titleSignedBy: "buyer", insuranceShown: true, inspectionBy: "done" },
   // The licence step settled, as a walked sale holds it: the pages print it.
-  buyerId: WALKED_BUYER_ID,
+  // Its county too: the county a city implies is a guess the 130-U never
+  // files unseen (deal-facts.ts countyOfResidence).
+  buyerId: { ...WALKED_BUYER_ID, mailing: { ...WALKED_BUYER_ID.mailing, county: "Harris" } },
   paperwork: {
     // The mileage statement answered: a sworn statement files only from an answer.
     billOfSale: { odometerStatus: "actual", tradeIn: "yes", tradeInAllowance: "2000", tradeInDescription: "2012 Honda Civic LX" },

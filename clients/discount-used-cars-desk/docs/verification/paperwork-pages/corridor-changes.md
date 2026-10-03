@@ -12,7 +12,7 @@ screen listed here, taken before the change, no longer matches the desk.
 |---|---|---|---|
 | Bill of sale | `buyerLicenseState` | Two letters typed; the answer was dropped and every page printed "TX" | A tap on the state list, asked only when the intake did not say; the answer reaches the bill of sale, the 130-U box 15 and every ID line |
 | Bill of sale | `odometerStatus` | Pre-selected "Real", filed unanswered | Pre-selected but sworn: the filing refuses it unanswered (`mustAnswer`) |
-| Bill of sale | `tradeInVin` | Not asked; the trade-in VIN printed blank | New, after the description, a VIN field (optional) |
+| Bill of sale | `tradeInVin` | Not asked; the trade-in VIN printed blank | New, right after "Is There A Trade-In?" and before the description: a VIN field (optional), so the car is identified before it is described |
 | Bill of sale | `warrantyKind` | Not asked | New on a warranty sale: Full / Limited, a tap |
 | Bill of sale | `warrantyLaborPercent`, `warrantyPartsPercent` | Not asked | New on a limited warranty: two numbers |
 | Bill of sale | `warrantySystems` | Not asked | New: a multi-pick of the FTC form's systems |

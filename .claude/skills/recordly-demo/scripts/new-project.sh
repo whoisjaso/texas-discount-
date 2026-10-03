@@ -37,23 +37,30 @@ for a in "$@"; do
 done
 INPUTS="$(realpath "${POS[0]:?usage: new-project.sh <client-inputs.json> [dest-dir] [--no-install] [--force]}")"
 INPUTS_DIR="$(dirname "$INPUTS")"
+# The repo root every repo-relative path in the inputs is read against (siteDir, brand files), whatever directory the
+# caller is in: $REPO from demo.env, else the repo that holds this skill, else the current directory.
+if [ -z "${REPO:-}" ]; then
+  case "$SKILL" in */.claude/skills/recordly-demo) REPO="${SKILL%/.claude/skills/recordly-demo}" ;; *) REPO="$PWD" ;; esac
+fi
+export REPO
 j() { node -e 'const v=process.argv[2].split(".").reduce((o,k)=>o==null?o:o[k],require(process.argv[1]));console.log(v==null?"":typeof v==="object"?JSON.stringify(v):v)' "$1" "$2"; }
 SLUG="$(j "$INPUTS" slug)"
-DEST="${POS[1]:-clients/$SLUG-demo}"
+DEST="${POS[1]:-$REPO/clients/$SLUG-demo}"
+case "$DEST" in /*) ;; *) DEST="$REPO/$DEST" ;; esac
 
 node "$SKILL/scripts/fill-client.cjs" check "$INPUTS"
 if [ -d "$DEST" ] && [ "$FORCE" != 1 ]; then
   others="$(ls -A "$DEST" 2>/dev/null | grep -vx 'client-inputs.json' || true)"
   if [ -n "$others" ]; then
-    echo "refusing: $DEST already holds a project (use --force to overwrite the files new-project writes)" >&2; exit 1
+    echo "refusing: $DEST already holds a project. Re-creating it on purpose: runbook.cjs run A4 --pass-force (new-project.sh --force), which backs up the plan, the voice lines and the storyboard first" >&2; exit 1
   fi
 fi
 
-resolve() { # a path from the inputs: absolute, relative to the cwd (repo root), or relative to the inputs file
-  case "$1" in /*) echo "$1" ;; *) if [ -e "$1" ]; then echo "$PWD/$1"; else echo "$INPUTS_DIR/$1"; fi ;; esac
+resolve() { # a path from the inputs: absolute, relative to the repo root, or relative to the inputs file
+  case "$1" in /*) echo "$1" ;; *) if [ -e "$REPO/$1" ]; then echo "$REPO/$1"; else echo "$INPUTS_DIR/$1"; fi ;; esac
 }
 MARK="$(resolve "$(j "$INPUTS" brand.mark)")"; LOGO="$(resolve "$(j "$INPUTS" brand.logoReverse)")"
-for f in "$MARK" "$LOGO"; do [ -f "$f" ] || { echo "missing brand file: $f" >&2; exit 1; }; done
+for f in "$MARK" "$LOGO"; do [ -f "$f" ] || { echo "missing brand file: $f (read against the repo root $REPO; run from anywhere)" >&2; exit 1; }; done
 
 # outro logo width: the house 760 px for a ~2.6:1 logo, narrower for a squarer one (house-recipe §9)
 LW="$(j "$INPUTS" logoWidth)"
@@ -70,7 +77,22 @@ case "$LW" in ''|*[!0-9]*) echo "logoWidth must be a whole number of px, not '$L
 
 mkdir -p "$DEST"
 DEST_INPUTS="$(realpath -m "$DEST/client-inputs.json")"
+# --force on a project that has been worked on: keep a copy of what a person (or a run) made, and keep the plan and
+# the voice lines themselves (the template's are empty skeletons; overwriting them lost a hand-written plan).
+KEEP=""
+if [ "$FORCE" = 1 ] && [ -d "$DEST/src" ]; then
+  BK="$DEST/.backup/$(date -u +%Y%m%dT%H%M%SZ)"
+  mkdir -p "$BK"
+  for f in src/narrated/plan.ts src/narrated/vo-lines.ts storyboard.json narration/storyboard-long.json src/project.ts README.md; do
+    if [ -f "$DEST/$f" ]; then mkdir -p "$BK/$(dirname "$f")"; cp -p "$DEST/$f" "$BK/$f"; fi
+  done
+  echo "backed up the worked files to $BK"
+  for f in src/narrated/plan.ts src/narrated/vo-lines.ts; do
+    if [ -f "$DEST/$f" ] && ! cmp -s "$DEST/$f" "$SKILL/template/$f"; then KEEP="$KEEP $f"; fi
+  done
+fi
 cp -r "$SKILL/template/." "$DEST/"
+for f in $KEEP; do cp -p "$BK/$f" "$DEST/$f"; echo "kept $f (a worked file, not the template's skeleton)"; done
 rm -f "$DEST"/public/brand/.gitkeep "$DEST"/public/fonts/.gitkeep "$DEST"/public/sfx/.gitkeep
 cp "$SKILL"/assets/sfx/*.wav "$DEST/public/sfx/"
 cp "$SKILL"/assets/fonts/*.woff2 "$SKILL/assets/fonts/OFL.txt" "$DEST/public/fonts/"
@@ -118,9 +140,9 @@ fi
 cat <<EOF
 
 Created $DEST
-  client-inputs.json the one copy of the inputs: edit it, then refill with fill-client.cjs (SKILL.md step 6)
+  client-inputs.json the one copy of the inputs: edit it, then refill with fill-client.cjs (runbook A5)
   src/project.ts     loader geometry, logos, facts, outro lines
-  storyboard.json    the house storyboard for this site$( [ "$SB" = 3 ] && echo ": STILL HAS PLACEHOLDERS, measure them in step 6 (measure-site.cjs --storyboard … --rects --into …)" )
+  storyboard.json    the house storyboard for this site$( [ "$SB" = 3 ] && echo ": STILL HAS PLACEHOLDERS, measure them in runbook A5 (measure-site.cjs --storyboard … --rects --into …)" )
   README.md          running order, re-capture commands, owner decisions
   public/sfx, fonts  the bundled kit and Barlow Semi Condensed (OFL)
 Next (runbook A5): adapt and preflight the storyboard on the served site; then capture in order.

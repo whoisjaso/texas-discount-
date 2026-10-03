@@ -19,6 +19,16 @@ tools or the time limits change. The Claude Code specifics are in the appendix.
 Shell variables do not survive between an agent's tool calls. `scripts/env.sh` writes every variable the runbook uses
 into `$SCRATCH/demo.env` as `export` lines; every command starts with `source <absolute scratch>/demo.env`. SCRATCH is
 absolute and outside the repo (captures are gigabytes). `theme.cjs --into` appends the desk's THEME_* lines to it.
+Before demo.env exists, `S` is the absolute folder holding the skill's SKILL.md: `export S=<that folder>` for S0-S2.
+
+- **The film is said, never guessed.** `env.sh` needs `--desk clients/<slug>-desk` (the house film) or `--no-desk`
+  (site only, on the user's word); a desk folder that does not exist, or a `--repo` with no `clients/`, is refused.
+- **Every step runs from the repo root.** `runbook.cjs run` spawns each command with `cwd=$REPO` and prints it, so a
+  repo-relative path in `client-inputs.json` (a logo, `siteDir`) resolves the same from any shell.
+- **State follows its inputs.** A step that runs again makes every step built on it STALE (`status` and `next` show
+  it), and an approval names the files it approved: when one changes, the approval reads STALE and is asked again.
+- **A forced step is on the record.** `run <id> --force` needs `--why` and the user's own words (`--by-user`);
+  without both it is refused. It is written to `verify-decisions.md`, shows as PASS* and goes into the send note.
 
 ## 2. Long jobs are detached, polled and stopped by process group
 
@@ -48,7 +58,9 @@ bash $S/scripts/bg.sh stop render         # TERM the group, KILL it 5 s later
 ## 3. Servers: two ports, own process groups
 
 - The site preview on :5183 (`site-server.sh`), the desk on :5190 (`desk/desk-server.sh`). No other port, ever: when
-  one is taken by a server you did not start, wait or ask; never kill it, never pick another port.
+  one is taken by a server you did not start, wait or ask; never kill it, never pick another port. The wait has a
+  bound: `desk-server.sh start --wait 1800` polls every 30 s for up to 30 minutes, naming the holder (its pid, its
+  directory, when it started; S0 prints the same), then exits so you can ask the user.
 - Both start detached in their own process group, record the group id in `$SCRATCH`, poll until they answer, and stop
   by group (`kill -TERM -- -PGID`, then KILL). Killing `npx` by PID leaves `next-server` holding :5190.
 - The desk's `next dev` rewrites `next-env.d.ts`; `desk-server.sh` saves it before starting and restores it by copy on

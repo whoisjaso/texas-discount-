@@ -28,7 +28,7 @@ import {
 } from "@/lib/vehicles/empty-weight/on-the-sale";
 import { factById, ownedFacts, texasCountyForCity, type DealFact } from "@/lib/sales/deal-facts";
 import { askOrderFor, fieldMapFor } from "@/lib/documents/field-maps";
-import { factsRead } from "@/lib/documents/field-maps/types";
+import { factsPrinted, factsRead } from "@/lib/documents/field-maps/types";
 
 /**
  * The paperwork, asked one question at a time, on the sale.
@@ -303,6 +303,17 @@ function factApplies(fact: DealFact, documentType: string, context: PaperworkCon
   return !fact.applies || fact.applies(contextFor(fact, documentType, context));
 }
 
+/**
+ * Whether a fact is a question on this sale at all: it applies, read in its
+ * owner's answers. A box reading a fact that does not apply (the cash-only
+ * payment method on a bank deal, the rate when the payment and the count
+ * were both agreed, the licence state the intake recorded) takes its value
+ * from somewhere else, and the review says where (field-maps `fallback`).
+ */
+export function factAppliesOnSale(fact: DealFact, documentType: string, context: PaperworkContext): boolean {
+  return factApplies(fact, documentType, context);
+}
+
 /** The value the deal already holds for a fact, when it holds one (never asked). */
 function knownValue(fact: DealFact, documentType: string, context: PaperworkContext): string | undefined {
   if (!fact.known) return undefined;
@@ -322,13 +333,18 @@ function borrowedFacts(documentType: string, context: PaperworkContext): DealFac
   const map = fieldMapFor(documentType);
   if (!map) return [];
   const out: DealFact[] = [];
-  for (const id of factsRead(map)) {
+  // Printed boxes only: a carried legacy key (the rebuilt disclosure's ID
+  // issuer, which the state page has no line for) is never a question.
+  for (const id of factsPrinted(map)) {
     const fact = factById(id);
     if (!fact || fact.owner === documentType || fact.owner.startsWith("guide:")) continue;
     if (!factApplies(fact, documentType, context)) continue;
     if (knownValue(fact, documentType, context) !== undefined) continue;
     if (answersOf(context, fact.owner)[fact.key] !== undefined) continue;
-    if (fact.start && !fact.mustAnswer) continue;
+    // A start that resolves files unseen, so nothing is left to ask here; a
+    // start with nothing to offer on this sale leaves the box to ask.
+    const start = fact.start ? fact.start(contextFor(fact, documentType, context)) : undefined;
+    if (start !== undefined && start !== "" && !fact.mustAnswer) continue;
     out.push(fact);
   }
   return out;
@@ -406,7 +422,11 @@ export function paperworkDefault(
   if (!fact) return undefined;
   const known = knownValue(fact, documentType, context);
   if (known !== undefined) return known;
-  return fact.start ? fact.start(contextFor(fact, documentType, context)) : undefined;
+  const own = contextFor(fact, documentType, context);
+  const start = fact.start ? fact.start(own) : undefined;
+  if (start !== undefined && start !== "") return start;
+  // A guess the screen offers as the likely answer; never filed unseen.
+  return fact.suggest ? fact.suggest(own) : start;
 }
 
 /**
@@ -526,13 +546,15 @@ export function unansweredSwornFacts(documentType: string, context: PaperworkCon
   const map = fieldMapFor(documentType);
   const ids = new Set<string>([
     ...ownedFacts(documentType).map((fact) => fact.id),
-    ...(map ? factsRead(map) : []),
+    ...(map ? factsPrinted(map) : []),
   ]);
   for (const id of ids) {
     const fact = factById(id);
     if (!fact?.mustAnswer || fact.owner.startsWith("guide:")) continue;
     if (fact.owner !== documentType && !context.allAnswers) continue;
     if (!factApplies(fact, documentType, context)) continue;
+    // The deal already holds it (the intake's county): answered, not sworn again.
+    if (knownValue(fact, documentType, context) !== undefined) continue;
     const own = contextFor(fact, documentType, context);
     if ((own.answers[fact.key] ?? "").trim() === "") out.push(fact);
   }

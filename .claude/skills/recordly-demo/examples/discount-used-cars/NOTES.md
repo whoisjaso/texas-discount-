@@ -9,7 +9,7 @@
 
 - `storyboard.json` is the capture storyboard as shipped, kept byte for byte. It predates the automatic `captureCss`,
   so each shot carries a pasted copy; `capture.cjs` does not add it twice. Its `serve` notes (npx) also predate lesson
-  O1: build and serve as SKILL.md step 3 says.
+  O1: build and serve as runbook A2 says.
 - `client-inputs.json` holds the inputs that rebuild this project with `scripts/new-project.sh`.
 
 ## Reproduction check (done when the skill was locked)

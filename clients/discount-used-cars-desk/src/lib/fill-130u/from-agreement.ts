@@ -3,6 +3,7 @@ import type { CompletedLinkData } from "@/lib/documents/customerPortal";
 import { readIdKind } from "@/lib/forms/id-document";
 import { codeCase, fieldCase, vinCase } from "@/lib/documents/presentation-case";
 import { isDocumentKind } from "@/lib/vehicles/empty-weight/rules";
+import { laidOutByPages } from "@/lib/documents/page-layout";
 
 /**
  * A filed agreement row, read into what the state form's fields want.
@@ -76,7 +77,13 @@ export function buildAgreementData(
   // Address — customer data → agreement columns
   const buyerAddress = fieldCase((cd.buyerAddress as string) || (cd.renterAddress as string) || (cd.mailingAddress as string) || (agreement.buyer_address as string) || '');
   const buyerCity = fieldCase((cd.buyerCity as string) || (cd.renterCity as string) || (cd.mailingCity as string) || (agreement.buyer_city as string) || '');
-  const buyerState = codeCase((cd.buyerState as string) || (cd.renterState as string) || (cd.mailingState as string) || (agreement.buyer_state as string) || 'TX');
+  /*
+    No "TX" for a mailing address that has none, on a copy filed under the
+    page-by-page paperwork: a blank state is a box the filing names, never a
+    state nobody said. A copy from before keeps the reading it was filed with.
+  */
+  const legacyState = laidOutByPages(dd) ? '' : 'TX';
+  const buyerState = codeCase((cd.buyerState as string) || (cd.renterState as string) || (cd.mailingState as string) || (agreement.buyer_state as string) || legacyState);
   const buyerZip = (cd.buyerZip as string) || (cd.renterZip as string) || (cd.mailingZip as string) || (agreement.buyer_zip as string) || '';
   const buyerCounty = fieldCase((cd.countyOfResidence as string) || '');
 
@@ -189,6 +196,7 @@ export function buildAgreementData(
     buyer_last_name: buyerLast,
     // The suffix the licence step recorded ("Jr"), into its own column.
     buyer_suffix: fieldCase((cd.applicantSuffix as string) || '') || undefined,
+    printed_name_has_suffix: laidOutByPages(dd),
     buyer_entity_name: entityName || undefined,
     buyer_address: buyerAddress,
     buyer_city: buyerCity,
@@ -197,7 +205,17 @@ export function buildAgreementData(
     buyer_county: buyerCounty,
     buyer_phone: (cd.buyerPhone as string) || (cd.renterPhone as string) || (cd.applicantPhone as string) || (agreement.buyer_phone as string) || undefined,
     buyer_email: (cd.buyerEmail as string) || (cd.renterEmail as string) || (cd.applicantEmail as string) || (agreement.buyer_email as string) || undefined,
-    buyer_dl_number: (applicantType === 'business' && fein ? fein : codeCase(buyerDl)) || undefined,
+    /*
+      Box 14 holds an entity's FEIN, never the person's licence number: a
+      business with no FEIN leaves the box blank, and the filing names it
+      (field-maps/form-130u.ts). A copy filed before keeps its reading.
+    */
+    buyer_dl_number:
+      (applicantType === 'business' && fein
+        ? fein
+        : applicantType === 'business' && laidOutByPages(dd)
+          ? ''
+          : codeCase(buyerDl)) || undefined,
     buyer_dl_state: codeCase(buyerDlState) || undefined,
     buyer_id_kind: buyerIdKind,
     co_buyer_name: coBuyerName || undefined,

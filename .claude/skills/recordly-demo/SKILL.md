@@ -2,16 +2,16 @@
 name: recordly-demo
 description: >-
   Make the house demo videos for a car dealer's website and staff sale desk, exactly as the approved
-  Discount Used Cars films: the short Recordly / Screen Studio style macOS screen recording (intro
-  match-cut onto the site's loader, one macOS window with pixel-matched cuts, auto-zooms, smoothed
-  cursor, iPhone cut with iOS swipes, iOS sounds, facts-only outro) and the narrated long cut (a fact-
-  checked money-made / time-saved script voiced free with Kokoro). Ships the scripts, the Remotion
-  template and a runbook any agent or model can run. Use it
-  whenever the user wants a demo video for a dealer, a screen recording or walkthrough of the site or
-  desk, a narrated or voice-over walkthrough, a product reel, promo or screen-recording ad, a dealer
-  social video, says "do the video for this client" or "like the Discount video", wants a Mac screen
-  recording look, or mentions Recordly or Screen Studio, even without the word demo. Use it instead of
-  building a dealer video from scratch with remotion-motion-graphics.
+  Discount Used Cars films, in gated steps (the user reviews the short cut, approves script and
+  voice): the short Recordly / Screen Studio style macOS screen recording (loader match-cut
+  intro, pixel-matched cuts, auto-zooms, smoothed cursor, iPhone cut, iOS sounds, facts-only outro)
+  and the narrated long cut (a fact-checked money-made / time-saved script voiced free with Kokoro).
+  Ships the scripts, the Remotion template and a runbook any agent or model can run. Use it whenever
+  the user wants a demo video for a dealer, a screen recording or walkthrough of the site or desk, a
+  narrated or voice-over walkthrough, a product reel, promo or screen-recording ad, a social
+  video, says "do the video for this client" or "like the Discount video", wants a Mac screen
+  recording look, or mentions Recordly or Screen Studio, even without the word demo. Use it instead
+  of a from-scratch dealer video with remotion-motion-graphics.
 ---
 
 # The house demo video (Recordly style)
@@ -29,9 +29,9 @@ It is not a new edit. The code, timings, sounds and look are fixed in `template/
 `references/house-recipe.md`. Only the client's facts, logos, measured geometry, a few framing points and the desk's
 demo inputs change, all in one `client-inputs.json`, and the tools measure most of them.
 
-**Where this sits in a dealer build:** the last two steps of premium-dealer-build's sequence (its Phase 7): after the
-site is deployed and the desk verified, the house film, then (on request) the narrated cut, whose script the user
-approves before it is voiced.
+**Where this sits in a dealer build:** premium-dealer-build's Phase 6 (6a the short cut, 6b the script, 6c the voice
+and the narrated cut), after its Phase 5 has verified the site and the desk and before its Phase 7 delivers and deploys.
+The gated steps below are the order every run follows.
 
 Recordly (github.com/webadderallorg/Recordly) is AGPL-3.0 and cannot run headless. **None of its code is used.** Only
 its published tuning numbers are, as reference (zoom depths, zoom timings, cursor smoothing, click bounce, motion
@@ -40,11 +40,12 @@ blur). Our own capture (`scripts/capture.cjs`) and Remotion composition reproduc
 ## How to run it: under any agent or model
 
 Everything is a numbered step with one command, a PASS gate and a written rule for a FAIL
-(`assets/runbook.json`; the same as prose in `references/runbook.md`). `scripts/runbook.cjs` walks it:
+(`assets/runbook.json`; the same as prose in `references/runbook.md`). `scripts/runbook.cjs` walks it.
+`$S` is the absolute folder that holds this SKILL.md: `export S=<that folder>` before S0 (demo.env sets it from S2 on).
 
 ```bash
-bash <skill>/scripts/setup.sh --check                         # S0: the machine (each missing piece with its remedy)
-bash <skill>/scripts/env.sh --slug <slug> --scratch <absolute scratch dir> [--desk clients/<slug>-desk]   # S2
+bash $S/scripts/setup.sh --check                              # S0: the machine (each missing piece with its remedy)
+bash $S/scripts/env.sh --slug <slug> --scratch <absolute scratch dir> (--desk clients/<slug>-desk | --no-desk)   # S2
 source <scratch>/demo.env                                     # at the top of EVERY later command
 node $S/scripts/runbook.cjs next                              # the next step's card, variables resolved
 node $S/scripts/runbook.cjs run <id>                          # run and judge it (long steps detach through bg.sh)
@@ -65,10 +66,41 @@ The rules that make it repeatable on any model (`references/harness.md`):
    sheet, the stills or the film to the user and records their words (`mark --by-user`). Approvals (the onboarding
    choice, the script, the voiced set) are always the user's.
 5. **Never force a gate.** An `--allow-*` needs its recorded row in `$P/verify-decisions.md` first; every allowance is
-   in the send note.
+   in the send note. `run <id> --force` needs `--why` and the user's own words (`--by-user`); it is
+   recorded, shows as PASS* and is carried into the send note. Re-running a step marks every step built on it STALE
+   (`status` and `next` show it), and an approval of something that has since changed is asked again.
 6. **Never invent a fact or a figure.** On-screen facts come from owner- or TxDMV-sourced fields; the demo fee from
    the owner or the user; an unconfirmed value is asked of the user.
 7. **Every file sent in chat is ≤ 28 MB** (the upload limit is 30 MB): `share.sh` makes it; the master is never sent.
+
+## The gated steps (in this order; stop at every gate)
+
+**Prerequisites** (premium-dealer-build; never film a stand-in for any of them): Phase 1, the user-approved site
+(G1) with its Admin link; Phase 3, the real inventory loaded (or the user's words that the stand-ins are filmed);
+Phases 4 and 5, the desk built and verified (G5); and the kickoff answers asked at its G0 (B0's onboarding path,
+demo fee and desk address; the narration flags). A site-only film needs Phases 1 and 3. Asked for a video before
+these exist, say which one is missing and offer to do it first.
+
+| # | Step | Runbook | Gate |
+|---|---|---|---|
+| 1 | Setup: the machine, the run's variables, the voice venv when narrated | S0, S2, S1 | the scripted checks |
+| 2 | Site capture: facts, build, measure, project, storyboard, the five shots, the cut gate, the stills | A1-A8 (B0 at kickoff) | A8 by eye |
+| 3 | Desk capture: the desk on :5190, part B and the off-camera sales on one fresh desk | B1-B7 | B6v by eye |
+| 4 | Short-cut render: render, verify, one watch with sound, the chat copy | B8-B10 | B9w by ear |
+| **G1** | **Short cut review** (soft): send `<slug>-demo-chat.mp4`, the contact sheet and the send note; ask "Here is the short cut (<length>). Anything to change before I write the narrated script?" | B11 | the user's go, or "keep going" recorded |
+| 5 | Script fill and fact-check: offer the narrated cut, fill the house script, check every line on this desk | N0-N1 | `check` PASS |
+| **G2** | **Script approval** (hard): send `narration/script.md`; ask "Approve it as written, or tell me what to change. Nothing is voiced until you approve." | N2 | `mark N2 --by-user` |
+| 6 | Voice: Kokoro-82M af_heart, one WAV per line, `preview.mp3` | N3 | scripted |
+| 7 | Transcribe-back: every difference decided and recorded | N4 | scripted |
+| **G3** | **Voice preview** (hard): send `preview.mp3` and `transcribe-diff.md`; ask "Does the voice sound right, and do you accept the differences listed?" | N5 | `mark N5 --by-user` |
+| 8 | The narrated cut: levels, the demo card, the long storyboard, captures, the plan, stills, render, verify | N6-N13 | N11 by eye; N13 scripted |
+| **G4** | **Final gate** (hard): send the narrated chat copy, the contact sheet, `narration/lip-to-picture.md` and the send note; ask "Here is the narrated walkthrough (<length>). Is it ready to show the dealer?" | N14 | the user's yes |
+
+A site-only film runs steps 1-2, then R1-R4 (its gate is R4, the user's go on `demo-v1`). Hard gates always wait; a
+soft gate waits too unless the user said "keep going", and then the status file records it (standalone: say so in the
+chat). A gate never passes on a model's own judgement (rule 4 above), and re-running a step makes every later gate
+STALE, so it is asked again. In a dealer build, tick the matching Phase 6 rows of `clients/<slug>-STATUS.md` at each
+gate and commit it (recordly-demo's G1-G4 are its G6a-G6d); `runbook.cjs status` is the run's own record.
 
 ## The runbook at a glance
 
@@ -86,7 +118,7 @@ The rules that make it repeatable on any model (`references/harness.md`):
 | A6 | Capture 1-hero … 5-phone in order (long) | `bash $S/scripts/capture-all.sh $P/storyboard.json 1-hero 2-scroll 3-buy 4-menu 5-phone` |
 | A7 | Cut gate; stop the site | `verify-film.cjs --cuts-only` → CUTS PASS; `site-server.sh stop` |
 | A8 | Part-A stills, looked at (by eye) | `stills.cjs` on the plan's frames; `mark A8` |
-| B0 | The user's onboarding choice, demo fee, desk clock, demo data | `fill-client.cjs check $I --stage desk`; `mark B0 --by-user` |
+| B0 | Asked at kickoff with A1: the onboarding choice, demo fee, desk host, demo data | `check-address.cjs --which addressPartB --write`; `fill-client.cjs check $I --stage desk`; `mark B0 --by-user` |
 | B1 | The desk on :5190 | `bash $S/scripts/desk/desk-server.sh start` |
 | B2 | Merge the desk shots | `fill-client.cjs desk-storyboard $I --into $P/storyboard.json` |
 | B3 | Desk theme + selector preflight, fresh desk | `desk/theme.cjs`, `measure-site.cjs --desk`, `desk-server.sh restart` |
@@ -97,7 +129,8 @@ The rules that make it repeatable on any model (`references/harness.md`):
 | B8 | Render master + chat copy (long) | `CRF=17 AUDIO_BITRATE=192k render.sh $P $SLUG-demo` |
 | B9 / B9w | Verify; contact sheet + one full watch with sound | `verify.sh $P out/$SLUG-demo.mp4 $SCRATCH/verify`; `mark B9w` |
 | B10 / B11 | Chat copy ≤ 28 MB; send with the filled note | `share.sh`; `fill-client.cjs send-note`; `mark B11` |
-| N1-N14 | The narrated cut (on request) | script → approval → voice → transcribe-back → approval → levels → card → long storyboard → captures → plan → stills → render → verify → send |
+| N0 | Offer the narrated cut (or skip it with the user's words) | `fill-narration.cjs init $I`, or `runbook.cjs skip N0 --by-user` |
+| N1-N14 | The narrated cut (on request) | script → approval → voice → transcribe-back → approval → levels → card → long storyboard → captures → plan (`narrated-plan.cjs --draft` starts it) → stills → render → verify → send |
 
 A site with no desk (rare: the house cut ends on the desk's Admin row, so ask the user first) runs S0-A8, then R1-R4
 (render, verify, watch, send `demo-v1`).
@@ -121,9 +154,11 @@ nothing is still for more than about 4 s; the sound is native and quiet; the onl
 owner-confirmed facts.
 
 **Facts first (A1).** Take the on-screen facts only from the site's `business.ts` fields sourced OWNER or TXDMV: the
-web address (www. + domain), the phone as (000) 000-0000, street and city, and the short hours line exactly as the
-visit card prints it, without closed days. Copy every string character for character ("Gulf Fwy", not "Gulf
-Freeway"). No prices, ratings or claims. The clock is **Wednesday 2026-09-30T14:00 in the dealer's zone with that
+web address (www. + domain), the phone as (000) 000-0000, street and city, and the short hours line exactly as
+`hoursShort` prints it, without closed days (split days as the site writes them: "Mon – Fri 9 AM – 7 PM, Sat 9 AM –
+5 PM"). Copy every string character for character ("Gulf Fwy", not "Gulf Freeway"). No prices, ratings or claims.
+`check --stage facts` compares them with `business.ts` and refuses placeholder words. `FINDER_QUERY` is read off the
+served site's `/inventory`. Ask B0's questions at the same kickoff. The clock is **Wednesday 2026-09-30T14:00 in the dealer's zone with that
 day's UTC offset** (the next open weekday at 14:00 if closed on Wednesdays). `brand.logoReverse` is the full-colour
 logo the site itself shows on dark; never recolour or invert a logo. `examples/discount-used-cars/client-inputs.json`
 is a complete one.
@@ -139,7 +174,7 @@ into the project instead of re-capturing; still run `--cuts-only` and `render.sh
 Shipped once in the Discount film (`out/discount-demo.mp4`, 82.5 s): part A unchanged to the cut point, then the desk in
 the SAME window, then B6 (the signed 130-U), then the phone and outro. House recipe too: shots in
 `assets/storyboard-desk.json`, segments in `template/src/demo/timeline.ts` (`partBSegments`, from
-`project.partB.cuts`), `DocScene` + `theme.doc`. Numbers: house-recipe §15; problems and fixes: lessons B1–B13; gates:
+`project.partB.cuts`), `DocScene` + `theme.doc`. Numbers: house-recipe §15; problems and fixes: lessons B1–B14; gates:
 verification §7; the capture recipe: `references/desk-capture.md`.
 
 | Film (Discount) | Segment | What |
@@ -175,9 +210,10 @@ each line's picture shows what it says, the camera on the thing named as the wor
 `Narrated`, 3:50, 24 lines; `Demo` is untouched). The recipe is `references/narration.md`; lessons N1–N12.
 
 1. **Script (N1-N2):** the house script, filled: `fill-narration.cjs init / check / lines / script`
-   (`assets/narration/`). Every line is checked against this client's desk (`narration.checked`); a line the desk
-   cannot back is cut with its reason. `check --desk $DESK_DIR` refuses a check older than the desk's last corridor
-   change. The user approves `script.md` before anything is voiced.
+   (`assets/narration/`). Every line is checked against this client's desk (`narration.checked`: the corridor
+   commit and the desk walk's `walk-report.json` as evidence); a line the desk cannot back is cut with its reason.
+   `check --desk $DESK_DIR` refuses a check on another corridor commit. The user approves `script.md` before anything
+   is voiced. The kickoff answers set the flags (`script-template.md`, Kickoff answers to flags).
 2. **Voice (N3-N5):** `voice/voice.py` (Kokoro-82M af_heart, speed 0.95, one WAV per line, `preview.mp3`);
    `voice/transcribe.py` (faster-whisper small.en; every difference decided and recorded; medium.en is the second
    opinion for a model that cannot listen). The user approves the voiced set.
@@ -186,7 +222,8 @@ each line's picture shows what it says, the camera on the thing named as the wor
 4. **Captures (N7-N9):** the demo card (`make-demo-card.mjs`: a PDF417 the desk's scanner decodes), the long
    storyboard (`fill-client.cjs long-storyboard`), its desk preflight, then `capture-narrated.sh` on one fresh desk.
 5. **Plan and gates (N10-N14):** `src/narrated/plan.ts` written from this run's captures (the template's is an empty
-   skeleton; `examples/discount-used-cars/plan.ts` is the worked one); `narrated-check.cjs` (PLAN OK);
+   skeleton, and `narrated-plan.cjs --draft` writes a starting one; `examples/discount-used-cars/plan.ts` is the worked
+   one); `narrated-check.cjs` (PLAN OK);
    `narrated-plan.cjs` (the lip-to-picture table and its gate, from `narration.anchors`); stills; the render
    (`render.sh --composition Narrated`, ~80 min, through bg.sh); `verify.sh --composition Narrated`; the chat copy.
 
@@ -216,10 +253,10 @@ Attach with your harness's file-sending tool (SendUserFile in Claude Code). Neve
 |---|---|---|
 | A by-eye or by-ear gate, and the model cannot see or hear | `contact-sheet.png`, the named stills, or the chat copy | wait for an explicit OK; `mark --by-user` |
 | B0 | the onboarding question, verbatim | record the answer and the fee's source |
-| The house film is done (B11) | `<slug>-demo-chat.mp4` + `contact-sheet.png` + the filled send note | done |
-| N2 | `narration/script.md` | wait for approval |
-| N5 | `narration/preview.mp3` + `transcribe-diff.md` | wait for approval |
-| The narrated cut is done (N14) | `<slug>-demo-narrated-chat.mp4` + contact sheet + `narration/lip-to-picture.md` + send note | done |
+| The house film is done (B11, gate G1) | `<slug>-demo-chat.mp4` + `contact-sheet.png` + the filled send note | wait for the user's go (or a recorded "keep going") before N1 |
+| N2 (gate G2) | `narration/script.md` | wait for approval |
+| N5 (gate G3) | `narration/preview.mp3` + `transcribe-diff.md` | wait for approval |
+| The narrated cut is done (N14, gate G4) | `<slug>-demo-narrated-chat.mp4` + contact sheet + `narration/lip-to-picture.md` + send note | wait for the user's yes |
 
 The send note (`fill-client.cjs send-note`) covers the length and running order, the master's path, every gate and
 every recorded allowance, the facts on screen, the onboarding filmed and the demo fee with its source, the timing
@@ -293,6 +330,7 @@ scripts/measure-site.cjs    loader, Open Now, storyboard preflight; --desk: the 
 scripts/measure-desk-cuts.cjs  partB.cuts from the desk captures' edge density
 scripts/fill-client.cjs     client-inputs.json → project.ts, storyboards (site, desk, long), scenarios, README, send note
 scripts/fill-narration.cjs  client-inputs.json → narration/lines.json + script.md (selftest: Discount's 24 lines)
+scripts/check-address.cjs   a demo address against the Census geocoder, recorded in demo.<which>.how (B0, N7)
 scripts/new-project.sh      template + assets + filled files → clients/<slug>-demo, npm ci (no install fallback)
 scripts/render.sh           preflight, typecheck, master (+faststart), chat copy; --composition, --frames, --concat
 scripts/share.sh            the chat copy: two-pass x264 to <= 28 MB, frames = the master's
@@ -302,7 +340,8 @@ scripts/make-demo-card.mjs  the demo licence (PDF417 decoded back) for the narra
 scripts/narrated-{check,frames,verify,plan}.cjs   the narrated plan check, stills list, film gates, lip-to-picture gate
 scripts/voice/              voice.py, transcribe.py, prepare-vo.py, smoke.py, common.py
 scripts/desk/               desk-server.sh, theme.cjs, onboard.cjs, ceremony-hand.cjs, signing-link.cjs,
-                            review-confirm.cjs, close-sale.cjs, latest-deal.cjs, validate-scenario.cjs, lib.cjs
+                            review-confirm.cjs, close-sale.cjs, latest-deal.cjs, validate-scenario.cjs, corridor.cjs,
+                            lib.cjs
 scripts/card/demo-card.py   the demo card's front and back camera frames
 template/                   the shipped film's Remotion project (parts A and B, DocScene, src/narrated with an empty
                             plan); lockfile pins Remotion 4.0.532

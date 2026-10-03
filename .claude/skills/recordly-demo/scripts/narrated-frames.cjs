@@ -5,11 +5,23 @@
 const path = require('path'), fs = require('fs'), Module = require('module');
 const ai = process.argv.indexOf('--project');
 const PROJECT = path.resolve(ai > 0 ? process.argv[ai + 1] : process.cwd());
+/** A capture's cursor.json, or one line naming the missing capture and the runbook step that makes it (exit 2). */
+const readCursor = (project, id) => {
+  const f = require('path').join(project, 'public', 'shots', id, 'cursor.json');
+  if (!require('fs').existsSync(f)) {
+    const n = parseInt(id, 10);
+    const step = n <= 5 ? 'A6, capture-all.sh' : n < 20 ? 'B4, capture-desk.sh' : 'N9, capture-narrated.sh';
+    console.error(`no capture ${id}: ${f} is missing; capture it first (runbook ${step})`);
+    process.exit(2);
+  }
+  return JSON.parse(require('fs').readFileSync(f, 'utf8'));
+};
 const req = Module.createRequire(path.join(PROJECT, 'package.json'));
 const out = req('esbuild').buildSync({ stdin: { contents: "export { narratedPlan } from './src/narrated/plan'; export * as DS from './src/scenes/DesktopScene';", resolveDir: PROJECT, loader: 'ts' }, bundle: true, platform: 'node', format: 'cjs', write: false, jsx: 'automatic', logLevel: 'error', external: ['react', 'react-dom', 'react/jsx-runtime', 'remotion'] });
 const m = new Module('f'); m.paths = Module._nodeModulePaths(PROJECT); m._compile(out.outputFiles[0].text, path.join(PROJECT, 'f.cjs'));
 const P = m.exports.narratedPlan; const fps = 30;
-const raw = P.segments.map((g) => JSON.parse(fs.readFileSync(path.join(PROJECT, 'public/shots', g.shot, 'cursor.json'))));
+if (!P.total || !P.segments.length) { console.error('the narrated plan is empty (src/narrated/plan.ts is still the template): write it first (runbook N10)'); process.exit(2); }
+const raw = P.segments.map((g) => readCursor(PROJECT, g.shot));
 const data = m.exports.DS.prepareData(raw, P.segments);
 const list = [];
 let at = P.deskFrom;

@@ -54,7 +54,18 @@ const gate = (ok, name, detail) => {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}: ${detail}`);
 };
 const ff = (argv) => spawnSync('ffmpeg', ['-nostdin', '-hide_banner', ...argv], { maxBuffer: 1 << 28 });
-const shot = (id) => JSON.parse(fs.readFileSync(path.join(PROJECT, 'public', 'shots', id, 'cursor.json'), 'utf8'));
+/** A capture's cursor.json, or one line naming the missing capture and the runbook step that makes it (exit 2). */
+const readCursor = (project, id) => {
+  const f = require('path').join(project, 'public', 'shots', id, 'cursor.json');
+  if (!require('fs').existsSync(f)) {
+    const n = parseInt(id, 10);
+    const step = n <= 5 ? 'A6, capture-all.sh' : n < 20 ? 'B4, capture-desk.sh' : 'N9, capture-narrated.sh';
+    console.error(`no capture ${id}: ${f} is missing; capture it first (runbook ${step})`);
+    process.exit(2);
+  }
+  return JSON.parse(require('fs').readFileSync(f, 'utf8'));
+};
+const shot = (id) => readCursor(PROJECT, id);
 
 // 1. container
 const probe = JSON.parse(spawnSync('ffprobe', ['-v', 'error', '-count_frames', '-show_entries', 'stream=codec_type,codec_name,width,height,r_frame_rate,nb_read_frames,pix_fmt,sample_rate,channels:format=duration,size', '-of', 'json', MP4]).stdout.toString());

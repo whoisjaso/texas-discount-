@@ -114,7 +114,8 @@
       0.5
      ],
      "durationSec": 0.8,
-     "why": "L09 'more comfortable in Spanish'"
+     "why": "L09 'more comfortable in Spanish'",
+     "when": "SPANISH_DOCS"
     },
     {
      "t": 21,
@@ -125,7 +126,8 @@
       0.5
      ],
      "durationSec": 0.3,
-     "why": "opens the menu"
+     "why": "opens the menu",
+     "when": "SPANISH_DOCS"
     },
     {
      "t": 21.6,
@@ -136,7 +138,8 @@
       0.5
      ],
      "durationSec": 0.45,
-     "why": "L09 'Mark the sale Spanish'"
+     "why": "L09 'Mark the sale Spanish'",
+     "when": "SPANISH_DOCS"
     },
     {
      "t": 27.3,
@@ -147,7 +150,8 @@
       0.5
      ],
      "durationSec": 0.4,
-     "why": "L09 'English-speaking buyer?'"
+     "why": "L09 'English-speaking buyer?'",
+     "when": "SPANISH_DOCS"
     },
     {
      "t": 29,
@@ -158,7 +162,8 @@
       0.5
      ],
      "durationSec": 0.5,
-     "why": "L09 'Leave it in English'"
+     "why": "L09 'Leave it in English'",
+     "when": "SPANISH_DOCS"
     },
     {
      "t": 30.3,
@@ -1740,5 +1745,6 @@
   "27-desk-stored": "27a-27d: 2/2 signed, Finish, Past Sales, Carter searched, the sale opened, Open / Print; 27h holds under doc C (23)"
  },
  "template": "recordly-demo assets/storyboard-long.template.json: the narrated cut's desk captures as shipped for Discount (examples/discount-used-cars/storyboard-long.json), with the client's values as double-brace placeholders and the run's values as capture vars: {deal} (the deal path's last part: --var deal=$(basename $(cat $SCRATCH/n-deal.txt))), {sign} and {sign2} (signing-link.cjs, one session each). fill-client.cjs long-storyboard fills it and injects assets/narrated/{select-menu.js,select-menu.css,camera-feed.js} (the camera feed with this client's demo card from make-demo-card.mjs).",
- "deskCommit": "2b7bb85"
+ "deskCommit": "2b7bb85",
+ "_when": "An action or shot with \"when\": \"<narration flag>\" is dropped by fill-client.cjs long-storyboard when that flag is false (SPANISH_DOCS false: 20-car never touches the language menu, as line 09 is left out)."
 }

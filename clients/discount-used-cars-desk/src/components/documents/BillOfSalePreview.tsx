@@ -4,7 +4,7 @@ import DocumentLetterhead from '@/components/documents/DocumentLetterhead';
 import SignatureLinePreview from '@/components/documents/SignatureLinePreview';
 import { chicagoDateKey } from '@/lib/customers/recurring-dates';
 import { printedPhone } from '@/lib/forms/phone';
-import { brand, dealerSignerPrintedName } from '@/lib/dealership-config';
+import { brand, dealerSignerPrintedName, notSet } from '@/lib/dealership-config';
 import { toTitleCaseDisplay } from '@/lib/display/title-case';
 import {
   BillOfSaleData,
@@ -13,6 +13,7 @@ import {
   formatCurrency,
   getSellerLienSummary,
   getTitleLienSummary,
+  billOfSaleTotalPaid,
 } from '@/lib/documents/billOfSale';
 import { getDocStrings, type DocStrings } from '@/lib/documents/i18n';
 import { idDocumentType, passportIssuerName, readIdKind } from '@/lib/forms/id-document';
@@ -196,10 +197,17 @@ export default function BillOfSalePreview({
     What was paid today, on a copy that carries it. A copy filed before the
     key existed prints its old "Total Paid", the total due.
   */
-  const paidToday =
-    typeof (data as { amountPaidToday?: unknown }).amountPaidToday === 'number'
-      ? ((data as { amountPaidToday?: number }).amountPaidToday as number)
-      : null;
+  /*
+    Every bill of sale filed from the corridor has carried `amountPaidToday`,
+    so the key cannot tell an old copy from a new one: the copy's own stamp
+    does (documents/page-layout.ts), and an old copy prints exactly what it
+    printed when it was signed. On a bank deal the lot is paid in full, the
+    buyer's part today and the lender's at funding, so Total Paid is the
+    total due with the lender's part beside it (billOfSaleTotalPaid).
+  */
+  const { stamped, paidToday, totalPaid, financedByLender, lenderName } = billOfSaleTotalPaid(data);
+  /** The doc fee line: the "Not set" marker when the owner has not set the fee. */
+  const docFeeUnset = (data as unknown as Record<string, unknown>).docFeeUnset === true;
   const dataRecord = data as BillOfSaleData & { buyerIdBackImage?: string };
   const buyerIdBackImage = dataRecord.buyerIdBackImage || '';
   const hasCoBuyer = Boolean(
@@ -221,9 +229,10 @@ export default function BillOfSalePreview({
   /*
     A line left for ink is dated the day of the sale, never the day it was
     printed: a copy reprinted next week used to date the buyer's line next
-    week. The render date stands only when the copy has no sale date.
+    week. The render date stands only when the copy has no sale date, and on
+    a copy filed before the stamp, which keeps the reading it was signed with.
   */
-  const today = data.saleDate || chicagoDateKey();
+  const today = stamped ? data.saleDate || chicagoDateKey() : chicagoDateKey();
   const sellerLienReason =
     sellerLien.reason === DEFAULT_SELLER_LIEN_REASON
       ? b.defaultSellerLienReason
@@ -589,7 +598,7 @@ export default function BillOfSalePreview({
                 </div>
                 <div className="bos-money-row bos-money-detail">
                   <span>{b.docFeeLine}</span>
-                  <span>{formatCurrency(data.docFee)}</span>
+                  <span data-doc-fee="">{docFeeUnset ? notSet('doc fee') : formatCurrency(data.docFee)}</span>
                 </div>
                 {/* Beside the fee, in bold capitals (Tex. Fin. Code
                     §348.006(c)(3)); only on copies stamped at filing. */}
@@ -628,10 +637,16 @@ export default function BillOfSalePreview({
                 </div>
                 {/* What crossed the desk today, between the total and the balance
                     it leaves: the balance is the difference of the two lines. */}
-                {sellerLien.enabled && paidToday !== null && (
+                {(sellerLien.enabled || financedByLender > 0) && paidToday !== null && (
                   <div className="bos-money-row" data-paid-today="">
                     <span>{b.paidToday}</span>
                     <span>{formatCurrency(paidToday)}</span>
+                  </div>
+                )}
+                {financedByLender > 0 && (
+                  <div className="bos-money-row" data-financed-by="">
+                    <span>{b.financedBy.replace('{lender}', lenderName || b.payFinancing)}</span>
+                    <span>{formatCurrency(financedByLender)}</span>
                   </div>
                 )}
                 {sellerLien.enabled && (
@@ -918,8 +933,14 @@ export default function BillOfSalePreview({
                 <dt className="bos-field-label">{b.ackTotalPaid}</dt>
                 {/* What was paid, not what is due: "Total Paid $4,001.75"
                     printed beside a $501.75 balance still owed. */}
-                <dd data-total-paid="">{formatCurrency(paidToday ?? calc.totalDue)}</dd>
+                <dd data-total-paid="">{formatCurrency(totalPaid)}</dd>
               </div>
+              {financedByLender > 0 && (
+                <div>
+                  <dt className="bos-field-label">{b.financedBy.replace('{lender}', lenderName || b.payFinancing)}</dt>
+                  <dd>{formatCurrency(financedByLender)}</dd>
+                </div>
+              )}
               {sellerLien.enabled && (
                 <div>
                   <dt className="bos-field-label">{b.ackSellerLienBalance}</dt>

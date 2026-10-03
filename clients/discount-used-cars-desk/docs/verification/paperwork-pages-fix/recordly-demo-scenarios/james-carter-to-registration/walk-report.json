@@ -1,0 +1,19 @@
+{
+ "deskCommit": "bec3e0f",
+ "dirty": 10,
+ "scenario": "/tmp/claude-0/-home-user-texas-discount-/32ac3a60-8835-5a00-89b8-298767621e65/scratchpad/fixr/sc2/james-carter-to-registration.json",
+ "deal": "/admin/sales/preview-deals-3",
+ "viewport": [
+  1440,
+  900
+ ],
+ "ended": "stopped at plan:registration",
+ "screens": [
+  "funding",
+  "paid",
+  "price",
+  "plan:registration"
+ ],
+ "contrastFailures": 0,
+ "at": "2026-10-03T21:26:57.234Z"
+}

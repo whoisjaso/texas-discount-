@@ -38,6 +38,17 @@ const M = m.exports;
 const P = M.narratedPlan;
 const fps = M.theme.fps;
 if (!P.total) { console.error('the narrated plan is empty (src/narrated/plan.ts is still the template): write it first (runbook N10)'); process.exit(2); }
+/** A capture's cursor.json, or one line naming the missing capture and the runbook step that makes it (exit 2). */
+const readCursor = (project, id) => {
+  const f = require('path').join(project, 'public', 'shots', id, 'cursor.json');
+  if (!require('fs').existsSync(f)) {
+    const n = parseInt(id, 10);
+    const step = n <= 5 ? 'A6, capture-all.sh' : n < 20 ? 'B4, capture-desk.sh' : 'N9, capture-narrated.sh';
+    console.error(`no capture ${id}: ${f} is missing; capture it first (runbook ${step})`);
+    process.exit(2);
+  }
+  return JSON.parse(require('fs').readFileSync(f, 'utf8'));
+};
 const EXC = (() => {
   try { return (JSON.parse(fs.readFileSync(path.join(PROJECT, 'client-inputs.json'), 'utf8')).narration || {}).exceptions || {}; } catch { return {}; }
 })();
@@ -72,7 +83,7 @@ for (const L of P.lines) {
 
 console.log('\nCUTS between desk captures (edited data: pointer CSS px, camera scale / pan display px)');
 const shots = {};
-const load = (id) => (shots[id] = shots[id] || JSON.parse(fs.readFileSync(path.join(PROJECT, 'public', 'shots', id, 'cursor.json'), 'utf8')));
+const load = (id) => (shots[id] = shots[id] || readCursor(PROJECT, id));
 const raw = P.segments.map((g) => load(g.shot));
 const data = M.DS.prepareData(raw, P.segments);
 const tracks = data.map((d) => M.computeTracks(d));

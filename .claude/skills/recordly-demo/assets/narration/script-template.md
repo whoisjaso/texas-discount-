@@ -36,7 +36,7 @@ are read from the rest of `client-inputs.json` and are not typed again.
 | `LEGAL_NAME_SAID` | said | 20 | The legal name the 130-U seller line prints, spelled for the voice | `LEGAL_NAME` with its entity suffix spelled out (LLC → L L C). The fill refuses anything else: only spacing and punctuation may differ | Discount Used Cars And Trucks, L L C |
 | `DEALER_NAME_SAID` | said | 24 | The dealer's name as customers say it (the DBA) | The site's `business.ts` `name`, which is also `dealership-config.ts` `name` (the DBA on the GDN record) | Discount Used Cars and Trucks |
 | `CLOSE_TAGLINE` | said | 24 | The three payoffs before the name | The house line. Use another only if the owner gives it, and never a price, rate, rating or "best" (the fill refuses them) | More buyers through the door. Less time on paperwork. Fewer mistakes that cost you money. |
-| `SERVICE_BAND` | shown | cue 03 | The site's sell band, as the site names it | The site's `Layout.tsx` nav label and the `Home.tsx` band | We Buy Cars |
+| `SELL_BAND_NAME` | shown | cue 03 | The site's sell band, as the site names it | The site's `Layout.tsx` nav label and the `Home.tsx` band | We Buy Cars |
 | `LEGAL_NAME` | shown | cues 16, 20 | The legal name exactly as the documents print it | The desk's `dealership-config.ts` `legalName` (TxDMV GDN record, Texas SOS) | Discount Used Cars And Trucks, LLC |
 | `DEMO_STAFF` | shown | cues 05, 20 | The demo salesperson typed at onboarding and printed on the seller line | House demo data. Never a real person | Maria Lopez |
 | `DEMO_BUYER` | shown | cues 10, 23 | The demo buyer on the DEMO card | House demo data, never a real person; the card is made for the demo (lesson N3) | James Carter |
@@ -54,8 +54,10 @@ are read from the rest of `client-inputs.json` and are not typed again.
 
 The `narration` block also holds three records:
 
-- **`checked`**: `{ "on": "YYYY-MM-DD", "how": "...", "features": [...] }`. These are the features from the table
-  further down that were seen working on this client's desk, with the date and what was walked or read.
+- **`checked`**: `{ "on": "YYYY-MM-DD", "how": "...", "features": [...], "commit": "...", "evidence": "..." }`. These
+  are the features from the table further down that were seen working on this client's desk, with the date, what was
+  walked or read, the desk's corridor commit at the walk, and the walk's folder (its `walk-report.json`, written by
+  premium-dealer-build's desk-walk `sale.cjs`). `check --desk` refuses another commit and "not walked" wording.
 - **`cut`**: `[{ "id": "...", "why": "..." }]`. A line the desk cannot back is cut here, with its reason.
 - **`speak`**: `{ "<line id>": "..." }`. A voice-only spelling for one line, so a refill keeps it.
 
@@ -66,6 +68,22 @@ The `narration` block also holds three records:
 | `03-site-c` | `SELL_BAND` is true | Left out. Scene 1 ends on line 02; the band is still filmed as in the house cut, or cut short |
 | `09-car-c` | `SPANISH_DOCS` is true | Left out. The language step is answered (English) off camera or in the gap after line 08 |
 | `16-money-c` | `SELLER_LIEN` is true | Left out. Film the deal paid in full, so no document shows a balance or a seller lien |
+
+### Kickoff answers to flags
+
+The flags and the band name are set from what the owner said at kickoff (premium-dealer-build `NEW-CLIENT-PROMPT.md`)
+and what the site and desk ship, never guessed:
+
+| Kickoff answer or fact | Sets | What else follows |
+|---|---|---|
+| Buyers may drive off owing part of the price (in-house financing, buy here pay here, "we finance") | `SELLER_LIEN` true | The long cut films carter-balance (a balance owed, the seller lien on the bill of sale and the 130-U). The house script has no BHPH payment-plan line; one is a template change behind a new flag, after it is walked on the desk |
+| Cash or outside lenders only: nobody leaves owing the dealer | `SELLER_LIEN` false | Line 16 is left out. `fill-client.cjs long-storyboard` refuses: 22-money and carter-balance film a balance, and a paid-in-full variant is a template change agreed with the user |
+| Sells in Spanish (staff, a "Se Habla Español" sign, Spanish paperwork) | `SPANISH_DOCS` true | Line 09 and 20-car's language menu (the long storyboard's `when: SPANISH_DOCS` actions) |
+| English only | `SPANISH_DOCS` false | Line 09 and the language-menu actions are dropped from the script and the long storyboard |
+| The site has a sell / trade-in band and form | `SELL_BAND` true, `SELL_BAND_NAME` its nav label | Line 03; cue 03 names the band |
+| No sell band | `SELL_BAND` false | Line 03 is left out; the house cut's 3-buy still films the service band as it is |
+| The service band's tile names financing ("Financing", "Easy Payments") | No flag | `storyboard.SERVICE_TILE_CHECK`: read what the tile prints; class (a) text (a payment, APR, %, term) never enters the frame, and `fill-client.cjs check` asks the user before A5 |
+| The owner set a documentary fee | `FEES_SAID` names "doc fee" | Only when the desk's receipt prints a row for it |
 
 Any line can also be cut in `narration.cut`, with its reason, when the client's desk cannot back it. Some lines are
 a setup and its payoff, and they stand or fall together. The fill refuses to keep one without the other:
@@ -91,7 +109,7 @@ of speech (Kokoro, speed 0.95, trimmed) in a 3:50 film.
 [The lineup lands on the {{BODY}} card; the visit card; the finder: Search, "{{FINDER_QUERY}}"]
 `02-site-b` Every {{STOCK_SAID}}, searchable in seconds, with your number one tap away. Fewer tire-kickers calling to ask what you have. More buyers walking in knowing what they want.
 
-[The {{SERVICE_BAND}} band: 2.0x on "{{SERVICE_TILE}}"] *Only when `SELL_BAND` is true.*
+[The {{SELL_BAND_NAME}} band: 2.0x on "{{SERVICE_TILE}}"] *Only when `SELL_BAND` is true.*
 `03-site-c` And when somebody wants to sell, the site takes the trade-in lead for you, while you're with another customer.
 
 **2 · Sign in once**

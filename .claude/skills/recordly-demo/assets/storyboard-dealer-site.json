@@ -76,7 +76,7 @@
           "anchor": "{{HERO_ANCHOR}}",
           "durationSec": 0.9,
           "why": "rest in the empty space right of the headline's second line (never on a glyph)",
-          "adapt": "HERO_ANCHOR is a fraction of the headline's tight glyph box. Discount ('Cars & Trucks. / For Less.') uses [0.75, 0.72]. For another headline, pick the point just right of line 2's last letter: measure-site.cjs --storyboard --rects prints line 2's glyph box and the element and cursor under the point (must be the headline itself, arrow cursor). Then check the 1-hero-zoom0 still (SKILL.md step 7b) at 100%."
+          "adapt": "HERO_ANCHOR is a fraction of the headline's tight glyph box. Discount ('Cars & Trucks. / For Less.') uses [0.75, 0.72]. For another headline, pick the point just right of line 2's last letter: measure-site.cjs --storyboard --rects prints line 2's glyph box and the element and cursor under the point (must be the headline itself, arrow cursor). Then check the 1-hero-zoom0 still (runbook A8) at 100%."
         }
       ],
       "zooms": [

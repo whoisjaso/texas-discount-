@@ -30,7 +30,7 @@ import { readMoney } from "@/lib/sales/money";
 import { saleContextExtras } from "@/lib/sales/paperwork-filing-context";
 import { dealFeeLinesForSale } from "@/lib/dealership-fees";
 import { readBuyerId } from "@/lib/sales/buyer-id";
-import { resolveCounty } from "@/lib/documents/resolve";
+import { resolveCountyByAddress } from "@/lib/documents/resolve";
 import { resolveVehicleWeight } from "@/lib/vehicles/empty-weight/ensure";
 import {
   carryingCapacityStart,
@@ -38,6 +38,8 @@ import {
   weightPrompt,
 } from "@/lib/vehicles/empty-weight/on-the-sale";
 import { dealership } from "@/lib/dealership-config";
+import { getStaffSignature } from "@/lib/actions/staff-signature";
+import { dealerStroke } from "@/lib/documents/dealer-signer";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: `Paperwork - ${dealership.name}` };
@@ -68,6 +70,8 @@ interface Props {
 
 /** The last screen, which is the document rather than a question. */
 const REVIEW = "review";
+
+const reviewingKey = (key: string) => key === REVIEW;
 
 export default async function PaperworkQuestionPage({ params, searchParams }: Props) {
   const { dealId, doc, q } = await params;
@@ -122,7 +126,9 @@ export default async function PaperworkQuestionPage({ params, searchParams }: Pr
     question is asked as it always was (empty-weight/on-the-sale.ts).
   */
   const mailing = readBuyerId(sale.stepData).mailing;
-  const buyerCounty = await resolveCounty(mailing);
+  // By the address (typed, else geocoded): the county the city implies is a
+  // guess the screen offers and never files (deal-facts.ts).
+  const buyerCounty = await resolveCountyByAddress(mailing);
   const vehicleWeight = sale.vehicle?.weightLbs ?? null;
   const key = decodeURIComponent(q);
   const isForm130U = entry.documentType === "form130U";
@@ -130,6 +136,20 @@ export default async function PaperworkQuestionPage({ params, searchParams }: Pr
     isForm130U && key === "emptyWeight" ? await resolveVehicleWeight(sale.vehicle, { network: true }) : null;
   const emptyWeight = isForm130U ? emptyWeightContext(sale.vehicle, estimate) : null;
 
+  /*
+    The date of sale: the current filed bill of sale's, else today. The
+    contract is dated with it, so the first payment's taps count from it,
+    not from the day the contract happens to be walked.
+  */
+  let saleDate: string | null = null;
+  try {
+    const client = await createClient();
+    saleDate = await saleDateFor(client, await readDealAgreements(client, dealId));
+  } catch {
+    saleDate = null;
+  }
+
+  const extras = saleContextExtras(sale);
   const context = {
     funding: sale.funding.type,
     bodyStyle: (sale.vehicle?.bodyStyle ?? "").toLowerCase(),
@@ -151,7 +171,8 @@ export default async function PaperworkQuestionPage({ params, searchParams }: Pr
     // The intake's county, the ID kind, the email, the contract date and
     // every document's answers: what makes a fact known, or another
     // document's to ask (paperwork-filing-context.ts).
-    ...saleContextExtras(sale),
+    ...extras,
+    contractDate: saleDate ?? extras.contractDate,
   };
   const questions = paperworkQuestions(entry.documentType, context);
 
@@ -204,6 +225,12 @@ export default async function PaperworkQuestionPage({ params, searchParams }: Pr
   // The document is the last screen, so it is counted as one.
   const total = questions.length + 1;
   const previous = position > 0 ? (position === questions.length ? questions[questions.length - 1] : questions[position - 1]) : null;
+  /*
+    Back is on every screen, as on every Handle A Sale step: a Change trip
+    goes back to the page it came from, and the first question of a
+    document goes back to the document's step in the guide.
+  */
+  const backHref = reopen && !reviewingKey(key) ? stepHref(REVIEW) : previous ? stepHref(previous.key) : guideHref;
   // Resolved after the answer lands (see "after:" above), never fixed here.
   const nextHref = reviewing ? stepHref(REVIEW) : stepHref(`after:${key}`);
 
@@ -223,14 +250,21 @@ export default async function PaperworkQuestionPage({ params, searchParams }: Pr
       ...money,
       ...(entry.documentType === "vehicleResponsibility" ? { quotedRegistrationAmount: money.registrationCost } : {}),
     };
-    let saleDate: string | null = null;
-    try {
-      const client = await createClient();
-      saleDate = await saleDateFor(client, await readDealAgreements(client, dealId));
-    } catch {
-      saleDate = null;
-    }
-    pages = readBack(entry.documentType, sale, reviewForm, { saleDate });
+    /*
+      The dealer line as the filing will print it: the signed-in member's
+      onboarding name and their saved stroke, exactly what finalizePaperwork
+      passes, so the review never says a box is blank that files filled.
+    */
+    const viewer = await getStaffSignature().catch(() => null);
+    const stroke = viewer ? dealerStroke(viewer) : null;
+    pages = readBack(entry.documentType, sale, reviewForm, {
+      saleDate,
+      dealerSignerName: viewer?.signerName ?? null,
+      dealerSignature: stroke,
+      dealerSignatureDate: stroke ? businessDateToday() : null,
+      docFeeSet: fees.docFeeSet,
+      context,
+    });
     sworn = unansweredSwornFacts(entry.documentType, context).map((fact) => ({
       key: fact.key,
       question: fact.question,
@@ -294,7 +328,7 @@ export default async function PaperworkQuestionPage({ params, searchParams }: Pr
         documentType={entry.documentType}
         documentTitle={entry.title}
         guideHref={guideHref}
-        previousHref={previous ? stepHref(previous.key) : null}
+        previousHref={backHref}
         position={position}
         total={total}
         reviewing={reviewing}

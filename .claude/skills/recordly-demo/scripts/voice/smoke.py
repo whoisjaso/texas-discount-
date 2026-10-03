@@ -11,7 +11,7 @@ import time
 
 sys.dont_write_bytecode = True  # keep the skill folder free of __pycache__
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from common import HOUSE_VOICE, SAMPLE_RATE, normalise, word_diff  # noqa: E402
+from common import HOUSE_VOICE, SAMPLE_RATE, hf_offline_when_cached, normalise, word_diff  # noqa: E402
 
 
 def main():
@@ -21,6 +21,7 @@ def main():
     a = ap.parse_args()
     import numpy as np
     import soundfile as sf
+    hf_offline_when_cached("hexgrad/Kokoro-82M", "Systran/faster-whisper-small.en")
     from kokoro import KPipeline
     from faster_whisper import WhisperModel
 

@@ -234,6 +234,12 @@ describe("every key the filed bill of sale prints", () => {
     ...keysOf("billOfSale", { type: "lender", lenderId: null, lenderOther: "First Bank" }, { ...money, sellerLienEnabled: false }),
     ...keysOf("billOfSale", { type: "inHouse", lenderId: null, lenderOther: null }, money),
     ...keysOf("salvageBillOfSale", { type: "cash", lenderId: null, lenderOther: null }, { ...money, howLeaving: "towTruck" }),
+    // A demo filing with the owner's doc fee unset stamps its marker too.
+    ...Object.keys(
+      (decodeCompletedLinkFromUrl(
+        corridorCompletedLink(sale({ type: "cash", lenderId: null, lenderOther: null }), "billOfSale", money, "https://x.test", { dealerSignerName: "Maria Lopez" }, { docFeeSet: false })!,
+      )!.dd ?? {}) as Record<string, unknown>,
+    ),
   ]);
 
   it("is classified as frozen or fixed, with a reason", () => {

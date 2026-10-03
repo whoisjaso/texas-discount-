@@ -69,7 +69,12 @@ describe("the review reads back the page", () => {
 
   it("is what the review screen shows, and the filing still posts the money", () => {
     const page = readFileSync("src/app/admin/sales/[dealId]/paperwork/[doc]/[q]/page.tsx", "utf8");
-    expect(page).toMatch(/pages = readBack\(entry\.documentType, sale, reviewForm, \{ saleDate \}\)/);
+    expect(page).toMatch(/pages = readBack\(entry\.documentType, sale, reviewForm, \{\s+saleDate,/);
+    // The dealer line as the filing prints it, and the sale's questions, so
+    // the read-back never calls a box blank that files filled.
+    expect(page).toMatch(/dealerSignerName: viewer\?\.signerName \?\? null,/);
+    expect(page).toMatch(/dealerSignature: stroke,/);
+    expect(page).toMatch(/docFeeSet: fees\.docFeeSet,\s+context,/);
     const review = readFileSync("src/components/admin/paperwork/ReviewStep.tsx", "utf8");
     expect(review).toContain("<PageReadBack pages={pages} />");
     expect(review).toContain("...(money ?? {}),");

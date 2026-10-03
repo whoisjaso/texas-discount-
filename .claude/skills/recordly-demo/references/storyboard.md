@@ -208,11 +208,11 @@ in `client-inputs.json` → `storyboard`. Each also carries an `adapt` note in t
 
 | Placeholder | Discount value | What it is | How to set it |
 |---|---|---|---|
-| `HERO_ANCHOR` | `[0.75, 0.72]` | Where the cursor rests, as a fraction of the headline's tight glyph box | Keep the house value. The preflight fails if the point lands on a glyph or not on the arrow; then pick the point just right of line 2's last letter from the glyph lines `--rects` prints, and check the `1-hero-zoom0` still at 100% (SKILL.md step 7b). |
+| `HERO_ANCHOR` | `[0.75, 0.72]` | Where the cursor rests, as a fraction of the headline's tight glyph box | Keep the house value. The preflight fails if the point lands on a glyph or not on the arrow; then pick the point just right of line 2's last letter from the glyph lines `--rects` prints, and check the `1-hero-zoom0` still at 100% (runbook A8). |
 | `BODY` | `Truck` | The featured lineup card | Truck if the dealer has trucks in stock, else SUV if it has SUVs, else Truck. Both sit in the left column. Never a right-column card unless the user asks. |
 | `BODY_FOCUS` | `{x 375, y 385}` | The 2.0× focus on that card | Keep it. It frames either left-column card; the preflight checks the zoom's `frame` rules and prints a suggestion if they fail. |
 | `HOURS_FOCUS` | `{x 400, y 422}` | The 1.8× focus on the visit card | Keep it. If the card copy is longer or shorter, the preflight fails the zoom and prints the suggested focus. |
-| `FINDER_QUERY` | `F-150` | Typed into the finder in shots 2 and 3 | A model in stock, about 5 characters. A longer query ends later: keep its last key 45–60 frames before shot 2 ends, with an `override` (below). |
+| `FINDER_QUERY` | `F-150` | Typed into the finder in shots 2 and 3 | A model in stock, about 5 characters, read off the served site's `/inventory` page (its data: `$SITE_DIR/src/data/inventory.ts`), never from memory. A longer query ends later: keep its last key 45–60 frames before shot 2 ends, with an `override` (below). |
 | `SERVICE_TILE` | `We buy trucks` | The middle service-band tile (`contains`) | Its label, copied exactly. No class (a) text (house-recipe §14) in the zoom; class (b) site copy goes in the README. If every tile carries class (a) text, stop and ask the user: the house cut has no recipe for it. |
 | `SERVICE_FOCUS` | `{x 740, y 623}` | The 2.0× focus on the tile row | **Always measured.** Leave it null; the preflight with `--into` writes its suggestion (Discount: `{730, 621}`; both pass). |
 | `PHONE_SWIPE_2/3` | `430 / 450` | The phone's 2nd and 3rd swipe distances | Keep them. The phone always rests on the Trucks card; the preflight checks the 5-phone `rest` rule (card top 55–70 px under the header, fine print below the screen) and prints the PHONE_SWIPE_3 that fixes it. Always three swipes. |
@@ -223,9 +223,9 @@ The jiggle at the start of shot 4 is not a placeholder: `moveTo {fromShot: "3-bu
 Top-level values (`DOMAIN`, `DESK_URL`, `INTRO_KEY`, `CLOCK`, `TIMEZONE`, `SITE_DIR`, `SLUG`, `CLIENT`, `FACTS`) come from
 `client-inputs.json` directly.
 
-**How to measure the placeholders** (SKILL.md step 6):
+**How to measure the placeholders** (runbook A5):
 
-1. Build and serve the site (SKILL.md, step 3).
+1. Build and serve the site (runbook A2).
 2. Run `node scripts/measure-site.cjs --storyboard clients/<slug>-demo/storyboard.json --rects --into clients/<slug>-demo/client-inputs.json`.
    It replays each shot at its viewport and checks what the header of `measure-site.cjs` lists: missing selectors,
    UNSET placeholders, edge cuts and `frame` rules for every fixed zoom, class (a) text in a zoom or on a last frame,
@@ -235,7 +235,7 @@ Top-level values (`DOMAIN`, `DESK_URL`, `INTRO_KEY`, `CLOCK`, `TIMEZONE`, `SITE_
 4. Refill: `fill-client.cjs storyboard client-inputs.json assets/storyboard-dealer-site.json --out storyboard.json` and
    `fill-client.cjs readme client-inputs.json assets/project-README.md --out README.md`.
 5. Repeat until it prints `PREFLIGHT CLEAN`. Discount's approved values print it.
-6. After capturing, the zoom stills (step 7b, then `verify.sh`) are the final word: the preflight replays instantly
+6. After capturing, the zoom stills (runbook A8, then R3 at 100%) are the final word: the preflight replays instantly
    and follow zooms are only approximate there.
 
 **Timing changes.** Change a `t`, `durationSec`, `at` or `until` only when the page forces it (for example a longer

@@ -79,7 +79,9 @@ export default function AnswerStep({
               ? t.money.downPaymentFrozen
               : result.code === "paidTodayInvalid"
                 ? t.money.paidTodayInvalid
-                : result.error ?? t.chrome.couldNotSave),
+                : result.code === "firstPaymentTooEarly"
+                  ? t.chrome.firstPaymentTooEarly
+                  : result.error ?? t.chrome.couldNotSave),
         );
         setChoosing(null);
         return;
@@ -90,7 +92,7 @@ export default function AnswerStep({
 
   if (question.kind === "list" && question.list) {
     return (
-      <div className="ed-paper-answer">
+      <div className="ed-paper-answer ed-paper-taps">
         <ListPickStep list={question.list} current={current} pending={pending} choosing={choosing} onPick={answer} />
         {worded.note ? <p className="ed-paper-note">{worded.note}</p> : null}
         {error ? (
@@ -105,7 +107,7 @@ export default function AnswerStep({
 
   if (question.kind === "multi") {
     return (
-      <div className="ed-paper-answer">
+      <div className="ed-paper-answer ed-paper-taps">
         <MultiPickStep options={worded.options ?? []} current={current} pending={pending} onDone={answer} />
         {worded.note ? <p className="ed-paper-note">{worded.note}</p> : null}
         {error ? (
@@ -130,7 +132,7 @@ export default function AnswerStep({
       !(worded.options ?? []).some((option) => option.value === current);
     const typing = otherOpen || offList;
     return (
-      <div className="ed-paper-answer">
+      <div className="ed-paper-answer ed-paper-taps">
         <div className="ed-pay-row">
           {(worded.options ?? []).map((option) => {
             const busy = pending && choosing === option.value;

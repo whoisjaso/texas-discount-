@@ -33,7 +33,7 @@ attempt() {
   for n in james-carter-to-registration james-carter; do
     run node "$S/scripts/fill-client.cjs" scenario "$I" "$S/assets/desk-scenarios/$n.json" --out "$SCRATCH/scenarios/$n.json" || return 1
   done
-  run node "$S/scripts/desk/validate-scenario.cjs" "$SCRATCH/scenarios/james-carter-to-registration.json" "$SCRATCH/scenarios/james-carter.json" --desk "$DESK_DIR" || return 1
+  run node "$S/scripts/desk/validate-scenario.cjs" "$SCRATCH/scenarios/james-carter-to-registration.json" "$SCRATCH/scenarios/james-carter.json" --desk "$DESK_DIR" --strict || return 1
   run env STOP_AT='plan:registration' node "$PDB/scripts/desk-walk/sale.cjs" "$SCRATCH/b4" "$SCRATCH/scenarios/james-carter-to-registration.json" 1440 900 || return 1
   [ "$DRY" = 1 ] || [ -s "$SCRATCH/b4/deal.txt" ] || { echo "the set-up walk wrote no deal.txt"; return 1; }
   cap 11-desk-guide --var "$( [ "$DRY" = 1 ] && echo deal=DEAL || dealvar "$SCRATCH/b4/deal.txt")" || return 1

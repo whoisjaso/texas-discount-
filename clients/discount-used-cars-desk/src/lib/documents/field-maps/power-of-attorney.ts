@@ -40,7 +40,8 @@ export const POWER_OF_ATTORNEY_MAP: DocumentMap = {
         { id: "grantorSuffix", label: "Grantor: Suffix (if any)", source: buyer("nameParts"), blank: allowed("(if any)") },
         { id: "grantorAddress", label: "Grantor: Address", source: buyer("street"), blank: NEVER, acroField: "Address" },
         { id: "grantorCity", label: "Grantor: City", source: buyer("city"), blank: NEVER, acroField: "City County State Zip" },
-        { id: "grantorCounty", label: "Grantor: County", source: answer("form130U.countyOfResidence"), blank: NEVER },
+        // The one county: the 130-U's answer, else the intake's (the fact's `known`).
+        { id: "grantorCounty", label: "Grantor: County", source: answer("form130U.countyOfResidence"), fallback: buyer("county"), blank: NEVER },
         { id: "grantorState", label: "Grantor: State", source: buyer("state"), blank: NEVER },
         { id: "grantorZip", label: "Grantor: Zip", source: buyer("zip"), blank: NEVER },
         { id: "granteeName", label: "Grantee: Entity Name", source: dealer("legalName"), blank: NEVER, acroField: "First Name or Entity Name Middle Name Last Name Suffix if any_2" },

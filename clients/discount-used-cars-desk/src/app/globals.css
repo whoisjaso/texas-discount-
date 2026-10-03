@@ -10563,6 +10563,26 @@ input.ed-money-input {
   gap: 14px;
 }
 
+/* A tap question fills the column, two cards to a row, exactly as the
+   guide's own taps do ("How Are They Paying?"). Centred and shrunk to its
+   content, a No/Yes pair was two 60px cards under a left-set heading. */
+.ed-paper-answer.ed-paper-taps {
+  max-width: none;
+  align-items: stretch;
+}
+
+.ed-paper-taps > .ed-pay-row,
+.ed-paper-taps > .ed-list-pick,
+.ed-paper-taps > .ed-multi-pick,
+.ed-paper-taps > .ed-paper-other {
+  width: 100%;
+}
+
+.ed-paper-taps > .ed-paper-note,
+.ed-paper-taps > .ed-paper-error {
+  align-self: center;
+}
+
 .ed-paper-field {
   width: 100%;
 }

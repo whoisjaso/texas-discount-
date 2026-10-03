@@ -106,3 +106,39 @@ export function poaProbe(fields: PoaFields): Record<string, unknown> {
     grantorSignature: "",
   };
 }
+
+/**
+ * The form's fields back from a filed copy's `form_data.printed` (the probe
+ * stamped at filing), or null for a copy filed before the stamp. A filed
+ * power of attorney reprints what was signed: rebuilding it from the sale
+ * now would follow any answer changed since (the county, the plate).
+ */
+export function poaFormFieldsFromPrinted(printed: unknown): PowerOfAttorneyFormFields | null {
+  if (!printed || typeof printed !== "object") return null;
+  const p = printed as Record<string, unknown>;
+  const text = (key: string) => (typeof p[key] === "string" ? (p[key] as string) : "");
+  if (!text("vin")) return null;
+  const parts: NameParts = {
+    first: text("grantorFirst"),
+    middle: text("grantorMiddle"),
+    last: text("grantorLast"),
+    suffix: text("grantorSuffix"),
+  };
+  return {
+    vin: text("vin"),
+    year: text("year") || undefined,
+    make: text("make") || undefined,
+    model: text("model") || undefined,
+    bodyStyle: text("bodyStyle") || undefined,
+    licensePlate: text("licensePlate") || undefined,
+    titleDocumentNumber: text("titleDocumentNumber") || undefined,
+    grantorName: text("printedName"),
+    grantorNameParts: parts,
+    grantorAddress: text("grantorAddress") || undefined,
+    grantorCity: text("grantorCity") || undefined,
+    grantorCounty: text("grantorCounty") || undefined,
+    grantorState: text("grantorState") || undefined,
+    grantorZip: text("grantorZip") || undefined,
+    executedDate: text("executedDate") || undefined,
+  };
+}

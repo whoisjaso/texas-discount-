@@ -49,6 +49,30 @@ import { looksLikeAStreet } from "@/lib/admin/address-lookup";
  * real bug here, and a typed answer outranks both lookups for exactly that
  * reason.
  */
+/**
+ * The county a mailing address is in, by the address alone: the county the
+ * intake typed, else the one the street geocodes to. Never the county the
+ * city implies, which is a guess the 130-U's screen offers but does not file
+ * (deal-facts.ts, countyOfResidence). Empty when neither answers.
+ */
+export async function resolveCountyByAddress(mailing: {
+  county?: string | null;
+  city?: string | null;
+  street?: string | null;
+  state?: string | null;
+}): Promise<string> {
+  const typed = (mailing.county ?? "").trim();
+  if (typed) return typed;
+  const street = (mailing.street ?? "").trim();
+  if (!looksLikeAStreet(street)) return "";
+  try {
+    const found = await completeAddress(street, (mailing.city ?? "").trim(), (mailing.state ?? "").trim());
+    return found?.county ?? "";
+  } catch {
+    return "";
+  }
+}
+
 export async function resolveCounty(mailing: {
   county?: string | null;
   city?: string | null;

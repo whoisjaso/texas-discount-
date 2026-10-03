@@ -108,3 +108,35 @@ def ebur128(inputs, pre_filter=None):
     lufs = float(m_i[-1]) if m_i and m_i[-1] != "-inf" else float("-inf")
     tp = float(m_p[-1]) if m_p and m_p[-1] != "-inf" else float("-inf")
     return lufs, tp
+
+
+def take_hash(path):
+    """A short hash of a voiced take: a decision about a line is about that take, and a re-voiced line asks again."""
+    import hashlib
+    if not os.path.exists(path):
+        return ""
+    with open(path, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()[:16]
+
+
+def hf_offline_when_cached(*repo_ids):
+    """Set HF_HUB_OFFLINE=1 when every model is already in $HF_HOME: a cached run never waits on the hub (the same
+    two-line transcribe took 73 s with the hub contacted and 11 s offline), and a proxy blip cannot fail it."""
+    if os.environ.get("HF_HUB_OFFLINE"):
+        return
+    home = os.environ.get("HF_HOME") or os.path.join(os.path.expanduser("~"), ".cache", "huggingface")
+    hub = os.path.join(home, "hub")
+    have = all(os.path.isdir(os.path.join(hub, "models--" + r.replace("/", "--"), "snapshots")) for r in repo_ids)
+    if have and repo_ids:
+        os.environ["HF_HUB_OFFLINE"] = "1"
+
+
+def free_gb(path):
+    st = os.statvfs(path if os.path.exists(path) else os.path.dirname(path) or "/")
+    return st.f_bavail * st.f_frsize / 1e9
+
+
+# The disk the runbook needs left free (setup.sh's gate): a fetch that would leave less is refused, not attempted.
+DISK_FLOOR_GB = 8.0
+MODEL_GB = {"small.en": 0.5, "medium.en": 1.6, "large-v3": 3.2}
+

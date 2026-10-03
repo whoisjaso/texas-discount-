@@ -24,7 +24,7 @@ import time
 
 sys.dont_write_bytecode = True  # keep the skill folder free of __pycache__
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from common import SAMPLE_RATE, house_voice, load_json, save_json  # noqa: E402
+from common import SAMPLE_RATE, hf_offline_when_cached, house_voice, load_json, save_json  # noqa: E402
 
 GAP_SEC = 0.6
 
@@ -66,6 +66,7 @@ def main():
 
     import numpy as np
     import soundfile as sf
+    hf_offline_when_cached("hexgrad/Kokoro-82M")
     from kokoro import KPipeline
 
     print(f"voice {want['voice']} speed {want['speed']} ({why}); {len(todo)} of {len(lines)} lines")

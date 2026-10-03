@@ -42,6 +42,9 @@ Dealer deputy (county):        <asked at owner onboarding: yes or no, and the
                                county-approved fee, $10.00 at most>
 Vehicle inventory tax:         <asked at owner onboarding: in business on
                                January 1? unit property tax factor>
+Late-handling fee:             <not provided: ask the owner (the Vehicle
+                               Responsibility sheet quotes it; prints
+                               [Not set: late-handling fee] until given)>
 Logo files:                    <not provided: ask the owner>
 SMS provider for signing texts:<not provided: ask the owner>
 Reference repo attached:       <not provided: ask the owner>
@@ -146,7 +149,8 @@ screens on top in the client's styling.
    that does not apply does not exist (there is no "Skip"). Completed steps
    stay in the list.
 5. **Nothing a formula can produce is a question.** Tax, totals, balances,
-   payments, APR within the ceiling, county from city: computed, never asked.
+   payments, APR within the ceiling, the county from the address lookup:
+   computed, never asked.
 6. **Pure logic, thin screens.** Everything in rules 1 to 5 lives in pure
    TypeScript modules with unit tests. Server actions validate and write.
    Components only render.
@@ -389,12 +393,54 @@ in 10 minutes, and never cache the pages that mint them.
 
 ### First sign-in: onboarding
 
-A new staff member's first sign-in lands on `/admin/account/onboarding`
-before anything else (the admin layout redirects there while
-`team_members.onboarding_completed_at` is null, or while the account is still
-flagged `requires_password_change`). One question per screen, the same
-corridor styling, the counter counting only the screens this member gets
-("Step 1 Of 4"), English and Spanish:
+This section is the whole specification of onboarding. Build it as ONE unit
+(premium-dealer-build step 4.3), everything below in this order, before Start
+A Sale: the screens are only half of it, and a desk that ships the screens
+without the account rules, the signers, the fee schedule or the walk is not
+onboarded. Other sections that touch it (Fees, Security, How the paper looks,
+Tests, Verification) carry the detail of their own rules and point back here.
+
+**What onboarding includes, in full** (each item is specified below):
+
+1. Where a member comes from: the access request, the approval (a temporary
+   password, the role, the default signing clearance) and the reset.
+2. The redirect: the admin layout sends an unfinished member to the page.
+3. The page, one question per screen: Choose A Password (only on a temporary
+   password), What Is Your Name?, Draw Your Signature (only when cleared to
+   sign), Your Fees (Owner only: six screens held to the Texas limits) and
+   Done.
+4. Who is cleared to sign, and its defaults by role.
+5. What the answers feed: the person's name on the 130-U seller line, on the
+   VTR-61's printed name and under every dealer line; the one stored
+   signature on every dealer line; the fee schedule every new sale copies.
+6. Changing an answer later: the signature page, Your Fees settings and the
+   posted notice, a reset, an owner for the name.
+7. The routes, files and navigation it needs.
+8. Build order and the preview members that exercise it.
+9. Its tests, and the end-to-end check that walks all of it.
+
+**1. Where a member comes from.** A person asks for access at
+`/admin/signup` (`requestTeamAccessAction`: name, email, an optional phone and
+a role from the public list, confirmed with a six-digit code before the
+request is recorded). An owner or manager (`team:manage`) approves it with a
+role, or denies it (`reviewTeamAccessAction`). The approval issues a
+generated temporary password on the auth account, sets
+`requires_password_change` and the role's default `can_sign_contracts` there,
+and stamps `password_reset_at` (Security); the welcome email carries an
+invite link, never the password. A reset (`resetTeamMemberAccessAction`; an
+active member only, never an owner account from the team screen) issues a new
+temporary password the same way, keeps the person's own signing clearance,
+stamps `password_reset_at` and ends the account's older sessions. Either way
+the member's next sign-in lands in onboarding at Choose A Password.
+
+**2. The redirect.** A new staff member's first sign-in lands on
+`/admin/account/onboarding` before anything else (the admin layout redirects
+there while `team_members.onboarding_completed_at` is null, or while the
+account is still flagged `requires_password_change`).
+
+**3. The page.** One question per screen, the same corridor styling, the
+counter counting only the screens this member gets ("Step 1 Of 4"), English
+and Spanish:
 
 0. **Choose A Password.** Shown first, and ONLY to an account still on the
    temporary password an approval or a reset issued it
@@ -422,7 +468,11 @@ corridor styling, the counter counting only the screens this member gets
    password write ends every session, this one included. The screen also
    refuses a roster row that is not active; a reset does not change the
    password of an account that already has one, so an owner who suspects
-   the password itself is known sets the member inactive.
+   the password itself is known sets the member inactive. Build the reset
+   cutoff (Security: the device cookie, the proxy, the current-admin check,
+   the API guard, `end_sessions_before`, `private.current_team_role()`) with
+   this screen, not after it: this screen refuses a stale device and signs
+   the member back in through it.
 1. **What Is Your Name?** First name and last name, two fields, required.
    Saved as `full_name` ("First Last") and `display_name` (first name). This
    is the name that prints in parentheses on the 130-U and under the dealer
@@ -443,7 +493,13 @@ corridor styling, the counter counting only the screens this member gets
    `/admin/dealership/fees`, which renders the same screens. A schedule that
    cannot be read skips the step; it never blocks onboarding. Six screens
    with their own sub-counter ("Your Fees 2 Of 6"), each citation on one
-   quiet line (see "## Fees" and `references/texas-dealer-fees.md`):
+   quiet line (see "## Fees" and `references/texas-dealer-fees.md`). The
+   step needs, built with it: the legal module
+   `src/lib/legal/texas-dealer-fees.ts` pinned to the rulebook's section 5.10
+   (`scripts/check-fee-module.cjs`), the fee schedule migration
+   (`dealer_fee_schedule`, its change log and `save_dealer_fee_schedule`, Data
+   model, "Dealer fees") and the save action, so a limit is refused at the
+   screen, the server action and the database alike:
    1. **Do You Write Finance Contracts?** (optional NMLS ID and legacy ALECS
       licence). Say that one documentary fee for every buyer is the desk's
       policy; never state it as law (the law: charged to cash and credit
@@ -479,7 +535,7 @@ corridor styling, the counter counting only the screens this member gets
    "Set These Later" goes to Done. Done then says documents cannot be filed
    until the fees are set, and the filing refusal ("Documentary fee") stays
    in force, so the owner is never locked out of the desk.
-4. **Done.** Sets `onboarding_completed_at` (never moved once set) and goes
+4. **Done** ("You Are All Set"). Sets `onboarding_completed_at` (never moved once set) and goes
    to Handle A Sale (a role that cannot open it goes to its signature page).
    Refused until the saved name is one step 1 would accept and, for a member
    cleared to sign, a signature is saved, and while the account is still on
@@ -496,15 +552,7 @@ filing refusal sends them (a "Finish Onboarding" button on Handle A Sale).
 Every refusal carries a code the screen renders from the message catalogue,
 so the Spanish corridor never shows an English sentence.
 
-The page must exist before the redirect is deployed: a redirect to a missing
-route locks every new member out. Test it with a fresh member in the preview
-mock (no name, no signature, onboarding not completed), and with one still
-on a temporary password (`DESK_PREVIEW_MEMBER=fresh-temporary-password`).
-The page never sends an account on a temporary password away (that would
-loop with the layout); step 0 clears the flag, and once onboarding is done
-nothing sends the account back, so Handle A Sale opens.
-
-**Who is cleared to sign** (`can_sign_contracts`) is a per-person fact. Its
+**4. Who is cleared to sign** (`can_sign_contracts`) is a per-person fact. Its
 starting value, written when an owner approves the member, is cleared for
 the Owner, Manager and Registration roles and not cleared for every other
 role (owner's decision 10/01/2026). An owner turns it on or off for one
@@ -512,6 +560,100 @@ person afterwards; a reset never rewrites that choice (the auth account's
 mirror of it keeps the person's value, not the role's). The default applies
 at approval only: nothing backfills members approved before it, so an Owner
 approved earlier stays not cleared until an owner turns signing on for them.
+
+**5. What the answers feed.** The name and signature are the dealer's side
+of every signed record, so the printing rules are part of this unit even
+though the documents are built later ("How the paper looks"):
+
+- **The 130-U seller line** reads `<Legal Name> (<First Last>)`, the legal
+  name from the config and the person from step 1, with that person's saved
+  signature on the seller band; the entity alone is rejected at the county.
+  The filer's name and member id are stored on the filed row
+  (`form_data.dealerSignerName`, `dealerSignerMemberId`); a member with no
+  usable name, or not cleared to sign, is refused at filing with "Finish
+  Onboarding" as the way out (`DESK_ALLOW_UNSET_FACTS=true` lifts it for a
+  demo and the `[Not set: signer name]` marker prints).
+- **The VTR-61** prints the same pairing as the dealership's "Printed Name
+  (Same as Signature)", with the same fit rules, and refuses to print for a
+  member not cleared or not named.
+- **Every dealer-authored sheet** prints the pairing under its dealer line
+  when its filing recorded a name.
+- **The signature** is stored once and reused on every dealer line; no
+  dealer signature is drawn per document.
+- **The fees** saved in step 3 are the schedule every new sale copies at
+  Start A Sale ("## Fees", the per-deal copy).
+
+**6. Changing an answer later.** The signature: `/admin/account/signature`
+(the same save action). The fees: `/admin/dealership/fees` (Owner only, one
+Change per fee, a stale tab refused, every change logged with who, when, from
+and to) and its posted notice at `/admin/dealership/fees/notice`. The
+password: a reset (item 1), which brings back Choose A Password and Done
+only. The name: through an owner (above). Signing clearance: an owner, per
+person (item 4).
+
+**7. Routes, files and navigation.**
+
+| Route or file | What |
+|---|---|
+| `/admin/signup` | The access request |
+| `/admin/account/onboarding` (`page.tsx`, `OnboardingFlow.tsx`) | The screens above |
+| `/admin/account/signature` | The stored signature, later |
+| `/admin/dealership/fees`, `/admin/dealership/fees/notice` | Your Fees settings and the posted notice (Owner only) |
+| `src/lib/actions/team-access.ts` | Request, approval, deny, reset (temporary password, default clearance, `password_reset_at`) |
+| `src/lib/actions/team-onboarding.ts` | Choose A Password, the name, Done |
+| `src/lib/actions/staff-signature.ts`, `src/lib/actions/dealer-fees.ts` | The signature save; the fee schedule save |
+| `src/lib/onboarding/staff-name.ts` | The name rules (characters, WinAnsi, the 7.25pt fit) |
+| `src/lib/documents/dealer-signer.ts` | The pairing on paper and the refusals that name Finish Onboarding |
+| `src/components/admin/fees/DealerFeesWizard.tsx`, `src/lib/legal/texas-dealer-fees.ts` | The Your Fees screens; the legal limits |
+| `src/app/admin/layout.tsx`, `src/lib/auth/destination.ts` | The redirect (the layout) and where a sign-in lands |
+
+"Your Fees" appears in the Owner's sidebar and the phone's More sheet and
+nowhere else; every other role is refused the page and the save
+(`notOwner`).
+
+**8. Build order and the preview members.** The page must exist before the
+redirect is deployed: a redirect to a missing route locks every new member
+out (the Vega's port did exactly that). Test it with a fresh member in the
+preview mock (no name, no signature, onboarding not completed), and with one
+still on a temporary password (`DESK_PREVIEW_MEMBER=fresh-temporary-password`).
+The page never sends an account on a temporary password away (that would
+loop with the layout); step 0 clears the flag, and once onboarding is done
+nothing sends the account back, so Handle A Sale opens. The preview members:
+`fresh` (an owner cleared to sign, who meets Your Fees), `fresh-cannot-sign`
+(no signature screen), `fresh-temporary-password` (Choose A Password first),
+`fresh-reset` (an owner reset: stale devices signed out, then Choose A
+Password) and `fresh-sales` (a salesperson, no fees step; with
+`PREVIEW_ADMIN=sales:<email>`).
+
+**9. Tests and the end-to-end check.** The tests are in "Tests you must
+write": Onboarding, Password reset, VTR-61 and Fees (the owner meets the fees
+at first sign-in and nobody else does; only the owner sets them). The
+end-to-end check walks the whole unit at 1440x900 and 390x844, a fresh
+server for each preview member, 0 page errors and 0 contrast failures
+(premium-dealer-build `scripts/desk-walk/onboard.cjs` and `reset.cjs`;
+"Verification", Fees A and B):
+
+- `fresh-temporary-password`: Choose A Password, the name, the signature,
+  Your Fees, Done, Handle A Sale (the 10-character floor and the
+  confirmation are held by the tests).
+- `fresh`: the name, the signature, Your Fees with $225.01 refused in
+  English and Spanish, the walk input saved (the owner's figure or one the
+  user approved, never invented), the review reading "$X of $225.00
+  allowed", Done to Handle A Sale; again with "Set These Later": Done works
+  and Handle A Sale names "Documentary fee".
+- `fresh-sales`: the name, the signature, Done, no fees step,
+  `/admin/dealership/fees` refused and Your Fees absent from the sidebar and
+  the More sheet.
+- `fresh-cannot-sign`: the name, then Done, with no signature screen.
+- `fresh-reset`: an old device sent to sign in with the notice (English and
+  Spanish) and its API call answered 401; signing in again reaches Choose A
+  Password, then the desk.
+- Once the documents exist (premium-dealer-build step 4.7; at once on a
+  forked desk), file one 130-U and print one VTR-61 as the walked member:
+  the seller line and the printed name read `<Legal Name> (<First Last>)`
+  with the drawn signature.
+- `fresh-cannot-sign` is walked with `onboard.cjs ... cannot-sign`; every
+  other member with the default `cleared`.
 
 ### The website on paper versus the desk's own address
 
@@ -551,6 +693,11 @@ All under the site's existing admin sign-in.
 | `GET /api/documents/agreements/[id]/pdf` | Renders a filed document to PDF. Staff session or a valid signing token for that deal. |
 | `GET /api/admin/sales/[dealId]/packet-status` | Public-safe packet facts for the desk's live refresh. |
 
+Onboarding's routes (`/admin/signup`, `/admin/account/onboarding`,
+`/admin/account/signature`, `/admin/dealership/fees` and its `/notice`) are
+listed with it in "First sign-in: onboarding", item 7; Government Fees
+(`/admin/sales/[dealId]/government-fees`) is in "## Fees".
+
 Server actions, one per decision: `startSale`, `setDealLanguage`,
 `saveBuyerId`, `setFunding`, `saveMoney`, `answerPlanQuestion`,
 `setSalvagePath`, `setPlate`, `answerPaperwork`, `finalizeDocument`,
@@ -579,8 +726,17 @@ One screen, read back before anything is written.
    455.5 and Tex. Fin. Code §348.006 key required disclosures to it.
 5. **Buyer.** Full name, mobile phone, email (optional), ID type (driver's
    licence, state ID, passport, military ID) and ID number, address with
-   autocomplete. County is derived from the city (keep a city-to-county table
-   for the dealer's state) and asked only when it cannot be derived.
+   autocomplete. The county is required (the 130-U prints it): it is filled
+   from the address lookup (the Census geocoder's county for the street) and
+   typed when the lookup cannot find it. Never derive it from the city alone:
+   a city's usual county is a guess (south Amarillo is Randall, not Potter),
+   which the 130-U's screen may offer only as a suggestion ("Document
+   templates, page by page", the fact registry). An optional co-buyer ("Add a
+   co-buyer") is kept on the sale, never on the buyer's record, and prints on
+   the bill of sale, the contract and the 130-U's box 17. A phone that
+   belongs to the buyer of another open sale whose paperwork is filed is
+   refused under a different name, and that customer's row is never
+   rewritten while the paperwork is filed.
 6. **Read back** everything on one panel, then Start. Creates customer and
    deal, writes the car's mileage, stamps the sale clock, lands on the first
    corridor step.
@@ -1078,14 +1234,30 @@ document's pages in order and, on each page, every box the paper prints:
   step's confirmed record), `coBuyer`, `answer` (a registered deal fact),
   `computed` (money or terms), `date` (sale date, signed on, contract date,
   lien date), `signature`, `static` (printed by the template), `none` (with
-  the reason);
+  the reason). The co-buyer is the name typed at Start A Sale ("Add a
+  co-buyer"), kept on the sale (`step_data.coBuyer`, `sales/co-buyer.ts`),
+  never on the buyer's customer record; it prints on the bill of sale, the
+  contract and the 130-U's box 17, and the co-buyer signs and writes their
+  own details in ink. A sale with no co-buyer prints no co-buyer block at
+  all, on screen or on the printed letter page;
 - `blank`: when the box may print empty. `never` (the sale always has it: a
-  blank is a defect, refused at filing), `when` (printed only on some sales,
-  the condition named), `allowed` (the form itself allows it, its words
+  blank is a defect, refused at filing), `when(condition, test?)` (printed
+  only on some sales), `allowed` (the form itself allows it, its words
   quoted), `ink` (a signature or date left for a pen), `office` (left for
   the county), `marker` (a dealer fact still unset prints `[Not set: ...]`);
-- `acroField` on a state form, and `printed: false` for a value carried in
-  the payload but not printed on that page.
+- `on`: the condition a box is printed under. A condition is a predicate in
+  `field-maps/conditions.ts` (a co-buyer, a trade-in, a trade-in with its
+  VIN, a warranty, a limited warranty, a seller lien, a bank deal, a lien on
+  the title, an entity or a person applicant), never prose: the review, the
+  filing and the tests run the same function. A box whose condition the sale
+  meets is required; one it does not meet is not read back at all;
+- `acroField` on a state form (`acroFields` when one answer ticks one of
+  several boxes, box 13's five kinds), `printed: false` for a value carried
+  in the payload but not printed on that page, `carriedFor` for a box a
+  document prints on another document's behalf (read back under its own
+  heading), and `fallback` for a record fact with an answer behind it when
+  the record has none (the licence state: the intake's, else the bill of
+  sale's question).
 
 A state form's map also lists, in `notOnThisDesk`, every AcroForm field the
 desk deliberately never fills, with the reason, so a coverage test can tell
@@ -1096,9 +1268,14 @@ desk deliberately never fills, with the reason, so a coverage test can tell
 or a `guide:` step), the question, the kind and where its answer is stored.
 A fact can be:
 
-- `known` from the record (the county the intake decoded, what the money
-  step says was paid today): then it is never asked;
-- `start`ed from the record (a tap pre-selected, still asked);
+- `known` from the record (what the money step says was paid today): then
+  it is never asked;
+- `start`ed from the record (a tap pre-selected, still asked): the county
+  starts from the county the intake's address lookup returned, and nothing
+  else;
+- `suggest`ed (offered as the likely card, filed only when somebody taps
+  it): the county a city usually lies in is only a guess (south Amarillo is
+  Randall, not Potter), so the operator taps it or another;
 - `mustAnswer` (sworn or contractual: the odometer, the first payment date,
   how a tow-away car leaves). Never defaulted; the filing refuses it unanswered;
 - `optional` (the box may print blank);
@@ -1106,8 +1283,16 @@ A fact can be:
   duration in the dealer's words). Everything else is a tap: a choice, a
   list (the states, the counties), a multi-pick (the warranty systems), a
   `dateChoice` (dates worked out from the contract date and the frequency,
-  with a typed date behind "Another Date"), or choices with an "other"
-  typed behind them (the number of payments, the rate).
+  with a typed date behind "Another Date"; a first payment before the
+  contract date is refused), or choices with an "other" typed behind them
+  (the number of payments, the rate, the payment method's "Another Way").
+  Every list has a way in for a real answer it does not hold: the licence
+  state list takes a typed place (Puerto Rico, a Mexican state).
+- Asked in the page's order: the trade-in's VIN right after "Is There A
+  Trade-In?" and before its description, so the car is identified before it
+  is described. Tap cards fill the column two-up, as Handle A Sale's do, and
+  every paperwork screen has Back (the first question of a document goes back
+  to the guide, a Change trip to the review).
 
 **Derived questions.** A document's corridor asks exactly the facts its
 pages leave open: the facts it owns (in its map's `askOrder`) plus any it
@@ -1125,7 +1310,18 @@ what each box will print. The review screen shows that, page by page
 source chip, Change on an answered box, a red "missing" with the place it is
 fixed. The review is the page, not a list of answers: the rebuilt
 disclosure's review shows its year, make, VIN, printed name, signature and
-date, and no price, because the state page prints no price.
+date, and no price, because the state page prints no price. It reads back
+exactly what files: the review passes the filer's onboarding name and saved
+signature, the sale date and whether the owner's fees are set, so the dealer
+line is never "blank" on a copy that files filled, and an unset documentary
+fee reads as its marker on the review and the paper alike, never "$0.00". It
+lists only this sale's boxes (no co-buyer or lien rows on a cash sale), the
+130-U's boxes in the form's own words ("Title And Registration", not a
+stored code; a business applicant's entity name and FEIN, not a person's
+licence), each chip naming the real source ("From Start Sale" for a typed
+phone or address, "Worked out" for a rate solved from the payment), and its headings,
+chips and the desk's own words in the screen's language while the box labels
+quote the English paper.
 
 **Filing refuses a blank the sale could fill.** After every refusal that
 already existed, in this order, and none lifted by `DESK_ALLOW_UNSET_FACTS`:
@@ -1133,14 +1329,29 @@ already existed, in this order, and none lifted by `DESK_ALLOW_UNSET_FACTS`:
 not solve), `rebuiltDisclosureFirst` (a rebuilt car's disclosure is filed
 before any instrument of sale), `poaInstrument` (the server decides which
 power of attorney the model year allows), and `fieldMissing`, which names
-every `never` box whose probe is empty (`missingPrintedFields`), page by
-page, and writes nothing.
+every `never` box whose probe is empty (`missingPrintedFields`), every box a
+`when` test or an `on` condition makes required on this sale (a business
+applicant's name and FEIN, a limited warranty's shares), and every box a
+document carries for another, page by page, and writes nothing. A box the
+review shows must be one the paper prints: a value the corridor asks for
+another document (the warranty's labor and parts shares, for the Buyer's
+Guide) is carried, not asked as if the bill of sale printed it.
 
 **Stamps.** A value the buyer signs to is stamped into `completed_link` at
 filing (the late-handling fee and its total, who files the registration, the
-ID's kind and issuer, the renewal-reminder answer, what was paid today, the
-warranty's kind), and every renderer falls back to its old reading when the
-stamp is absent. A copy filed before the change re-renders as filed.
+ID's kind and issuer, the renewal-reminder answer, the warranty's kind, the
+co-buyer's name, an unset documentary fee, and `pageLayout`, the
+page-by-page readings themselves), and every renderer falls back to its old
+reading when the stamp is absent. A copy filed before the change re-renders
+as filed: its Total Paid is still the total due and its ink lines carry the
+date they always did. Do not take a key every copy already carried (what was
+paid today, the stock number, the trade-in's VIN) as the sign of a new copy:
+only a stamp written by the change itself is. On a new copy Total Paid is
+what was paid today on a balance sale, and on a bank deal the total due with
+the lender's line, so the record never reads as if most of the price was
+neither paid nor owed. A filed power of attorney reprints what was signed
+(`form_data.printed`), not the sale as it stands now. A Buyer's Guide is
+refused when its sale cannot be read, never printed AS IS by default.
 
 **Any name prints.** The state forms fill in Helvetica (WinAnsi). When a
 value holds a letter WinAnsi cannot print (Vietnamese, Polish), the filler
@@ -1750,7 +1961,21 @@ Sales** beneath it (and **Sale Times** and **Promises** if built).
   before the change renders whole without the new stamps; a Vietnamese and
   a Polish name fill the 130-U, VTR-271, VTR-61 and the state's rebuilt
   disclosure without throwing, and a WinAnsi name keeps Helvetica alone;
-  every new question has its English and Spanish words.
+  every new question has its English and Spanish words. And the paper, not
+  just the map: every value a renderer works out (Total Amount Due, Net
+  Trade-In, Balance, Total Paid, the contract's Amount Financed, Finance
+  Charge and Total of Payments) is on its map and on the read-back, and every
+  map box is one the renderer prints; every question is for a box its own
+  document prints or carries; the sources a map names are the ones the paper
+  reads; each condition is a predicate with a sale that meets it and one that
+  does not (a business applicant with no name or FEIN is refused); the co-buyer
+  named at intake is on the bill of sale, the contract and the 130-U, and a
+  sale without one prints no co-buyer box; a bank deal's Total Paid states the
+  lender; an old bill of sale reprints its Total Paid and ink date as filed; a
+  filed power of attorney reprints what was signed; the review shows the
+  filer's name, the 130-U's words, the real chips and the screen's language;
+  every Change link opens its question and every screen has Back; every tap
+  list has a way in for a real answer.
 - Money: every test vector above, plus "$" and "$3,000.00" parsing, empty vs 0,
   paid clamp, lender balance always 0.
 - Plan: the derived chain on both branches; `false` counts as answered;
@@ -1808,7 +2033,9 @@ Sales** beneath it (and **Sale Times** and **Promises** if built).
   stamping path ends the older sessions at the database; on Postgres, a
   session whose earliest amr predates the reset holds no team role, and an
   unreadable reset changes nothing and is logged.
-- Onboarding: "Choose A Password" only with `requires_password_change`; the
+- Onboarding (the unit is specified in "First sign-in: onboarding"; its
+  password, VTR-61 and fee tests are the bullets named there): "Choose A
+  Password" only with `requires_password_change`; the
   10-character floor and the confirmation; the write goes to the session's
   own account and clears the flag; Done refuses until it is cleared; signing
   clearance at approval is Owner, Manager and Registration only.
@@ -1964,7 +2191,9 @@ Sales** beneath it (and **Sale Times** and **Promises** if built).
    the bill of sale's figures summing to its total, the odometer identical on
    every document, and today's business date on every signature.
 5. **Fees** ("## Fees"; `scripts/desk-walk/onboard.cjs` and `fees.cjs`), at
-   both sizes, 0 page errors and 0 contrast failures. The doc fee typed in a
+   both sizes, 0 page errors and 0 contrast failures. A and B are part of
+   onboarding's end-to-end check ("First sign-in: onboarding", item 9),
+   which also walks `fresh-cannot-sign` and `fresh-reset`. The doc fee typed in a
    walk is a walk input (the owner's figure, or one the user approved,
    labelled as a demo input), never invented:
    - **A, owner onboarding** (`DESK_PREVIEW_MEMBER=fresh`, or

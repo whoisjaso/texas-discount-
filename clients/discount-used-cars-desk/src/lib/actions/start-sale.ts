@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { writeCoBuyer } from "@/lib/sales/co-buyer";
 import { AGREEMENT_RECORD_COLUMNS, isCurrentFiled, type AgreementRecord } from "@/lib/sales/filed-documents";
 import { mergeBuyerProfile, toE164 } from "@/lib/admin/buyer-profile";
 import { readIdKind } from "@/lib/forms/id-document";
@@ -492,6 +493,12 @@ export async function startSale(
     }
     // The fees this sale started with, in the same insert as the deal.
     stepData = writeDealFees(stepData, dealFeesFromSchedule(feeSchedule.schedule));
+    /*
+      The co-buyer named at intake, on the sale itself: the customer record
+      is every sale that buyer ever makes, and nothing printed it from
+      there. The documents read it from here (sales/co-buyer.ts).
+    */
+    stepData = writeCoBuyer(stepData, { name: input.coBuyerName ?? "" });
 
     const { data: deal, error: dealError } = await supabase
       .from("deals")

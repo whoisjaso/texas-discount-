@@ -177,6 +177,7 @@ export function DocumentSheet({
             quotedRegistrationAmount: Number(docData.quotedRegistrationAmount) || 0,
             // Stamped at filing on copies filed since; absent, the dealer's figure.
             ...(typeof docData.lateHandlingFee === 'number' ? { lateHandlingFee: docData.lateHandlingFee } : {}),
+            ...(typeof docData.lateHandlingTotal === 'number' ? { lateHandlingTotal: docData.lateHandlingTotal } : {}),
           }}
           buyerSignature={signatures.buyerSignature || null}
           buyerSignatureDate={signatures.buyerSignatureDate || null}

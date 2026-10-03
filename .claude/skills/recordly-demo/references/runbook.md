@@ -5,7 +5,12 @@
 Every step has one command, its outputs, a PASS gate and a written rule for a FAIL. `node $S/scripts/runbook.cjs next` prints
 the next step with the variables resolved; `run <id>` runs and judges it; long steps start through `bg.sh` and are
 judged with `check <id>`; looked-at, listened-to, approval and send steps close only with `mark <id>` (references/harness.md).
-Every command assumes `source $SCRATCH/demo.env` first (S0-S2 come before it exists).
+Every command assumes `source $SCRATCH/demo.env` first (S0-S2 come before it exists), and every step runs from $REPO.
+
+A PASS holds only while what it was built from holds: a step that runs again makes every step after it STALE, and an
+approval is bound to the files it approved (a changed script.md asks again). STALE is not done; `next` returns it.
+`run <id> --force` needs `--why` and the user's own words (`--by-user`); it is recorded, shows as PASS* and goes into
+the send note. An optional step is declined only with the user's words (`skip <id> --by-user … --source …`).
 
 ## Every film
 
@@ -19,7 +24,7 @@ Every command assumes `source $SCRATCH/demo.env` first (S0-S2 come before it exi
   ```
 
 - **PASS:** exit 0; prints `SETUP OK`
-- **On FAIL:** Apply each printed remedy. Browsers, apt packages and global npm installs only with the user's OK; never playwright install on your own. Re-run S0.
+- **On FAIL:** Apply each printed remedy. Browsers, apt packages and global npm installs only with the user's OK; never playwright install on your own. Disk under 8 GB: the disk row lists what this skill made, largest first (captures, stills, render frames, the medium.en model are safe to delete once the film they fed is sent; keep the voice venv if a narrated cut is coming). A taken port names its holder: yours, stop it; someone else's, wait (desk-server.sh start --wait 1800), then ask. Re-run S0.
 
 ### S2 · Write the run's variables (demo.env)
 
@@ -28,12 +33,12 @@ Every command assumes `source $SCRATCH/demo.env` first (S0-S2 come before it exi
 - **Command:**
 
   ```bash
-  bash "$S/scripts/env.sh" --slug <client-slug> --scratch <absolute scratch dir outside the repo> [--desk clients/<slug>-desk]
+  bash "$S/scripts/env.sh" --slug <client-slug> --scratch <absolute scratch dir outside the repo> --desk clients/<slug>-desk   (or --no-desk, only on the user's word)
   ```
 
 - **Outputs:** `$SCRATCH/demo.env`
 - **PASS:** every output exists
-- **On FAIL:** Fix the variable it names. Then `source <scratch>/demo.env` at the top of EVERY later command (variables do not survive between calls).
+- **On FAIL:** Fix the variable it names. The desk is said, never guessed: --desk <folder> for the house film (parts A + B), --no-desk only when the user says the client has no desk. S is the absolute folder that holds this skill's SKILL.md (export S=<that folder> before S0). Then `source <scratch>/demo.env` at the top of EVERY later command (variables do not survive between calls).
 
 ### A1 · Facts and client-inputs.json
 
@@ -47,7 +52,7 @@ Every command assumes `source $SCRATCH/demo.env` first (S0-S2 come before it exi
 
 - **Outputs:** `$I`
 - **PASS:** exit 0; prints `client-inputs OK (facts)`
-- **On FAIL:** Fill each listed key from the site's business.ts fields sourced OWNER or TXDMV, character for character. An unconfirmed fact is asked of the user, never guessed. Leave loader, word, introKey and brand.mark null (A3 measures them).
+- **On FAIL:** Fill each listed key from the site's business.ts fields sourced OWNER or TXDMV, character for character: the check compares phone, street and city, hours and domain with business.ts (split days as the site writes them, e.g. "Mon – Fri 9 AM – 7 PM, Sat 9 AM – 5 PM"), and refuses Example, Test, Lorem, TBD or a .example host. An unconfirmed fact is asked of the user, never guessed. FINDER_QUERY: a model in the served site's own inventory (its /inventory page or its inventory data file), about 5 characters. A financing service band: read its tile on the site and record it in storyboard.SERVICE_TILE_CHECK (class (a) text: ask the user). The narration flags follow the kickoff answers (assets/narration/script-template.md, 'Kickoff answers to flags'). Leave loader, word, introKey and brand.mark null (A3 measures them). With a desk, ask the part-B questions (B0) now, with the facts, so the run never waits on a person hours in.
 
 ### A2 · Build the site with the Admin link and serve it on :5183
 
@@ -100,7 +105,7 @@ Every command assumes `source $SCRATCH/demo.env` first (S0-S2 come before it exi
 
 - **Outputs:** `$P/src/project.ts`, `$P/storyboard.json`, `$P/node_modules/remotion/package.json`
 - **PASS:** exit 0; prints `PROJECT READY`; every output exists
-- **On FAIL:** npm ci failed: send the user the error. Never npm install. An existing project: --force only when re-creating it on purpose.
+- **On FAIL:** npm ci failed: send the user the error; never npm install. 'refusing: … already holds a project': this client's project exists. To re-create it on purpose run `runbook.cjs run A4 --pass-force` (new-project.sh --force backs up plan.ts, vo-lines.ts, the storyboards, project.ts and the README to <P>/.backup/<time>/ and keeps a worked plan.ts and vo-lines.ts); otherwise use the project as it is and mark nothing.
 
 ### A5 · Adapt and preflight the site storyboard (loop until clean)
 
@@ -156,6 +161,19 @@ Every command assumes `source $SCRATCH/demo.env` first (S0-S2 come before it exi
 - **PASS:** `runbook.cjs mark`
 - **On FAIL:** Look at every still at 100% (the hero anchor beside the headline, every zoom's framing, the cut stills, the outro). A model that cannot view images sends the stills (or a contact sheet of them) to the user and records their words with mark --by-user. Never self-certify.
 
+### N0 · Offer the narrated long cut (on request; skip it with the user's words)
+
+- **Kind:** manual (you do the work; the gate checks it); optional: the user may decline it (skip)
+- **Needs:** S2
+- **Command:**
+
+  ```bash
+  node "$S/scripts/fill-narration.cjs" init "$I"
+  ```
+
+- **PASS:** exit 0; prints `wrote an empty narration block`
+- **On FAIL:** Ask the user whether they want the narrated long cut (about 4 minutes, a fact-checked script voiced free). Yes: run N0, which adds the narration block; the narrated steps (S1, N1-N14) then appear in `next`. No: runbook.cjs skip N0 --by-user "<their words>" --source "<where they said it>". 'already has a narration block': it was added before; run nothing and go on (mark nothing).
+
 ## A site with no desk (rare: the house cut ends on the desk's Admin row; ask the user first)
 
 ### R1 · Render the site film (demo-v1) and its chat copy
@@ -170,7 +188,7 @@ Every command assumes `source $SCRATCH/demo.env` first (S0-S2 come before it exi
 
 - **Outputs:** `$P/out/demo-v1.mp4`, `$P/out/demo-v1-chat.mp4`
 - **PASS:** exit 0; prints `RENDERED`; every output exists
-- **On FAIL:** Killed or out of memory: render the missing ranges with --frames A-B and join them with --concat (references/harness.md).
+- **On FAIL:** Before R1: the site-only film is the rare case (the house film ends on the desk's Admin row and goes on into part B). Ask the user first, and record their answer, before rendering it as the deliverable. Killed or out of memory: render the missing ranges with --frames A-B and join them with --concat (references/harness.md).
 
 ### R2 · Verify the site film
 
@@ -210,27 +228,29 @@ Every command assumes `source $SCRATCH/demo.env` first (S0-S2 come before it exi
 
 - **Outputs:** `$SCRATCH/send-note.md`
 - **PASS:** `runbook.cjs mark`
-- **On FAIL:** Attach demo-v1-chat.mp4 (<= 28 MB) and the contact sheet with your file-sending tool, paste the send note. Never send the master.
+- **On FAIL:** Ask the user first that the site-only film is what they want sent (the house film is parts A + B; SKILL.md: demo-v1 alone is an internal checkpoint). Then attach demo-v1-chat.mp4 (<= 28 MB) and the contact sheet with your file-sending tool, paste the send note. Never send the master.
 
 ## With the sale desk: part B, render, verify, send
 
-### B0 · Part B decisions: the user's onboarding choice, the demo fee, the desk clock, the demo data
+### B0 · Part B decisions, asked at kickoff: the onboarding path, the demo fee, the desk host, the demo data
 
 - **Kind:** approval (the user's approval: closed by mark --by-user)
-- **Needs:** A8
+- **Approves:** `$P/partB-decisions.json` (a change makes it STALE)
+- **Needs:** A1
 - **Command:**
 
   ```bash
-  node "$S/scripts/fill-client.cjs" check "$I" --stage desk
+  node "$S/scripts/fill-client.cjs" check "$I" --stage desk && node "$S/scripts/fill-client.cjs" decisions "$I" --out "$P/partB-decisions.json"
   ```
 
-- **PASS:** exit 0; prints `client-inputs OK (desk)`; `runbook.cjs mark`
-- **On FAIL:** Ask the user, verbatim: "Film the owner's first sign-in including Your Fees (I type a fee figure you give me), or film a salesperson's first sign-in (no fees screen)?" Never choose. If they choose the owner path, tell them Your Fees is new to the film: its shots and its composition segment are made and verified on this run (a house change; render.sh refuses until the segment exists). Record partB.onboarding (and demoFee with its source), deskClock = today 14:00 local, demo.phone and demo.addressPartB (lesson B13), then mark B0 --by-user with their words.
+- **Outputs:** `$P/partB-decisions.json`
+- **PASS:** exit 0; prints `PART B DECISIONS WRITTEN`; every output exists; `runbook.cjs mark`
+- **On FAIL:** Asked at kickoff, with A1's facts. Ask the user, verbatim: "Film the owner's first sign-in including Your Fees (I type a fee figure you give me), or film a salesperson's first sign-in (no fees screen)?" and "May the desk's own web address be shown in the address bar on the desk frames, or should it show the site's?" Never choose for them. If they choose the owner path, tell them Your Fees is new to the film: its shots and its composition segment are made and verified on this run (a house change; render.sh refuses until the segment exists). Record partB.onboarding (and demoFee with its source), partBDomain and partB.domainDecision (their words), demo.phone (a 555 number in the dealer's area code) and demo.addressPartB (scripts/check-address.cjs --which addressPartB --write; lesson B13). deskClock is the capture day at 14:00: set it on the day of B4 (the desk check refuses another day). Then mark B0 --by-user "<their words>" --source "<where they said it>". A later change to these decisions makes B0 STALE: ask again.
 
 ### B1 · Start the desk on :5190 (its own process group)
 
 - **Kind:** auto (scripted: the gate decides)
-- **Needs:** B0
+- **Needs:** B0, A8
 - **Command:**
 
   ```bash
@@ -238,7 +258,7 @@ Every command assumes `source $SCRATCH/demo.env` first (S0-S2 come before it exi
   ```
 
 - **PASS:** exit 0; prints `DESK READY`
-- **On FAIL:** Port taken by your own server: desk-server.sh stop. By another: wait or ask; never another port, never npm install in the desk.
+- **On FAIL:** Port taken by your own server: desk-server.sh stop. By another (the refusal names its pid, folder and start time): desk-server.sh start --wait 1800 polls it for up to 30 minutes, then ask the user who owns it. Never another port, never kill a server you did not start, never npm install in the desk.
 
 ### B2 · Merge the filled desk shots into the storyboard
 
@@ -273,12 +293,12 @@ Every command assumes `source $SCRATCH/demo.env` first (S0-S2 come before it exi
 - **Command:**
 
   ```bash
-  bash "$S/scripts/capture-desk.sh"
+  node "$S/scripts/fill-client.cjs" check "$I" --stage desk && bash "$S/scripts/capture-desk.sh"
   ```
 
 - **Outputs:** `$P/public/shots/12-desk-signed/cursor.json`, `$P/public/docs/130u-p1.png`
 - **PASS:** exit 0; prints `DESK CAPTURES OK`; every output exists
-- **On FAIL:** The script restarted the desk and tried once more already. Stop; send the user the log.
+- **On FAIL:** 'deskClock is …, but today at the dealer is …': set deskClock to today 14:00 (the desk stamps today's date on the paper) and run B4 again. A scenario refused by validate-scenario (strict): the corridor changed since it was walked; read the desk's docs/verification/paperwork-pages/corridor-changes.md, update assets/desk-scenarios/<name>.json (a tap is answered { "button": "<label>" }, a typed box { "fill": "main input", "value": … }), walk it once on this desk with premium-dealer-build desk-walk sale.cjs to the packet, then validate-scenario.cjs --stamp. Otherwise the script restarted the desk and tried once more already: stop and send the user the log.
 
 ### B5 · Measure the part-B cuts; refill project.ts
 
@@ -427,11 +447,12 @@ Every command assumes `source $SCRATCH/demo.env` first (S0-S2 come before it exi
 
 - **Outputs:** `$P/narration/lines.json`, `$P/narration/script.md`
 - **PASS:** exit 0; every output exists
-- **On FAIL:** fill-narration.cjs init $I adds the block. Walk the desk for checked.features (desk-server.sh start; desk-walk sale.cjs with a scenario; the screenshots' path in checked.how). A line the desk cannot back is cut with its reason, never softened.
+- **On FAIL:** Walk the desk for checked.features: desk-server.sh start, then premium-dealer-build desk-walk sale.cjs with a scenario (DESK_DIR set): it writes walk-report.json into its out folder. Record checked.on, checked.commit (the report's deskCommit), checked.dirty and checked.evidence (that folder); the check refuses a walk on another corridor commit or one older than the desk's last corridor commit, and any 'dry run' or 'not walked' wording. A line the desk cannot back is cut with its reason, never softened.
 
 ### N2 · The user approves the script
 
 - **Kind:** approval (the user's approval: closed by mark --by-user)
+- **Approves:** `$P/narration/script.md` (a change makes it STALE)
 - **Needs:** N1
 - **Command:**
 
@@ -440,7 +461,7 @@ Every command assumes `source $SCRATCH/demo.env` first (S0-S2 come before it exi
   ```
 
 - **PASS:** `runbook.cjs mark`
-- **On FAIL:** Send narration/script.md and wait. Voice nothing before an explicit approval (mark N2 --by-user "<their words>").
+- **On FAIL:** Send narration/script.md and wait. Voice nothing before an explicit approval (mark N2 --by-user "<their words>" --source "<where they said it>"). A changed script.md makes N2 STALE: send it again.
 
 ### N3 · Voice every line (Kokoro af_heart, 0.95)
 
@@ -468,11 +489,12 @@ Every command assumes `source $SCRATCH/demo.env` first (S0-S2 come before it exi
 
 - **Outputs:** `$P/narration/words.json`, `$P/narration/transcribe-diff.md`
 - **PASS:** exit 0; prints `TRANSCRIBE OK`
-- **On FAIL:** Exit 2: run --model medium.en --only <ids>; if medium.en hears the line as written, --accept <id> --by medium.en --why …. Else change only the punctuation of `speak` (narration.speak) and re-voice that line (voice.py --only, at most twice), else send the clip to the user and --accept --by user with their words.
+- **On FAIL:** Exit 2: transcribe-diff.md suggests the first fix per open row. Run --model medium.en --only <ids> (refused when it would leave under 8 GB free); --accept <id> --by medium.en --why … is accepted only when medium.en heard that line as written. Else change only the punctuation of `speak` (a comma or full stop right after the word the models dropped; fill-narration refuses any other change to the words) and re-voice that line (voice.py --only, at most twice). A proper noun both models hear wrongly, or anything still open: carry it to N5 for the user's ear. A decision is bound to its take: re-voicing a line reopens it.
 
 ### N5 · The user approves the voiced set
 
 - **Kind:** approval (the user's approval: closed by mark --by-user)
+- **Approves:** `$P/narration/preview.mp3`, `$P/narration/transcribe-diff.md` (a change makes it STALE)
 - **Needs:** N4
 - **Command:**
 
@@ -481,7 +503,7 @@ Every command assumes `source $SCRATCH/demo.env` first (S0-S2 come before it exi
   ```
 
 - **PASS:** `runbook.cjs mark`
-- **On FAIL:** Send preview.mp3 and transcribe-diff.md; cut nothing until the user says yes (mark N5 --by-user).
+- **On FAIL:** Send preview.mp3 and transcribe-diff.md together: one reply covers the voiced set and every open transcribe row (record each open row with transcribe.py --accept <id> --by user --words "<their words>" --why …). Cut nothing until the user says yes (mark N5 --by-user … --source …). Re-voicing anything makes N5 STALE: send again.
 
 ### N6 · Levels and trims (-16 LUFS +/- 0.5, true peak <= -1.5 dBTP)
 
@@ -522,7 +544,7 @@ Every command assumes `source $SCRATCH/demo.env` first (S0-S2 come before it exi
   ```
 
 - **PASS:** exit 0; prints `DESK PREFLIGHT CLEAN[sS]*DESK READY`
-- **On FAIL:** As B3: the desk changed under the storyboard; update assets/storyboard-long.template.json from the desk's corridor-changes.md, re-run N8.
+- **On FAIL:** As B3: the desk changed under the storyboard; update assets/storyboard-long.template.json from the desk's corridor-changes.md, re-run N8. :5190 held by another: desk-server.sh start --wait 1800, then ask.
 
 ### N9 · Capture 20-27 and the off-camera steps on one fresh desk
 
@@ -545,12 +567,12 @@ Every command assumes `source $SCRATCH/demo.env` first (S0-S2 come before it exi
 - **Command:**
 
   ```bash
-  node "$S/scripts/narrated-check.cjs" --project "$P" && node "$S/scripts/narrated-plan.cjs" --project "$P" --write
+  node "$S/scripts/narrated-plan.cjs" --project "$P" --draft && node "$S/scripts/narrated-check.cjs" --project "$P" && node "$S/scripts/narrated-plan.cjs" --project "$P" --write
   ```
 
 - **Outputs:** `$P/narration/lip-to-picture.md`
 - **PASS:** exit 0; prints `LIP-TO-PICTURE OK`
-- **On FAIL:** Write src/narrated/plan.ts from THIS run's captures (examples/discount-used-cars/plan.ts is the worked one; never copy its frames) and client-inputs.json → narration.anchors; fix the line or anchor each FAIL names; an exception only with its reason.
+- **On FAIL:** --draft writes src/narrated/plan.draft.ts from THIS run's captures (cursor.json events), the voice (vo-lines.ts) and client-inputs.json → narration.anchors (each with its shot and key word): one cut per anchored line, the word landing 0.15 s before its event, documents and the phone left as TODO lines (their overlay needs its page, pushes and boxes: pdftotext -bbox on the anchor text, references/narration.md §6), and narration/anchors.draft.json, the anchors re-keyed to those cuts. Read both, copy the draft into src/narrated/plan.ts and its anchors into narration.anchors together, add the overlays (references/narration.md §5-7; examples/discount-used-cars/plan.ts is the worked one, never copy its frames), then fix the line or anchor each FAIL names; an exception only with its reason.
 
 ### N11 · Stills of the narrated plan
 

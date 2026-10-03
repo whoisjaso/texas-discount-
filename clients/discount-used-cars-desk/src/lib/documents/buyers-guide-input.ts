@@ -75,6 +75,8 @@ export function buyersGuideProbe(input: BuyersGuideInput): Record<string, unknow
     dealerWarranty: asIs ? "" : "X",
     fullWarranty: warranty?.kind === "full" ? "X" : "",
     limitedWarranty: warranty?.kind === "limited" ? "X" : "",
+    // Which of the two is ticked under DEALER WARRANTY: one of them must be.
+    warrantyKind: asIs ? "" : warranty?.kind ?? "",
     laborPercent: warranty?.kind === "limited" ? warranty.laborPercent ?? "" : "",
     partsPercent: warranty?.kind === "limited" ? warranty.partsPercent ?? "" : "",
     systemsCovered: (warranty?.systems ?? []).join(", "),

@@ -30,6 +30,7 @@ import { missingPrintedFields } from "@/lib/documents/field-maps/resolve";
 import { poaFieldsFromSale, poaProbe } from "@/lib/documents/poa-fields";
 import { isEligibleForPlainPoa } from "@/lib/documents/power-of-attorney-eligibility";
 import { saleDateFor } from "@/lib/sales/sale-date";
+import { firstPaymentProblem, usLabel } from "@/lib/sales/date-choices";
 import { casMergeStepData } from "@/lib/sales/step-data-write";
 import { corridorCompletedLink } from "@/lib/sales/corridor-link";
 import { getSaleDetail } from "@/lib/admin/sale-desk";
@@ -100,6 +101,7 @@ export type PaperworkState = {
     | "feeSettingsUnreadable"
     | GovernmentFeesFilingProblem
     | "chapter345Vehicle"
+    | "firstPaymentTooEarly"
     | PageGateCode;
   /** On a fieldMissing or mustAnswer refusal: the boxes or questions, by name. */
   missing?: string[];
@@ -172,6 +174,25 @@ export async function savePaperworkAnswer(
 
   try {
     const supabase = await createClient();
+    /*
+      The first payment is a date on or after the contract's own date (the
+      filed bill of sale's date of sale, else today): "Another Date" used to
+      take any day at all, including one before the note existed.
+    */
+    if (documentType === "financing" && key === "firstPaymentDate") {
+      const contractDate = (await saleDateFor(supabase, await readDealAgreements(supabase, dealId)).catch(() => null)) ?? businessDateToday();
+      const problem = firstPaymentProblem(value, contractDate);
+      if (problem) {
+        return {
+          ok: false,
+          code: "firstPaymentTooEarly",
+          error:
+            problem === "notADate"
+              ? "Pick a date for the first payment."
+              : `The first payment cannot be before the contract date (${usLabel(contractDate)}).`,
+        };
+      }
+    }
     /*
       The down payment is frozen once the bill of sale is filed (owner's
       decision 10/01/2026; SOP Freeze): the contract's answer may not state a
@@ -625,7 +646,7 @@ export async function finalizePaperwork(
           },
         };
       }
-      const missing = missingPrintedFields(documentType, sale, input.formData, { saleDate });
+      const missing = missingPrintedFields(documentType, sale, input.formData, { saleDate, docFeeSet: feeLines?.docFeeSet });
       if (missing.length > 0) {
         return { ok: false, code: "fieldMissing", missing, error: `${FILING_GATE_MESSAGES.fieldMissing} ${missing.join(", ")}.` };
       }
@@ -651,7 +672,7 @@ export async function finalizePaperwork(
           dealerSignatureDate: staffSignature ? signedOn : null,
           // The name printed beside that stroke, on every dealer line.
           dealerSignerName,
-        }, { saleDate })
+        }, { saleDate, docFeeSet: feeLines?.docFeeSet })
       : null;
 
     const { data, error } = await supabase

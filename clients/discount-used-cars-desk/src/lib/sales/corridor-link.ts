@@ -15,6 +15,8 @@ import { DOC_FEE_NOTICE_VERSION } from "@/lib/legal/doc-fee-notice";
 import { joinAddress } from "@/lib/sales/aamva";
 import { warrantySystemLabels } from "@/lib/sales/deal-facts";
 import { dealerFees } from "@/lib/dealership-config";
+import { readCoBuyer } from "@/lib/sales/co-buyer";
+import { PAGE_LAYOUT } from "@/lib/documents/page-layout";
 
 /**
  * The corridor's filed document, assembled into something a printer can hold.
@@ -274,9 +276,20 @@ export function corridorCompletedLink(
   options: {
     /** The current filed bill of sale's date of sale (`saleDateFor`), when known. */
     saleDate?: string | null;
+    /**
+     * False when the owner has not set the documentary fee (Your Fees), so
+     * the fee is 0 in the arithmetic. The paper then says so with the "Not
+     * set" marker beside the line rather than printing $0.00 as if the owner
+     * had charged nothing. Only a demo (DESK_ALLOW_UNSET_FACTS) files one.
+     */
+    docFeeSet?: boolean;
   } = {},
 ): string | null {
   const facts = baseFacts(sale);
+  // The co-buyer named at intake, on the sale (sales/co-buyer.ts). They sign
+  // and write their own details in ink (D-02); the name is printed.
+  const coBuyerName = fieldCase(readCoBuyer(sale.stepData).name);
+  const docFeeUnset = options.docFeeSet === false ? { docFeeUnset: true } : {};
   const billAnswers = readPaperwork(sale.stepData, "billOfSale");
   const funding = sale.funding.type;
   const lenderName = lenderNameFor(sale);
@@ -334,7 +347,7 @@ export function corridorCompletedLink(
       stockNumber: sale.vehicle?.stockNumber ?? "",
       outstanding: stillToDo(sale),
       ...facts,
-      coBuyerName: "",
+      coBuyerName,
       coBuyerAddress: "",
       coBuyerCity: "",
       coBuyerState: "",
@@ -388,6 +401,10 @@ export function corridorCompletedLink(
       // notice existed re-renders exactly as it was filed.
       docFeeNotice: DOC_FEE_NOTICE_VERSION,
       docFeeNoticeSpanish: sale.language === "es",
+      ...docFeeUnset,
+      // Filed under the page-by-page paperwork (documents/page-layout.ts):
+      // Total Paid and the unsigned lines read the new way on this copy only.
+      pageLayout: PAGE_LAYOUT,
     };
   } else if (documentType === "financing") {
     section = "financing";
@@ -399,7 +416,7 @@ export function corridorCompletedLink(
       buyerAddress: oneLineAddress(facts.buyerAddress, facts.buyerCity, facts.buyerState, facts.buyerZip),
       buyerPhone: facts.buyerPhone,
       buyerEmail: facts.buyerEmail,
-      coBuyerName: "",
+      coBuyerName,
       coBuyerAddress: "",
       coBuyerPhone: "",
       coBuyerEmail: "",
@@ -438,11 +455,15 @@ export function corridorCompletedLink(
       // can follow it once counsel words its warranty box (D-05).
       conditionType: billAnswers.conditionType || "as_is",
       warrantyDuration: billAnswers.conditionType === "warranty" ? billAnswers.warrantyDuration ?? "" : "",
+      ...docFeeUnset,
+      pageLayout: PAGE_LAYOUT,
     };
   } else if (documentType === "form130U") {
     section = "form130U";
     data = {
       ...facts,
+      // Box 17, the additional applicant: the co-buyer the intake named.
+      ...(coBuyerName ? { coBuyerName } : {}),
       saleDate: dated,
       odometerReading: text(formData.odometerReading) || facts.vehicleMileage,
       // Box 10 states the bill of sale's mileage statement, never a default
@@ -475,6 +496,7 @@ export function corridorCompletedLink(
       // lienholder was the audit's worst finding.
       ...(lien?.holder === "seller" ? sellerLien : {}),
       ...form130ULienKeys(lien),
+      pageLayout: PAGE_LAYOUT,
     };
   } else if (
     documentType === "vehicleResponsibility" ||
@@ -589,7 +611,7 @@ export function corridorCompletedLink(
       // The salvage bill of sale is the tow-away sale's buyer's order, so the
       // documentary fee notice prints beside its fee as on any bill of sale.
       ...(documentType === "salvageBillOfSale"
-        ? { docFeeNotice: DOC_FEE_NOTICE_VERSION, docFeeNoticeSpanish: sale.language === "es" }
+        ? { docFeeNotice: DOC_FEE_NOTICE_VERSION, docFeeNoticeSpanish: sale.language === "es", ...docFeeUnset }
         : {}),
     };
   } else {

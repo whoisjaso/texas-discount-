@@ -31,7 +31,13 @@ look at the screenshots yourself, then send the user a few of them.
   `node ceremony.cjs <out>-cer "$(cat <out>/deal.txt)" <w> <h>`.
   Set THEME_ACCENT / THEME_GROUND / THEME_FONT to the client's computed values:
   the walker refuses to trust screenshots until the theme assertion passes.
-  Every walk must end `N / N signed` with `CONTRAST FAILURES 0`.
+  Every walk must end `N / N signed` with `CONTRAST FAILURES 0`. Walk
+  `co-buyer` too (a scenario's `"coBuyer"` adds one at Start A Sale): its
+  name must be on the bill of sale, the contract and the 130-U's box 17,
+  and a sale without one must print no co-buyer box. Give each scenario its
+  own phone: Start A Sale refuses a phone that names another open sale's
+  buyer. Each walk writes `walk-report.json` (set `DESK_DIR` to the desk so
+  it records the corridor commit), the evidence a narration fact-check cites.
 - Pull one packet with `node pdfs.cjs <out> <deal>` and read it (PyMuPDF): the
   legal name, licence, county present, the lienholder right for the funding
   type, the odometer identical across documents, no dev host, no `[Not set]`
@@ -40,6 +46,16 @@ look at the screenshots yourself, then send the user a few of them.
   legal fee module and its migration's caps equal the rulebook's section
   5.10. A difference stops the build until the rulebook and then the module
   are corrected.
+- The onboarding walk, the whole unit (SOP, First sign-in: onboarding, item
+  9; the skill's step 4.3), at both sizes, a fresh server per preview member
+  (`DESK_PREVIEW_MEMBER`): `fresh-temporary-password` (Choose A Password,
+  then the rest), `fresh` (the fees bullets below), `fresh-sales`
+  (`PREVIEW_ADMIN=sales:<email>`, `FEES=none`), `fresh-cannot-sign` (no
+  signature screen; `onboard.cjs ... cannot-sign`) and `fresh-reset`
+  (`reset.cjs`: the old device signed out in English and Spanish, its API
+  call 401, Choose A Password after signing in again). Then one filed 130-U
+  and one printed VTR-61 read `<Legal Name> (<First Last>)` with the drawn
+  signature.
 - The fees walk (SOP, Verification, Fees; A to F), at both sizes, on a
   fresh server per size (the preview mock keeps what onboarding saved for
   the server's life). Every server needs `ADMIN_SESSION_SECRET` and

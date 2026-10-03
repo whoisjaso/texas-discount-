@@ -1,4 +1,4 @@
-import { INK, NEVER, answer, buyer, date, signature, statik, vehicle, type DocumentMap } from "@/lib/documents/field-maps/types";
+import { INK, NEVER, answer, buyer, computed, date, signature, statik, vehicle, type DocumentMap } from "@/lib/documents/field-maps/types";
 import { SIGNATURE_BLOCK } from "@/lib/documents/field-maps/shared-blocks";
 
 /**
@@ -32,7 +32,7 @@ export const REBUILT_DISCLOSURE_MAP: DocumentMap = {
         { id: "vehicleModel", label: "(carried)", source: vehicle("model"), blank: NEVER, printed: false },
         { id: "vehicleDescription", label: "(carried)", source: vehicle("model"), blank: NEVER, printed: false },
         { id: "saleDate", label: "(carried)", source: date("saleDate"), blank: NEVER, printed: false },
-        { id: "quotedRegistrationAmount", label: "(carried)", source: answer("guide:paid.amount"), blank: NEVER, printed: false },
+        { id: "quotedRegistrationAmount", label: "(carried)", source: computed("money.registrationCost, when the review posts it"), blank: NEVER, printed: false },
         { id: "language", label: "(carried)", source: answer("guide:language.language"), blank: NEVER, printed: false },
         ...SIGNATURE_BLOCK.filter((field) => field.id.startsWith("dealer")).map((field) => ({ ...field, printed: false as const })),
       ],

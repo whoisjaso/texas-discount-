@@ -1,4 +1,5 @@
 import { dealerFees, dealership, factOr } from "@/lib/dealership-config";
+import { laidOutByPages } from "@/lib/documents/page-layout";
 
 // ============================================================
 // Texas Tax & Fee Constants
@@ -225,6 +226,44 @@ export function getSellerLienSummary(data: BillOfSaleData): SellerLienSummary {
     lienholderCity: data.sellerLienholderCity || DEFAULT_SELLER_LIENHOLDER.city,
     lienholderState: data.sellerLienholderState || DEFAULT_SELLER_LIENHOLDER.state,
     lienholderZip: data.sellerLienholderZip || DEFAULT_SELLER_LIENHOLDER.zip,
+  };
+}
+
+/**
+ * What the acknowledgment's "Total Paid" says, and the lines beside it, from
+ * the copy itself. One function for the sheet, the review and the tests.
+ *
+ *   cash or in-house   what was paid today; the balance is the seller's lien
+ *   bank deal          the total due: the lot is paid in full, the buyer's
+ *                      part today and the lender's at funding, with the
+ *                      lender's part on its own line
+ *   an old copy        the total due, as every copy printed before the
+ *                      page-by-page stamp (documents/page-layout.ts)
+ */
+export function billOfSaleTotalPaid(data: BillOfSaleData): {
+  stamped: boolean;
+  totalPaid: number;
+  paidToday: number | null;
+  bankFinanced: boolean;
+  financedByLender: number;
+  lenderName: string;
+} {
+  const calc = calculateBillOfSale(data);
+  const sellerLien = getSellerLienSummary(data);
+  const titleLien = getTitleLienSummary(data);
+  const stamped = laidOutByPages(data as unknown as Record<string, unknown>);
+  const raw = (data as { amountPaidToday?: unknown }).amountPaidToday;
+  const paidToday = stamped && typeof raw === "number" ? raw : null;
+  const bankFinanced = titleLien.enabled || (data.paymentMethod === "Financing" && !sellerLien.enabled);
+  const financedByLender =
+    stamped && bankFinanced && paidToday !== null ? Math.max(0, Math.round((calc.totalDue - paidToday) * 100) / 100) : 0;
+  return {
+    stamped,
+    totalPaid: paidToday !== null && !bankFinanced ? paidToday : calc.totalDue,
+    paidToday,
+    bankFinanced,
+    financedByLender,
+    lenderName: titleLien.lienholderName || data.paymentMethodOther || "",
   };
 }
 

@@ -13,7 +13,6 @@ import { fillTemplate, funnelDollars, type FunnelStrings } from "@/lib/sales/i18
 import { localizeDocumentTitle } from "@/lib/sales/question-i18n";
 import { DOC_FEE_SET } from "@/lib/documents/billOfSale";
 import { DOC_FEE, STATE_FEES_2026, centsAsDollars } from "@/lib/legal/texas-dealer-fees";
-import { notSet } from "@/lib/dealership-config";
 import { sourceLineFromAnswers } from "@/lib/vehicles/empty-weight/copy";
 import PageReadBack from "@/components/admin/paperwork/PageReadBack";
 import type { ReadBackPage } from "@/lib/documents/field-maps/resolve";
@@ -476,7 +475,7 @@ export default function ReviewStep({
           <div className="ed-paper-line">
             <dt className="ed-fine">{t.review.money.docFee}</dt>
             {/* A missing doc fee is not a zero fee: say so. */}
-            <dd>{docFeeSet ? dollars(money.docFee) : notSet(t.review.money.docFee.toLowerCase())}</dd>
+            <dd>{docFeeSet ? dollars(money.docFee) : fillTemplate(t.review.page.notSetMarker, { what: t.review.money.docFee.toLowerCase() })}</dd>
           </div>
           {noRegistration ? null : (
             <div className="ed-paper-line">

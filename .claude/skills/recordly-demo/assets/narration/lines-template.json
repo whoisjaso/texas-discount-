@@ -20,7 +20,7 @@
     "LEGAL_NAME_SAID": { "kind": "said", "perClient": true, "hint": "LEGAL_NAME spelled for the voice (LLC -> L L C)", "source": "dealership-config.ts legalName" },
     "DEALER_NAME_SAID": { "kind": "said", "perClient": true, "hint": "the dealer's name as customers say it (the DBA), spelled for the voice", "source": "site business.ts name / dealership-config.ts name" },
     "CLOSE_TAGLINE": { "kind": "said", "house": "More buyers through the door. Less time on paperwork. Fewer mistakes that cost you money.", "hint": "the closing three payoffs; the house line unless the owner gives one, never a price, rating or 'best'", "source": "house default" },
-    "SERVICE_BAND": { "kind": "shown", "hint": "the site's sell band as it names itself, e.g. We Buy Cars", "source": "site Layout.tsx nav label / Home.tsx band" },
+    "SELL_BAND_NAME": { "kind": "shown", "hint": "the site's sell band as it names itself, e.g. We Buy Cars", "source": "site Layout.tsx nav label / Home.tsx band" },
     "LEGAL_NAME": { "kind": "shown", "perClient": true, "hint": "the legal name exactly as the documents print it, e.g. Example Motors, LLC", "source": "dealership-config.ts legalName" },
     "DEMO_STAFF": { "kind": "shown", "house": "Maria Lopez", "hint": "the demo salesperson typed at onboarding (never a real person)", "source": "house demo data" },
     "DEMO_BUYER": { "kind": "shown", "house": "James Carter", "hint": "the demo buyer on the DEMO card (never a real person)", "source": "house demo data (lesson N3)" },
@@ -39,7 +39,7 @@
   "features": {
     "site-hero-road": { "what": "The hero's headline or lede names {{ROAD_SAID}}, so the 1.5x hero zoom shows it as it is said.", "where": "site: src/pages/Home.tsx hero; business.ts street" },
     "site-lineup-finder": { "what": "The lineup by body type, the finder's search, and the header's call button (tel: link).", "where": "site: src/pages/Home.tsx lineup and finder; src/components/Layout.tsx header" },
-    "site-sell-band": { "what": "The {{SERVICE_BAND}} band and its page take a trade-in lead.", "where": "site: src/pages/Home.tsx band; src/pages/Sell.tsx; src/lib/leads.ts ('trade-in')" },
+    "site-sell-band": { "what": "The {{SELL_BAND_NAME}} band and its page take a trade-in lead.", "where": "site: src/pages/Home.tsx band; src/pages/Sell.tsx; src/lib/leads.ts ('trade-in')" },
     "desk-admin-row": { "what": "The site's drawer has the Admin row to the sale desk.", "where": "site: src/components/Layout.tsx drawer (VITE_DESK_URL)" },
     "onboarding-signature": { "what": "The first sign-in asks the member's legal name and a drawn signature, once, and the desk reuses it.", "where": "desk: src/app/admin/account/onboarding" },
     "car-from-inventory": { "what": "Start A Sale picks the car off the lot; year, make, model and VIN are on every form without typing.", "where": "desk: src/components/admin/StartSale.tsx; the packet's documents" },
@@ -73,7 +73,7 @@
     },
     {
       "id": "03-site-c", "seg": "site", "key": "trade-in", "when": "SELL_BAND",
-      "cue": "The {{SERVICE_BAND}} band: 2.0x on its middle tile ('{{SERVICE_TILE}}') on 'trade-in'",
+      "cue": "The {{SELL_BAND_NAME}} band: 2.0x on its middle tile ('{{SERVICE_TILE}}') on 'trade-in'",
       "text": "And when somebody wants to sell, the site takes the trade-in lead for you, while you're with another customer.",
       "needs": ["site-sell-band"]
     },

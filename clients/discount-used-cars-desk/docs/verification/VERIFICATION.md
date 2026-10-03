@@ -15,6 +15,158 @@ passed on the command line and never written to a file:
 
 The desk this one was forked from has the same requirements.
 
+## 00000000. Paperwork, page by page: the fix round, walked (10/03/2026)
+
+The page-by-page paperwork (README "Paperwork, page by page"; SOP
+"Document templates, page by page") went through a live verify at both
+sizes (13 problems) and a code review (13 findings). This section records
+what was fixed, the test for each, and this round's walks. The verify
+round's own screenshots stay in `docs/verification/paperwork-pages/`; this
+round's are in `docs/verification/paperwork-pages-fix/` (910 screenshots,
+compressed with PIL to at most 1600 px wide, 128 colours: 51.6 MB to
+19.5 MB; the designed sheets' PDFs; the 130-U PDFs, 2.3 MB each, are
+rasterised in `paper/` and read back in the logs instead of committed).
+
+**Servers.** The local dev server on port **5190** only, started fresh
+(`.next` deleted) in its own process group (`setsid`) and stopped by its
+PGID, the port checked free after each; `next-env.d.ts` restored by copy
+after every stop and build. Four servers: one per size for the walks, one
+for the co-buyer walk again at 1440 and recordly-demo's scenarios, one for
+those scenarios again. All on the preview mock with
+`DESK_ALLOW_UNSET_FACTS=true`, `DESK_PREVIEW_MEMBER=fresh`, the owner
+preview cookie, throwaway `ADMIN_SESSION_SECRET` and `INTERNAL_RENDER_TOKEN`,
+and `NODE_USE_ENV_PROXY=1` so the address lookup reaches the Census
+geocoder. Onboarding with the fees left for later, so the documentary fee
+is unset and prints its marker: no figure was typed for it.
+
+### Static checks
+
+| Check | Result |
+|---|---|
+| `npx tsc --noEmit` | 0 errors |
+| `npx eslint` | 0 errors; the same 4 warnings, in files this round did not touch (`paper-palette-contrast.test.ts`, `the-photograph-lands-before-it-is-read.test.ts`, `the-price-means-one-thing.test.ts`, `Form130UPreview.tsx`) |
+| `npx vitest run --maxWorkers=2` | 268 files, 2,936 tests, all passed (`test-output.txt`); 246 and 2,771 at the end of the build |
+| `npx next build` | compiled; `next-env.d.ts`, rewritten by the build, restored by copy |
+
+### What the verify and the review found, and what was done (a test each)
+
+| Finding | Fix | Test |
+|---|---|---|
+| A co-buyer typed at Start A Sale reached no paper (verify 1) | The name is kept on the sale (`step_data.coBuyer`, `sales/co-buyer.ts`, written by Start A Sale) and printed on the bill of sale, the contract and the 130-U's box 17; the co-buyer's details and signature are left for ink | `the-co-buyer-named-at-intake-is-on-the-paper` |
+| The contract printed an empty CO-BUYER box and signature line on every financed sale (verify 2) | The block and line are rendered only with a co-buyer, on screen and on the printed letter page | `no-empty-co-buyer-box-prints-on-the-contract` |
+| The 130-U review showed stored codes (verify 3, review 12) | The review words each 130-U box as the form does ("Title & Registration", "Individual", "Actual Mileage") | `the-130u-review-says-what-the-form-says` |
+| A business applicant's review contradicted the filed page (verify 4) | Box 13, 14, 15, 16 and the printed-name line read back as the page prints them: the entity name and FEIN, no photo ID or name parts; each row on its condition | `the-130u-review-says-what-the-form-says`, `a-box-the-sale-requires-is-refused-blank` |
+| The review called the dealer's printed name blank (verify 5, review 5) | The review passes the filer's onboarding name, saved signature, the sale date and the fee setting, as the filing does | `the-review-prints-the-filers-name`, `the-review-reads-back-the-page` |
+| The paperwork's tap cards were narrow and centred (verify 6) | They fill the column two-up, as Handle A Sale's do | `tap-cards-fill-the-column` |
+| No Back on a document's first question or on a Change trip (verify 7) | Back goes to the previous question, the guide, or the review | `every-paperwork-screen-has-a-way-back` |
+| An unset documentary fee printed $0.00 (verify 8) | Filing stamps `docFeeUnset`; the sheets, the contract and the review print `[Not set: doc fee]` | `an-unset-doc-fee-prints-its-marker` |
+| Wrong source chips; the rate without its % (verify 9) | "From Start Sale" for what the intake took down, "Worked out" for a solved rate, the rate with % | `the-chips-say-where-it-came-from` |
+| A Spanish review was half in English (verify 10) | Headings, chips, the desk's own values and the marker in the screen's language; a line says the box labels quote the English paper | `the-spanish-review-speaks-spanish` |
+| The trade-in VIN was asked before the description, against the docs (verify 11) | The order is kept (the car is identified before it is described) and the docs now say so (`corridor-changes.md`, the SOP) | `every-question-is-for-a-box-on-its-document` ("asks the trade-in's VIN right after the trade-in") |
+| A cash sale's review listed 74 boxes, co-buyer and lien rows among them (verify 12) | A box on a condition the sale does not meet is not read back (the test's paid-in-full cash bill of sale: 55 rows, no co-buyer or lien rows) | `the-review-lists-only-this-sales-boxes` |
+| Bills of sale filed before the change reprinted a different Total Paid and a new ink date (review 1, 13a) | Only the change's own stamp (`pageLayout`) switches the reading; an old copy prints its total due and its old ink date | `an-old-bill-of-sale-reprints-as-it-was-signed`, `a-filed-copy-renders-as-it-was-filed` |
+| A bank deal's Total Paid read as the down payment alone (review 2) | The total due, with "Financed by <lender>" for the lender's share | `a-bank-deal-is-paid-in-full` |
+| A filed power of attorney reprinted the sale as it is now (review 3) | The reprint reads `form_data.printed`, what was signed | `a-filed-power-of-attorney-reprints-what-was-signed` |
+| A `when` condition was prose nothing evaluated (review 4) | Conditions are predicates (`field-maps/conditions.ts`); a box a condition requires is refused blank (`fieldMissing`), so a business with no name or FEIN does not file | `a-box-the-sale-requires-is-refused-blank` |
+| The 130-U's printed name dropped the suffix (review 6) | Stamped copies print the whole name, as box 16, the bill of sale and the VTR-271 do; an old copy keeps its name | `the-130u-keeps-the-suffix` (changed, see below), `one-buyer-one-printed-name` |
+| A map box the paper lacked (warranty kind); shares asked with no box (review 7) | The warranty kind is the Buyers Guide's row; the shares are carried for the Buyers Guide and read back under it | `every-printed-box-is-on-the-paper`, `every-question-is-for-a-box-on-its-document` |
+| Coverage gaps: worked-out figures, question paths (review 8) | Every figure a renderer works out is on its map and the read-back; every 130-U field written is mapped; every Change link opens its question; fixtures for the intake gaps | `every-printed-box-is-on-the-paper`, `nothing-the-130u-writes-is-left-off-its-map`, `every-change-link-opens-its-question` |
+| The rebuilt disclosure asked the licence state for a box it does not print (review 9) | Borrowing reads only boxes a document prints | `every-question-is-for-a-box-on-its-document` |
+| Map sources the code did not use (review 10) | The licence state reads the intake, then the answer (`fallback`); the late-handling fee is the dealer's fact; the complaints contact is the form's words | `the-sources-the-maps-name-are-the-ones-the-paper-reads` |
+| Taps with no way in for a real answer (review 11) | A typed place behind the state list, "Another Way" for the payment method, a first payment before the contract date refused | `a-real-answer-has-a-way-in` |
+| The Buyers Guide fell back to AS IS when its sale could not be read (review 13b) | Refused instead | `a-buyers-guide-states-its-sale-or-is-refused` |
+| **Found in this round's walks:** the 130-U's printed-name line, for a business, read back as "From the licence" | Two rows on one box, as box 14: the person's name, or the entity name from the answer | `the-130u-review-says-what-the-form-says` |
+
+Also changed: the county starts only from the intake's address lookup; the
+county a city usually lies in is offered as the likely card and filed only
+when tapped (south Amarillo is Randall, not Potter).
+
+**Tests changed, and why** (each assertion replaced by an equal or stronger one):
+
+- `the-130u-keeps-the-suffix`: the printed name now keeps the suffix
+  (review 6). The old expectation ("Avery J Collins") is kept for a copy
+  filed before the stamp; the new one ("Avery J Collins Jr") is added.
+- `a-filed-copy-renders-as-it-was-filed`: its list of new stamps named
+  `amountPaidToday`, `stockNumber` and `tradeInVin`, which every corridor
+  copy already carried (review 1); it now names the change's own stamps
+  (`pageLayout`, `docFeeUnset`) and also asserts an old copy's Total Paid
+  equals its total due.
+- `the-review-reads-back-the-page`: the review's `readBack` call now passes
+  the filer's name, stroke and fee setting; the pattern matches that and
+  checks each.
+- `every-state-form-box-is-on-its-map`: a row may name several AcroForm
+  boxes (`acroFields`, box 13's kinds); coverage counts them.
+- `the-bill-of-sale-holds-everything-it-states`: the key list also covers a
+  filing with the doc fee unset.
+- `filing-again-goes-through-the-same-gates`, `a-filed-bill-of-sale-keeps-its-own-fees`:
+  the county comes from the intake or a tap, never from a city guess; the
+  fixtures say which.
+- `the-130u-review-says-what-the-form-says` (new this round): the business
+  printed name is the entity row, with its source.
+
+### Walks (each at 1440×900 and 390×844; 0 page errors, 0 contrast failures)
+
+| Walk | What it asserts | 1440 | 390 |
+|---|---|---|---|
+| Owner onboarding, fees later | name, signature, the finance question, Done | pass | pass |
+| Estimate confirm, cash out the door, cash with a balance, buy here pay here with a trade, bank, buyer files | to the packet, every document signed (2 / 2 or 3 / 3) | pass | pass |
+| Co-buyer (buy here pay here, "Marco Ruiz" added at Start A Sale) | 3 / 3 signed; the name on the bill of sale, the contract and the 130-U box 17 | pass (on the second server: the first try was refused because its phone belonged to the bank walk's buyer) | pass |
+| Void the buy-here-pay-here bill of sale, file again with $2,000 down | voided with the reason; old link refused; filed again, 3 / 3 signed | pass | pass |
+| Tap check, English, business applicant | every paperwork question, Back on each document's second question, review, file | pass | pass |
+| Tap check, Spanish, with a co-buyer | the same in Spanish; the co-buyer on the paper | pass | pass |
+| Questions asked (`asked-*.log`) | no fact asked twice, none asked that the record holds | pass | pass |
+
+### The paper, read back
+
+Every filed copy (70: both sizes, voided copies included) was read with an
+independent reader (PyMuPDF text and AcroForm widgets against each map row,
+not the desk's own probe): 0 boxes missing, 0 differing, 0 unfilled, 0 not
+found in the text (`readback-*.log`). The only `[Not set: …]` text is the
+documentary fee (30 copies: the walks left the owner's fees unset) and the
+late-handling fee (the buyer-files Vehicle Responsibility sheet), both
+owner facts. In `paper/`:
+
+| Page | Read |
+|---|---|
+| `bank-bill-of-sale-total-paid.png` | Total Amount Due $15,514.25; "Financed by Chase Auto Finance $15,514.25"; the acknowledgment's Total Paid $15,514.25 beside the lender |
+| `cash-balance-bill-of-sale-paid-today.png`, `-acknowledgment.png` | Total Amount Due $3,826.75; Paid Today $3,500.00; balance secured by seller lien $326.75; Total Paid $3,500.00 |
+| `unset-doc-fee-marker.png` | Documentary Fee `[Not set: doc fee]`, never $0.00 |
+| `co-buyer-contract-p1.png`, `no-co-buyer-contract-p1.png` | CO-BUYER INFORMATION: Marco Ruiz; without a co-buyer, no co-buyer block at all |
+| `co-buyer-bill-of-sale-co-buyer.png`, `-signatures.png`, `co-buyer-contract-signatures-p5.png` | the co-buyer's name, an ink line for their signature |
+| `co-buyer-130u-box17.png` | box 17: Marco / Ruiz in the form's columns; the additional applicant's printed name |
+| `business-130u-p1.png` | Business ticked; 12-3456789 in box 14; Ruiz Landscaping LLC alone in box 16; box 15 blank |
+
+### recordly-demo's scenarios, walked on this corridor
+
+The demo film's off-camera scenarios were walked once on this desk at
+1440×900 (`recordly-demo-scenarios/`, each with `walk-report.json`): the
+set-up deal to `plan:registration`, the complete sale to the packet, and
+the balance sale to the packet. Box 11 is now answered with the desk's own
+estimate ("Confirm This Weight"): a typed weight needs the document it was
+read from since the empty-weight change, and `validate-scenario.cjs` now
+refuses one typed without it. The three are stamped with this corridor
+(`deskCorridor 16c80f4cffcce9c4`, desk `bec3e0f` plus the uncommitted
+changes) and pass `validate-scenario.cjs --strict`.
+
+### Not done, and why
+
+- The late-handling fee prints `[Not set: late-handling fee]` on the
+  buyer-files sheet (verify 13): it is the owner's figure
+  (`NEXT_PUBLIC_DEALER_LATE_HANDLING_FEE`); none is invented.
+- The trade-in VIN's order was kept rather than moved after the
+  description (verify 11): the docs were wrong, not the corridor.
+
+### Open items
+
+- The owner sets the documentary fee (Your Fees) and the late-handling fee
+  before real sales; with the demo flag off, filing refuses until then.
+- The Discount narration's `checked` record predates this corridor: before
+  the next narrated render, re-check lines 14-18 against the desk and
+  record the walk's commit and `walk-report.json`.
+- The demo storyboards' desk shots were last captured on `2b7bb85`; the
+  next capture's preflight (recordly-demo B3) names any paperwork screen
+  that moved (`corridor-changes.md`).
+
 ## 0000000. Dealer fees: the review fixes, walked (10/03/2026)
 
 The dealer-fee build (owner sets the fees at onboarding, the Texas limits

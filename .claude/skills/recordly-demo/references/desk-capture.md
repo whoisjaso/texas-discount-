@@ -132,9 +132,16 @@ The paperwork corridor changes (page-by-page templates, typed answers turned int
 keeps its own list of what moved in `docs/verification/paperwork-pages/corridor-changes.md` (step / key / old screen
 → new screen). On every desk change:
 
-1. `desk/validate-scenario.cjs` on the three scenarios: update stale answer keys, re-walk once, restamp `deskCommit`.
+1. `desk/validate-scenario.cjs --strict` on the three scenarios (the capture scripts run it strict): it refuses a
+   stale answer key, an answer whose shape no longer fits its question (a typed value for a question that became a
+   tap), an unanswered sworn question, and a scenario not walked on this corridor (`deskCorridor`, the content hash
+   `desk/corridor.cjs <desk>` prints). For each refused one: read corridor-changes.md, update the answer in
+   `assets/desk-scenarios/<name>.json` (a tap is `{ "button": "<label>" }`, a typed box `{ "fill": "main input",
+   "value": … }`), walk it once with premium-dealer-build desk-walk `sale.cjs` to the packet, then
+   `validate-scenario.cjs --stamp` records the corridor hash and commit.
 2. The desk preflight (B3 / N8): update a shot whose selector or label no longer resolves, in the house template
    (`assets/storyboard-desk.json`, `assets/storyboard-long.template.json`), and say so in the send note.
-3. `fill-narration.cjs check --desk $DESK_DIR` refuses a script whose `checked.on` predates the desk's last corridor
-   commit: re-walk the features and re-check lines 14-18 (the money, who files, the inspection).
+3. `fill-narration.cjs check --desk $DESK_DIR` refuses a script checked on another corridor commit
+   (`narration.checked.commit`) or without the walk's evidence (`checked.evidence`: the desk walk's folder with its
+   `walk-report.json`): re-walk the features and re-check lines 14-18 (the money, who files, the inspection).
 4. Re-find document boxes by text (section 8).

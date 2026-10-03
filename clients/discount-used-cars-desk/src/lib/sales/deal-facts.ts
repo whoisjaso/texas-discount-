@@ -38,6 +38,11 @@ export type DealFact = PaperworkQuestion & {
   dynamicOptions?: (context: PaperworkContext) => PaperworkOption[];
   known?: (context: PaperworkContext) => string | undefined;
   start?: (context: PaperworkContext) => string | undefined;
+  /**
+   * A likely answer the screen pre-selects that is only a guess (the county
+   * a city implies): shown, never filed until somebody taps it.
+   */
+  suggest?: (context: PaperworkContext) => string | undefined;
   mustAnswer?: true;
   freeze?: FreezeField;
   /** Why this one is typed rather than tapped. Only free-form answers may be. */
@@ -74,6 +79,12 @@ export const PAYMENT: PaperworkOption[] = [
   choice("Card", "Card"),
   choice("Check", "Check"),
 ];
+
+/*
+  A cashier's check, a money order or the money split two ways is still how
+  the money arrived: the last card types it, and the paper prints the words.
+*/
+const PAYMENT_OTHER = { label: "Another Way", kind: "text" as const };
 
 /** The FTC Buyers Guide's own list of systems, the only honest set for "systems covered". */
 export const WARRANTY_SYSTEMS: PaperworkOption[] = [
@@ -150,6 +161,7 @@ export const DOCUMENT_FACTS: DealFact[] = [
     question: "How Are They Paying Today?",
     kind: "choice",
     options: PAYMENT,
+    other: PAYMENT_OTHER,
     /*
       Only a cash deal asks how the money arrived. On buy here pay here the
       answer is the financing contract; on a bank deal the money arrives
@@ -279,7 +291,16 @@ export const DOCUMENT_FACTS: DealFact[] = [
       the county the mailing city implies.
     */
     known: (context) => (context.intakeCounty ?? "").trim() || undefined,
-    start: (context) => context.buyerCounty.trim() || texasCountyForCity(context.buyerCity),
+    /*
+      The start is the county the mailing ADDRESS geocodes to (the Census
+      lookup the page runs), filed when nobody changes it. The county the
+      CITY implies is only a guess (Katy, Pearland, Dallas, Fort Worth and
+      Plano sit in more than one county; south Amarillo is Randall, not
+      Potter): pre-selected on the screen as the likely answer, and never
+      filed unseen. The power of attorney prints the same county.
+    */
+    start: (context) => context.buyerCounty.trim() || undefined,
+    suggest: (context) => texasCountyForCity(context.buyerCity),
   },
   {
     id: "form130U.applicationType",
@@ -488,6 +509,7 @@ export const DOCUMENT_FACTS: DealFact[] = [
     question: "How Are They Paying Today?",
     kind: "choice",
     options: PAYMENT,
+    other: PAYMENT_OTHER,
     applies: ({ funding }) => funding !== "inHouse" && funding !== "lender",
     start: (context) => (context.funding === "cash" ? "Cash" : undefined),
     freeze: "paymentMethod",

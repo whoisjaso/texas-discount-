@@ -8,7 +8,7 @@ import {
   type SalvageLanguage,
   type SalvageSaleData,
 } from "@/lib/documents/salvageSale";
-import { brand, dealership, dealerSignerPrintedName } from "@/lib/dealership-config";
+import { brand, dealership, dealerSignerPrintedName, notSet } from "@/lib/dealership-config";
 import DocFeeNotice from "@/components/documents/DocFeeNotice";
 
 /**
@@ -182,7 +182,10 @@ export default function SalvageSaleDocument({
               <Field label={copy.priceLabel} value={dollars(data.salePrice)} />
               <Field label={copy.taxLabel} value={dollars(data.tax)} />
               <Field label={copy.titleFeeLabel} value={dollars(data.titleFee)} />
-              <Field label={copy.docFeeLabel} value={dollars(data.docFee)} />
+              <Field
+                label={copy.docFeeLabel}
+                value={(data as unknown as Record<string, unknown>).docFeeUnset === true ? notSet("doc fee") : dollars(data.docFee)}
+              />
               <Field label={copy.totalLabel} value={dollars(data.total)} />
               <Field label={copy.paidTodayLabel} value={dollars(data.amountPaidToday)} />
               {(data.balanceOwed ?? 0) > 0 ? (

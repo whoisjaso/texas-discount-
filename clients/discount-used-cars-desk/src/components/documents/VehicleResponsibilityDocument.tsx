@@ -47,6 +47,8 @@ export type VehicleResponsibilityDocumentData = {
    * copy filed before the stamp, which reads the dealer's figure as it did.
    */
   lateHandlingFee?: number | null;
+  /** The total beside it, stamped with it: the figure the buyer signed. */
+  lateHandlingTotal?: number | null;
 };
 
 type Props = {
@@ -94,7 +96,9 @@ export default function VehicleResponsibilityDocument({
   // set, the clause, the fee row and the total print its visible marker.
   // The stamped fee when the copy carries one, the dealer's figure otherwise.
   const lateFee = typeof data.lateHandlingFee === "number" ? data.lateHandlingFee : LATE_HANDLING_FEE;
-  const returnClause = buildReturnClause(language, data.quotedRegistrationAmount, lateFee);
+  // The total the copy was signed with, when stamped; worked out otherwise.
+  const stampedTotal = typeof data.lateHandlingTotal === "number" ? data.lateHandlingTotal : null;
+  const returnClause = buildReturnClause(language, data.quotedRegistrationAmount, lateFee, stampedTotal);
 
   return (
     // `print-doc` is what the PDF generator waits for before it prints. This
@@ -222,7 +226,7 @@ export default function VehicleResponsibilityDocument({
               <div className="doc-reckoning-total">
                 <dt>{body.owedTotalLabel}</dt>
                 <dd className="bos-live-figure">
-                  {lateFeeTotalText(data.quotedRegistrationAmount, lateFee)}
+                  {lateFeeTotalText(data.quotedRegistrationAmount, lateFee, stampedTotal)}
                 </dd>
               </div>
             </dl>

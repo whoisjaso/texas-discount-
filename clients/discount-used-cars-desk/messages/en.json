@@ -346,6 +346,7 @@
       "outstandingOnFile": "On file",
       "outstandingBringIt": "Bring it to us",
       "paidToday": "Paid Today",
+      "financedBy": "Financed by {lender}",
       "balanceOwed": "Balance Owed",
       "payCash": "Cash",
       "payZelle": "Zelle",
@@ -738,7 +739,9 @@
       "search": "Search",
       "useTyped": "Use {value}",
       "done": "Done",
-      "another": "Another"
+      "another": "Another",
+      "useTypedPlace": "Another state or country: {value}",
+      "firstPaymentTooEarly": "The first payment cannot be before the contract date."
     },
     "rail": {
       "home": "Home",
@@ -878,6 +881,9 @@
             "Check": {
               "label": "Check"
             }
+          },
+          "other": {
+            "label": "Another Way"
           }
         },
         "tradeIn": {
@@ -1159,6 +1165,9 @@
             "Check": {
               "label": "Check"
             }
+          },
+          "other": {
+            "label": "Another Way"
           }
         },
         "howLeaving": {
@@ -1324,13 +1333,59 @@
           "date": "Date of sale",
           "signature": "Signature",
           "static": "Printed by the form",
-          "none": "Not on this sale"
+          "none": "Not on this sale",
+          "intake": "From Start Sale"
         },
         "statuses": {
           "ink": "Left for ink",
           "office": "Left for the tax office",
           "marker": "Not set by the owner",
           "blankAllowed": "Left blank"
+        },
+        "carriedHeading": "Asked here, printed on the {document}",
+        "quotesEnglish": "",
+        "values": {
+          "registrationByDealer": "We file the registration",
+          "registrationByBuyer": "The buyer files the registration",
+          "insuranceOnFile": "Insurance on file",
+          "insuranceOwed": "Insurance owed",
+          "inspectionPassed": "Inspection passed",
+          "weInspect": "We inspect",
+          "buyerInspects": "The buyer inspects",
+          "yes": "Yes"
+        },
+        "notSetMarker": "[Not set: {what}]",
+        "documents": {
+          "buyersGuide": "Buyers Guide",
+          "towAwayAcknowledgment": "Tow-Away Acknowledgment"
+        },
+        "titles": {
+          "The Transaction": "The Transaction",
+          "Trade-In, Itemization And Statements": "Trade-In, Itemization And Statements",
+          "Liens, Still To Do And Terms": "Liens, Still To Do And Terms",
+          "Buyer Acknowledgment And Signatures": "Buyer Acknowledgment And Signatures",
+          "Vehicle, Buyer And What Is The Buyer's From Here": "Vehicle, Buyer And What Is The Buyer's From Here",
+          "Clauses 4 And 5 And Signatures": "Clauses 4 And 5 And Signatures",
+          "Buyers Guide (Front)": "Buyers Guide (Front)",
+          "Buyers Guide (Back)": "Buyers Guide (Back)",
+          "Parties, Vehicle And Truth In Lending": "Parties, Vehicle And Truth In Lending",
+          "Itemization Of Amount Financed": "Itemization Of Amount Financed",
+          "Signatures": "Signatures",
+          "Application For Texas Title And/Or Registration": "Application For Texas Title And/Or Registration",
+          "TxDMV Instructions": "TxDMV Instructions",
+          "The Buyer, The Vehicle And What The Buyer Acknowledges": "The Buyer, The Vehicle And What The Buyer Acknowledges",
+          "Clause 5 And Signatures": "Clause 5 And Signatures",
+          "Limited Power Of Attorney": "Limited Power Of Attorney",
+          "Rebuilt Motor Vehicle Written Disclosure": "Rebuilt Motor Vehicle Written Disclosure",
+          "Parties, Vehicle And Summary": "Parties, Vehicle And Summary",
+          "Vehicle, Buyer And Money": "Vehicle, Buyer And Money",
+          "Clauses And Signatures": "Clauses And Signatures",
+          "Vehicle, How It Leaves, Buyer": "Vehicle, How It Leaves, Buyer",
+          "Clauses 3 To 5 And Signatures": "Clauses 3 To 5 And Signatures",
+          "The Buyer, The Vehicle And What The Buyer Agrees To": "The Buyer, The Vehicle And What The Buyer Agrees To",
+          "If It Comes Back To Us, And Signatures": "If It Comes Back To Us, And Signatures",
+          "Vehicle, Owner, Rebuilder And Work": "Vehicle, Owner, Rebuilder And Work",
+          "Component Parts": "Component Parts"
         }
       },
       "mustAnswer": "Answer this first; it is a statement the paper swears to and it is never filled in for you:",

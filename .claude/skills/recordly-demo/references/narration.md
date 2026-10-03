@@ -173,6 +173,16 @@ The template's `src/narrated/plan.ts` is an empty skeleton (types, `cap` / `hold
 builder over SEGMENTS, LINES and OVERLAYS); `examples/discount-used-cars/plan.ts` is the worked one. Write this
 client's from this run's captures: never copy Discount's frame numbers.
 
+Start from a draft: `node $S/scripts/narrated-plan.cjs --project $P --draft` writes `src/narrated/plan.draft.ts` and
+`narration/anchors.draft.json` from the voice (vo-lines.ts), the captures' cursor.json and `narration.anchors` (here
+`nth` counts events of that type in the whole capture; `shot` and `word` are optional). It keeps part A and the part-B
+sign-in as approved, gives each line anchored on a narrated capture its own `cap()` (the key word 0.15 s before a
+pointer action, the line plus 0.8 s after it; a later cut on the same capture never replays an earlier one), and
+leaves each document or phone line as a TODO `{gap}` for its overlay. The anchors file is the same anchors re-keyed to
+the draft's cuts (`nth` counted inside the cut, as the gate reads it). Copy both in together, write the overlays, then
+tune against the two checks below: on the Discount material the draft passes every pointer and in-frame line and fails
+only the four document lines it leaves TODO.
+
 - `node $S/scripts/narrated-check.cjs --project $P` prints the running order, every line (start, end, gap, key word
   time, picture) and every cut's pointer and camera on both sides, and exits 1 on an overlap, a gap outside the §7
   rules or a failed cut.
@@ -181,7 +191,8 @@ client's from this run's captures: never copy Discount's frame numbers.
   zoom, nth} for a capture event, {overlay, event: doc, doc, key} for a document push, {…, event: frame} for "in frame")
   and the captures' own events; it writes `narration/lip-to-picture.md` and the README block, and fails a line outside
   its window unless `narration.exceptions` gives the reason. Discount's anchors (in the example inputs) pass with three
-  recorded exceptions. It does not write plan.ts: plan.ts stays hand-written to the landing rules.
+  recorded exceptions. It never writes plan.ts: `--draft` writes plan.draft.ts, and plan.ts is tuned by hand to the
+  landing rules.
 - `node $S/scripts/narrated-frames.cjs --project $P [--csv]` lists the frames to look at (segment firsts, zooms at
   full depth, document keys landed).
 

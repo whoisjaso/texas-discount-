@@ -82,3 +82,16 @@ export function firstPaymentChoices(
     template,
   }));
 }
+
+/**
+ * Why a typed first payment date cannot be filed, or null when it can: a
+ * date that is not a date, or one before the contract it is the first
+ * payment of. "Another Date" used to take any day at all.
+ */
+export function firstPaymentProblem(answer: string, contractDate: string): "notADate" | "beforeContract" | null {
+  const at = parse(answer.trim());
+  if (!at) return "notADate";
+  const contract = parse(contractDate);
+  if (contract && answer.trim() < contractDate) return "beforeContract";
+  return null;
+}

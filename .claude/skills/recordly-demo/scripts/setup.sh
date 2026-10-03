@@ -96,12 +96,12 @@ check() {
   # disk on the scratch filesystem
   local where="${SCRATCH:-$PWD}"; while [ ! -d "$where" ]; do where="$(dirname "$where")"; done
   local kb gb; kb="$(df -Pk "$where" | awk 'NR==2{print $4}')"; gb=$((kb / 1024 / 1024))
-  if [ "$gb" -lt 8 ]; then row MISSING disk "${gb} GB free on $where (need >= 8 GB)" "free space first: a DSF 2 shot is ~2.5 GB of PNG before --clean, a render's frames ~1 GB, the voice venv 1.8 GB"
-  elif [ "$gb" -lt 20 ]; then row WARN disk "${gb} GB free on $where (20 GB recommended)" "capture with --clean, render one film at a time, delete old captures/ and stills"
+  if [ "$gb" -lt 8 ]; then row MISSING disk "${gb} GB free on $where (need >= 8 GB)" "free space first. What this skill made, largest first (safe to delete once the film it fed is sent: captures, stills, render frames, the medium.en model; keep the voice venv if a narrated cut is coming):$(skill_usage)"
+  elif [ "$gb" -lt 20 ]; then row WARN disk "${gb} GB free on $where (20 GB recommended)" "capture with --clean, render one film at a time, delete old captures/ and stills:$(skill_usage)"
   else row OK disk "${gb} GB free on $where"; fi
   # ports (warnings: another run may own them; never pick another port)
   for port in 5183 5190; do
-    if port_taken "$port"; then row WARN "port $port" "taken (another run's server?)" "stop your own server with site-server.sh / desk-server.sh stop; never start on another port; never kill a server you did not start"
+    if port_taken "$port"; then row WARN "port $port" "taken by $(port_holder "$port")" "yours (its cwd is this client's site or desk, started by this run): site-server.sh / desk-server.sh stop. Someone else's: wait (desk-server.sh start --wait 1800), then ask the user; never start on another port; never kill a server you did not start"
     else row OK "port $port" "free"; fi
   done
   local load cores; load="$(cut -d' ' -f1 /proc/loadavg 2>/dev/null || echo 0)"; cores="$(nproc 2>/dev/null || echo 1)"
@@ -116,6 +116,22 @@ check() {
   return "$FAIL"
 }
 
+# what this skill made on this machine, largest first, with sizes (for the disk remedy)
+skill_usage() {
+  local d
+  for d in "${SCRATCH:-}" "${SCRATCH:-}/captures" "${SCRATCH:-}/selftest" "${HF_HOME:-}/hub/models--Systran--faster-whisper-medium.en" \
+           "${VOICE_VENV:-}" /tmp/remotion-* ; do
+    [ -n "$d" ] && [ -e "$d" ] && printf ' %s %s;' "$(du -sh "$d" 2>/dev/null | cut -f1)" "$d"
+  done
+}
+# who holds a port: pid, command, its directory, when it started
+port_holder() {
+  local pid=""
+  if have ss; then pid="$(ss -ltnpH 2>/dev/null | awk -v p=":$1\$" '$4 ~ p' | grep -o 'pid=[0-9]*' | head -1 | cut -d= -f2)"; fi
+  [ -z "$pid" ] && have lsof && pid="$(lsof -t -iTCP:"$1" -sTCP:LISTEN 2>/dev/null | head -1)"
+  [ -n "$pid" ] || { echo "an unknown process"; return; }
+  echo "pid $pid ($(ps -o args= -p "$pid" 2>/dev/null | cut -c1-48)) in $(readlink "/proc/$pid/cwd" 2>/dev/null || echo '?') since $(ps -o lstart= -p "$pid" 2>/dev/null | sed 's/  */ /g')"
+}
 port_taken() {
   if have ss; then ss -ltnH 2>/dev/null | awk '{print $4}' | grep -qE "[:.]$1\$"
   else local hex; hex="$(printf '%04X' "$1")"; grep -qiE "^ *[0-9]+: [0-9A-F]+:$hex [0-9A-F]+:[0-9A-F]+ 0A" /proc/net/tcp /proc/net/tcp6 2>/dev/null; fi
