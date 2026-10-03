@@ -43,6 +43,7 @@ are at 30 fps with part B empty.
 14. [Content rules](#14-content-rules)
 15. [Part B: the desk](#15-part-b-the-desk)
 16. [Known open items](#16-known-open-items)
+17. [Composition rules (for a template change)](#17-composition-rules-for-a-template-change)
 
 ## 1. Running order
 
@@ -687,3 +688,25 @@ These are not decisions.
   27.1), then reaches black at f1476, so it reads as a quick ~3-frame pop. A critic's fix was a cubic-in
   `bezier(0.32, 0, 0.67, 0)` for opacity and blur exits. The user approved v1 as it is, so change it only if they ask.
 - **No separate SFX stem** is produced for when music is added. Only the mixed MP4 exists.
+
+## 17. Composition rules (for a template change)
+
+Read this before changing anything in `template/src` (a new segment such as the owner path's 7b, a paid-in-full long
+cut). These are the Remotion rules the shipped template follows, so the change looks like the rest of the film:
+
+- **Every motion is a function of the frame.** Read the frame with `useCurrentFrame()` and drive every value with
+  `interpolate()` or `spring()` (the eases and springs in §10, from `theme.ts`). No CSS transitions or `@keyframes`, no
+  timers, no `Math.random()`: a render draws frames out of order and in parallel, so anything else differs between
+  frames. Opacity, scale and blur interpolations clamp (`extrapolateLeft` / `extrapolateRight: "clamp"`).
+- **Time is written in seconds and converted once.** Durations live in `theme.ts` and `timeline.ts` in seconds and
+  become frames through `toFrames(sec, fps)` at 30 fps, 1920×1080. Never type a frame count that a second value and
+  the fps already give.
+- **Pieces are placed with `<Sequence from durationInFrames name>`**, named so the stills and the verifier can find
+  them; a desk shot is a `deskSegment(...)` in `timeline.ts`, never a hand-placed Sequence.
+- **Files come through `staticFile()`** from the project's `public/` (sfx, fonts, brand, docs, vo); a capture plays as
+  `<OffthreadVideo muted>` (`Camera.tsx`); a sound is a cue in `Sfx` (an `<Audio>` inside its own `<Sequence>`), never
+  a sound baked into a capture.
+- **Fonts load through `lib/fonts.ts`** (it calls `cancelRender` if a face fails), never a font URL.
+- **The deliberate override:** grade, vignette, dither and heavy grain sit on the backdrop, under the window (§3).
+- **Then prove it:** `render.sh … --check` (the typecheck), the cut gate (`verify-film.cjs --cuts-only`), the stills
+  looked at, and `verify.sh` on the render. A template change is said in the send note.

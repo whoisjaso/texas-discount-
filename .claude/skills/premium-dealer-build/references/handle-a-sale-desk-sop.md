@@ -31,7 +31,9 @@ Website domain:                <not provided: ask the owner>
 Dealer licence (GDN) number:   <not provided: ask the owner>
 State:                         <not provided: ask the owner>
 Business time zone:            <not provided: ask the owner>
-Owner / authorised signer:     <not provided: ask the owner>
+First Owner (owner account):   <not provided: ask the owner for name and email,
+                               never a password (First sign-in, item 1);
+                               each cleared member signs as themselves>
 Funding offered:               <not provided: ask the owner>
 Languages:                     <not provided: ask the owner>
 Documentary fee:               <asked at owner onboarding: $225.00 or less, or an
@@ -42,9 +44,10 @@ Dealer deputy (county):        <asked at owner onboarding: yes or no, and the
                                county-approved fee, $10.00 at most>
 Vehicle inventory tax:         <asked at owner onboarding: in business on
                                January 1? unit property tax factor>
-Late-handling fee:             <not provided: ask the owner (the Vehicle
-                               Responsibility sheet quotes it; prints
-                               [Not set: late-handling fee] until given)>
+Late-handling fee:             <not asked as an amount: a counsel question
+                               (texas-dealer-fees.md 6.1 Q6); the Vehicle
+                               Responsibility sheet stays refused until
+                               counsel answers>
 Logo files:                    <not provided: ask the owner>
 SMS provider for signing texts:<not provided: ask the owner>
 Reference repo attached:       <not provided: ask the owner>
@@ -295,9 +298,11 @@ alter table document_agreements add column if not exists voided_with_id uuid;   
 --   change).
 ```
 
-**Dealer fees (a third additive migration; see "## Fees").** The owner's
-fees are one row per desk (the desk is single-tenant), every change is
-logged, and nothing writes either table but one function:
+**Dealer fees (an additive migration; on the reference desk the fourth file,
+`*_dealer_fee_schedule.sql`, after `*_vehicle_empty_weight.sql`; see
+"## Fees").** The owner's fees are one row per desk (the desk is
+single-tenant), every change is logged, and nothing writes either table but
+one function:
 
 ```sql
 create table dealer_fee_schedule (
@@ -402,13 +407,15 @@ Tests, Verification) carry the detail of their own rules and point back here.
 
 **What onboarding includes, in full** (each item is specified below):
 
-1. Where a member comes from: the access request, the approval (a temporary
-   password, the role, the default signing clearance) and the reset.
-2. The redirect: the admin layout sends an unfinished member to the page.
-3. The page, one question per screen: Choose A Password (only on a temporary
+1. Where a member comes from: the first Owner (a one-time bootstrap), the
+   access request, the approval (a temporary password, the role, the default
+   signing clearance) and the reset.
+2. The page, one question per screen: Choose A Password (only on a temporary
    password), What Is Your Name?, Draw Your Signature (only when cleared to
    sign), Your Fees (Owner only: six screens held to the Texas limits) and
    Done.
+3. The redirect: the admin layout sends an unfinished member to the page
+   (built after the page: item 8).
 4. Who is cleared to sign, and its defaults by role.
 5. What the answers feed: the person's name on the 130-U seller line, on the
    VTR-61's printed name and under every dealer line; the one stored
@@ -419,7 +426,35 @@ Tests, Verification) carry the detail of their own rules and point back here.
 8. Build order and the preview members that exercise it.
 9. Its tests, and the end-to-end check that walks all of it.
 
-**1. Where a member comes from.** A person asks for access at
+**1. Where a member comes from.** **The first Owner** cannot come through
+the access request: the public role list has no owner, and only an owner can
+approve one. An `ADMIN_EMAIL` sign-in with no roster row is not enough either:
+it is never sent to onboarding, never meets Your Fees, and the fee save and
+filing refuse it. So the owner bootstraps their own account once, in their own
+Supabase project, after the migrations (Phase 0 asks only their name and
+email, never a password):
+
+1. Authentication, Users, Add user: their email and a password only they
+   know (auto-confirm). Nobody else types or sees it.
+2. In the SQL editor, with that email in lower case:
+
+   ```sql
+   insert into public.team_members (email, full_name, role, status, can_sign_contracts)
+   values ('<owner email>', '', 'owner', 'active', true)
+   on conflict (email) do update
+     set role = 'owner', status = 'active', can_sign_contracts = true;
+   ```
+
+3. They sign in at `/admin/login` (or set a password first through
+   `/admin/recover`). The first sign-in links the row to the account by email
+   and lands in onboarding: the name, the signature, Your Fees, Done.
+
+The empty `full_name` is filled by What Is Your Name?, and
+`onboarding_completed_at` stays null until Done. A row added by hand any other
+way starts with `can_sign_contracts` false (the column's default) and nothing
+backfills it.
+
+**Everyone else** asks for access at
 `/admin/signup` (`requestTeamAccessAction`: name, email, an optional phone and
 a role from the public list, confirmed with a six-digit code before the
 request is recorded). An owner or manager (`team:manage`) approves it with a
@@ -428,17 +463,19 @@ generated temporary password on the auth account, sets
 `requires_password_change` and the role's default `can_sign_contracts` there,
 and stamps `password_reset_at` (Security); the welcome email carries an
 invite link, never the password. A reset (`resetTeamMemberAccessAction`; an
-active member only, never an owner account from the team screen) issues a new
-temporary password the same way, keeps the person's own signing clearance,
-stamps `password_reset_at` and ends the account's older sessions. Either way
-the member's next sign-in lands in onboarding at Choose A Password.
+active member only, never an owner account from the team screen) never
+changes the password of an account that already has one (overwriting a
+working credential is how a failed email once locked a member out): it sets
+`requires_password_change`, keeps the person's own signing clearance, stamps
+`password_reset_at`, ends the account's older sessions and emails the setup
+link. Only a member with no auth account yet gets a generated temporary
+password, created as at approval. The team screen shows a temporary password
+only when the reset created the account (the reference's
+`resetApprovedMemberAccess` returns one, with "Temporary password reset.", in
+every case: correct that when the team screen is built). Either way the
+member's next sign-in lands in onboarding at Choose A Password.
 
-**2. The redirect.** A new staff member's first sign-in lands on
-`/admin/account/onboarding` before anything else (the admin layout redirects
-there while `team_members.onboarding_completed_at` is null, or while the
-account is still flagged `requires_password_change`).
-
-**3. The page.** One question per screen, the same corridor styling, the
+**2. The page.** One question per screen, the same corridor styling, the
 counter counting only the screens this member gets ("Step 1 Of 4"), English
 and Spanish:
 
@@ -472,7 +509,9 @@ and Spanish:
    cutoff (Security: the device cookie, the proxy, the current-admin check,
    the API guard, `end_sessions_before`, `private.current_team_role()`) with
    this screen, not after it: this screen refuses a stale device and signs
-   the member back in through it.
+   the member back in through it. (The two database pieces sit in the Voiding
+   migration block below and, on the reference desk, in the void migration
+   file; they are built here, at step 4.3, all the same.)
 1. **What Is Your Name?** First name and last name, two fields, required.
    Saved as `full_name` ("First Last") and `display_name` (first name). This
    is the name that prints in parentheses on the 130-U and under the dealer
@@ -552,6 +591,12 @@ filing refusal sends them (a "Finish Onboarding" button on Handle A Sale).
 Every refusal carries a code the screen renders from the message catalogue,
 so the Spanish corridor never shows an English sentence.
 
+**3. The redirect.** A new staff member's first sign-in lands on
+`/admin/account/onboarding` before anything else (the admin layout redirects
+there while `team_members.onboarding_completed_at` is null, or while the
+account is still flagged `requires_password_change`). Build it after the page
+(item 8): a redirect to a missing route locks every new member out.
+
 **4. Who is cleared to sign** (`can_sign_contracts`) is a per-person fact. Its
 starting value, written when an owner approves the member, is cleared for
 the Owner, Manager and Registration roles and not cleared for every other
@@ -598,7 +643,8 @@ person (item 4).
 | `/admin/signup` | The access request |
 | `/admin/account/onboarding` (`page.tsx`, `OnboardingFlow.tsx`) | The screens above |
 | `/admin/account/signature` | The stored signature, later |
-| `/admin/dealership/fees`, `/admin/dealership/fees/notice` | Your Fees settings and the posted notice (Owner only) |
+| `/admin/dealership/fees` | Your Fees settings (Owner only: `admin:all`) |
+| `/admin/dealership/fees/notice` | The posted notice, linked from Your Fees; any role that reads sales (`sales:read`) may open and print it, since it states no figure |
 | `src/lib/actions/team-access.ts` | Request, approval, deny, reset (temporary password, default clearance, `password_reset_at`) |
 | `src/lib/actions/team-onboarding.ts` | Choose A Password, the name, Done |
 | `src/lib/actions/staff-signature.ts`, `src/lib/actions/dealer-fees.ts` | The signature save; the fee schedule save |
@@ -620,7 +666,8 @@ The page never sends an account on a temporary password away (that would
 loop with the layout); step 0 clears the flag, and once onboarding is done
 nothing sends the account back, so Handle A Sale opens. The preview members:
 `fresh` (an owner cleared to sign, who meets Your Fees), `fresh-cannot-sign`
-(no signature screen), `fresh-temporary-password` (Choose A Password first),
+(an owner not cleared to sign: no signature screen, and Your Fees),
+`fresh-temporary-password` (Choose A Password first),
 `fresh-reset` (an owner reset: stale devices signed out, then Choose A
 Password) and `fresh-sales` (a salesperson, no fees step; with
 `PREVIEW_ADMIN=sales:<email>`).
@@ -633,9 +680,9 @@ server for each preview member, 0 page errors and 0 contrast failures
 (premium-dealer-build `scripts/desk-walk/onboard.cjs` and `reset.cjs`;
 "Verification", Fees A and B):
 
-- `fresh-temporary-password`: Choose A Password, the name, the signature,
-  Your Fees, Done, Handle A Sale (the 10-character floor and the
-  confirmation are held by the tests).
+- `fresh-temporary-password` (`FEES=<walk input>`): Choose A Password, the
+  name, the signature, Your Fees, Done, Handle A Sale (the 10-character floor
+  and the confirmation are held by the tests).
 - `fresh`: the name, the signature, Your Fees with $225.01 refused in
   English and Spanish, the walk input saved (the owner's figure or one the
   user approved, never invented), the review reading "$X of $225.00
@@ -644,10 +691,12 @@ server for each preview member, 0 page errors and 0 contrast failures
 - `fresh-sales`: the name, the signature, Done, no fees step,
   `/admin/dealership/fees` refused and Your Fees absent from the sidebar and
   the More sheet.
-- `fresh-cannot-sign`: the name, then Done, with no signature screen.
+- `fresh-cannot-sign` (`FEES=<walk input>`): the name, Your Fees, Done, with
+  no signature screen.
 - `fresh-reset`: an old device sent to sign in with the notice (English and
   Spanish) and its API call answered 401; signing in again reaches Choose A
-  Password, then the desk.
+  Password, then the rest of onboarding (`reset.cjs` asserts each and exits
+  1 on a failure).
 - Once the documents exist (premium-dealer-build step 4.7; at once on a
   forked desk), file one 130-U and print one VTR-61 as the walked member:
   the seller line and the printed name read `<Legal Name> (<First Last>)`
@@ -664,9 +713,11 @@ the desk origin as the website, and never build links from the public
 website.
 
 Dealer facts live in ONE file, `src/lib/dealership-config.ts`: legal name,
-DBA, address, county, phone, email, licence number, time zone, signer name
-and title, the fee seeds (the owner's saved fees win; "## Fees"), tax rate,
-brand tokens. Add a unit test that fails if
+DBA, address, county, phone, email, licence number, time zone, the fee seeds
+(the owner's saved fees win; "## Fees"), tax rate, brand tokens. The signer
+is not a config fact: every dealer line prints the filing member's onboarded
+name with the legal name (item 5). The config's `signer` is read only by the
+legacy rental agreement. Add a unit test that fails if
 any of those values is typed anywhere else in `src/`.
 
 ## Routes
@@ -2038,7 +2089,23 @@ Sales** beneath it (and **Sale Times** and **Promises** if built).
   Password" only with `requires_password_change`; the
   10-character floor and the confirmation; the write goes to the session's
   own account and clears the flag; Done refuses until it is cleared; signing
-  clearance at approval is Owner, Manager and Registration only.
+  clearance at approval is Owner, Manager and Registration only. The name:
+  each refusal with its code, in English and Spanish (a part over 60
+  characters, a character other than letters, spaces, apostrophes, periods
+  and hyphens, one the state form's WinAnsi font cannot print, "(First
+  Last)" that will not fit the 130-U seller box at the 7.25pt floor); kept as
+  typed (trimmed, spaces collapsed, never re-cased). Done refuses without a
+  usable saved name and, for a member cleared to sign, without a saved
+  signature. A finished member with a usable name is sent back to work and
+  the name action refuses them. Every onboarding write touches only the
+  session's own row. The admin layout redirects an unfinished member (and
+  one still on a temporary password) to the page, and the page never sends
+  such an account away.
+- The 130-U seller line: `<Legal Name> (<First Last>)` in one line or two at
+  the 7.25pt floor, with the filer's saved signature; the filer's name and
+  member id recorded on the filed row, and a filed copy re-rendering that
+  recorded name, never the person viewing it; filing refused, with "Finish
+  Onboarding" as the way out, for a member not cleared to sign or not named.
 - VTR-61: the dealership recognised however its name is typed, on both
   routes; the dealer's printed name is the pairing in one line or two at the
   floor, the marker when nobody is named, refused for a member not cleared

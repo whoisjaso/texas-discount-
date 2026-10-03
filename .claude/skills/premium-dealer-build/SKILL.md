@@ -89,33 +89,40 @@ dealer search screenshot and any collages). It names this skill and the facts to
    the state licence record for legal name, GDN and county (ask the user for a screenshot of the TxDMV dealer
    search). Claude cannot log into the user's accounts: ask for screenshots, never passwords.
 4. The documentary fee is not a research fact: the owner sets it at first sign-in (Your Fees, step 4.3). Ask
-   only whether it is above $225.00, which needs an OCCC filing (7 TAC §84.205(b)(1), (c), in force since
-   2024-07-11). The other facts only the owner can give (the signer, the domain, the late-handling fee the
-   Vehicle Responsibility sheet quotes; `references/facts-research.md`) are asked now, not found missing
-   later.
+   whether it is above $225.00, which needs an OCCC filing (7 TAC §84.205(b)(1), (c), in force since
+   2024-07-11), and ask for the doc fee the walks and the films type: the owner's figure, or one the user
+   approves, $225.00 or less unless an OCCC filing is recorded. Record it and its source in the status file;
+   it is a walk and demo input only, never code. The other facts only the owner can give (the first Owner's
+   name and email for the owner account, never a password; the domain; `references/facts-research.md`) are
+   asked now, not found missing later. The late-handling fee the Vehicle Responsibility sheet quotes is not
+   asked as an amount: ask rulebook 6.1 question 6 (its legal basis) as a counsel item; the sheet stays
+   refused until counsel answers.
 5. Re-check the Texas fee rulebook (`references/texas-dealer-fees.md`, section 6.3, and its as-of date), then
    run this skill's `scripts/check-fee-module.cjs` on `clients/discount-used-cars-desk` (the desk you will
-   fork) so its legal module matches it.
+   fork) so its legal module matches it. On the Vega's fallback (no Discount desk), it runs at 4.3 step 6.
 6. A client with its own website repository: the desk SOP's Phase 0 applies as written (find its stack and
    design system; never restyle their public pages unasked), and its findings join this report. A state other
    than Texas stops here (SOP, State check).
 7. Ask the video's kickoff questions now, so Phase 6 never waits on them (recordly-demo B0 and the narration
-   flags): film the owner's first sign-in with Your Fees (then a demo fee figure from the owner or the user)
-   or a salesperson's; may the desk's own web address show in the film's address bar; may buyers drive off
-   owing part of the price (BHPH, in-house); does the dealer sell in Spanish; does the site keep a sell /
-   trade-in band.
+   flags): film the owner's first sign-in with Your Fees or a salesperson's (recommend the salesperson's: the
+   owner path is a house template change the video runbook does not script yet, recordly-demo B7f); may the
+   desk's own web address show in the film's address bar; may buyers drive off owing part of the price (BHPH,
+   in-house; a "no" means the narrated cut needs a paid-in-full variant, a template change agreed with the user
+   before recordly-demo N1); does the dealer sell in Spanish; does the site keep a sell / trade-in band.
 
-**Deliverables:** the report: facts found with sources, facts missing (signer, domain and late-handling fee
-listed until given), the hero concept, the stack plan, the rulebook's as-of date and the fee-module check, the
-OCCC question, the video's kickoff questions, and the status file.
+**Deliverables:** the report: facts found with sources, facts missing (the first Owner's name and email and the
+domain listed until given; the late-handling fee as a counsel question), the hero concept, the stack plan, the
+rulebook's as-of date and the fee-module check, the OCCC question and the walk and demo doc fee, the video's
+kickoff questions, and the status file.
 
 **REVIEW GATE G0 (hard):** "Here is what I found, with sources, and what is missing. Shall I build the site
 with these facts (anything missing stays marked `[Not set]` until you have it)? And please answer the video
-and fee questions at the end." If the user says "I don't know those, go", proceed with nulls and markers, and
-list them in the status file.
+and fee questions at the end, including the doc fee the walks and films type (the owner's, or one you approve,
+$225.00 or less without an OCCC filing)." If the user says "I don't know those, go", proceed with nulls and
+markers, and list them in the status file; the doc fee is asked again before 4.3's walk, never invented.
 
 **Exit:** every fact sourced or listed missing; the rulebook current and the module check at exit 0; the
-kickoff answers (or "unknown") recorded; the go in the status file.
+kickoff answers (or "unknown") and the walk doc fee with its source recorded; the go in the status file.
 
 ## Phase 1: Brand and public site
 
@@ -126,13 +133,17 @@ kickoff answers (or "unknown") recorded; the go in the status file.
    `clients/<client>-site` (and `clients/discount-used-cars-desk` → `clients/<client>-desk` beside it, for
    step 4.1). It carries every desk standard listed in Phase 4; the older Vega's copies
    (`clients/vegas-auto-sales`, `clients/vegas-desk`) do not, so use them only if the Discount build is
-   unavailable, and then build each standard at its Phase 4 step. Both are clean and tested, and every dealer
-   fact lives in one file (`src/data/business.ts` for the site, `src/lib/dealership-config.ts` for the desk).
+   unavailable, and then build each standard at its Phase 4 step. Both are clean and tested. The desk keeps
+   every dealer fact in `src/lib/dealership-config.ts`; the site's live in `src/data/business.ts` and also in
+   `index.html` (title, meta, og tags and the JSON-LD: rebuild every value from `business.ts`) and the page copy.
    Then:
-   - replace every reference dealer's fact and asset (Discount: grep for `Discount`, `900-5050`, `203-3890`,
-     `P145000`, `8108`, `Gulf Fw`, `Park Place`, `discountusedcarsandtrucks`; Vega's: `Vega`, `7722`,
-     `941-1622`, `P113248`, `Galveston`, `Constantino`);
-   - rename the Loader SEEN_KEY, the photo files and `package.json` names;
+   - replace every reference dealer's fact and asset (Discount: grep, case-insensitive, for `Discount`,
+     `900-5050`, `203-3890`, `P145000`, `8108`, `Gulf Fw`, `Gulf Freeway`, `Houston`, `77017`, `29.68`, `-95.27`,
+     `Tuesday`, `Park Place`, `discountusedcarsandtrucks`; Vega's: `Vega`, `7722`, `941-1622`, `P113248`,
+     `Galveston`, `Constantino`);
+   - rename the Loader SEEN_KEY in `src/components/Loader.tsx` and the same string in `index.html`'s inline
+     script (they must match, or the page stays locked after the intro), the photo files and `package.json`
+     names;
    - empty `public/photos/` and the inventory list: the new client starts with drawn stand-ins until their own
      images arrive.
 2. Apply the design system (`references/design-system.md`) with the client's logo: logo assets and favicon/OG
@@ -146,8 +157,8 @@ kickoff answers (or "unknown") recorded; the go in the status file.
      generated images or the dealer's photos);
    - the Admin link in the menu drawer: it opens the desk's staff sign-in (`VITE_DESK_URL` + `/admin/login`)
      and appears once the desk URL is set.
-3. Build, screenshot desktop and phone (`scripts/site_screens.cjs`), and look at every shot
-   (`references/verification.md`, Public site).
+3. Build, screenshot at 1440, 1920 and 390 (`scripts/site_screens.cjs`, `INTRO_KEY` = the SEEN_KEY), and look
+   at every shot (`references/verification.md`, Public site).
 
 **Deliverables:** desktop (1440 and 1920) and phone (390) screenshots.
 
@@ -156,7 +167,8 @@ will wear the same theme, so I'd like your go before the image brief and the des
 open the draft PR so the user can follow the build there.
 
 **Exit:** the build clean; every shot looked at (headline clear of the subject at 1440 and 1920, the grotesk
-not Arial, Title Case, no stand-in where a photo was delivered); the user's go recorded.
+not Arial, Title Case, no stand-in where a photo was delivered); the price disclaimer checked against rulebook
+5.6 (a conflict goes to counsel, question 8, on the owner's list); the user's go recorded.
 
 ## Phase 2: The image brief
 
@@ -205,16 +217,22 @@ documents, signing, security, tests, Texas block). Forking the Discount desk mea
 step below still names what must be present and how it is checked: work through them in order, building any
 step the fork lacks. The SOP's rules hold throughout: structure and logic fixed, no invented facts, filing
 refused while a legal fact is missing, no destructive database operations, the client creates their own
-Supabase project. Each migration is applied in filename order as its step lands (the owner's list repeats them
-at Phase 7). Each step is done when its SOP tests are green and its check passes.
+Supabase project. No migration is applied to any Supabase project during the build: the desk runs on the
+preview mock, the tests run every migration in PGlite, and the owner applies them in filename order (Phase 7).
+On a fork every migration already exists; built from scratch, each lands as a file with its step, dated so
+filename order is step order. Each step is done when its SOP tests are green and its check passes.
 
 **4.1 Fork, facts and config.** SOP: FACTS, Porting from the reference repository, The website on paper versus
 the desk's own address. The desk copied at Phase 1, the reference dealer's facts out (the Phase 1 grep list)
 and this client's in, in `src/lib/dealership-config.ts` only. Add the reference dealer's strings (and the
 previous client's licence, address and phone) to the desk's `no-hardcoded-dealer-facts` guard list so they can
-never leak. The website printed on documents is the public domain; the desk's origin is only for signing
-links: keep them as two values. The fees are not config facts: they stay empty until the owner's first sign-in
-(4.3). *Check:* the guard test fails on any surviving fact; `check-fee-module.cjs` on the fork exits 0.
+never leak; first delete the reference desk's `docs/verification/*` evidence except
+`paperwork-pages/corridor-changes.md` (Phase 6 reads it), and rewrite `README.md` and `.env.example` for this
+client, since the guard reads them too. The website printed on documents is the public domain; the desk's
+origin is only for signing links: keep them as two values. The fees are not config facts: they stay empty
+until the owner's first sign-in (4.3). *Check:* the guard test fails on any surviving fact;
+`check-fee-module.cjs` on the fork exits 0 (on the Vega's fallback, at the end of 4.3 step 6, once the module
+and the fee migration exist).
 
 **4.2 Theme.** SOP: The screens, in the client's clothes; `references/design-system.md`, The admin desk wears
 the same clothes. The desk matches the site's theme, never a separate dark style: the eight role tokens, the
@@ -225,13 +243,16 @@ assertion passes) and 0 contrast failures at 1440 and 390.
 **4.3 Team, signers and first sign-in onboarding: one unit.** SOP: First sign-in: onboarding (the complete
 specification, items 1-9; build all of it here, before Start A Sale), with Security (the reset) and Fees (Your
 Fees). In this order:
-1. Where members come from: the access request, the approval (a temporary password, the role, and the default
-   signers: Owner, Manager and Registration cleared to sign, every other role not), the reset.
+1. Where members come from: the first Owner (a one-time bootstrap the owner runs in their own Supabase project,
+   since nobody can request the owner role: SOP, onboarding item 1), the access request, the approval (a
+   temporary password, the role, and the default signers: Owner, Manager and Registration cleared to sign,
+   every other role not), the reset (it never changes an existing password).
 2. The onboarding page, then the redirect to it: the page must exist first (the Vega's port redirected new
    members to a route that did not exist and locked them out).
 3. Choose A Password, only on a temporary password, built with **a password reset signs out every device**
    signed in before it (the device cookie, the proxy, the current-admin check, the API guard, the database
-   role), because this screen refuses a stale device and signs the member back in.
+   role: `end_sessions_before` and the amr-aware `private.current_team_role()`, which on the fork ship in the
+   void migration), because this screen refuses a stale device and signs the member back in.
 4. What Is Your Name?: the person's legal first and last name. It is **the person on the paper**: the 130-U
    seller line reads `<Legal Name> (<First Last>)` (the entity alone is now rejected at the county), the
    VTR-61 printed name is the same pairing, and it prints under every dealer line; a name that will not fit at
@@ -239,7 +260,8 @@ Fees). In this order:
 5. Draw Your Signature, once, for members cleared to sign: the saved signature sits on the seller line and
    every dealer line.
 6. **Your Fees (Owner only)**: the dealer's fees, set by the owner, never in code; the limits from the
-   rulebook through the desk's one legal module (`src/lib/legal/texas-dealer-fees.ts`, the fee migration),
+   rulebook through the desk's one legal module (`src/lib/legal/texas-dealer-fees.ts`; the fee migration
+   `*_dealer_fee_schedule.sql`),
    **refused, never trimmed,** at the screen, the server action and the database. Texas has no combined cap
    (rulebook section 4), so each dealer charge is capped on its own and every paperwork charge, whatever its
    name, is the documentary fee: $225.00 or less (7 TAC §84.205(b)(1), in force since 2024-07-11), more only
@@ -249,15 +271,18 @@ Fees). In this order:
    since 2024-09-05). No free-form dealer fee line exists, and a doc fee is never backed out of a quoted total
    (rulebook section 5.3). "Set These Later" leaves filing refused ("Documentary fee") until the fees are set.
    Later changes: Your Fees settings (`/admin/dealership/fees`, Owner only, one Change per fee, a stale tab
-   refused); every change logged and listed with who, when, from and to; the posted notice prints from the
-   same page.
+   refused); every change logged and listed with who, when, from and to; the posted notice at
+   `/admin/dealership/fees/notice`, linked from that page and printable by every role that reads sales (it
+   states no figure).
 7. Done.
 
 *Check:* the SOP's Onboarding, Password reset, VTR-61 and Fees (owner onboarding, owner only) tests; then the
-guided end-to-end walk of the whole unit (SOP, onboarding item 9) at 1440 and 390: `fresh-temporary-password`,
-`fresh` (`FEES_TRY=225.01` and the walk input, then `FEES=later`), `fresh-sales` (`FEES=none`),
-`fresh-cannot-sign`, `fresh-reset` (`reset.cjs`), each on a fresh server, 0 page errors, 0 contrast failures.
-The walk input is the owner's figure or one the user approved, never invented.
+guided end-to-end walk of the whole unit (SOP, onboarding item 9) at 1440 and 390: `fresh-temporary-password`
+(`FEES=<walk input>`), `fresh` (`FEES_TRY=225.01` and the walk input, then `FEES=later`), `fresh-sales`
+(`PREVIEW_ADMIN=sales:<email>`, `FEES=none`), `fresh-cannot-sign` (an Owner not cleared to sign:
+`onboard.cjs … cannot-sign` with `FEES=<walk input>`; no signature screen), `fresh-reset` (`reset.cjs`, which
+exits 1 on a missing sign-out, notice, 401 or Choose A Password), each on a fresh server, 0 page errors, 0
+contrast failures. The walk input is the doc fee recorded at Phase 0, never invented.
 
 **4.4 Start A Sale and the corridor.** SOP: The architecture, in six rules; Routes; Start A Sale; VIN
 decoding; The buyer's ID; The corridor; Funding; The sale plan; Salvage; Bilingual. One record, answers in
@@ -319,9 +344,10 @@ tests; `freeze.cjs` and `void.cjs`.
 
 **4.10 Walk the desk end to end.** SOP: Verification; `references/verification.md`, Admin desk. `npx tsc
 --noEmit`, `npx eslint`, `npx vitest run`, `next build`; then every walk once at 1440 on the dev server (port
-5190): the five SOP sales, `co-buyer`, the three box-11 walks, the ceremony to N / N signed, void, freeze,
-reset, and the fees walk, each scenario with its own phone. Fix what fails here, so Phase 5 confirms rather
-than discovers.
+5190): the five SOP sales, `co-buyer`, the four box-11 walks (`estimate-confirm` first on a fresh server,
+`title-on-file`, `no-source`, and `pickup` with `RESUME_DEAL=/admin/sales/preview-truck-deal`), the ceremony
+to N / N signed, void, freeze, reset, and the fees walk, each scenario with its own phone. Fix what fails
+here, so Phase 5 confirms rather than discovers.
 
 **Phase 4 exit (the standards; a desk missing one is not done):** first sign-in onboarding (4.3); the person
 on the paper and the default signers (4.3, printed at 4.7); dealer fees at owner onboarding with the Texas
@@ -358,7 +384,7 @@ and one packet page. May I go on to the demo video?"
 ## Phase 6: The demo videos (`recordly-demo`)
 
 **Prerequisites:** G5 passed (the video films the verified site and desk); the G0 kickoff answers; the
-`recordly-demo` skill installed alongside this one.
+`recordly-demo` skill (`.claude/skills/recordly-demo/SKILL.md`).
 
 Follow recordly-demo's own gated steps and runbook (`node "$S/scripts/runbook.cjs" next` prints the next step:
 A1-A8 and R1-R4 the site film, B0-B11 part B on the desk, N0-N14 the narrated cut). Per client only
@@ -373,9 +399,10 @@ cut ships too.
 the desk, first sign-in (with Your Fees when the user chose the owner path at G0), a sale to N / N signed, the
 130-U close-up, the iPhone cut, the facts-only outro, for social and the owner's first look. Only
 `client-inputs.json` changes: address, phone, hours, clock, logos and the measured framing. The fee typed on
-screen is the owner's figure or one the user approved, labelled as a demo input. The house desk storyboard
-predates Your Fees (its onboarding shot ends on Done), so filming the step is a storyboard change agreed with
-the user before capture (asked at G0; recordly-demo, Part B). The paperwork screens changed with the
+screen is the owner's figure or one the user approved, named as a demo input in the film's README and send note
+(never labelled on screen). The house desk storyboard predates Your Fees (its onboarding shot ends on Done), so
+filming the step is a storyboard and composition change agreed with the user before capture (asked at G0;
+recordly-demo, Part B and B7f). The paperwork screens changed with the
 page-by-page templates (the licence state, county, payment count, rate and first payment date are taps; the
 review reads back the page): film them from the shipped desk, never from an older storyboard, using the desk's
 `docs/verification/paperwork-pages/corridor-changes.md` to see which shots moved. **Deliverables:** the share
@@ -399,19 +426,20 @@ and `transcribe-diff.md`: "Here is the voice. Does it sound right, and do you ac
 **REVIEW GATE G6d (hard, recordly-demo's final gate):** send the narrated chat copy with its contact sheet and
 lip-to-picture table: "Here is the narrated walkthrough (<length>). Is it ready to show the dealer?"
 
-**Exit:** both MP4s in the chat with their send notes; the demo project's inputs committed to the same PR
-(recordly-demo, What to send).
+**Exit:** both MP4s in the chat with their send notes; G6d's yes recorded; the demo project's inputs committed
+to the same PR (recordly-demo, What to send).
 
 ## Phase 7: Deliver and deploy
 
-**Prerequisites:** G5 and G6b passed and the films sent (or the user's words that the videos come later,
-recorded in the status file).
+**Prerequisites:** G5 passed; G6a (or passed on "keep going"), G6b, G6c and G6d passed, or the user's words
+that the videos come later, recorded in the status file.
 
 **Steps:** commit on the session branch with clear messages, push, and bring the draft PR up to date. Deploy
 the public site to Vercel as its own project (`references/verification.md`, Deploy). Don't deploy the desk
 until it has its own Supabase project and secrets. List what only the owner can still supply: the Supabase
-project, the migrations in filename order, the secrets, the facts still missing, and Your Fees at their first
-sign-in.
+project, the migrations in filename order, the secrets, the owner account (SOP onboarding item 1's bootstrap)
+and their first sign-in for Your Fees, the facts still missing, and the counsel questions (rulebook 6.1
+question 6, the late-handling fee; 6.2 question 8, the site's price disclaimer).
 
 **Deliverables:** the draft PR link, the live site URL, the owner's list, the status file.
 
@@ -440,9 +468,9 @@ owner item.
 - `scripts/prepare_image.py`: delivered image → web-ready slot file (resize, trim transparent margins, hero
   phone crop).
 - `scripts/crop_collage.py`: Facebook collage → individual inventory photos plus a contact sheet to check.
-- `scripts/site_screens.cjs`: desktop and phone screenshots of the public site.
+- `scripts/site_screens.cjs`: the public site at 1440, 1920 and 390 (`INTRO_KEY` required).
 - `scripts/desk-walk/`: `sale.cjs`, `ceremony.cjs`, `pdfs.cjs`, `audit-fn.cjs` and the sale scenarios (the
-  five SOP walks plus `co-buyer`, `estimate-confirm`, `title-on-file` and `no-source` for box 11, and
+  five SOP walks plus `co-buyer`, `estimate-confirm`, `title-on-file`, `no-source` and `pickup` for box 11, and
   `bhph-void`): full end-to-end desk walks with the theme assertion and WCAG contrast audit, the signing
   ceremony, and packet PDF download. A scenario's `expect` map names text a screen must show, a scenario with
   a `vin` starts the sale through "Not on the lot?" instead of a lot car, and `"coBuyer"` adds one at Start A

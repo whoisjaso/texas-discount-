@@ -49,7 +49,9 @@ node $S/scripts/fill-narration.cjs selftest           # Discount's approved 24 l
 - **The variables:** the road customers drive to, what the lot sells, the fees the receipt adds up, the legal name as
   the voice says it, the dealer's name, and the closing line are spoken. The sell band's name, the legal name as
   printed, and the demo people, car, address and county are on screen only.
-- **The flags:** `SELL_BAND`, `SPANISH_DOCS` and `SELLER_LIEN` leave out lines 03, 09 and 16 when false.
+- **The flags:** `SELL_BAND`, `SPANISH_DOCS` and `SELLER_LIEN` leave out lines 03, 09 and 16 when false. `SELLER_LIEN`
+  false also needs a paid-in-full long storyboard, which the house cut does not have yet: a template change agreed
+  with the user before N1 (`narration.paidInFull`; script-template.md, Kickoff answers to flags).
 - **Refusals:** the fill refuses a leftover `{{placeholder}}`, a missing or unknown variable, and an abbreviation in a
   spoken value ("Fwy", "LLC", "&"). It refuses a line whose feature is not in `narration.checked.features` (seen
   working on this client's desk), half a setup/payoff pair, and Discount's road, name or legal name reused for another

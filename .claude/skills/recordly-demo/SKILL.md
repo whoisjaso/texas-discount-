@@ -64,7 +64,7 @@ The rules that make it repeatable on any model (`references/harness.md`):
    own process group, stopped by group. A taken port is waited for, never swapped. Never `npm install` in the desk.
 4. **Never self-certify what you cannot perceive.** A model that cannot view images or hear audio sends the contact
    sheet, the stills or the film to the user and records their words (`mark --by-user`). Approvals (the onboarding
-   choice, the script, the voiced set) are always the user's.
+   choice, the short cut's review, the script, the voiced set, the narrated film) are always the user's.
 5. **Never force a gate.** An `--allow-*` needs its recorded row in `$P/verify-decisions.md` first; every allowance is
    in the send note. `run <id> --force` needs `--why` and the user's own words (`--by-user`); it is
    recorded, shows as PASS* and is carried into the send note. Re-running a step marks every step built on it STALE
@@ -85,7 +85,7 @@ these exist, say which one is missing and offer to do it first.
 |---|---|---|---|
 | 1 | Setup: the machine, the run's variables, the voice venv when narrated | S0, S2, S1 | the scripted checks |
 | 2 | Site capture: facts, build, measure, project, storyboard, the five shots, the cut gate, the stills | A1-A8 (B0 at kickoff) | A8 by eye |
-| 3 | Desk capture: the desk on :5190, part B and the off-camera sales on one fresh desk | B1-B7 | B6v by eye |
+| 3 | Desk capture: the desk on :5190, part B and the off-camera sales on one fresh desk | B1-B7 (and B7f) | B6v by eye |
 | 4 | Short-cut render: render, verify, one watch with sound, the chat copy | B8-B10 | B9w by ear |
 | **G1** | **Short cut review** (soft): send `<slug>-demo-chat.mp4`, the contact sheet and the send note; ask "Here is the short cut (<length>). Anything to change before I write the narrated script?" | B11 | the user's go, or "keep going" recorded |
 | 5 | Script fill and fact-check: offer the narrated cut, fill the house script, check every line on this desk | N0-N1 | `check` PASS |
@@ -126,9 +126,10 @@ gate and commit it (recordly-demo's G1-G4 are its G6a-G6d); `runbook.cjs status`
 | B5 | Measure the cuts, refill project.ts | `measure-desk-cuts.cjs --into $I`; `fill-client.cjs project` |
 | B6 / B6v | Every cut; every still (by eye) | `verify-film.cjs --cuts-only`; stills; `mark B6v` |
 | B7 | Stop the desk (next-env.d.ts restored) | `desk-server.sh stop` |
+| B7f | Owner path only: the 7b Your Fees segment in the composition (a house change, by hand) | passes at once on the salesperson path |
 | B8 | Render master + chat copy (long) | `CRF=17 AUDIO_BITRATE=192k render.sh $P $SLUG-demo` |
 | B9 / B9w | Verify; contact sheet + one full watch with sound | `verify.sh $P out/$SLUG-demo.mp4 $SCRATCH/verify`; `mark B9w` |
-| B10 / B11 | Chat copy ≤ 28 MB; send with the filled note | `share.sh`; `fill-client.cjs send-note`; `mark B11` |
+| B10 / B11 | Chat copy ≤ 28 MB (long); send with the filled note, get the user's go (G1) | `share.sh`; `fill-client.cjs send-note`; `mark B11 --by-user` |
 | N0 | Offer the narrated cut (or skip it with the user's words) | `fill-narration.cjs init $I`, or `runbook.cjs skip N0 --by-user` |
 | N1-N14 | The narrated cut (on request) | script → approval → voice → transcribe-back → approval → levels → card → long storyboard → captures → plan (`narrated-plan.cjs --draft` starts it) → stills → render → verify → send |
 
@@ -194,8 +195,10 @@ verification §7; the capture recipe: `references/desk-capture.md`.
 - **The onboarding choice is the user's (B0).** The storyboard predates the owner's Your Fees step; `fresh` is now an
   owner who meets it. Ask: film the owner's first sign-in with Your Fees (then `partB.demoFee`, the owner's figure or
   one the user approved, named as a demo input in the README and the send note, never on screen), or a salesperson's
-  (`fresh-sales`, no fees screen). `7b-desk-fees` is written but not yet captured, and its composition segment is
-  added and tuned on the first owner-fees run (`render.sh` refuses until then; references/desk-capture.md §3).
+  (`fresh-sales`, no fees screen). Recommend the salesperson path: it films the approved storyboard as it is. The
+  owner path is a house template change the runbook does not script yet: `7b-desk-fees` is written but not yet
+  captured, and its composition segment is written and tuned by hand on this run (runbook B7f; `render.sh` refuses
+  until then; references/desk-capture.md §3). Say so at B0 and take it only on the user's words.
 - **The desk changes under the video.** Before every desk capture, the preflight (B3) replays every desk shot and the
   scenarios are validated against the desk's questions; the runbook refuses the captures while the desk has moved since
   the clean preflight. What changed is in the desk's `docs/verification/paperwork-pages/corridor-changes.md`.
@@ -213,7 +216,9 @@ each line's picture shows what it says, the camera on the thing named as the wor
    (`assets/narration/`). Every line is checked against this client's desk (`narration.checked`: the corridor
    commit and the desk walk's `walk-report.json` as evidence); a line the desk cannot back is cut with its reason.
    `check --desk $DESK_DIR` refuses a check on another corridor commit. The user approves `script.md` before anything
-   is voiced. The kickoff answers set the flags (`script-template.md`, Kickoff answers to flags).
+   is voiced. The kickoff answers set the flags (`script-template.md`, Kickoff answers to flags). A cash-only dealer
+   (`SELLER_LIEN` false) has no house long cut yet: its paid-in-full variant is a template change agreed with the
+   user before N1, and `check` refuses until `narration.paidInFull` records their words.
 2. **Voice (N3-N5):** `voice/voice.py` (Kokoro-82M af_heart, speed 0.95, one WAV per line, `preview.mp3`);
    `voice/transcribe.py` (faster-whisper small.en; every difference decided and recorded; medium.en is the second
    opinion for a model that cannot listen). The user approves the voiced set.
@@ -280,8 +285,9 @@ describe a film you have not verified. Commit the project's `client-inputs.json`
 - **Not a dealer site, no intro loader, or no sale desk:** the house cut does not apply as is. Tell the user and agree
   the change before building.
 
-When you change composition code, read the remotion-motion-graphics skill first. The template follows its rules,
-except one deliberate override: the grade and vignette sit under the window.
+When you change composition code, read `references/house-recipe.md` §17 first: the Remotion rules the template
+follows, written out so any model has them (the remotion-motion-graphics skill, where it is installed, says the same;
+one deliberate override: the grade and vignette sit under the window).
 
 ## Requirements (setup.sh checks every one)
 

@@ -10,6 +10,10 @@ phases in order and stops at each review gate for your go, keeping
 
 ---
 
+Read `.claude/skills/premium-dealer-build/SKILL.md` in this repository first and follow it (not an account
+copy of the skill); its `references/`, `scripts/` and `assets/` paths are relative to that folder. The video
+skill is `.claude/skills/recordly-demo/SKILL.md`.
+
 Use the premium-dealer-build skill. Onboard a new dealership client by
 replicating the newest build exactly: copy `clients/discount-used-cars-site`
 to `clients/[client-slug]-site` and `clients/discount-used-cars-desk` to
@@ -45,11 +49,11 @@ Client:
 - Languages spoken: [English / Español]
 - Facebook page: [link]; Google listing: [link]
 - TxDMV dealer search screenshot: [attached, gives legal name, GDN and county]
-- Authorised signer: [name or unknown]; domain: [domain or unknown]
-- Late-handling fee the Vehicle Responsibility sheet quotes when a buyer files their own title late: [amount or unknown]
-- Fees (optional, leave blank if unsure): the owner enters the dealer's own fees (the doc fee; the deputy title fee and inventory tax if they apply) at their first sign-in (Your Fees), and each sale's state fees come from webDEALER, so nothing is needed here. If you know it: doc fee [amount]; filed a doc fee above $225 with the OCCC (7 TAC §84.205): [yes / no / unknown]. A figure given here is checked against the limit and used only as the walk and demo input; it never goes into the code.
+- The owner (the desk's first Owner account; every staff member signs the paperwork as themselves): [name and email, or unknown; never a password]; domain: [domain or unknown]
+- Late-handling fee on the Vehicle Responsibility sheet: not asked as an amount. The build asks counsel's question about its legal basis (fee rulebook 6.1, question 6) and keeps that sheet unfiled until counsel answers.
+- Fees: the owner enters the dealer's own fees (the doc fee; the deputy title fee and inventory tax if they apply) at their first sign-in (Your Fees), and each sale's state fees come from webDEALER. Filed a doc fee above $225 with the OCCC (7 TAC §84.205): [yes / no / unknown]. The doc fee the build's walks and the films type: [the owner's figure, or your OK for one at or under $225.00]. It is checked against the limit and used only as the walk and demo input; it never goes into the code.
 - Inventory: [attached Facebook collages / CarGurus link / none yet]
-- Demo video (asked now so the video phase never waits): film the owner's first sign-in with Your Fees, or a salesperson's [owner / salesperson]; the doc fee typed on screen for the film [figure, or "use the owner's"]; may the desk's own web address show in the film's address bar [yes / no]; can buyers drive off owing part of the price [yes / no]
+- Demo video (asked now so the video phase never waits): film the owner's first sign-in with Your Fees, or a salesperson's [owner / salesperson] (salesperson is the house film as approved; owner adds a Your Fees segment the video runbook does not script yet, built by hand on this run); may the desk's own web address show in the film's address bar [yes / no]; can buyers drive off owing part of the price [yes / no] (no: the narrated film needs a paid-in-full version, a template change agreed with you before the script)
 
 Follow the skill's gated phases in order (0 to 7, and the desk's steps 4.1 to
 4.10), never starting a phase before its prerequisites are met. Stop at every

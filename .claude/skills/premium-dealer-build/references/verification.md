@@ -6,9 +6,11 @@ look at the screenshots yourself, then send the user a few of them.
 ## Public site
 
 - `npm run build` (tsc + vite) clean.
-- `vite preview --port 5181`, then `PWPATH=$(npm root -g)/playwright node
-  scripts/site_screens.cjs <out> http://localhost:5181` (set INTRO_KEY to the
-  Loader's SEEN_KEY). Look at every desktop and phone shot: headline never
+- `vite preview --port 5181`, then `INTRO_KEY=<SEEN_KEY>
+  PWPATH=$(npm root -g)/playwright node scripts/site_screens.cjs <out>
+  http://localhost:5181`: it shoots 1440×900, 1920×1080 and 390×844 and
+  refuses to run without INTRO_KEY (the Loader's SEEN_KEY, the same string as
+  `index.html`'s inline script). Look at every shot: headline never
   crossing the hero subject (check 1440 AND 1920 wide), no text on busy
   photo areas, cards not collapsed, fonts actually the grotesk (not Arial),
   Title Case applied, no drawn stand-in left where a photo was delivered.
@@ -16,6 +18,16 @@ look at the screenshots yourself, then send the user a few of them.
   forcing `.reveal` visible; otherwise shots catch fades mid-way.
 
 ## Admin desk
+
+Before any `scripts/desk-walk/` script: `export PWPATH=$(npm root -g)/playwright`
+(every walk requires it, with no fallback) and `CHROME_PATH` if Playwright
+cannot find Chromium. The server command is the desk's README ("Run it"):
+`DESK_ALLOW_UNSET_FACTS=true`, `ADMIN_SESSION_SECRET` and
+`INTERNAL_RENDER_TOKEN` (long random local values on the command line),
+`CHROME_PATH`, and `DESK_PREVIEW_MEMBER` for the onboarding walks, in its own
+process group, stopped by its PGID. THEME_ACCENT / THEME_GROUND / THEME_FONT
+come from the desk's computed theme: the THEME ASSERTION FAILED message prints
+them, or recordly-demo's `scripts/desk/theme.cjs` reads them.
 
 - `npx tsc --noEmit`, `npx eslint`, `npx vitest run` (all green; the guard test
   must fail if any previous client's fact survives, so add the previous
@@ -38,6 +50,13 @@ look at the screenshots yourself, then send the user a few of them.
   own phone: Start A Sale refuses a phone that names another open sale's
   buyer. Each walk writes `walk-report.json` (set `DESK_DIR` to the desk so
   it records the corridor commit), the evidence a narration fact-check cites.
+- Box 11 (SOP, Verification, the four box-11 walks), at 1440×900 and 390×844:
+  `estimate-confirm` first on a freshly started server (its Camry is also
+  `cash-otd`'s), then `title-on-file`, `no-source`, and `pickup` with
+  `RESUME_DEAL=/admin/sales/preview-truck-deal` (the mock's seeded pickup:
+  "needs the weight from a document" with the estimate as a hint and no
+  Confirm, a typed Texas title figure, carrying capacity starting at the
+  Table 2-1 minimum), each to `N / N signed` through the ceremony.
 - Pull one packet with `node pdfs.cjs <out> <deal>` and read it (PyMuPDF): the
   legal name, licence, county present, the lienholder right for the funding
   type, the odometer identical across documents, no dev host, no `[Not set]`
@@ -50,10 +69,14 @@ look at the screenshots yourself, then send the user a few of them.
   9; the skill's step 4.3), at both sizes, a fresh server per preview member
   (`DESK_PREVIEW_MEMBER`): `fresh-temporary-password` (Choose A Password,
   then the rest), `fresh` (the fees bullets below), `fresh-sales`
-  (`PREVIEW_ADMIN=sales:<email>`, `FEES=none`), `fresh-cannot-sign` (no
-  signature screen; `onboard.cjs ... cannot-sign`) and `fresh-reset`
-  (`reset.cjs`: the old device signed out in English and Spanish, its API
-  call 401, Choose A Password after signing in again). Then one filed 130-U
+  (`PREVIEW_ADMIN=sales:<email>`, `FEES=none`), `fresh-cannot-sign` (an
+  Owner not cleared to sign: `FEES=<walk input> onboard.cjs ... cannot-sign`;
+  the name, Your Fees, Done, no signature screen) and `fresh-reset`
+  (`reset.cjs`, its API check on `/admin/sales/preview-completed-deal` unless a
+  deal path is given: the old device signed out in English and Spanish, its
+  API call 401, Choose A Password after signing in again; it exits 1 when any
+  of these fails). `fresh-temporary-password` meets Your Fees too:
+  `FEES=<walk input>`. Then one filed 130-U
   and one printed VTR-61 read `<Legal Name> (<First Last>)` with the drawn
   signature.
 - The fees walk (SOP, Verification, Fees; A to F), at both sizes, on a

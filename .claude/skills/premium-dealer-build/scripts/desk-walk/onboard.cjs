@@ -3,6 +3,9 @@
 //
 // Run against a server started with DESK_PREVIEW_MEMBER=fresh (or
 // fresh-temporary-password / fresh-reset, which add Choose A Password first).
+// DESK_PREVIEW_MEMBER=fresh-cannot-sign is an Owner not cleared to sign: walk
+// it with the last argument `cannot-sign` (no signature screen; the walk fails
+// if one appears) and FEES=<walk input>|later, since an Owner meets Your Fees.
 // The member's row then carries the typed name and signature for the rest of
 // that server's life, which is what a void needs: the record names who voided.
 // DESK_BASE picks the server (default http://localhost:5190).
@@ -74,8 +77,8 @@ const NEW_PASSWORD = process.env.NEW_PASSWORD || 'a preview password of mine';
   await p.locator('input[name=lastName]').fill(last);
   await shot('name');
   await p.getByRole('button', { name: 'Next', exact: true }).click();
-  await question().filter({ hasText: mode === 'cleared' ? 'Draw Your Signature' : 'You Are All Set' }).waitFor({ timeout: 60000 });
   if (mode === 'cleared') {
+    await question().filter({ hasText: 'Draw Your Signature' }).waitFor({ timeout: 60000 });
     const c = p.locator('canvas').first();
     await c.scrollIntoViewIfNeeded();
     const bx = await c.boundingBox();
@@ -84,6 +87,17 @@ const NEW_PASSWORD = process.env.NEW_PASSWORD || 'a preview password of mine';
     await p.mouse.up();
     await shot('signature');
     await p.getByRole('button', { name: 'Save Signature', exact: true }).click();
+  } else {
+    // Not cleared to sign: the next screen is Your Fees (an Owner) or Done,
+    // never the signature pad. Your Fees has no #onboarding-question heading.
+    const sig = question().filter({ hasText: 'Draw Your Signature' });
+    await Promise.race([
+      sig.waitFor({ timeout: 60000 }).catch(() => {}),
+      p.locator('h1#fees-question').waitFor({ timeout: 60000 }).catch(() => {}),
+      question().filter({ hasText: 'You Are All Set' }).waitFor({ timeout: 60000 }).catch(() => {}),
+    ]);
+    if (await sig.isVisible().catch(() => false)) throw new Error('the signature screen was shown to a member not cleared to sign');
+    console.log('NO SIGNATURE SCREEN (not cleared to sign)');
   }
 
   // Your Fees, or straight to Done.

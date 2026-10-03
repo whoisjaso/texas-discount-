@@ -3,7 +3,8 @@
 /**
  * fill-narration.cjs — the narrated long cut's house script, filled for one client.
  *
- *   node fill-narration.cjs init     <client-inputs.json>          add an empty `narration` block to fill (once)
+ *   node fill-narration.cjs init     <client-inputs.json>          add an empty `narration` block to fill (once; a block
+ *                                                                  already there is kept: "narration block present")
  *   node fill-narration.cjs check    <client-inputs.json>          every refusal below, nothing written
  *   node fill-narration.cjs lines    <client-inputs.json> [--out narration/lines.json]   what Kokoro voices
  *   node fill-narration.cjs script   <client-inputs.json> [--out narration/script.md]    for the owner to read
@@ -57,7 +58,7 @@ const write = (out, text) => {
 
 const HOLE = /\{\{|\}\}/;
 const VAR = /\{\{([A-Z0-9_]+)\}\}/g;
-const META_KEYS = new Set(['checked', 'cut', 'speak', 'anchors', 'exceptions']); // anchors / exceptions: narrated-plan.cjs (the lip-to-picture gate)
+const META_KEYS = new Set(['checked', 'cut', 'speak', 'anchors', 'exceptions', 'paidInFull']); // anchors / exceptions: narrated-plan.cjs (the lip-to-picture gate); paidInFull: below
 const LINE_FIELDS = ['text', 'speak', 'cue', 'key'];
 
 /** Written forms the voice misreads in a said value, with how to spell them. */
@@ -159,6 +160,16 @@ function build(inp, tpl) {
     if (k.startsWith('_') || META_KEYS.has(k)) continue;
     if (k === 'SERVICE_BAND') { problems.push('narration.SERVICE_BAND is now narration.SELL_BAND_NAME: the site\'s SELL band as it names itself (e.g. We Buy Cars). The storyboard\'s service band is a different thing (storyboard.SERVICE_TILE)'); continue; }
     if (!V[k] || V[k].kind === 'derived') problems.push(`narration.${k} is not a variable of the template (a typo?): the variables are in assets/narration/script-template.md`);
+  }
+
+  // SELLER_LIEN false: the house long cut films a balance owed (22-money, carter-balance) and has no paid-in-full
+  // variant, so fill-client.cjs long-storyboard refuses it at N8. Settle it before the script is approved and voiced:
+  // the user agrees that template change and narration.paidInFull records their words.
+  if (values.SELLER_LIEN === false) {
+    const D = N.paidInFull;
+    if (!D || typeof D !== 'object' || typeof D.words !== 'string' || D.words.trim().length < 4 || typeof D.source !== 'string' || D.source.trim().length < 4 || HOLE.test(`${D.words}${D.source}`)) {
+      problems.push('narration.SELLER_LIEN is false, but the house long cut films a balance owed and has no paid-in-full variant yet (22-money, carter-balance): that is a template change agreed with the user before N1. Record their words as narration.paidInFull { "words": "<their words>", "source": "<where they said it>" } and make the variant before N8 (script-template.md, Kickoff answers to flags)');
+    }
   }
 
   // Cross-checks between values.
@@ -354,8 +365,9 @@ function report(r) {
 function init(file, tpl) {
   const inp = readJson(file);
   if (inp.narration && !flags.force) {
-    console.error(`${file} already has a narration block (--force replaces it)`);
-    process.exit(1);
+    // Kept as it is (runbook N0 passes on this): a re-run after S2, or a block added by hand, never blocks the run.
+    console.log(`narration block present in ${file}: kept as it is (--force replaces it with an empty one)`);
+    return;
   }
   const N = {
     _narration: 'The narrated long cut (recordly-demo assets/narration/script-template.md): fill every double-brace value from the source its "Variables" row names, spelled as the voice says it; set every flag true or false on the owner\'s answer; walk the client\'s desk and list each feature seen working in checked.features. Then fill-narration.cjs check, lines and script.',
@@ -425,8 +437,9 @@ function selftest(tplFile) {
   ok('another client\'s copy of Discount\'s desk check is refused', has(mut((x) => { x.slug = 'example-motors'; }), /narration\.checked is .*desk check, copied/));
   const noEs = mut((x) => { x.narration.SPANISH_DOCS = false; });
   ok('SPANISH_DOCS false leaves out 09-car-c only', noEs.problems.length === 0 && noEs.lines.length === 23 && !noEs.lines.some((l) => l.id === '09-car-c'), noEs.problems.join('; '));
-  const noBand = mut((x) => { x.narration.SELL_BAND = false; x.narration.SELLER_LIEN = false; });
-  ok('SELL_BAND and SELLER_LIEN false leave out 03 and 16', noBand.problems.length === 0 && noBand.lines.length === 22 && !noBand.lines.some((l) => ['03-site-c', '16-money-c'].includes(l.id)));
+  ok('SELLER_LIEN false without the user\'s recorded decision is refused', has(mut((x) => { x.narration.SELLER_LIEN = false; }), /SELLER_LIEN is false.*paidInFull/));
+  const noBand = mut((x) => { x.narration.SELL_BAND = false; x.narration.SELLER_LIEN = false; x.narration.paidInFull = { words: 'Film it paid in full', source: 'selftest fixture' }; });
+  ok('SELL_BAND and SELLER_LIEN false (paid in full agreed) leave out 03 and 16', noBand.problems.length === 0 && noBand.lines.length === 22 && !noBand.lines.some((l) => ['03-site-c', '16-money-c'].includes(l.id)), noBand.problems.join('; '));
   ok('a feature not checked on the desk is refused', has(mut((x) => { x.narration.checked.features = x.narration.checked.features.filter((f) => f !== 'id-scan'); }), /^"id-scan" is narrated by 10-buyer-a and/));
   ok('a missing check date is refused', has(mut((x) => { x.narration.checked.on = null; }), /checked\.on/));
   ok('cutting a payoff without its setup is refused', has(mut((x) => { x.narration.cut = [{ id: '19-payoff-a', why: 'test' }]; }), /^12-buyer-c needs 19-payoff-a/));

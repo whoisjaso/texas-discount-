@@ -1,14 +1,10 @@
 {
- "car": "2020 Nissan Altima S",
+ "_note": "Box 11's pickup walk (SOP Verification: a pickup asks for a document and shows the estimate as a hint only; after a title figure, carrying capacity starts at the Registration Manual Table 2-1 minimum). It resumes the preview mock's seeded pickup sale, so run it with RESUME_DEAL=/admin/sales/preview-truck-deal (a 2018 Ford F-150 XLT with no weight on record; Start A Sale is skipped, so it needs no phone), once per fresh server. The title figure 5012 is the walk input the reference build typed (desk docs/verification/VERIFICATION.md, Pickup: 'Box 11 will read 5,100 lb'). Answers for a screen the corridor no longer asks are ignored; a 'NO ANSWER FOR <step>' stop means the corridor asks something new: answer it from the screen, never with an invented fact.",
+ "car": "2018 Ford F-150 XLT (the preview mock's preview-truck-deal)",
  "language": "en",
  "title": "Clean title",
- "first": "Omar",
- "last": "Hayes",
- "phone": "7135550194",
- "street": "1200 Edgebrook Dr",
- "city": "Houston",
- "zip": "77034",
- "county": "Harris",
+ "first": "Daniel",
+ "last": "Ortiz",
  "answers": {
   "funding": {
    "button": "Cash",
@@ -69,6 +65,20 @@
   "applicantType": {
    "text": "A Person"
   },
+  "emptyWeight": [
+   {
+    "fill": "main input",
+    "value": "5012"
+   },
+   {
+    "button": "Texas Title",
+    "exact": true
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
   "carryingCapacity": {
    "button": "Next",
    "exact": true
@@ -85,6 +95,7 @@
   }
  },
  "expect": {
-  "form130U/review": "Texas title"
+  "form130U/emptyWeight": "needs the weight from a document",
+  "form130U/carryingCapacity": "Table 2-1"
  }
 }

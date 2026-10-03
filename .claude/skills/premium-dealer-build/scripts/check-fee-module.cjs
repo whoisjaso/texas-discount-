@@ -9,7 +9,10 @@
 // this script lets the skill check a desk without running its test suite.
 //
 // Usage: node check-fee-module.cjs [deskDir]
-//   deskDir defaults to clients/discount-used-cars-desk under the repo root.
+//   deskDir defaults to clients/discount-used-cars-desk under the current
+//   directory (run it from the repository root, or pass the desk's path).
+//   The rulebook is read from this skill's own references/ folder, wherever
+//   the skill is installed.
 //   Reads <deskDir>/src/lib/legal/texas-dealer-fees.ts, transpiled with the
 //   desk's own typescript package (no install), and
 //   <deskDir>/supabase/migrations/*_dealer_fee_schedule.sql.
@@ -23,9 +26,9 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const ROOT = path.resolve(__dirname, '..', '..', '..', '..');
-const RULEBOOK = path.join(ROOT, '.claude/skills/premium-dealer-build/references/texas-dealer-fees.md');
-const desk = path.resolve(process.argv[2] || path.join(ROOT, 'clients/discount-used-cars-desk'));
+const ROOT = process.cwd();
+const RULEBOOK = path.join(__dirname, '..', 'references', 'texas-dealer-fees.md');
+const desk = path.resolve(process.argv[2] || 'clients/discount-used-cars-desk');
 const MODULE = path.join(desk, 'src/lib/legal/texas-dealer-fees.ts');
 
 function fail(message) {

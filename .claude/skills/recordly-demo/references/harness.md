@@ -33,7 +33,8 @@ Before demo.env exists, `S` is the absolute folder holding the skill's SKILL.md:
 ## 2. Long jobs are detached, polled and stopped by process group
 
 Anything that can run over two minutes runs through `scripts/bg.sh`: npm ci, the capture loops, the stills, the
-renders, `verify.sh`, the voice venv, `share.sh` on a long film.
+renders, `verify.sh`, the voice venv, `share.sh` on a long film (runbook B10 is long; `share.sh` is quick when the
+render already made the chat copy from the same master, and N14 only checks it with `--check`).
 
 ```bash
 source $SCRATCH/demo.env
@@ -53,7 +54,7 @@ bash $S/scripts/bg.sh stop render         # TERM the group, KILL it 5 s later
   (`npx remotion render … --codec aac`) and mux it over the joined picture (the Discount ending was remade that way).
 - Typical lengths on 4 shared cores: npm ci 1-3 min; the capture self-test 70 s; five site shots 5 min; the part-B
   order 15-25 min; stills 3-5 min; the house render 12-30 min; verify 3-4 min; the narrated render ~80 min; the share
-  copy of a 3:50 film ~8 min.
+  copy of a 3:50 film about 8-15 min (the same figure as `share.sh`'s header).
 
 ## 3. Servers: two ports, own process groups
 
@@ -73,8 +74,9 @@ bash $S/scripts/bg.sh stop render         # TERM the group, KILL it 5 s later
   that can view images may look and record what it looked at (`runbook.cjs mark <id> --by-agent "<what>"`). A model
   that cannot view images or hear audio sends the files to the user (contact-sheet.png, the named stills, the chat
   copy, preview.mp3) and records the user's words (`--by-user "<their words>"`). It never marks such a gate itself.
-- **Approvals:** the narrated script (N2), the voiced set (N5) and part B's onboarding choice (B0) are the user's.
-  `mark` refuses an approval without `--by-user`.
+- **Approvals:** part B's onboarding choice (B0), the short cut's review (B11, gate G1: the user's go, or their
+  recorded "keep going"), the narrated script (N2), the voiced set (N5) and the narrated film (N14, gate G4: the
+  user's yes) are the user's. `mark` refuses an approval without `--by-user`, so `next` waits at each of them.
 - **Allowances:** a gate is never forced. An `--allow-spikes / --allow-onsets / --allow-cut` needs its row in
   `$P/verify-decisions.md` first (`runbook.cjs mark <step> --allow spike:812 --why … --by-…`); verify.sh refuses
   otherwise and copies every allowance into the report and the send note.

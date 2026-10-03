@@ -72,7 +72,11 @@ text/call/pre-qualify buttons, highlight chips) + specs + viewing form.
 
 - Logo files → `public/brand/` (full, small, 512 icon, favicon, touch icon,
   OG 1200×630 made from the hero photo).
-- `business.ts` (name, facts, hours, reviews) and the `Loader` SEEN_KEY.
+- `business.ts` (name, facts, hours, reviews), and every fact `index.html`
+  repeats (title, meta, og tags, the JSON-LD address, geo and hours).
+- The `Loader` SEEN_KEY in `src/components/Loader.tsx` and the same string in
+  `index.html`'s inline script (they must match), passed to
+  `site_screens.cjs` as `INTRO_KEY`.
 - Hero headline: the client's real offer in two short lines
   (Vega's: "Trucks, cars / & SUVs." + "Easy credit and auto glass at …").
 - Body-type lines, service band content, Discover tiles.

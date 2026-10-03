@@ -60,8 +60,10 @@ setsid env PORT=5190 DESK_PREVIEW_MEMBER=<fresh|fresh-sales> DESK_ALLOW_UNSET_FA
   (`verified: false`). The composition has no 7b segment yet either: the first owner-fees run adds it to
   `template/src/demo/timeline.ts` (a 7b `deskSegment` after 7, 7's pad zoom pulled out before its cut so the camera
   matches 7b's first frame, the Save Fees click's success cue) and tunes it on those captures with the cut gate and
-  the part-B stills; until then `render.sh` refuses an owner-fees storyboard. Say so to the user when they choose the
-  owner path (B0), and in the send note.
+  the part-B stills; until then `render.sh` refuses an owner-fees storyboard. The runbook does not script that work:
+  it is runbook step B7f, done by hand after B7 (read house-recipe.md §17 first, copy the changed timeline.ts into the
+  project, then run B5, B6 and B6v again). So at B0 recommend the salesperson path, say plainly that the owner path is
+  this house change, take it only on the user's words, and say it in the send note.
 - Off camera (the narrated cut's fresh server): `scripts/desk/onboard.cjs` signs in the member with the SAME strokes
   7 draws (`assets/sig/member-maria-lopez.json`), so every document carries one hand; FEES=<dollars> on the owner path.
 

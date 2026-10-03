@@ -1,5 +1,7 @@
 // A password reset signs out every device signed in before it.
 // Usage: node reset.cjs <outDir> <width> <height> [dealPath]
+//   dealPath defaults to /admin/sales/preview-completed-deal (the preview
+//   mock's seeded deal), so the API check always runs.
 //
 // Run against a server started with DESK_PREVIEW_MEMBER=fresh-reset: the
 // preview account then carries a password reset, fixed the first time it is
@@ -8,7 +10,10 @@
 //      notice, in English and Spanish;
 //   2. a signed-in time older than the reset: the same, and an API call from
 //      that device answers 401;
-//   3. signing in on the form: Choose A Password, then the desk.
+//   3. signing in on the form: Choose A Password, then the rest of onboarding.
+// Each check is asserted: a device not sent to /admin/login?notice=signed-out-reset,
+// a notice missing either language, an API answer other than 401, or a sign-in
+// that does not reach Choose A Password prints FAILED and exits 1.
 // DESK_BASE picks the server (default http://localhost:5190).
 const { chromium } = require(process.env.PWPATH);
 const fs = require('fs');
@@ -16,7 +21,16 @@ const { BASE, guard, at } = require('./desk-base.cjs');
 const { AUDIT } = require('./audit-fn.cjs');
 
 (async () => {
-  const [out, W, H, deal] = process.argv.slice(2);
+  const [out, W, H, dealArg] = process.argv.slice(2);
+  const deal = dealArg || '/admin/sales/preview-completed-deal';
+  const failed = [];
+  const expect = (ok, what) => { if (!ok) { failed.push(what); console.log('FAILED', what); } };
+  const signedOut = async (p, label) => {
+    const url = p.url().replace(BASE, '');
+    const said = await notice(p);
+    expect(url.startsWith('/admin/login?notice=signed-out-reset'), `${label}: landed on ${url}, not /admin/login?notice=signed-out-reset`);
+    expect(/password was reset/i.test(said) && /contraseña/i.test(said), `${label}: the notice in English and Spanish is missing (${JSON.stringify(said)})`);
+  };
   fs.mkdirSync(out, { recursive: true });
   const b = await chromium.launch({ executablePath: process.env.CHROME_PATH || undefined });
   const host = new URL(BASE).hostname;
@@ -42,6 +56,7 @@ const { AUDIT } = require('./audit-fn.cjs');
     const { ctx, p } = await open([['tj-local-admin-preview', 'owner:owner@example.dev']]);
     await p.goto(at('/admin/sales'), { waitUntil: 'networkidle', timeout: 180000 });
     console.log('NO SIGNED-IN TIME ->', p.url().replace(BASE, ''), '::', JSON.stringify(await notice(p)));
+    await signedOut(p, 'no signed-in time');
     await shot(p, 'no-signed-in-time');
     await ctx.close();
   }
@@ -52,11 +67,11 @@ const { AUDIT } = require('./audit-fn.cjs');
     const { ctx, p } = await open([['tj-local-admin-preview', 'owner:owner@example.dev'], ['tj-local-admin-signed-in', old]]);
     await p.goto(at('/admin/sales'), { waitUntil: 'networkidle', timeout: 180000 });
     console.log('OLD SIGNED-IN TIME ->', p.url().replace(BASE, ''), '::', JSON.stringify(await notice(p)));
+    await signedOut(p, 'old signed-in time');
     await shot(p, 'old-signed-in-time');
-    if (deal) {
-      const r = await ctx.request.get(at(`/api/admin/sales/${deal.split('/').pop()}/packet-status`));
-      console.log('STALE DEVICE API', r.status(), JSON.stringify(await r.json().catch(() => null)));
-    }
+    const r = await ctx.request.get(at(`/api/admin/sales/${deal.split('/').pop()}/packet-status`));
+    console.log('STALE DEVICE API', r.status(), JSON.stringify(await r.json().catch(() => null)));
+    expect(r.status() === 401, `stale device API answered ${r.status()}, not 401`);
     await ctx.close();
   }
 
@@ -71,6 +86,7 @@ const { AUDIT } = require('./audit-fn.cjs');
     await p.waitForLoadState('networkidle').catch(() => {});
     const q = (await p.locator('h1#onboarding-question').innerText().catch(() => '')).replace(/\s+/g, ' ');
     console.log('AFTER SIGN-IN ->', p.url().replace(BASE, ''), '::', JSON.stringify(q));
+    expect(/Choose A Password/.test(q), `a fresh sign-in reached ${JSON.stringify(q)}, not Choose A Password`);
     await shot(p, 'choose-a-password');
     await p.locator('input[name=password]').fill('a preview password of mine');
     await p.locator('input[name=confirmPassword]').fill('a preview password of mine');
@@ -83,5 +99,7 @@ const { AUDIT } = require('./audit-fn.cjs');
 
   console.log('PAGE ERRORS', errors.length);
   console.log('CONTRAST FAILURES', failures.length); for (const f of [...new Set(failures)].slice(0, 10)) console.log('  ', f);
+  console.log(failed.length ? `RESET WALK FAILED (${failed.length})` : 'RESET WALK OK');
+  if (failed.length) process.exitCode = 1;
   await b.close();
 })().catch((e) => { console.error('FAIL', e.message.split('\n')[0]); process.exit(1); });

@@ -15,7 +15,7 @@
 | Started | 2026-10-01 (`7121d43`, forked from the Vega's build) |
 | Last updated | 2026-10-03, after the paperwork page-by-page fix round |
 | Now working on | The skills (the gated process); the desk's code is unchanged by it |
-| Waiting on the user for | G5's go on the paperwork round's evidence; then G7 (deploy) |
+| Waiting on the user for | G5's go on the paperwork round's evidence; then the Phase 6 re-check and re-capture (the open Phase 6 lines below; recordly-demo B3/N8 preflight from `corridor-changes.md`), with G6a-G6d asked again if the films are re-rendered, or G6d's yes on the current film; then G7 (deploy) |
 
 How to read this: the phases run in order, 0 to 7. Each ends at a review gate. **Hard** gates always wait for
 your go; **soft** gates wait too unless you said "keep going". `[x]` done and checked, `[ ]` not yet, `[~]`
@@ -127,10 +127,15 @@ started, `[!]` blocked (the reason is on the line).
 
 - [ ] Documentary fee: Your Fees at the owner's first sign-in (above $225.00 only with an OCCC filing); until
       then filing refuses ("Documentary fee") with the demo flag off, and the paper prints its marker
-- [ ] Late-handling fee (`NEXT_PUBLIC_DEALER_LATE_HANDLING_FEE`): the Vehicle Responsibility sheet prints
-      `[Not set: late-handling fee]` until given
+- [ ] Counsel: the late-handling fee's legal basis (fee rulebook 6.1 question 6). Not an amount to supply: the
+      Vehicle Responsibility sheet stays refused at filing, and `NEXT_PUBLIC_DEALER_LATE_HANDLING_FEE` unset, until
+      counsel answers
+- [ ] Counsel: the site's price disclaimer (`Home.tsx` "Excludes … the documentary fee"; rulebook 5.6 and 6.2
+      question 8)
 - [ ] A Supabase project of their own; the four migrations applied in filename order; the secrets (Supabase
       URL and keys, `ADMIN_SESSION_SECRET`, `INTERNAL_RENDER_TOKEN`, SMS credentials once a provider is chosen)
+- [ ] The owner account: the first-Owner bootstrap in that project (SOP, First sign-in, item 1), then their
+      first sign-in (name, signature, Your Fees)
 - [ ] The desk's own address (`NEXT_PUBLIC_SITE_URL`, a host other than the public website)
 - [ ] The dealer's email and the sender mailboxes (`RESEND_FROM_EMAIL`, `SUPPORT_FROM_EMAIL`)
 - [ ] The current lot: photos, collages or a DMS export (Phase 3)

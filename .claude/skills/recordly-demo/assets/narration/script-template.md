@@ -67,7 +67,7 @@ The `narration` block also holds three records:
 |---|---|---|
 | `03-site-c` | `SELL_BAND` is true | Left out. Scene 1 ends on line 02; the band is still filmed as in the house cut, or cut short |
 | `09-car-c` | `SPANISH_DOCS` is true | Left out. The language step is answered (English) off camera or in the gap after line 08 |
-| `16-money-c` | `SELLER_LIEN` is true | Left out. Film the deal paid in full, so no document shows a balance or a seller lien |
+| `16-money-c` | `SELLER_LIEN` is true | Left out. The film must then show a deal paid in full, with no balance or seller lien on any document, and the house long storyboard has no such variant yet (see the next table) |
 
 ### Kickoff answers to flags
 
@@ -77,7 +77,7 @@ and what the site and desk ship, never guessed:
 | Kickoff answer or fact | Sets | What else follows |
 |---|---|---|
 | Buyers may drive off owing part of the price (in-house financing, buy here pay here, "we finance") | `SELLER_LIEN` true | The long cut films carter-balance (a balance owed, the seller lien on the bill of sale and the 130-U). The house script has no BHPH payment-plan line; one is a template change behind a new flag, after it is walked on the desk |
-| Cash or outside lenders only: nobody leaves owing the dealer | `SELLER_LIEN` false | Line 16 is left out. `fill-client.cjs long-storyboard` refuses: 22-money and carter-balance film a balance, and a paid-in-full variant is a template change agreed with the user |
+| Cash or outside lenders only: nobody leaves owing the dealer | `SELLER_LIEN` false | Line 16 is left out. The house long cut has no paid-in-full variant: 22-money and carter-balance film a balance, so `fill-client.cjs long-storyboard` refuses at N8. Making the variant is a template change agreed with the user at kickoff, before N1: `fill-narration.cjs check` refuses `SELLER_LIEN` false until `narration.paidInFull` records it as `{ "words": "<their words>", "source": "<where they said it>" }` |
 | Sells in Spanish (staff, a "Se Habla Español" sign, Spanish paperwork) | `SPANISH_DOCS` true | Line 09 and 20-car's language menu (the long storyboard's `when: SPANISH_DOCS` actions) |
 | English only | `SPANISH_DOCS` false | Line 09 and the language-menu actions are dropped from the script and the long storyboard |
 | The site has a sell / trade-in band and form | `SELL_BAND` true, `SELL_BAND_NAME` its nav label | Line 03; cue 03 names the band |

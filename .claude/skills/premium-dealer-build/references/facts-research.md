@@ -36,14 +36,24 @@ report until supplied:
   in the desk's Your Fees step, and filing is refused until it is set).
   $225.00 or less is presumed reasonable (7 TAC §84.205(b)(1), in force since
   2024-07-11); more only up to a maximum the dealer filed with the OCCC. Ask
-  only whether the dealer filed one. See `references/texas-dealer-fees.md`.
-- **Authorised signer** (name and title on the dealer signature line; the licence holder is the usual answer, but confirm)
+  whether the dealer filed one, and ask for the doc fee the build's walks and
+  the films type: the owner's figure, or one the user approves, $225.00 or
+  less unless a filing is recorded. Record it and its source in the status
+  file; it is a walk and demo input only and never goes into code. See
+  `references/texas-dealer-fees.md`.
+- **The first Owner's name and email** (the owner account the desk is
+  bootstrapped with: SOP, First sign-in, item 1; never a password). There is
+  no separate "authorised signer" fact: each member cleared to sign prints as
+  themselves, `<Legal Name> (<First Last>)`, from their own onboarding (step 4.3)
 - **Website domain** (prints on documents)
 - **Late-handling fee** (the figure the Vehicle Responsibility sheet quotes
-  when a buyer who files their own title brings it back to the dealer late;
-  the desk's `NEXT_PUBLIC_DEALER_LATE_HANDLING_FEE`, stamped at filing). Until
-  the owner gives it the sheet prints `[Not set: late-handling fee]`; ask for
-  it in the Phase 0 report, so it is never found missing at the walks.
+  when a buyer who files their own title brings it back late; the desk's
+  `NEXT_PUBLIC_DEALER_LATE_HANDLING_FEE`). No legal basis for it was found
+  (`references/texas-dealer-fees.md` 5.8 item 9), so it is NOT asked as an
+  amount: put rulebook 6.1 question 6 (its legal basis) in the Phase 0 report
+  as a counsel item. Until counsel answers, the variable stays unset, the
+  sheet stays refused at filing, and the variable never goes on the owner's
+  list of values to supply.
 - Email, payment destinations (Zelle, Cash App…), SMS provider for signing texts
 - Salvage dealer licence, if held
 

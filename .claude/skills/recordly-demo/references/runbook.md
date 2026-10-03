@@ -52,7 +52,7 @@ the send note. An optional step is declined only with the user's words (`skip <i
 
 - **Outputs:** `$I`
 - **PASS:** exit 0; prints `client-inputs OK (facts)`
-- **On FAIL:** Fill each listed key from the site's business.ts fields sourced OWNER or TXDMV, character for character: the check compares phone, street and city, hours and domain with business.ts (split days as the site writes them, e.g. "Mon – Fri 9 AM – 7 PM, Sat 9 AM – 5 PM"), and refuses Example, Test, Lorem, TBD or a .example host. An unconfirmed fact is asked of the user, never guessed. FINDER_QUERY: a model in the served site's own inventory (its /inventory page or its inventory data file), about 5 characters. A financing service band: read its tile on the site and record it in storyboard.SERVICE_TILE_CHECK (class (a) text: ask the user). The narration flags follow the kickoff answers (assets/narration/script-template.md, 'Kickoff answers to flags'). Leave loader, word, introKey and brand.mark null (A3 measures them). With a desk, ask the part-B questions (B0) now, with the facts, so the run never waits on a person hours in.
+- **On FAIL:** Fill each listed key from the site's business.ts fields sourced OWNER or TXDMV, character for character: the check compares phone, street and city, hours and domain with business.ts (split days as the site writes them, e.g. "Mon – Fri 9 AM – 7 PM, Sat 9 AM – 5 PM"), and refuses Example, Test, Lorem, TBD or a .example host. An unconfirmed fact is asked of the user, never guessed. FINDER_QUERY: a model in the served site's own inventory (its /inventory page or its inventory data file), about 5 characters. A financing service band: read its tile on the site and record it in storyboard.SERVICE_TILE_CHECK (class (a) text: ask the user). Record the kickoff answers (B0's and the narration flags' answers) in clients/<slug>-STATUS.md now; the flags go into the narration block only after N0 writes it, at N1 (assets/narration/script-template.md, 'Kickoff answers to flags'). A cash-only dealer (no buyer drives off owing the dealer: SELLER_LIEN false) has no house narrated cut yet: it needs a paid-in-full long-storyboard variant, a template change agreed with the user before N1 (fill-narration.cjs check refuses until narration.paidInFull records their words). Leave loader, word, introKey and brand.mark null (A3 measures them). With a desk, ask the part-B questions (B0) now, with the facts, so the run never waits on a person hours in.
 
 ### A2 · Build the site with the Admin link and serve it on :5183
 
@@ -171,8 +171,8 @@ the send note. An optional step is declined only with the user's words (`skip <i
   node "$S/scripts/fill-narration.cjs" init "$I"
   ```
 
-- **PASS:** exit 0; prints `wrote an empty narration block`
-- **On FAIL:** Ask the user whether they want the narrated long cut (about 4 minutes, a fact-checked script voiced free). Yes: run N0, which adds the narration block; the narrated steps (S1, N1-N14) then appear in `next`. No: runbook.cjs skip N0 --by-user "<their words>" --source "<where they said it>". 'already has a narration block': it was added before; run nothing and go on (mark nothing).
+- **PASS:** exit 0; prints `wrote an empty narration block|narration block present`
+- **On FAIL:** Ask the user whether they want the narrated long cut (about 4 minutes, a fact-checked script voiced free). Yes: run N0, which adds the narration block; the narrated steps (S1, N1-N14) then appear in `next`. No: runbook.cjs skip N0 --by-user "<their words>" --source "<where they said it>". 'narration block present': it was added before (or N0 ran again after S2); that passes, and the block is kept as it is.
 
 ## A site with no desk (rare: the house cut ends on the desk's Admin row; ask the user first)
 
@@ -245,7 +245,7 @@ the send note. An optional step is declined only with the user's words (`skip <i
 
 - **Outputs:** `$P/partB-decisions.json`
 - **PASS:** exit 0; prints `PART B DECISIONS WRITTEN`; every output exists; `runbook.cjs mark`
-- **On FAIL:** Asked at kickoff, with A1's facts. Ask the user, verbatim: "Film the owner's first sign-in including Your Fees (I type a fee figure you give me), or film a salesperson's first sign-in (no fees screen)?" and "May the desk's own web address be shown in the address bar on the desk frames, or should it show the site's?" Never choose for them. If they choose the owner path, tell them Your Fees is new to the film: its shots and its composition segment are made and verified on this run (a house change; render.sh refuses until the segment exists). Record partB.onboarding (and demoFee with its source), partBDomain and partB.domainDecision (their words), demo.phone (a 555 number in the dealer's area code) and demo.addressPartB (scripts/check-address.cjs --which addressPartB --write; lesson B13). deskClock is the capture day at 14:00: set it on the day of B4 (the desk check refuses another day). Then mark B0 --by-user "<their words>" --source "<where they said it>". A later change to these decisions makes B0 STALE: ask again.
+- **On FAIL:** Asked at kickoff, with A1's facts. Ask the user, verbatim: "Film the owner's first sign-in including Your Fees (I type a fee figure you give me), or film a salesperson's first sign-in (no fees screen)?" and "May the desk's own web address be shown in the address bar on the desk frames, or should it show the site's?" Never choose for them, but say plainly: the salesperson path films the approved house storyboard as it is, so recommend it. The owner path needs a house template change the runbook does not script yet: Your Fees' shots are not yet captured anywhere and its composition segment (7b) is written and tuned by hand on this run (B7f; render.sh refuses until it exists). Take the owner path only on their words, after saying that. Record partB.onboarding (and demoFee with its source), partBDomain and partB.domainDecision (their words), demo.phone (a 555 number in the dealer's area code) and demo.addressPartB (scripts/check-address.cjs --which addressPartB --write; lesson B13). deskClock is the capture day at 14:00: set it on the day of B4 (the desk check refuses another day). Then mark B0 --by-user "<their words>" --source "<where they said it>". A later change to these decisions makes B0 STALE: ask again.
 
 ### B1 · Start the desk on :5190 (its own process group)
 
@@ -353,10 +353,23 @@ the send note. An optional step is declined only with the user's words (`skip <i
 - **PASS:** exit 0; prints `DESK STOPPED`
 - **On FAIL:** desk-server.sh stop --force. If :5190 stays taken by a server you did not start, leave it and tell the user.
 
+### B7f · Owner path only: the Your Fees segment (7b) in the composition
+
+- **Kind:** manual (you do the work; the gate checks it)
+- **Needs:** B7
+- **Command:**
+
+  ```bash
+  if grep -q '"7b-desk-fees"' "$P/storyboard.json" && ! grep -q '7b-desk-fees' "$P/src/demo/timeline.ts"; then echo 'OWNER-FEES SEGMENT MISSING: storyboard.json films 7b-desk-fees and src/demo/timeline.ts has no segment for it'; exit 1; fi; echo 'COMPOSITION READY'
+  ```
+
+- **PASS:** exit 0; prints `COMPOSITION READY`
+- **On FAIL:** Only on the owner path (partB.onboarding owner-fees, agreed at B0 as a house change). Read references/house-recipe.md §17 first. Then, per references/desk-capture.md §3: in the skill's template/src/demo/timeline.ts add a 7b deskSegment for 7b-desk-fees after 7-desk-onboard, pull 7's pad zoom out before its cut so the camera matches 7b's first frame, and give the Save Fees click its success cue; add 7b to scripts/measure-desk-cuts.cjs if its cut needs a measured frame; copy timeline.ts into $P/src/demo/timeline.ts. Then run B5, B6 and B6v again (the cut gate and the stills judge the new segment), then B7 and this step. A model that cannot write and tune Remotion code stops here and tells the user; the salesperson path needs none of this.
+
 ### B8 · Render the film (parts A + B) and its chat copy
 
 - **Kind:** auto (scripted: the gate decides); long: runs through bg.sh
-- **Needs:** B6v, B7
+- **Needs:** B6v, B7, B7f
 - **Command:**
 
   ```bash
@@ -365,7 +378,7 @@ the send note. An optional step is declined only with the user's words (`skip <i
 
 - **Outputs:** `$P/out/$SLUG-demo.mp4`, `$P/out/$SLUG-demo-chat.mp4`
 - **PASS:** exit 0; prints `RENDERED`; every output exists
-- **On FAIL:** Killed or out of memory: render.sh … --frames A-B for the missing ranges, then --concat (references/harness.md).
+- **On FAIL:** Killed or out of memory: render.sh … --frames A-B for the missing ranges, then --concat (references/harness.md). 'the storyboard films Your Fees … not rendered': the owner path's 7b segment is missing (B7f).
 
 ### B9 · Verify the film
 
@@ -395,7 +408,7 @@ the send note. An optional step is declined only with the user's words (`skip <i
 
 ### B10 · The chat copy is <= 28 MB with the master's frame count
 
-- **Kind:** auto (scripted: the gate decides)
+- **Kind:** auto (scripted: the gate decides); long: runs through bg.sh
 - **Needs:** B9w
 - **Command:**
 
@@ -404,11 +417,12 @@ the send note. An optional step is declined only with the user's words (`skip <i
   ```
 
 - **PASS:** exit 0; prints `SHARE OK`
-- **On FAIL:** It lowers the bitrate once itself; still over: send the master's path, never the master.
+- **On FAIL:** share.sh exits at once with SHARE OK when B8's render already made a chat copy from this master (newer than it, within the cap, the master's frame count); otherwise it encodes (8-15 min for a long film, which is why this step runs through bg.sh) and replaces the copy only once its checks pass. It lowers the bitrate once itself; still over: send the master's path, never the master.
 
-### B11 · Send the film
+### B11 · Send the short cut and get the user's go (G1)
 
-- **Kind:** send (sent: closed by mark)
+- **Kind:** approval (the user's approval: closed by mark --by-user)
+- **Approves:** `$P/out/$SLUG-demo-chat.mp4` (a change makes it STALE)
 - **Needs:** B10
 - **Command:**
 
@@ -418,7 +432,7 @@ the send note. An optional step is declined only with the user's words (`skip <i
 
 - **Outputs:** `$SCRATCH/send-note.md`
 - **PASS:** `runbook.cjs mark`
-- **On FAIL:** Attach $SLUG-demo-chat.mp4 and contact-sheet.png with your file-sending tool (SendUserFile in Claude Code), paste the send note, then mark B11 --by-agent "sent".
+- **On FAIL:** Attach $SLUG-demo-chat.mp4 and contact-sheet.png with your file-sending tool (SendUserFile in Claude Code), paste the send note, and ask word for word: "Here is the short cut (<length>). Anything to change before I write the narrated script?" Then wait for the user: mark B11 --by-user "<their words>" --source "<where they said it>". G1 is soft: the user's recorded "keep going" for this build also counts (their words and where, the same way). A change they ask for is made and the film sent again (a new chat copy makes B11 STALE). Never mark it --by-agent.
 
 ## The narrated long cut (on request, after the short film is sent)
 
@@ -447,7 +461,7 @@ the send note. An optional step is declined only with the user's words (`skip <i
 
 - **Outputs:** `$P/narration/lines.json`, `$P/narration/script.md`
 - **PASS:** exit 0; every output exists
-- **On FAIL:** Walk the desk for checked.features: desk-server.sh start, then premium-dealer-build desk-walk sale.cjs with a scenario (DESK_DIR set): it writes walk-report.json into its out folder. Record checked.on, checked.commit (the report's deskCommit), checked.dirty and checked.evidence (that folder); the check refuses a walk on another corridor commit or one older than the desk's last corridor commit, and any 'dry run' or 'not walked' wording. A line the desk cannot back is cut with its reason, never softened.
+- **On FAIL:** Walk the desk for checked.features: desk-server.sh start, then premium-dealer-build desk-walk sale.cjs with a scenario (DESK_DIR set): it writes walk-report.json into its out folder. Record checked.on, checked.commit (the report's deskCommit), checked.dirty and checked.evidence (that folder); the check refuses a walk on another corridor commit or one older than the desk's last corridor commit, and any 'dry run' or 'not walked' wording. A line the desk cannot back is cut with its reason, never softened. 'SELLER_LIEN is false': the house long cut films a balance owed and has no paid-in-full variant yet; agree that template change with the user, record their words in narration.paidInFull {"words", "source"}, and make the variant before N8 (script-template.md, Kickoff answers to flags).
 
 ### N2 · The user approves the script
 
@@ -615,17 +629,18 @@ the send note. An optional step is declined only with the user's words (`skip <i
 - **PASS:** exit 0; prints `ALL GATES PASS`
 - **On FAIL:** Per gate (references/narration.md §10): voice set -16 +/- 0.5 LUFS, mix -16 +/- 1, true peak <= -1.5 dBTP, frames = the plan's total, onsets on cues or lines.
 
-### N14 · Watch it, then send the narrated film
+### N14 · Watch it, send the narrated film and get the user's yes (G4)
 
-- **Kind:** send (sent: closed by mark)
+- **Kind:** approval (the user's approval: closed by mark --by-user)
+- **Approves:** `$P/out/$SLUG-demo-narrated-chat.mp4` (a change makes it STALE)
 - **Needs:** N13
 - **Command:**
 
   ```bash
-  bash "$S/scripts/share.sh" "$P/out/$SLUG-demo-narrated.mp4" 28 && node "$S/scripts/fill-client.cjs" send-note "$I" --film "$P/out/$SLUG-demo-narrated.mp4" --share "$P/out/$SLUG-demo-narrated-chat.mp4" --report "$SCRATCH/verify-n/report.json" --out "$SCRATCH/send-note-narrated.md"
+  bash "$S/scripts/share.sh" "$P/out/$SLUG-demo-narrated.mp4" 28 --check && node "$S/scripts/fill-client.cjs" send-note "$I" --film "$P/out/$SLUG-demo-narrated.mp4" --share "$P/out/$SLUG-demo-narrated-chat.mp4" --report "$SCRATCH/verify-n/report.json" --out "$SCRATCH/send-note-narrated.md"
   ```
 
 - **Outputs:** `$SCRATCH/send-note-narrated.md`
 - **PASS:** `runbook.cjs mark`
-- **On FAIL:** One full watch with sound first (no hearing: the user watches the chat copy and says yes). Attach the chat copy, the contact sheet and narration/lip-to-picture.md; never the master.
+- **On FAIL:** One full watch with sound first (no hearing: the user watches the chat copy). Attach the chat copy, the contact sheet, narration/lip-to-picture.md and the send note; never the master. Ask word for word: "Here is the narrated walkthrough (<length>). Is it ready to show the dealer?" and wait for their yes (G4, hard): mark N14 --by-user "<their words>" --source "<where they said it>". Never mark it --by-agent. share.sh --check only judges the chat copy N12's render made; if it says SHARE FAIL, make the copy through bg.sh (bash $S/scripts/bg.sh start share -- bash $S/scripts/share.sh $P/out/$SLUG-demo-narrated.mp4 28), never in a foreground call.
 

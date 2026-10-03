@@ -27,6 +27,8 @@ checked, `[ ]` not yet, `[~]` started, `[!]` blocked (the reason is on the line)
 - [ ] Kickoff message received (logo, TxDMV screenshot, collages)
 - [ ] Facts researched with sources (table below); facts only the owner can give listed
 - [ ] Fee rulebook as-of date checked; `check-fee-module.cjs` exit 0 on the desk to fork
+- [ ] Doc fee: OCCC filing above $225 {{yes / no / unknown}}; the walk and demo figure {{$}} from {{the owner /
+      the user}} ({{date}}), $225.00 or less unless a filing is recorded; never in code
 - [ ] Video kickoff answers: onboarding to film, demo fee and its source, desk address in the address bar,
       seller lien (BHPH), Spanish, sell band
 - [ ] **G0 (hard): the Phase 0 report** · sent {{date}} · go {{date}}: "{{user's words}}" · {{link}}
@@ -61,7 +63,8 @@ checked, `[ ]` not yet, `[~]` started, `[!]` blocked (the reason is on the line)
       on the 130-U and VTR-61)
 - [ ] 4.8 Signing (ceremony to N / N signed)
 - [ ] 4.9 The bill of sale's lock; void and file again
-- [ ] 4.10 Every walk once at 1440; typecheck, lint, tests, build
+- [ ] 4.10 Every walk once at 1440 (the five sales, co-buyer, the four box-11 walks incl. pickup, ceremony,
+      void, freeze, reset, fees); typecheck, lint, tests, build
 - [ ] Phase 4 exit: every standard present with its tests
 - [ ] **G4 (soft): the desk's screens** · sent {{date}} · {{go / passed on "keep going"}} · {{links}}
 
@@ -84,6 +87,8 @@ checked, `[ ]` not yet, `[~]` started, `[!]` blocked (the reason is on the line)
 - [ ] Demo project inputs committed (never `public/shots/` or `out/`)
 
 ### Phase 7: Deliver and deploy
+- [ ] Prerequisites: G5; G6a (or "keep going"), G6b, G6c and G6d passed, or the user's words that the videos
+      come later: "{{user's words}}"
 - [ ] Draft PR up to date: {{PR_LINK}}
 - [ ] Public site deployed to Vercel: {{URL}}
 - [ ] Desk deployed (only with its own Supabase project and secrets): {{URL or "waiting on the owner"}}
@@ -103,15 +108,19 @@ checked, `[ ]` not yet, `[~]` started, `[!]` blocked (the reason is on the line)
 | Hours | {{}} | {{}} |
 | Website domain | {{}} | {{}} |
 | Languages | {{}} | {{}} |
-| Authorised signer | {{}} | {{}} |
+| First Owner (the owner account: name, email) | {{}} | {{}} |
 
 ## Open owner items
 
 Only the owner can supply these; each stays open (and its marker prints) until it is given.
 
-- [ ] Documentary fee (Your Fees at the owner's first sign-in; above $225.00 only with an OCCC filing)
-- [ ] Late-handling fee (`NEXT_PUBLIC_DEALER_LATE_HANDLING_FEE`)
 - [ ] Supabase project; migrations applied in filename order; secrets set
+- [ ] The owner account: the first-Owner bootstrap in their own Supabase project (SOP, First sign-in, item 1),
+      then their first sign-in
+- [ ] Documentary fee (Your Fees at the owner's first sign-in; above $225.00 only with an OCCC filing)
+- [ ] Counsel: the late-handling fee's legal basis (rulebook 6.1 question 6); the Vehicle Responsibility sheet
+      stays refused and `NEXT_PUBLIC_DEALER_LATE_HANDLING_FEE` unset until counsel answers
+- [ ] Counsel: the site's price disclaimer (rulebook 6.2 question 8), if it conflicts with rulebook 5.6
 - [ ] {{other missing facts}}
 
 ## Decisions recorded

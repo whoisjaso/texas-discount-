@@ -694,17 +694,27 @@ replaces an existing test.
 
 ### 5.9 Order of work for a new build
 
-1. Fork the desk.
-2. Read this file's as-of date. If it is older than the current calendar
-   year, or older than the last Finance Commission meeting, run the
-   section 6 re-checks first.
-3. Load the year's Fee Chart 1C county table.
-4. Have the owner complete the Dealer Fees step.
-5. Verify a Harris-style worked example for the dealer's own county
-   against webDEALER's computed fees.
-6. Print one cash bill of sale and one finance contract, and read the
-   notice back.
-7. Check the public site's price disclaimer.
+There is one order of work: premium-dealer-build's phases (`SKILL.md`). The
+fee work sits at these steps:
+
+1. **The as-of date** (if it is older than the current calendar year, or
+   older than the last Finance Commission meeting, run the section 6
+   re-checks first) and `check-fee-module.cjs`: Phase 0, step 5.
+2. **Fork the desk:** Phase 1, step 1, and step 4.1.
+3. **The county fee table (Fee Chart 1C):** only the January re-check in
+   6.3. The desk records each sale's government fees from webDEALER (step
+   4.5); it loads no county table.
+4. **The owner's Dealer Fees step (Your Fees):** the owner's first sign-in,
+   after Phase 7 (their own Supabase project). Until then the walks type the
+   doc fee recorded at Phase 0 (the owner's figure, or one the user
+   approved), never an invented one: step 4.3's check.
+5. **A worked example for the dealer's own county:** Phase 5's government
+   fees walk (`gov.cjs`), with the figures from a webDEALER receipt for that
+   county (or the worked example 2.2, said so).
+6. **One cash bill of sale and one finance contract read back, the notice
+   with them:** Phase 5's fees walk (`references/verification.md`).
+7. **The public site's price disclaimer** (5.6): Phase 1's exit; a conflict
+   goes to counsel (6.2, question 8) on the Phase 7 owner's list.
 
 ### 5.10 Machine-readable limits
 
