@@ -4,6 +4,8 @@ import SaleDetailView from "@/components/admin/SaleDetailView";
 import { getSaleDetail, type SaleDetail } from "@/lib/admin/sale-desk";
 import { CaretLeft } from "@phosphor-icons/react/ssr";
 import { dealership } from "@/lib/dealership-config";
+import { resolveVehicleWeight } from "@/lib/vehicles/empty-weight/ensure";
+import type { WeightEstimate } from "@/lib/vehicles/empty-weight/types";
 
 export const metadata = { title: `Sale - ${dealership.name}` };
 export const dynamic = "force-dynamic";
@@ -59,5 +61,16 @@ export default async function SaleDetailPage({ params }: Props) {
     );
   }
 
-  return <SaleDetailView sale={sale} backLink={backLink} />;
+  /*
+    The car's empty weight, as the sale knows it: worked out the first time
+    the sale is opened (and kept on the vehicle), silent on failure, and held
+    to four seconds here so a slow lookup never holds the sale page. The
+    lookup carries on and is cached for the 130-U.
+  */
+  const estimate: WeightEstimate | null = await Promise.race([
+    resolveVehicleWeight(sale.vehicle, { network: true }),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), 4000)),
+  ]).catch(() => null);
+
+  return <SaleDetailView sale={sale} backLink={backLink} weightEstimate={estimate} />;
 }

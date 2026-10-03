@@ -169,6 +169,84 @@ what it includes, the funding or the bill of sale's trade-in after the bill
 of sale is filed still moves the balance it states. Whether those should be
 frozen too is a decision for the owner.
 
+## The 130-U empty weight (box 11)
+
+The desk finds the empty weight by itself and fills box 11 with it, and every
+figure it files carries its source. It never files a number nobody vouched for.
+
+**How the weight is found, in order.**
+
+1. **A document on the car.** A Texas title, an out-of-state title, an MCO, a
+   weight certificate or a KBB / JD Power figure that someone typed and named
+   on an earlier sale is stored on the vehicle (`weight_lbs` plus
+   `weight_source`, the reading, the rounding rule, who and when). The 130-U
+   skips the question and affixes it.
+2. **An estimate, worked out on the server** (`src/lib/vehicles/empty-weight/`)
+   when the sale page or the 130-U first needs one, and when Start A Sale
+   decodes a VIN:
+   - **EPA test data, bundled.** EPA's yearly Test Car List gives each tested
+     vehicle's Equivalent Test Weight, which is curb weight plus 300 lb
+     (40 CFR 86.1803-01; 1066.805). The estimate is ETW less 300 lb, matched
+     on year, make, model, engine size, hybrid or EV, and drive. Measured on
+     1,706 crash-test cars with lab-weighed curb weights: about 90% covered,
+     median error 67 lb.
+   - **Transport Canada** (live, through vPIC, 4 s limit), as a cross-check
+     or when EPA has nothing.
+   - **The VIN decode's curb weight**, last and as a cross-check only: it
+     often reads the heaviest version (+139 lb median, up to about 700 lb).
+3. **Nothing.** The question is asked as it always was: read it off the title.
+
+Rounding follows TxDMV: up to the next 100; a manufacturer figure (MCO, KBB,
+JD Power or an estimate) on a passenger car, SUV or van first gets +100; a
+title or weight certificate never does, and neither does a truck.
+
+**What staff see.**
+
+- A car with a document on file: no weight question. The review shows
+  "3,300 lb · Texas title, entered by Jo Smith on 10/01/2026", with a Change
+  link.
+- A car with a good estimate: a card with box 11 ("3,500 lb"), one sentence
+  saying which EPA models it stands on and how ("EPA tested the Camry,
+  Camry LE/SE and Camry XLE/XSE (2019) at 3,625 lb ..."), the cross-checks,
+  and **Confirm This Weight**. One tap records who confirmed it and when.
+- A car that needs a document: the estimate is shown as a hint only, with
+  the reason, and no Confirm. That is every pickup or work truck, cargo or
+  work van, cab-chassis, heavy-duty vehicle (GVWR 8,001 lb or more, 2500 /
+  3500 / HD), bus, any estimate within 300 lb of the 6,000 lb registration
+  line (a house rule), any car whose kind nobody recorded (no body style and
+  no decode: it could be a pickup), and any low-confidence estimate no second
+  source supports.
+- Always: one box to type the figure from a document and buttons to say
+  which document. A figure that differs from a document already on file needs
+  a reason, which is kept.
+- A weight on the vehicle with no recorded source is shown ("Where it came
+  from was not recorded") and never pre-filled, never filed and never copied
+  into webDEALER until someone settles it on the 130-U.
+
+A 130-U with box 11 unsettled does not file. At filing the server rewrites
+box 11 and its record (`_emptyWeight*` in `form_data`: source, reading, rule,
+by, at, reason, and the estimate as shown) from its own read; the state form
+prints only the number.
+
+**Keeping the EPA table current.** The table is
+`src/lib/vehicles/empty-weight/epa-etw-table.generated.js` (server-only,
+MY1995 to 2026). When EPA posts a new model year (data page:
+https://www.epa.gov/compliance-and-fuel-economy-data/data-cars-used-testing-fuel-economy):
+
+```
+pip install openpyxl
+python3 scripts/empty-weight/build_epa_table.py --download --cache /tmp/epa-test-car
+python3 scripts/empty-weight/make_fixtures.py --crash <crash-test research folder>
+npx vitest run
+```
+
+`--download` records each file's URL, sha256 and download date in
+`/tmp/epa-test-car/manifest.json`; the build reads only that manifest (never
+file times), so the same files always give the same table, and it stops if a
+file has no URL or its bytes changed. Commit the regenerated table (and the
+fixture when it was rebuilt). Stored estimates made against an older table
+are worked out again on their own.
+
 ## Owner's manual steps before going live
 
 1. **Create a new Supabase project for Discount Used Cars and Trucks.** Do not
@@ -259,7 +337,12 @@ frozen too is a decision for the owner.
 13. **Signing texts** stay off (`PAPERWORK_TEXTS_ENABLED=false`) until an SMS
     provider and a registered sending campaign exist.
 
-14. **Supply the two email images.** The email templates embed
+14. **Apply the empty-weight migration before deploying this version:**
+    `supabase/migrations/20261002000000_vehicle_empty_weight.sql`. It is
+    additive (new `vehicles.weight_*` columns), and the sale pages read them,
+    so the code needs it in place. Once a year, refresh the EPA table (see
+    "The 130-U empty weight" above).
+15. **Supply the two email images.** The email templates embed
     `public/brand/email-monogram.png` and `public/brand/email-wordmark.png`,
     which do not exist yet (the desk this was forked from lacked them too).
     Until they are added, emails go out without the marks. The prompts are in

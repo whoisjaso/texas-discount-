@@ -7809,6 +7809,15 @@ html[data-tj-route-phase="leaving"] .ed-route-loader {
   text-underline-offset: 3px;
 }
 
+/* An empty weight nobody recorded the source of: a link to settle it on the
+   130-U, in the fine print, where the copy button would have been useless. */
+.ed-handoff-fix {
+  color: var(--tj-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  white-space: nowrap;
+}
+
 .ed-handoff-copy {
   display: inline-flex;
   align-items: center;
@@ -10475,6 +10484,128 @@ input.ed-money-input {
   min-height: 56px;
   padding-inline: 26px;
   justify-content: center;
+}
+
+/*
+  The 130-U's empty weight (box 11): an estimate offered with its source, or
+  the reason it needs a document, then the way to type it off one. The card
+  is the same plane as a choice, so it reads as something to decide on, not
+  as a notice.
+*/
+.ed-weight {
+  gap: 18px;
+}
+
+.ed-weight-card {
+  width: 100%;
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  text-align: center;
+  padding: 20px 18px;
+  background: var(--tj-plane);
+  border: 1px solid var(--tj-line);
+  border-radius: var(--radius-card);
+}
+
+.ed-weight-kicker,
+.ed-weight-label,
+.ed-weight-or {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--tj-muted);
+}
+
+.ed-weight-figure {
+  font-family: var(--font-display);
+  font-size: clamp(30px, 8vw, 40px);
+  line-height: 1.05;
+  color: var(--tj-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.ed-weight-lead,
+.ed-weight-method,
+.ed-weight-known,
+.ed-weight-live {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--tj-ink);
+  max-width: 40ch;
+}
+
+.ed-weight-cross,
+.ed-weight-warn {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--tj-muted);
+  max-width: 40ch;
+}
+
+.ed-weight-warn {
+  color: var(--tj-ink);
+}
+
+.ed-weight-card .ed-paper-next {
+  margin-top: 6px;
+}
+
+.ed-weight-typed {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.ed-weight-typed .ed-paper-field {
+  display: grid;
+  gap: 6px;
+  text-align: center;
+}
+
+.ed-weight-kinds {
+  width: 100%;
+}
+
+.ed-weight-kinds .ed-pay-choice {
+  min-height: 56px;
+  padding: 10px 12px;
+}
+
+.ed-weight-kinds .ed-pay-choice-label {
+  font-size: 16px;
+}
+
+.ed-weight-reason {
+  width: 100%;
+  min-height: 48px;
+}
+
+.ed-weight-change {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  white-space: nowrap;
+}
+
+.ed-weight-source {
+  color: var(--tj-muted);
+}
+
+.ed-handoff-source {
+  grid-column: 1 / -1;
+  color: var(--tj-muted);
+}
+
+@media (min-width: 640px) {
+  .ed-handoff-source {
+    grid-column: 2 / -1;
+  }
+}
+
+.ed-sale-weight {
+  margin-top: 4px;
+  color: var(--tj-muted);
 }
 
 /* The signature block, shared by onboarding and the paperwork review screen.

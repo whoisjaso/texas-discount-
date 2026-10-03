@@ -200,8 +200,10 @@ const vehicle = [
       make: "vehicleMake",
       model: "vehicleModel",
       bodyStyle: "vehicleBodyStyle",
-      // No empty weight. Box 11 is read off the door jamb or the old title,
-      // never off a decoder. See DERIVED_BY_VIN in derive.ts.
+      // No empty weight. A decode's weight is an estimate, and box 11 takes
+      // one only with its source and a person's confirmation, which the sale's
+      // 130-U screen gives (vehicles/empty-weight/on-the-sale.ts) and this
+      // blank template does not. It is typed here from the title.
     }),
     field("vehicleYear", "Year", true),
     field("vehicleMake", "Make", true),

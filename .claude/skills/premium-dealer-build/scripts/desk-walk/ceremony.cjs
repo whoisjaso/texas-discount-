@@ -1,6 +1,7 @@
 // Sign every document through the ceremony. Usage: node ceremony.cjs <out> <dealPath> <w> <h>
 const { chromium } = require(process.env.PWPATH);
-const BASE = 'http://localhost:5190';
+// The desk under test; DESK_BASE points a walk at another port (e.g. a worktree's server).
+const BASE = process.env.DESK_BASE || 'http://localhost:5190';
 const { AUDIT } = require('./audit-fn.cjs');
 const failures = [];
 (async () => {
@@ -15,7 +16,9 @@ const failures = [];
   console.log('SIGN LINK', href && href.replace(/[A-Za-z0-9_-]{20,}/, '<token>'));
   const p = await ctx.newPage();
   p.on('pageerror', e => console.log('PAGEERR', e.message.slice(0, 200)));
-  await p.goto(href.startsWith('http') ? href : BASE + href, { waitUntil: 'networkidle' });
+  // The link carries the desk's configured origin; a walk against DESK_BASE follows it to the same path there.
+  const signUrl = href.startsWith('http') ? (process.env.DESK_BASE ? href.replace(/^https?:\/\/[^/]+/, BASE) : href) : BASE + href;
+  await p.goto(signUrl, { waitUntil: 'networkidle' });
   let n = 0;
   const shot = async (l) => { await p.waitForTimeout(700); await p.screenshot({ path: `${out}/sign-${String(n++).padStart(2, '0')}-${l}.png`, fullPage: true }); for (const f of await p.evaluate(AUDIT)) failures.push(l + ': ' + f); };
   await shot('cover');

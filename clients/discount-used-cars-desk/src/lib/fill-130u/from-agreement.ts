@@ -2,6 +2,7 @@ import { type AgreementData, DEALER } from "@/lib/fill-130u/field-mapping";
 import type { CompletedLinkData } from "@/lib/documents/customerPortal";
 import { readIdKind } from "@/lib/forms/id-document";
 import { codeCase, fieldCase, vinCase } from "@/lib/documents/presentation-case";
+import { isDocumentKind } from "@/lib/vehicles/empty-weight/rules";
 
 /**
  * A filed agreement row, read into what the state form's fields want.
@@ -160,7 +161,13 @@ export function buildAgreementData(
     minor_color: minorColor || undefined,
     odometer,
     odometer_brand: odometerBrand,
-    empty_weight: (dd.emptyWeight as string) || (vehicle?.weight_lbs?.toString()) || undefined,
+    // Box 11 as the filing recorded it, else the vehicle's document figure.
+    // Never `weight_estimate`, and never a `weight_lbs` nobody recorded the
+    // source of: the state form prints only a figure a person confirmed.
+    empty_weight:
+      (dd.emptyWeight as string) ||
+      (isDocumentKind(vehicle?.weight_source) ? vehicle?.weight_lbs?.toString() : undefined) ||
+      undefined,
     carrying_capacity: (dd.carryingCapacity as string) || undefined,
     tx_plate_no: codeCase((dd.vehiclePlate as string) || (dd.licensePlateNo as string) || (vehicle?.license_plate as string) || '') || undefined,
     buyer_first_name: buyerFirst,

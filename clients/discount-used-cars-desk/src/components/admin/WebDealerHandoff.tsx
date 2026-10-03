@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useState, useTransition, useId } from "react";
 import { ArrowSquareOut, Copy, Check } from "@phosphor-icons/react";
 import { saveSalePlate } from "@/lib/actions/sale-funding";
-import { handoffClipboardText, type HandoffField } from "@/lib/sales/webdealer";
+import { handoffClipboardText, isUnconfirmedHandoffValue, type HandoffField } from "@/lib/sales/webdealer";
 import { useFunnel } from "@/components/admin/funnel/FunnelLocaleProvider";
 import { fillTemplate, type FunnelStrings } from "@/lib/sales/i18n";
+import { weightSourceLine } from "@/lib/vehicles/empty-weight/copy";
 import "@/styles/webdealer-handoff.css";
 
 /** The row's name in the reader's language; the clipboard keeps English. */
@@ -45,8 +46,12 @@ function FieldRow({ field }: { field: HandoffField }) {
   // it reads in the operator's language like everything else on the screen.
   const shown = field.value === "None" ? t.handoff.none : field.value;
 
+  // A weight nobody recorded the source of is shown but never copied: it is
+  // settled on the 130-U first (lib/sales/webdealer.ts).
+  const unconfirmed = isUnconfirmedHandoffValue(field);
+
   async function copy() {
-    if (!field.value) return;
+    if (!field.value || unconfirmed) return;
     try {
       await navigator.clipboard.writeText(field.value);
       setCopied(true);
@@ -65,19 +70,21 @@ function FieldRow({ field }: { field: HandoffField }) {
       {field.value ? (
         <>
           <span className="ed-handoff-value">{shown}</span>
-          <button
-            type="button"
-            className="ed-handoff-copy"
-            onClick={copy}
-            aria-label={fillTemplate(t.handoff.copyField, { label: named })}
-            data-copied={copied}
-          >
-            {copied ? (
-              <Check size={15} aria-hidden="true" />
-            ) : (
-              <Copy size={15} aria-hidden="true" />
-            )}
-          </button>
+          {unconfirmed ? null : (
+            <button
+              type="button"
+              className="ed-handoff-copy"
+              onClick={copy}
+              aria-label={fillTemplate(t.handoff.copyField, { label: named })}
+              data-copied={copied}
+            >
+              {copied ? (
+                <Check size={15} aria-hidden="true" />
+              ) : (
+                <Copy size={15} aria-hidden="true" />
+              )}
+            </button>
+          )}
         </>
       ) : (
         <span className="ed-handoff-missing">
@@ -90,6 +97,28 @@ function FieldRow({ field }: { field: HandoffField }) {
           ) : null}
         </span>
       )}
+      {/* Where the value came from, in fine print. Not in the clipboard text:
+          webDEALER wants the number, the desk wants to know whose number. */}
+      {field.value && field.source ? (
+        <span className="ed-fine ed-handoff-source">
+          {field.source.kind === "notRecorded" ? (
+            <>
+              {t.weight.handoff.notRecorded}
+              {/* Not copied: a link to settle it on the 130-U instead. */}
+              {unconfirmed && field.fixHref ? (
+                <>
+                  {" "}
+                  <Link className="ed-handoff-fix" href={field.fixHref}>
+                    {fixLabelFor(t, field)}
+                  </Link>
+                </>
+              ) : null}
+            </>
+          ) : (
+            fillTemplate(t.weight.handoff.source, { line: weightSourceLine(t, field.source) })
+          )}
+        </span>
+      ) : null}
       <span className="sr-only" role="status">{copied ? fillTemplate(t.handoff.copiedField, { label: named }) : ""}</span>
     </li>
   );

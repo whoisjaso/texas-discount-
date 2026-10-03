@@ -27,6 +27,7 @@ export default function AnswerStep({
   question,
   current,
   nextHref,
+  suggestionNote = null,
 }: {
   dealId: string;
   documentType: string;
@@ -34,6 +35,12 @@ export default function AnswerStep({
   /** What is already on the deal, or the sensible starting answer. */
   current: string;
   nextHref: string;
+  /**
+   * Where a starting value the page offered came from, said under the box.
+   * Only the carrying capacity has one: a truck starts at TxDMV's minimum
+   * for its empty weight, labelled as that and never filed unseen.
+   */
+  suggestionNote?: "capacityMinimum" | null;
 }) {
   const router = useRouter();
   const { t } = useFunnel();
@@ -137,6 +144,10 @@ export default function AnswerStep({
           autoFocus
         />
       </label>
+
+      {suggestionNote && value === current && current !== "" ? (
+        <p className="ed-paper-note">{t.weight[suggestionNote]}</p>
+      ) : null}
 
       {worded.note ? <p className="ed-paper-note">{worded.note}</p> : null}
 

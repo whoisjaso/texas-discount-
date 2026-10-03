@@ -16,8 +16,26 @@ export interface NHTSADecodedVehicle {
   turbo: boolean;
   manufacturer: string | null;
   plantCountry: string | null;
+  /**
+   * vPIC's CurbWeightLB: a VIN-pattern value, often the heaviest version of
+   * the model (measured +139 lb median, p95 686 lb; absent before MY2015 and
+   * for whole makes). A cross-check for the empty-weight estimate only, never
+   * box 11 on its own (SOP "Empty weight (130-U box 11)").
+   */
   curbWeightLbs: number | null;
+  /** vPIC's GVWR text: a class range, never a carrying capacity. */
   gvwr: string | null;
+  /** The GVWR class code out of that text ("1C", "2G"), for the heavy-duty gate. */
+  gvwrClass: string | null;
+  /** vPIC's raw Model, before the trim is joined on (the estimate matches on it). */
+  modelName: string | null;
+  series: string | null;
+  displacementL: number | null;
+  /** vPIC's raw DriveType ("4WD/4-Wheel Drive/4x4"). */
+  driveType: string | null;
+  electrificationLevel: string | null;
+  /** vPIC's raw BodyClass ("Pickup", "Incomplete - Cab Chassis"). */
+  bodyClass: string | null;
   errorCode: string;
 }
 
@@ -102,11 +120,14 @@ function buildEngineString(
   return parts.length > 0 ? parts.join(" ") : null;
 }
 
-export async function decodeVin(vin: string): Promise<NHTSADecodedVehicle> {
+export async function decodeVin(
+  vin: string,
+  opts: { timeoutMs?: number } = {},
+): Promise<NHTSADecodedVehicle> {
   const url = `${NHTSA_BASE}/DecodeVinValues/${encodeURIComponent(vin)}?format=json`;
 
   const res = await fetch(url, {
-    signal: AbortSignal.timeout(10000),
+    signal: AbortSignal.timeout(opts.timeoutMs ?? 10000),
   });
 
   if (!res.ok) {
@@ -144,6 +165,13 @@ export async function decodeVin(vin: string): Promise<NHTSADecodedVehicle> {
     plantCountry: normalizePlantCountry(r.PlantCountry || ""),
     curbWeightLbs: numOrNull(r.CurbWeightLB) !== null ? Math.round(numOrNull(r.CurbWeightLB)!) : null,
     gvwr: valOrNull(r.GVWR),
+    gvwrClass: /Class (\w+)/.exec(r.GVWR || "")?.[1] ?? null,
+    modelName: valOrNull(r.Model),
+    series: valOrNull(r.Series),
+    displacementL: numOrNull(r.DisplacementL),
+    driveType: valOrNull(r.DriveType),
+    electrificationLevel: valOrNull(r.ElectrificationLevel),
+    bodyClass: valOrNull(r.BodyClass),
     errorCode: r.ErrorCode || "0",
   };
 }

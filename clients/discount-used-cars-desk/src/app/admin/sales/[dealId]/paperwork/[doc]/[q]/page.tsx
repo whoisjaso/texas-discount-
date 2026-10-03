@@ -18,6 +18,12 @@ import {
 import { readMoney } from "@/lib/sales/money";
 import { readBuyerId } from "@/lib/sales/buyer-id";
 import { resolveCounty } from "@/lib/documents/resolve";
+import { resolveVehicleWeight } from "@/lib/vehicles/empty-weight/ensure";
+import {
+  carryingCapacityStart,
+  emptyWeightContext,
+  weightPrompt,
+} from "@/lib/vehicles/empty-weight/on-the-sale";
 import { dealership } from "@/lib/dealership-config";
 
 export const dynamic = "force-dynamic";
@@ -43,13 +49,17 @@ export const metadata = { title: `Paperwork - ${dealership.name}` };
 
 interface Props {
   params: Promise<{ dealId: string; doc: string; q: string }>;
+  /** `?change=emptyWeight`: the review's Change link, reopening a skipped question. */
+  searchParams?: Promise<{ change?: string | string[] }>;
 }
 
 /** The last screen, which is the document rather than a question. */
 const REVIEW = "review";
 
-export default async function PaperworkQuestionPage({ params }: Props) {
+export default async function PaperworkQuestionPage({ params, searchParams }: Props) {
   const { dealId, doc, q } = await params;
+  const change = (await searchParams)?.change;
+  const reopen = change === "emptyWeight" ? "emptyWeight" : undefined;
 
   const entry = SALE_DOCUMENTS.find((candidate) => candidate.documentType === doc);
   if (!entry?.documentType || !hasPaperwork(entry.documentType)) notFound();
@@ -84,15 +94,23 @@ export default async function PaperworkQuestionPage({ params }: Props) {
     nothing on the deal answers, it fails silent, and it never overrules a
     typed answer.
 
-    The empty weight is NOT looked up. It comes off the vehicle row when the
-    row holds one and is otherwise asked, because box 11 is read off the door
-    jamb or the old title rather than decoded. A version of this file resolved
-    it from NHTSA's curb weight, which is a different figure for the model in
-    general and not what the dealership files.
+    The empty weight is looked up the same way, and only on its own screen:
+    a document figure on the vehicle (a title, an MCO, a weight certificate)
+    skips the question and is affixed with its source; otherwise the estimate
+    (EPA test weight less 300 lb, cross-checked against Transport Canada and
+    the VIN decode) is offered WITH its source for a person to confirm, or the
+    figure is typed off a document. Never a silent default, never an
+    unsourced figure in the box, and silent on failure: no estimate means the
+    question is asked as it always was (empty-weight/on-the-sale.ts).
   */
   const mailing = readBuyerId(sale.stepData).mailing;
   const buyerCounty = await resolveCounty(mailing);
   const vehicleWeight = sale.vehicle?.weightLbs ?? null;
+  const key = decodeURIComponent(q);
+  const isForm130U = entry.documentType === "form130U";
+  const estimate =
+    isForm130U && key === "emptyWeight" ? await resolveVehicleWeight(sale.vehicle, { network: true }) : null;
+  const emptyWeight = isForm130U ? emptyWeightContext(sale.vehicle, estimate) : null;
 
   const context = {
     funding: sale.funding.type,
@@ -104,6 +122,8 @@ export default async function PaperworkQuestionPage({ params }: Props) {
     buyerCity: mailing.city ?? "",
     buyerCounty,
     vehicleWeight,
+    emptyWeight,
+    reopen,
     // For the note: the principal is the whole deal less the down payment,
     // and the rate ceiling depends on how old the car is.
     dealTotal: money.total,
@@ -129,8 +149,6 @@ export default async function PaperworkQuestionPage({ params }: Props) {
     `/admin/sales/${encodeURIComponent(dealId)}/paperwork/${encodeURIComponent(entry.documentType!)}/${encodeURIComponent(key)}`;
   /** Back to the guide step this document belongs to, not to the deal. */
   const guideHref = `/admin/sales/${encodeURIComponent(dealId)}/guide/${encodeURIComponent(`document:${entry.documentType}`)}`;
-
-  const key = decodeURIComponent(q);
 
   /*
     "after:<key>": the screen that follows a question, decided after its
@@ -169,6 +187,15 @@ export default async function PaperworkQuestionPage({ params }: Props) {
 
   const question = reviewing ? null : questions[index];
   const { lang, userId } = await resolveAdminLanguageWithUser();
+
+  /*
+    A truck's carrying capacity starts at TxDMV's minimum for its box 11
+    (Registration Manual Table 2-1), on the screen only and labelled as that:
+    the minimum the county uses when nobody can supply the figure and the
+    door-jamb GVWR cannot be read. Never vPIC's GVWR, which is a class range.
+  */
+  const capacityStart =
+    question?.key === "carryingCapacity" ? carryingCapacityStart(emptyWeight, filedAnswers, answers) : null;
 
   /**
    * The power of attorney's facts and its instrument decision, off the
@@ -209,10 +236,13 @@ export default async function PaperworkQuestionPage({ params }: Props) {
         current={
           question
             ? (answers[question.key] ??
+              (capacityStart !== null ? String(capacityStart) : undefined) ??
               paperworkDefault(entry.documentType, question.key, context) ??
               "")
             : ""
         }
+        suggestionNote={capacityStart !== null ? "capacityMinimum" : null}
+        weightPrompt={question?.key === "emptyWeight" && emptyWeight ? weightPrompt(emptyWeight, answers) : null}
         nextHref={nextHref}
         vehicle={vehicleLabel(sale.vehicle)}
         vin={sale.vehicle?.vin ?? ""}

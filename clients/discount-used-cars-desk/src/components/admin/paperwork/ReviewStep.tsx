@@ -12,6 +12,8 @@ import { fillTemplate, funnelDollars, type FunnelStrings } from "@/lib/sales/i18
 import { localizeDocumentTitle } from "@/lib/sales/question-i18n";
 import { DOC_FEE_SET } from "@/lib/documents/billOfSale";
 import { notSet } from "@/lib/dealership-config";
+import Link from "next/link";
+import { sourceLineFromAnswers } from "@/lib/vehicles/empty-weight/copy";
 
 /**
  * The last screen: what was answered, and the signature that files it.
@@ -245,16 +247,54 @@ export default function ReviewStep({
   const acknowledgmentNote =
     (t.review.acknowledgmentNotes as Record<string, string>)[documentType] ?? null;
 
+  /*
+    Box 11 with where it came from, and the way to change it. Without a
+    settled figure the 130-U does not file, so the row says so here rather
+    than leaving the refusal to be a surprise on the File button.
+  */
+  const weightHref = `/admin/sales/${encodeURIComponent(dealId)}/paperwork/form130U/emptyWeight?change=emptyWeight`;
+  const weightSettled = documentType === "form130U" && /^\d+$/.test(answers.emptyWeight ?? "");
+  const weightSourceLine = weightSettled ? sourceLineFromAnswers(t, answers) : null;
+
   return (
     <div className="ed-paper-review">
       {acknowledgmentNote ? <p className="ed-paper-note">{acknowledgmentNote}</p> : null}
       <dl className="ed-paper-summary">
-        {entries.map(([key, value]) => (
-          <div key={key} className="ed-paper-line">
-            <dt className="ed-fine">{label(t, key)}</dt>
-            <dd>{display(t, lang, key, value)}</dd>
+        {entries.map(([key, value]) =>
+          key === "emptyWeight" && documentType === "form130U" ? (
+            <div key={key} className="ed-paper-line">
+              <dt className="ed-fine">{label(t, key)}</dt>
+              <dd>
+                {weightSettled ? `${Number(value).toLocaleString("en-US")} lb` : value}{" "}
+                <Link className="ed-weight-change" href={weightHref}>
+                  {t.weight.review.change}
+                </Link>
+              </dd>
+              {weightSourceLine ? <dd className="ed-fine ed-weight-source">{weightSourceLine}</dd> : null}
+              {weightSettled && answers._emptyWeightReason ? (
+                <dd className="ed-fine ed-weight-source">
+                  {fillTemplate(t.weight.reasonLine, { reason: answers._emptyWeightReason })}
+                </dd>
+              ) : null}
+            </div>
+          ) : (
+            <div key={key} className="ed-paper-line">
+              <dt className="ed-fine">{label(t, key)}</dt>
+              <dd>{display(t, lang, key, value)}</dd>
+            </div>
+          ),
+        )}
+        {documentType === "form130U" && !weightSettled ? (
+          <div className="ed-paper-line" data-weight-unsettled="true">
+            <dt className="ed-fine">{label(t, "emptyWeight")}</dt>
+            <dd>
+              {t.weight.review.notSettled}{" "}
+              <Link className="ed-weight-change" href={weightHref}>
+                {t.weight.review.settle}
+              </Link>
+            </dd>
           </div>
-        ))}
+        ) : null}
         {entries.length === 0 && !money && quotedRegistrationAmount === null && !acknowledgmentNote ? (
           <p className="ed-paper-note">{t.review.nothingAsked}</p>
         ) : null}

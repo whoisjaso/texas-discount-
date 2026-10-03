@@ -61,8 +61,30 @@ export type SaleVehicle = {
   exteriorColor: string | null;
   /** Trim level, for the bill of sale's vehicle line. */
   trim: string | null;
-  /** Empty weight in pounds, when the row holds one: the 130-U's starting answer for box 11. */
+  /**
+   * Box 11 as a person confirmed it from a document, when the row holds one.
+   *
+   * With `weightSource` set (a title, an MCO, a weight certificate, KBB / JD
+   * Power) this is the 130-U's box 11 and the question is skipped. Without a
+   * source it is a legacy figure nobody recorded the origin of: shown, never
+   * defaulted (empty-weight/on-the-sale.ts).
+   */
   weightLbs: number | null;
+  /** Which document box 11 was read from (empty-weight/rules.ts DOCUMENT_KINDS). */
+  weightSource?: string | null;
+  /** The figure as printed on that document, before rounding. */
+  weightReadingLbs?: number | null;
+  /** roundUp or plus100RoundUp. */
+  weightRule?: string | null;
+  weightConfirmedByName?: string | null;
+  weightConfirmedAt?: string | null;
+  weightNote?: string | null;
+  /** An estimate with its source (empty-weight/estimate.ts). Never a fact. */
+  weightEstimate?: unknown;
+  /** For the estimate: what the decode and the lot know about the car. */
+  engine?: string | null;
+  drivetrain?: string | null;
+  fuelType?: string | null;
 };
 
 /**
@@ -132,7 +154,7 @@ export async function getSaleDetail(dealId: string): Promise<SaleDetail | null> 
   const { data, error } = await supabase
     .from("deals")
     .select(
-      "id, status, language, created_at, started_at, completed_at, step_data, customers(id, name, phone, email, profile_data), vehicles(id, year, make, model, vin, status, sale_price, body_style, title_status, mileage, exterior_color, trim, weight_lbs)",
+      "id, status, language, created_at, started_at, completed_at, step_data, customers(id, name, phone, email, profile_data), vehicles(id, year, make, model, vin, status, sale_price, body_style, title_status, mileage, exterior_color, trim, weight_lbs, weight_source, weight_reading_lbs, weight_rule, weight_confirmed_by_name, weight_confirmed_at, weight_note, weight_estimate, engine, drivetrain, fuel_type)",
     )
     .eq("id", dealId)
     .maybeSingle();
@@ -169,6 +191,16 @@ export async function getSaleDetail(dealId: string): Promise<SaleDetail | null> 
       exterior_color: string | null;
       trim: string | null;
       weight_lbs: number | null;
+      weight_source?: string | null;
+      weight_reading_lbs?: number | null;
+      weight_rule?: string | null;
+      weight_confirmed_by_name?: string | null;
+      weight_confirmed_at?: string | null;
+      weight_note?: string | null;
+      weight_estimate?: unknown;
+      engine?: string | null;
+      drivetrain?: string | null;
+      fuel_type?: string | null;
     } | null;
   };
 
@@ -267,6 +299,16 @@ export async function getSaleDetail(dealId: string): Promise<SaleDetail | null> 
           exteriorColor: row.vehicles.exterior_color ?? null,
           trim: row.vehicles.trim ?? null,
           weightLbs: row.vehicles.weight_lbs ?? null,
+          weightSource: row.vehicles.weight_source ?? null,
+          weightReadingLbs: row.vehicles.weight_reading_lbs ?? null,
+          weightRule: row.vehicles.weight_rule ?? null,
+          weightConfirmedByName: row.vehicles.weight_confirmed_by_name ?? null,
+          weightConfirmedAt: row.vehicles.weight_confirmed_at ?? null,
+          weightNote: row.vehicles.weight_note ?? null,
+          weightEstimate: row.vehicles.weight_estimate ?? null,
+          engine: row.vehicles.engine ?? null,
+          drivetrain: row.vehicles.drivetrain ?? null,
+          fuelType: row.vehicles.fuel_type ?? null,
         }
       : null,
     documents,

@@ -259,6 +259,15 @@ function vehicleToRow(vehicle: Vehicle): VehicleRow {
     selling_fees: vehicle.sellingFees,
     net_profit: vehicle.netProfit,
     weight_lbs: vehicle.weightLbs,
+    weight_source: vehicle.weightSource ?? null,
+    weight_reading_lbs: vehicle.weightReadingLbs ?? null,
+    weight_rule: vehicle.weightRule ?? null,
+    weight_confirmed_by: vehicle.weightConfirmedBy ?? null,
+    weight_confirmed_by_name: vehicle.weightConfirmedByName ?? null,
+    weight_confirmed_at: vehicle.weightConfirmedAt ?? null,
+    weight_note: vehicle.weightNote ?? null,
+    weight_estimate: vehicle.weightEstimate ?? null,
+    weight_estimated_at: vehicle.weightEstimatedAt ?? null,
     license_plate: vehicle.licensePlate,
     buyer_name: vehicle.buyerName,
     buyer_phone: vehicle.buyerPhone,
@@ -519,6 +528,53 @@ const previewDeals = [
       id: "preview-customer-paperwork-2",
       name: "Marcus Reed",
       phone: "+17135550188",
+    },
+  },
+  /*
+    A pickup, so the 130-U's empty weight can be seen in its "needs a
+    document" state: an estimate exists (EPA has the 2018 F-150 2.7 4x4), but
+    a pickup is never filed on an estimate, so the screen asks for the title,
+    the MCO or a scale ticket and shows the estimate as a hint only. Nothing
+    on the vehicle row says what it weighs.
+  */
+  {
+    id: "preview-truck-deal",
+    status: "in_progress",
+    current_step: 4,
+    step_data: {
+      buyerId: {
+        mailing: {
+          street: "8100 Bellfort Ave",
+          city: "Houston",
+          state: "TX",
+          postal: "77061",
+          county: "Harris",
+        },
+        mailingConfirmed: true,
+      },
+    },
+    language: "en",
+    created_at: "2026-10-02T15:00:00.000Z",
+    completed_at: null,
+    vehicles: {
+      id: "preview-vehicle-truck-1",
+      year: 2018,
+      make: "Ford",
+      model: "F-150 XLT",
+      trim: "XLT",
+      vin: "1FTEW1EP5JFA00001",
+      sale_price: 18900,
+      body_style: "Truck",
+      engine: "2.7L V6",
+      drivetrain: "4WD",
+      fuel_type: "Gasoline",
+      title_status: "clean",
+      weight_lbs: null,
+    },
+    customers: {
+      id: "preview-customer-truck-1",
+      name: "Daniel Ortiz",
+      phone: "+17135550166",
     },
   },
 ];

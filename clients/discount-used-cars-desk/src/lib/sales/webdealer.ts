@@ -29,6 +29,7 @@ import { lenderNameFor } from "@/lib/sales/corridor-link";
 import { dealership, factOr } from "@/lib/dealership-config";
 import { readTitleOrigin } from "@/lib/vehicles/title-kinds";
 import { readPaperwork } from "@/lib/sales/paperwork";
+import { isDocumentKind, isEstimateKind } from "@/lib/vehicles/empty-weight/rules";
 
 export type HandoffFieldKey =
   | "vin"
@@ -62,6 +63,12 @@ export type HandoffField = {
   /** Where to go when it is missing. Only set for fields we can point at. */
   fixHref?: string;
   fixLabel?: string;
+  /**
+   * Where the value came from, for the fine print under it. Only the empty
+   * weight has one: a title, an MCO, a confirmed estimate, or "not recorded"
+   * on a legacy figure. Never part of the clipboard text.
+   */
+  source?: { kind: string; by: string | null; at: string | null };
 };
 
 function cleanText(value: string | null | undefined): string | null {
@@ -98,6 +105,29 @@ function emptyWeightFor(sale: SaleDetail): string | null {
   if (!/^\d+$/.test(text)) return null;
   const weight = Number(text);
   return Number.isSafeInteger(weight) && weight > 0 ? String(weight) : null;
+}
+
+/**
+ * Where the empty weight on the handoff came from: the 130-U's own record of
+ * its source, else the vehicle's document record, else "not recorded" (a
+ * figure on the vehicle nobody wrote the origin of; confirm it on the 130-U).
+ */
+function emptyWeightSourceFor(sale: SaleDetail): HandoffField["source"] {
+  if (emptyWeightFor(sale) === null) return undefined;
+  const answers = readPaperwork(sale.stepData, "form130U");
+  if (cleanText(answers.emptyWeight)) {
+    const kind = answers._emptyWeightSource;
+    return {
+      kind: isDocumentKind(kind) || isEstimateKind(kind) ? kind : "typed_unrecorded",
+      by: cleanText(answers._emptyWeightBy),
+      at: cleanText(answers._emptyWeightAt),
+    };
+  }
+  const vehicle = sale.vehicle;
+  if (vehicle && isDocumentKind(vehicle.weightSource)) {
+    return { kind: vehicle.weightSource, by: vehicle.weightConfirmedByName ?? null, at: vehicle.weightConfirmedAt ?? null };
+  }
+  return { kind: "notRecorded", by: null, at: null };
 }
 
 /**
@@ -142,6 +172,7 @@ export function buildHandoffFields(
       value: emptyWeightFor(sale),
       fixHref: `/admin/sales/${encodeURIComponent(sale.id)}/guide/document:form130U`,
       fixLabel: "Add on the 130-U",
+      ...(emptyWeightSourceFor(sale) ? { source: emptyWeightSourceFor(sale) } : {}),
     },
     {
       key: "buyerName",
@@ -281,14 +312,27 @@ export function buildHandoffFields(
  * Missing fields are named rather than skipped, so a blank in the paste is
  * visible as a blank instead of silently shortening the list.
  */
+/**
+ * A value on screen that must not be pasted into webDEALER yet: an empty
+ * weight on the vehicle that nobody recorded the source of. It is shown, so
+ * the operator can see what the record says, but it is a filing, and a
+ * figure nobody vouched for is settled on the 130-U first.
+ */
+export function isUnconfirmedHandoffValue(field: HandoffField): boolean {
+  return field.value !== null && field.source?.kind === "notRecorded";
+}
+
 export function handoffClipboardText(fields: HandoffField[]): string {
   return fields
-    .map((field) => `${field.label}: ${field.value ?? (field.optional ? "(not supplied)" : "(missing)")}`)
+    .map((field) => {
+      if (isUnconfirmedHandoffValue(field)) return `${field.label}: (not confirmed; settle it on the 130-U)`;
+      return `${field.label}: ${field.value ?? (field.optional ? "(not supplied)" : "(missing)")}`;
+    })
     .join("\n");
 }
 
 export function missingHandoffFields(fields: HandoffField[]): HandoffField[] {
-  return fields.filter((field) => field.value === null && !field.optional);
+  return fields.filter((field) => (field.value === null && !field.optional) || isUnconfirmedHandoffValue(field));
 }
 
 /**

@@ -134,6 +134,16 @@ secrets.
   desk: the Vega's port redirected new members to a route that did not exist.
 - The website printed on documents is the public domain; the desk's origin is
   only for signing links. Keep them as two values.
+- Empty weight is resolved automatically with its source, on every desk: a
+  title, MCO or scale figure on the car skips the 130-U question; otherwise a
+  bundled EPA estimate (test weight less 300 lb, matched to the model's own
+  EPA rows, cross-checked against Transport Canada) is offered for one tap,
+  rounded per TxDMV; pickups and work vans (known by name too), heavy duty,
+  buses, a class nobody recorded, an unsupported low-confidence estimate and
+  anything within 300 lb of 6,000 lb need a document; with no source at all
+  the question is asked as before. A failed decode is never stored, an
+  unsourced weight is never filed or pasted into webDEALER, and filing writes
+  box 11's source into `form_data` (SOP, Empty weight).
 - Demo videos: `references/demo-video.md` (Recordly-style screen capture with
   zoom, cursor and macOS window, cut with the jason-video-editor template).
 
@@ -145,5 +155,10 @@ secrets.
   plus a contact sheet to check.
 - `scripts/site_screens.cjs`: desktop and phone screenshots of the public site.
 - `scripts/desk-walk/`: `sale.cjs`, `ceremony.cjs`, `pdfs.cjs`, `audit-fn.cjs`
-  and five sale scenarios: full end-to-end desk walks with the theme assertion
-  and WCAG contrast audit, the signing ceremony, and packet PDF download.
+  and eight sale scenarios (the five SOP walks plus `estimate-confirm`,
+  `title-on-file` and `no-source` for box 11): full end-to-end desk walks
+  with the theme assertion and WCAG contrast audit, the signing ceremony, and
+  packet PDF download. `DESK_BASE` points them at another port (default
+  `http://localhost:5190`); a scenario's `expect` map names text a screen
+  must show, and a scenario with a `vin` starts the sale through "Not on the
+  lot?" instead of a lot car.

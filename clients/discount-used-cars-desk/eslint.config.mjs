@@ -19,6 +19,8 @@ const eslintConfig = defineConfig([
     "tmp/**",
     "triple-j-auto-investment-main/**",
     "supabase/.temp/**",
+    // Generated data (scripts/empty-weight/build_epa_table.py), typed by its .d.ts.
+    "src/lib/vehicles/empty-weight/*.generated.js",
   ]),
   {
     // The editorial homepage serves pre-built, art-directed derivatives from
