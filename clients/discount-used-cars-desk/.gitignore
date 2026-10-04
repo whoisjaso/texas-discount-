@@ -1,0 +1,9 @@
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+.env
+.env*.local
+.vercel
+AGENTS.md
+CLAUDE.md

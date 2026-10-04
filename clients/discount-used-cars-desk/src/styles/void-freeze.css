@@ -1,0 +1,238 @@
+/* Void and file again, and the bill of sale's freeze (owner's decision
+   10/02/2026). Quiet by design: the void control is an outline action, never
+   the accent and never red; the notice is the hold tone the deal badge uses;
+   the held note is one muted line. */
+
+.ed-void-action[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ed-void-who {
+  flex-basis: 100%;
+  margin: 2px 0 0;
+}
+
+.ed-void-ask {
+  max-width: min(34rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+}
+
+.ed-void-body .ed-ask-question {
+  margin: 0;
+}
+
+.ed-void-readback {
+  font-size: clamp(18px, 4.6vw, 22px);
+}
+
+.ed-void-heading {
+  margin: 18px 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tj-ink);
+}
+
+.ed-void-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--tj-line);
+}
+
+.ed-void-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--tj-line);
+  font-size: 14px;
+  color: var(--tj-ink);
+}
+
+.ed-void-state {
+  flex-shrink: 0;
+  color: var(--tj-muted);
+  font-size: 13px;
+}
+
+.ed-void-label {
+  display: block;
+  margin: 18px 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tj-ink);
+}
+
+.ed-void-reason {
+  width: 100%;
+  min-height: 84px;
+  resize: vertical;
+  font-size: 16px;
+}
+
+.ed-void-title {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.ed-void-radio {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font-size: 15px;
+  color: var(--tj-ink);
+  cursor: pointer;
+}
+
+.ed-void-radio input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--tj-ink);
+}
+
+.ed-void-actions {
+  margin-top: 18px;
+}
+
+.ed-void-hold-off {
+  min-width: 15rem;
+  min-height: 48px;
+}
+
+/* The notice, while anything waits to be filed again. */
+.ed-void-notice {
+  margin: 0 0 22px;
+  padding: 18px 20px;
+  border: 1px solid var(--tj-ink);
+  border-radius: 12px;
+  background: var(--tj-plane);
+  color: var(--tj-ink);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.ed-void-notice p {
+  margin: 6px 0 0;
+}
+
+.ed-void-notice-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 400;
+}
+
+.ed-void-quote {
+  font-style: italic;
+  overflow-wrap: anywhere;
+}
+
+.ed-void-notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 14px;
+}
+
+.ed-void-notice-actions .ed-btn {
+  min-height: 44px;
+}
+
+.ed-void-see {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--tj-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.ed-voided-copies .ed-void-group {
+  padding-top: 8px;
+}
+
+.ed-void-line {
+  margin: 8px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.ed-voided-copies .ed-packet-row[data-voided="true"] .ed-packet-title {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+/* The summary, straight after a void. */
+.ed-void-banner {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border: 1px solid var(--tj-ink);
+  border-radius: 10px;
+  background: var(--tj-plane);
+  color: var(--tj-ink);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* The held note and the way out of a freeze refusal. */
+.ed-held-note {
+  margin: 0 0 14px;
+  color: var(--tj-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ed-held-note p {
+  margin: 0;
+}
+
+.ed-freeze-way {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--tj-muted);
+}
+
+.ed-freeze-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  color: var(--tj-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.ed-held-note .ed-freeze-way {
+  text-align: left;
+  margin-top: 2px;
+}
+
+@media (max-width: 600px) {
+  .ed-void-ask[open] {
+    width: 100vw;
+    max-width: 100vw;
+    max-height: 92dvh;
+    margin: auto 0 0;
+    border-radius: 14px 14px 0 0;
+  }
+
+  .ed-void-actions {
+    flex-direction: column-reverse;
+  }
+
+  .ed-void-actions .tj-action-base {
+    width: 100%;
+  }
+
+  .ed-void-notice {
+    padding: 16px;
+  }
+}

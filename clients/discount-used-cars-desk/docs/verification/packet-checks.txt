@@ -1,0 +1,435 @@
+Packet checks: Discount Used Cars and Trucks sale desk
+Business date of the run: 10/01/2026 (America/Chicago). Dev server on :5190, in-memory preview mock, DESK_ALLOW_UNSET_FACTS=true.
+Every PDF was fetched through the packet screen's own Open/Print route (scripts/desk-walk/pdfs.cjs) after the buyer signed in the ceremony,
+then read with PyMuPDF (text + AcroForm field values). The bhph-trade packet is rasterised in packet-pages/ and was read page by page.
+
+================================================================================================
+CASH-OTD  (Cash, out the door, dealer files, insurance shown)  deal /admin/sales/preview-deals-2  [1440x900 walk]
+  130-U_Delgado_812345.pdf  (2 pages, 21 filled form fields)
+      OK   legal name "Discount Used Cars And Trucks, LLC": 3x
+      OK   licence P145000: 2x
+      OK   130-U box 21 Dealer GDN = P145000
+      OK   130-U box 20 previous owner / seller printed name = legal name
+      OK   130-U box 19 county of residence: Harris
+      OK   odometer 89432: 2x (130-U box 9)
+      OK   dates are the business date only: 10/01/2026
+      OK   no dev host
+      OK   no fact from an earlier dealer, no private fact
+      OK   one casing of the legal name on the page
+      OK   [Not set] only for genuinely missing facts: none
+      OK   130-U box 33/34 lien: none: lien date field: empty
+  Discount_BillOfSale_Maria_Delgado_20261001.pdf  (3 pages, 0 filled form fields)
+      OK   legal name "Discount Used Cars And Trucks, LLC": 3x
+      OK   licence P145000: 3x
+      OK   county Harris (venue clause): 2x
+      OK   odometer 89432: 4x
+      OK   dates are the business date only: 10/01/2026
+      OK   no dev host
+      OK   no fact from an earlier dealer, no private fact
+      OK   one casing of the legal name on the page
+      OK   [Not set] only for genuinely missing facts: [Not set: website domain]
+      OK   bill of sale: no lien section
+      OK   bill of sale figures sum to the total: $3,663.06 - $0.00 + $336.94 = $4,000.00
+================================================================================================
+CASH-BALANCE  (Cash, vehicle only, partial payment (balance and lien))  deal /admin/sales/preview-deals-7  [1440x900 walk]
+  130-U_Herrera_345678.pdf  (2 pages, 22 filled form fields)
+      OK   legal name "Discount Used Cars And Trucks, LLC": 4x
+      OK   licence P145000: 2x
+      OK   130-U box 21 Dealer GDN = P145000
+      OK   130-U box 20 previous owner / seller printed name = legal name
+      OK   130-U box 19 county of residence: Harris
+      OK   odometer 64280: 2x (130-U box 9)
+      OK   dates are the business date only: 10/01/2026
+      OK   no dev host
+      OK   no fact from an earlier dealer, no private fact
+      OK   one casing of the legal name on the page
+      OK   [Not set] only for genuinely missing facts: none
+      OK   130-U box 34 first lienholder = the dealer: Discount Used Cars And Trucks, LLC, 8108 Gulf Fwy, Houston TX 77017; lien date 10/01/2026
+  Discount_BillOfSale_Luis_Herrera_20261001.pdf  (4 pages, 0 filled form fields)
+      OK   legal name "Discount Used Cars And Trucks, LLC": 5x
+      OK   licence P145000: 3x
+      OK   county Harris (venue clause): 2x
+      OK   odometer 64280: 4x
+      OK   dates are the business date only: 10/01/2026
+      OK   no dev host
+      OK   no fact from an earlier dealer, no private fact
+      OK   one casing of the legal name on the page
+      OK   [Not set] only for genuinely missing facts: [Not set: website domain]
+      OK   bill of sale: seller lien to the dealer: secured balance $326.75
+      OK   bill of sale figures sum to the total: $3,500.00 - $0.00 + $326.75 = $3,826.75
+================================================================================================
+BHPH  (Buy here pay here with a trade-in)  deal /admin/sales/preview-deals-13  [1440x900 walk]
+  130-U_Salinas_A98765.pdf  (2 pages, 22 filled form fields)
+      OK   legal name "Discount Used Cars And Trucks, LLC": 4x
+      OK   licence P145000: 2x
+      OK   130-U box 21 Dealer GDN = P145000
+      OK   130-U box 20 previous owner / seller printed name = legal name
+      OK   130-U box 19 county of residence: Harris
+      OK   odometer 118340: 2x (130-U box 9)
+      OK   dates are the business date only: 10/01/2026
+      OK   no dev host
+      OK   no fact from an earlier dealer, no private fact
+      OK   one casing of the legal name on the page
+      OK   [Not set] only for genuinely missing facts: none
+      OK   130-U box 34 first lienholder = the dealer: Discount Used Cars And Trucks, LLC, 8108 Gulf Fwy, Houston TX 77017; lien date 10/01/2026
+  Discount_BillOfSale_Andrea_Salinas_20261001.pdf  (4 pages, 0 filled form fields)
+      OK   legal name "Discount Used Cars And Trucks, LLC": 5x
+      OK   licence P145000: 3x
+      OK   county Harris (venue clause): 2x
+      OK   odometer 118340: 4x
+      OK   dates are the business date only: 10/01/2026
+      OK   no dev host
+      OK   no fact from an earlier dealer, no private fact
+      OK   one casing of the legal name on the page
+      OK   [Not set] only for genuinely missing facts: [Not set: website domain]
+      OK   bill of sale: seller lien to the dealer: secured balance $7,545.50
+      OK   bill of sale figures sum to the total: $9,000.00 - $2,000.00 + $545.50 = $7,545.50
+  Discount_Financing_Andrea_Salinas_20261001.pdf  (5 pages, 0 filled form fields)
+      OK   legal name "Discount Used Cars And Trucks, LLC": 2x
+      OK   licence P145000: 2x
+      OK   county Harris (venue clause): 1x
+      OK   odometer 118340: 1x
+      OK   dates are the business date only: 10/01/2026
+      OK   no dev host
+      OK   no fact from an earlier dealer, no private fact
+      OK   one casing of the legal name on the page
+      OK   [Not set] only for genuinely missing facts: [Not set: website domain]
+      OK   financing contract on a buy-here-pay-here deal only
+================================================================================================
+BANK  (Bank financing (Chase Auto Finance))  deal /admin/sales/preview-deals-22  [1440x900 walk]
+  130-U_Okafor_654321.pdf  (2 pages, 22 filled form fields)
+      OK   legal name "Discount Used Cars And Trucks, LLC": 3x
+      OK   licence P145000: 2x
+      OK   130-U box 21 Dealer GDN = P145000
+      OK   130-U box 20 previous owner / seller printed name = legal name
+      OK   130-U box 19 county of residence: Harris
+      OK   odometer 102587: 2x (130-U box 9)
+      OK   dates are the business date only: 10/01/2026
+      OK   no dev host
+      OK   no fact from an earlier dealer, no private fact
+      OK   one casing of the legal name on the page
+      OK   [Not set] only for genuinely missing facts: none
+      OK   130-U box 34 first lienholder = Chase Auto Finance, no dealer lien: Chase Auto Finance; lien date 10/01/2026; dealer address absent from the form
+  Discount_BillOfSale_Daniel_Okafor_20261001.pdf  (4 pages, 0 filled form fields)
+      OK   legal name "Discount Used Cars And Trucks, LLC": 4x
+      OK   licence P145000: 3x
+      OK   county Harris (venue clause): 2x
+      OK   odometer 102587: 4x
+      OK   dates are the business date only: 10/01/2026
+      OK   no dev host
+      OK   no fact from an earlier dealer, no private fact
+      OK   one casing of the legal name on the page
+      OK   [Not set] only for genuinely missing facts: [Not set: website domain]
+      OK   bill of sale: lienholder Chase Auto Finance, no seller lien
+      OK   bill of sale figures sum to the total: $14,500.00 - $0.00 + $1,014.25 = $15,514.25
+  OK   no dealer financing contract on the bank deal
+================================================================================================
+BUYER-FILES  (Buyer files, no insurance shown)  deal /admin/sales/preview-deals-30  [1440x900 walk]
+  Discount_BillOfSale_Rosa_Villarreal_20261001.pdf  (3 pages, 0 filled form fields)
+      OK   legal name "Discount Used Cars And Trucks, LLC": 3x
+      OK   licence P145000: 3x
+      OK   county Harris (venue clause): 2x
+      OK   odometer 95710: 4x
+      OK   dates are the business date only: 10/01/2026
+      OK   no dev host
+      OK   no fact from an earlier dealer, no private fact
+      OK   one casing of the legal name on the page
+      OK   [Not set] only for genuinely missing facts: [Not set: website domain]
+      OK   bill of sale: no lien section
+      OK   bill of sale figures sum to the total: $10,251.29 - $0.00 + $748.71 = $11,000.00
+  Discount_InsuranceAcknowledgment_Rosa_Villarreal_20261001.pdf  (2 pages, 0 filled form fields)
+      OK   legal name "Discount Used Cars And Trucks, LLC": 5x
+      OK   licence P145000: 1x
+      n/a  county: this acknowledgment has no venue clause (same as the reference)
+      OK   no conflicting odometer (document prints none)
+      OK   dates are the business date only: 10/01/2026
+      OK   no dev host
+      OK   no fact from an earlier dealer, no private fact
+      OK   one casing of the legal name on the page
+      OK   [Not set] only for genuinely missing facts: [Not set: website domain]
+  Discount_VehicleResponsibility_Rosa_Villarreal_20261001.pdf  (2 pages, 0 filled form fields)
+      OK   legal name "Discount Used Cars And Trucks, LLC": 4x
+      OK   licence P145000: 1x
+      n/a  county: this acknowledgment has no venue clause (same as the reference)
+      OK   no conflicting odometer (document prints none)
+      OK   dates are the business date only: 10/01/2026
+      OK   no dev host
+      OK   no fact from an earlier dealer, no private fact
+      OK   one casing of the legal name on the page
+      OK   [Not set] only for genuinely missing facts: [Not set: website domain]
+  OK   no 130-U when the buyer files; vehicle responsibility + insurance acknowledgment present: True
+
+OVERALL: ALL AUTOMATED CHECKS PASS
+
+================================================================================================
+READ BY EYE: the bhph-trade packet (packet-pages/, 11 pages at 110 dpi)
+================================================================================================
+Bill of sale p1: black-ink letterhead (the ink DISCOUNT / USED CARS AND TRUCKS LLC logo; 0
+  coloured pixels on the page). Seller block: Discount Used Cars And Trucks, LLC, 8108 Gulf Fwy,
+  Houston, TX 77017, (713) 900-5050, [Not set: website domain], Texas Dealer License P145000.
+  Date 10/01/2026. 2017 Ford Explorer XLT, Blue, SUV, mileage 118340, VIN 1FM5K8D82HGA98765.
+  Vehicle Price $9,000.00 - Net Trade-In $2,000.00 + Fees & Tax $545.50 = Total Due $7,545.50.
+Bill of sale p3: lienholder Discount Used Cars And Trucks, LLC, 8108 Gulf Fwy, Houston, TX
+  77017, lien date 10/01/2026. Governing law: "... shall be resolved in Harris County, Texas."
+  The county now comes from dealership.county through the {dealerCounty} message token; the
+  printed words are the same as before.
+130-U p1: box 9 odometer 118340; box 19 Harris; box 20 previous owner "Discount Used Cars And
+  Trucks, LLC", Houston, TX; box 21 GDN P145000; box 33 first lien date 10/01/2026; box 34
+  first lienholder Discount Used Cars And Trucks, LLC, 8108 Gulf Fwy, Houston, TX 77017;
+  seller printed name = legal name; dates 10/01/2026; buyer signature drawn.
+Retail installment contract p1-p5: same ink letterhead; mileage 118340; APR 25.98% (held at the
+  ceiling, $329.11 x 35 + final $328.97); amount financed $8,170.50; finance charge $3,677.32;
+  total of payments $11,847.82; venue Harris County (now read from dealership.county); dealer
+  signature line "Discount Representative. DL# P145000"; date 10/01/2026.
+Odometer: 118340 on the bill of sale (4x), the 130-U (box 9) and the contract. Identical.
+
+One casing of the legal name: every document in all five packets prints "Discount Used Cars
+  And Trucks, LLC" and none prints the lower-case "and" form, so the bill of sale, the 130-U and
+  the contract agree word for word.
+
+[Not set] markers seen across all five packets: only "[Not set: website domain]" (letterheads and
+  seller blocks). The documentary fee prints as $0.00 on the documents (the desk screen shows
+  "[Not set: doc fee]" on the review step and the "Dealer Details Missing" banner lists
+  Documentary fee, Authorised signer, Website domain). The authorised signer has no printed
+  name on any document: the seller lines read "Seller (Dealer). DL# P145000" and
+  "Discount Representative", as in the reference desk.
+
+Colour: the letterhead pages (bill of sale p1, contract p1, both 130-U pages) have 0 coloured
+  pixels. The only colour in the packet is the reference desk's red on open balances (bill of
+  sale p2-p4) and the rust down-payment figure on the contract (p2).
+
+PRE-EXISTING (the same figures print from the reference desk; money math and document rules are
+fixed, so these are reported, not changed):
+  - Buy here pay here with a trade-in: the bill of sale credits the $2,000 trade and taxes
+    $7,000 ($437.50, secured balance $7,545.50), while the retail installment contract
+    itemises the full $9,000 cash price with $562.50 tax and no trade-in line, less the
+    $1,500 down = $8,170.50 financed. The bill of sale's seller-lien balance also ignores the
+    $1,500 down payment.
+  - 130-U box 36 (trade-in) is left blank on the trade-in deal.
+  - The contract prints the down payment in a rust colour (#8A3A1C, ContractPreview.tsx).
+  - The vehicle-responsibility form prints a hard-coded $100.00 late-handling fee
+    (LATE_HANDLING_FEE_USD in src/lib/documents/vehicleResponsibility.ts), a policy figure
+    the owner has not confirmed.
+
+
+================================================================================================
+RE-VERIFICATION 10/01/2026: SIGNER ON THE 130-U SELLER LINE, ONBOARDING, WEBSITE ON PAPER
+================================================================================================
+Server: .next deleted, then next dev on :5190, in-memory preview mock, DESK_ALLOW_UNSET_FACTS=true,
+DESK_PREVIEW_MEMBER=fresh (a cleared-to-sign member with no name, no signature, onboarding not done).
+Throwaway ADMIN_SESSION_SECRET / INTERNAL_RENDER_TOKEN / CHROME_PATH passed on the command line only.
+The member was onboarded through /admin/account/onboarding as "Maria Lopez" (a test name typed by the
+walk, not a dealer fact), signature drawn with a scripted stroke, before any sale was walked.
+Walks (sale.cjs then ceremony.cjs, theme accent rgb(0, 0, 0), ground rgb(238, 239, 242), Barlow Semi
+Condensed): cash-otd, bhph-trade, buyer-files at 1440x900 and 390x844, all "N / N signed",
+CONTRAST FAILURES 0 in both the corridor and the ceremony. PDFs pulled with pdfs.cjs, read with
+PyMuPDF (text + AcroForm values); pages rasterised at 110 dpi into packet-pages/ (replaced), seller
+line and box 36 also at 300 dpi.
+
+CASH-OTD  deal /admin/sales/preview-deals-2  [1440x900 walk; filed by the onboarded member "Maria Lopez"]
+  130-U_Delgado_812345.pdf  (2 pages)
+      OK   130-U 'Seller  Name' field value == 'Discount Used Cars And Trucks, LLC (Maria Lopez)' (expected 'Discount Used Cars And Trucks, LLC (Maria Lopez)'), 9.49pt, box [293.5, 688.2, 514.6, 712.0]
+      OK   staff signature image on the seller band (y 688.2-712.0, left of the printed name): [[96.5, 689.0, 213.5, 711.0]]
+      OK   no [Not set] marker on the 130-U
+      OK   signer name present only inside the seller line parentheses: ['Discount Used Cars And Trucks, LLC (Maria Lopez) 10/01/2026']
+      OK   box 9 odometer ['89432']
+      OK   no [Not set: website domain]
+      OK   hours printed: none (no hours on this document)
+      OK   no dev host and no desk address printed
+      OK   no old Google-listing hours
+      OK   phone (713) 900-5050 (not on the 130-U form)
+      OK   one casing of the legal name
+  Discount_BillOfSale_Maria_Delgado_20261001.pdf  (3 pages)
+      OK   website www.discountusedcarsandtrucks.com: 2x
+      OK   dealer signature line prints ['Discount Used Cars And Trucks, LLC (Maria Lopez)']
+      OK   [Not set] markers: none
+      OK   odometer 89432: 4x
+      OK   no [Not set: website domain]
+      OK   hours printed: none (no hours on this document)
+      OK   no dev host and no desk address printed
+      OK   no old Google-listing hours
+      OK   phone (713) 900-5050
+      OK   one casing of the legal name
+
+BHPH-TRADE  deal /admin/sales/preview-deals-6  [1440x900 walk; filed by the onboarded member "Maria Lopez"]
+  130-U_Salinas_A98765.pdf  (2 pages)
+      OK   130-U 'Seller  Name' field value == 'Discount Used Cars And Trucks, LLC (Maria Lopez)' (expected 'Discount Used Cars And Trucks, LLC (Maria Lopez)'), 9.49pt, box [293.5, 688.2, 514.6, 712.0]
+      OK   staff signature image on the seller band (y 688.2-712.0, left of the printed name): [[96.5, 689.0, 213.5, 711.0]]
+      OK   no [Not set] marker on the 130-U
+      OK   signer name present only inside the seller line parentheses: ['Discount Used Cars And Trucks, LLC (Maria Lopez) 10/01/2026']
+      OK   box 9 odometer ['118340']
+      OK   box 36 trade-in ['2012 Honda Civic LX'], trade-in amount ['2000.00']
+      OK   no [Not set: website domain]
+      OK   hours printed: none (no hours on this document)
+      OK   no dev host and no desk address printed
+      OK   no old Google-listing hours
+      OK   phone (713) 900-5050 (not on the 130-U form)
+      OK   one casing of the legal name
+  Discount_BillOfSale_Andrea_Salinas_20261001.pdf  (4 pages)
+      OK   website www.discountusedcarsandtrucks.com: 2x
+      OK   dealer signature line prints ['Discount Used Cars And Trucks, LLC (Maria Lopez)']
+      OK   [Not set] markers: none
+      OK   odometer 118340: 4x
+      OK   no [Not set: website domain]
+      OK   hours printed: none (no hours on this document)
+      OK   no dev host and no desk address printed
+      OK   no old Google-listing hours
+      OK   phone (713) 900-5050
+      OK   one casing of the legal name
+  Discount_Financing_Andrea_Salinas_20261001.pdf  (5 pages)
+      OK   website www.discountusedcarsandtrucks.com: 1x
+      OK   dealer signature line prints ['Discount Used Cars And Trucks, LLC (Maria Lopez)']
+      OK   [Not set] markers: none
+      OK   odometer 118340: 1x
+      OK   no [Not set: website domain]
+      OK   hours printed: none (no hours on this document)
+      OK   no dev host and no desk address printed
+      OK   no old Google-listing hours
+      OK   phone (713) 900-5050
+      OK   one casing of the legal name
+Looked at (rasterised, by eye): 130-U_Delgado_812345-p1-seller-line-300dpi.png and
+  130-U_Salinas_A98765-p1-seller-line-300dpi.png. "Discount Used Cars And Trucks, LLC (Maria Lopez)"
+  sits on one line inside the printed-name box at 9.49pt, clear of the rule and of the date box.
+  The staff stroke (the same two-part stroke drawn at onboarding) sits on the "Signature(s) of
+  Seller(s)" band, x 96.5-213.5, y 689-711 pt; its lowest loop just touches the rule, as ink would.
+  The buyer's ceremony stroke sits on the applicant band below it. Box 36 (300 dpi crop): "Yes
+  (Complete)" ticked, "2012 Honda Civic LX"; box 38(b) trade-in amount 2000.00.
+Hours: no document in either packet prints opening hours, so there was nothing to read; the old
+  Mon-Fri 10-5 listing appears nowhere. Config holds Tue-Sat 10:00-19:00, Sun/Mon closed
+  (dealer-hours and sms-assistant hours tests pass).
+buyer-files packet (spot check, 1440x900, deal /admin/sales/preview-deals-11): bill of sale, vehicle
+  responsibility and insurance acknowledgment each print the website and the dealer line
+  "Discount Used Cars And Trucks, LLC (Maria Lopez)"; the only marker is the expected
+  "[Not set: late-handling fee]" (x4) on the vehicle responsibility sheet.
+
+MONEY (bhph-trade, scenario file unchanged; reported, not changed):
+  Bill of sale: price $9,000.00, trade-in -$2,000.00, tax $437.50 (on $7,000.00), fees $108.00,
+    balance $7,545.50. Contract: tax $437.50, trade-in allowance $2,000.00, cash down $1,500.00,
+    total down $3,500.00, amount financed $6,045.50. Tax now agrees across documents; the balances
+    differ by the $1,500 down payment because this scenario types it only at the financing question,
+    after the bill of sale is filed (the open decision the build reported).
+
+REFUSAL (separate server: DESK_PREVIEW_MEMBER=fresh, DESK_ALLOW_UNSET_FACTS NOT set; for this run
+only NEXT_PUBLIC_SITE_URL=http://localhost:5190 and NEXT_PUBLIC_DEALER_DOC_FEE=0 were passed on the
+command line so the dealer-facts refusal, which is checked first, would not mask the signer refusal.
+Nothing was filed, so no document carries these values.)
+  OK   every hard load (/admin/sales) and every server-action redirect sends the unnamed member to
+       /admin/account/onboarding. The walk reached the desk only by client-side navigation
+       (window.nd.router, dev only) from the onboarding page, to exercise the server's own check.
+  OK   Handle A Sale shows "Before You File / Your Name On The Dealer Line: Add your first and last
+       name before filing: the 130-U prints the seller as Discount Used Cars And Trucks, LLC
+       (First Last). Finish it at /admin/account/onboarding."
+  OK   File The Bill Of Sale: refused with the same sentence, URL unchanged (1440 and 390).
+  OK   File The Form 130-U: refused with the same sentence, URL unchanged (1440 and 390).
+  OK   packet afterwards: "Documents 0 on file".
+  OK   Preview The PDF on the 130-U review (draft, the real filled form): 'Seller  Name' =
+       "Discount Used Cars And Trucks, LLC ([Not set: signer name])" at 8.01pt, no stroke on the
+       seller band (this member has none).
+  NOTE the bill of sale draft preview for the same member prints nothing under "Seller (Dealer).
+       DL# P145000" (no name, no [Not set: signer name] marker), unlike the 130-U.
+  NOTE after a server-action redirect bounces to onboarding, the browser re-requested
+       /admin/account/onboarding continuously (about 15,800 GETs in the server log over the run).
+       Reached only through the dev-only bypass above; not seen in the normal onboarding walks.
+Screens: docs/verification/refusal/unnamed-1440x900/ and unnamed-390x844/; onboarding screens:
+  docs/verification/onboarding/.
+
+================================================================================================
+FINAL RUN, after the fix round (10/01/2026, business date, America/Chicago)
+================================================================================================
+Dev server :5190, preview mock, DESK_ALLOW_UNSET_FACTS=true, DESK_PREVIEW_MEMBER=fresh, onboarded at
+1440x900 as "Maria Lopez" before the walks. Packets pulled with scripts/desk-walk/pdfs.cjs and read
+with PyMuPDF. These results replace the earlier ones above wherever they differ.
+
+CASH-OTD  deal /admin/sales/preview-deals-3  [1440x900 walk; filed by the onboarded member "Maria Lopez"]
+  130-U_Delgado_812345.pdf  (2 pages)
+      OK   130-U 'Seller  Name' field value == 'Discount Used Cars And Trucks, LLC (Maria Lopez)' (expected 'Discount Used Cars And Trucks, LLC (Maria Lopez)'), 9.49pt, box [293.5, 688.2, 514.6, 712.0]
+      OK   staff signature image on the seller band (y 688.2-712.0, left of the printed name): [[96.5, 689.0, 213.5, 711.0]]
+      OK   no [Not set] marker on the 130-U
+      OK   signer name present only inside the seller line parentheses: ['Discount Used Cars And Trucks, LLC (Maria Lopez) 10/01/2026']
+      OK   box 9 odometer ['89432']
+      OK   no [Not set: website domain]
+      OK   hours printed: none (no hours on this document)
+      OK   no dev host and no desk address printed
+      OK   no old Google-listing hours
+      OK   phone (713) 900-5050 (not on the 130-U form)
+      OK   one casing of the legal name
+  Discount_BillOfSale_Maria_Delgado_20261001.pdf  (3 pages)
+      OK   website www.discountusedcarsandtrucks.com: 2x
+      OK   dealer signature line prints ['Discount Used Cars And Trucks, LLC (Maria Lopez)']
+      OK   [Not set] markers: none
+      OK   odometer 89432: 4x
+      OK   no [Not set: website domain]
+      OK   hours printed: none (no hours on this document)
+      OK   no dev host and no desk address printed
+      OK   no old Google-listing hours
+      OK   phone (713) 900-5050
+      OK   one casing of the legal name
+
+BHPH-TRADE  deal /admin/sales/preview-deals-7  [1440x900 walk; filed by the onboarded member "Maria Lopez"]
+  130-U_Salinas_A98765.pdf  (2 pages)
+      OK   130-U 'Seller  Name' field value == 'Discount Used Cars And Trucks, LLC (Maria Lopez)' (expected 'Discount Used Cars And Trucks, LLC (Maria Lopez)'), 9.49pt, box [293.5, 688.2, 514.6, 712.0]
+      OK   staff signature image on the seller band (y 688.2-712.0, left of the printed name): [[96.5, 689.0, 213.5, 711.0]]
+      OK   no [Not set] marker on the 130-U
+      OK   signer name present only inside the seller line parentheses: ['Discount Used Cars And Trucks, LLC (Maria Lopez) 10/01/2026']
+      OK   box 9 odometer ['118340']
+      OK   box 36 trade-in ['2012 Honda Civic LX'], trade-in amount ['2000.00']
+      OK   no [Not set: website domain]
+      OK   hours printed: none (no hours on this document)
+      OK   no dev host and no desk address printed
+      OK   no old Google-listing hours
+      OK   phone (713) 900-5050 (not on the 130-U form)
+      OK   one casing of the legal name
+  Discount_BillOfSale_Andrea_Salinas_20261001.pdf  (4 pages)
+      OK   website www.discountusedcarsandtrucks.com: 2x
+      OK   dealer signature line prints ['Discount Used Cars And Trucks, LLC (Maria Lopez)']
+      OK   [Not set] markers: none
+      OK   odometer 118340: 4x
+      OK   no [Not set: website domain]
+      OK   hours printed: none (no hours on this document)
+      OK   no dev host and no desk address printed
+      OK   no old Google-listing hours
+      OK   phone (713) 900-5050
+      OK   one casing of the legal name
+  Discount_Financing_Andrea_Salinas_20261001.pdf  (5 pages)
+      OK   website www.discountusedcarsandtrucks.com: 1x
+      OK   dealer signature line prints ['Discount Used Cars And Trucks, LLC (Maria Lopez)']
+      OK   [Not set] markers: none
+      OK   odometer 118340: 1x
+      OK   no [Not set: website domain]
+      OK   hours printed: none (no hours on this document)
+      OK   no dev host and no desk address printed
+      OK   no old Google-listing hours
+      OK   phone (713) 900-5050
+      OK   one casing of the legal name
+
+BUYER-FILES  deal /admin/sales/preview-deals-12  [1440x900 walk]
+      OK   bill of sale, vehicle responsibility, insurance acknowledgment each print the dealer line
+           "Discount Used Cars And Trucks, LLC (Maria Lopez)" and www.discountusedcarsandtrucks.com
+      OK   the only [Not set] marker in the packet is [Not set: late-handling fee] (vehicle
+           responsibility; the owner has not supplied the fee)
+
+MONEY (bhph-trade, scenario file unchanged; reported, not changed): unchanged from the run above.
+  Bill of sale total $7,545.50 and balance $7,545.50; contract tax $437.50, trade-in $2,000.00,
+  cash down $1,500.00, amount financed $6,045.50. The scenario types the down payment only at the
+  financing question, after the bill of sale is filed (open owner decision; scenario change needs
+  permission).
+
+BUYER'S GUIDE (live, /api/documents/buyers-guide): page 3 Email box prints [Not set: dealer email];
+  the website appears nowhere on the form.
+
+SIGNER NOTICE (server with DESK_ALLOW_UNSET_FACTS not set, fresh member cleared to sign, no name;
+Handle A Sale entered client-side from onboarding, dev only):
+  NOTICE "Before You File Your Name On The Dealer Line Add your first and last name before filing: the 130-U prints the seller as Discount Used Cars And Trucks, LLC (First Last). Use Finish Onboarding on Handle A Sale. Finish Onboarding"
+  FINISH ONBOARDING BUTTON 1 /admin/account/onboarding
+  AFTER FINISH ONBOARDING -> /admin/account/onboarding :: What Is Your Name?
+  PAGE ERRORS 0
+  CONTRAST FAILURES 0
+  NOTICE "Before You File Your Name On The Dealer Line Add your first and last name before filing: the 130-U prints the seller as Discount Used Cars And Trucks, LLC (First Last). Use Finish Onboarding on Handle A Sale. Finish Onboarding"
+  FINISH ONBOARDING BUTTON 1 /admin/account/onboarding
+  AFTER FINISH ONBOARDING -> /admin/account/onboarding :: What Is Your Name?
+  PAGE ERRORS 0
+  CONTRAST FAILURES 0
+  Server log: GET /admin/account/onboarding requested 4 times over both runs (no redirect loop).
+  Screens: refusal/notice-1440x900.png, notice-390x844.png, handle-a-sale-<size>.png.
+  The filing-refusal screens in refusal/unnamed-*/ are from the run above: same refusal, older
+  wording ("Finish it at /admin/account/onboarding."), now "Use Finish Onboarding on Handle A Sale."

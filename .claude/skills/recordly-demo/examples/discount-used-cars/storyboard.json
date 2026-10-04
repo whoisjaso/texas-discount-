@@ -1,0 +1,2297 @@
+{
+ "project": "discount-used-cars",
+ "title": "Discount Used Cars and Trucks: site demo, part A",
+ "notes": [
+  "Times in each capture are seconds from that capture's frame 0. A scene plays capture seconds [scene.trimSec, scene.trimSec + scene.durationSec].",
+  "Selectors were read from clients/discount-used-cars-site/src (Home.tsx, Layout.tsx) and checked on the running preview at 1440x900 and 390x797.",
+  "clock pins the page's wall clock to a Wednesday 2 PM in Houston, so the site shows 'Open Now' (it is computed from the time).",
+  "The phone capture is 390x797: under iOS's 47 pt status bar that makes the iPhone 14 screen, 390x844 pt, exactly (capturing 844 tall would stretch the phone or put the header under the Dynamic Island).",
+  "Part B (the sale desk) is inserted between shots 4 and 5: shot 4 ends held at 1.8x on the 'Admin · Staff Sign-In To The Sale Desk' row with the cursor resting on it, so part B can open on the click (same window, same 1440x900 viewport at DSF 2).",
+  "Shot 5 stops on the Trucks card: one more swipe reaches the lineup's fine print (finance terms), which is not in the on-screen fact list.",
+  "Shot 2 parks the real mouse in the left page gutter (x 64) while the cursor is hidden during the first scroll: otherwise the cursor carried over from shot 1 (342, 579) sits over the cards as they scroll past, and the Trucks card is already in its hover state (photo zoomed, white arrow) before the visible cursor reaches it.",
+  "Site content outside the on-screen fact list: shot 2 hides the lineup fine print ('15% down, 12.9% APR, 48 months') with visibility:hidden (layout and scroll targets unchanged). Shots 3 and 4 now hand off on the 'We Buy Cars, Too.' band, so the Discover tiles ('$205/mo', '4.8/5', '24 Google reviews') and the review quote never enter the frame and need no blur.",
+  "captureCss is injected into every shot: video-only brand fixes (see captureCss.why).",
+  "Shot 3's set-up click on the finder waits for the section's 0.9 s reveal transition (translateY 28 px): clicking mid-reveal put the cursor 4.7 px below where shot 2 ended. The typing ends 0.73 s before frame 0, so the caret is in the same blink phase as shot 2's last frame (56 frames after its last key).",
+  "Shot 4 repeats shot 3's last scroll in its preroll, then jiggles the mouse and hovers the same tile point, so frame 0 matches shot 3's last frame (tile hovered, cursor on it)."
+ ],
+ "base": "http://localhost:5183",
+ "serve": {
+  "build": "cd clients/discount-used-cars-site && VITE_DESK_URL=https://desk.discountusedcarsandtrucks.com npx vite build --outDir $SCRATCH/dist-demo --emptyOutDir",
+  "preview": "cd clients/discount-used-cars-site && npx vite preview --outDir $SCRATCH/dist-demo --port 5183 --strictPort"
+ },
+ "capture": {
+  "command": "node .claude/skills/recordly-demo/scripts/capture.cjs --storyboard .claude/skills/recordly-demo/examples/discount-used-cars/storyboard.json --shot <id> --out $SCRATCH/captures/<id> --publish clients/discount-used-cars-demo/public/shots --clean",
+  "order": [
+   "1-hero",
+   "2-scroll",
+   "3-buy",
+   "4-menu",
+   "5-phone"
+  ],
+  "dsf": 2,
+  "dsfReason": "The window shows the 1440 px page ~1490 px wide and zooms up to 1.8x (≈2680 px): DSF 1 is visibly soft there, DSF 2 stays sharp (self-test dsf-compare-at-1.8x.png).",
+  "partBOrder": [
+   "6-desk-signin",
+   "7-desk-onboard",
+   "8-desk-sale-start",
+   "9-desk-buyer",
+   "10-desk-readback",
+   "11-desk-guide",
+   "12-desk-signed"
+  ],
+  "partBCommand": "Start the desk (scratch start-desk.sh: next dev on :5190, DESK_PREVIEW_MEMBER=fresh), then node .claude/skills/recordly-demo/scripts/capture.cjs --storyboard .claude/skills/recordly-demo/examples/discount-used-cars/storyboard.json --shot <id> --out $SCRATCH/captures/<id> --publish clients/discount-used-cars-demo/public/shots --clean [--var deal=<id from the set-up walk>]; part B shots carry their own base (http://localhost:5190), clock and css."
+ },
+ "fps": 30,
+ "size": [
+  1920,
+  1080
+ ],
+ "introKey": "discount.intro.seen",
+ "clock": "2026-09-30T14:00:00-05:00",
+ "window": {
+  "url": "discountusedcarsandtrucks.com",
+  "lights": "mono"
+ },
+ "facts": [
+  "www.discountusedcarsandtrucks.com",
+  "(713) 900-5050",
+  "8108 Gulf Fwy, Houston",
+  "Tue – Sat 10 AM – 7 PM"
+ ],
+ "sfx": {
+  "auto": "From each capture's cursor.json (template shotCues): click → ios_tink −12 dB, 2 frames early; every typed character → one keystroke (key_1..7, sliced from macbook_keyboard) −18 dB ±1.5 dB, 1 frame early; every zoom-in → whoosh_short (rotating _lo/_hi pitch variants) −20 dB, placed so its peak (0.3 s in) lands just before the camera's fastest frame (zoom start + 9). All cues + masterDb (+10 dB).",
+  "manual": [
+   {
+    "shot": "0-intro",
+    "at": 0.03,
+    "cue": "intro",
+    "file": "sfx/ios_note.wav",
+    "db": -8
+   },
+   {
+    "shot": "1-hero",
+    "at": 0.0,
+    "cue": "open",
+    "file": "sfx/open_ui.wav",
+    "db": -14,
+    "why": "window springs in",
+    "note": "open_ui is trimmed to 0.6 s (the kit file ends in a stray tick at 0.97 s)"
+   },
+   {
+    "shot": "4-menu",
+    "onEvent": {
+     "type": "click",
+     "index": 0
+    },
+    "cue": "open",
+    "file": "sfx/open_ui.wav",
+    "db": -14,
+    "why": "menu drawer opens",
+    "note": "open_ui is trimmed to 0.6 s (the kit file ends in a stray tick at 0.97 s)"
+   },
+   {
+    "shot": "5-phone",
+    "at": 0.0,
+    "cue": "open",
+    "file": "sfx/open_ui.wav",
+    "db": -16,
+    "why": "phone slides in",
+    "note": "open_ui is trimmed to 0.6 s (the kit file ends in a stray tick at 0.97 s)"
+   },
+   {
+    "shot": "6-outro",
+    "at": 0.6,
+    "cue": "outro",
+    "file": "sfx/ios_received.wav",
+    "db": -4
+   }
+  ],
+  "music": "none"
+ },
+ "shots": [
+  {
+   "id": "0-intro",
+   "kind": "remotion",
+   "composition": "Intro",
+   "durationSec": 2.0,
+   "describe": "Dark neutral-charcoal mesh wallpaper (slow drift, grain, dither); the red car-swoosh mark wipes and slides in; DISCOUNT staggers in beneath it letter by letter in the loader's exact layout (×1.667); from 1.4 s the whole sting shrinks onto the site's own loader inside the springing window (a match cut), lands at 1.87 s and dissolves into it."
+  },
+  {
+   "id": "1-hero",
+   "describe": "macOS window springs in as a MATCH CUT: the intro sting shrinks onto the site's own loader (same mark, same DISCOUNT, same spot), the loader's hairline finishes and the curtain lifts; the fixed hero photo settles; the cursor drifts in from bottom-right and rests just right of 'For Less.'; 1.5x zoom on the headline and back out.",
+   "url": "/",
+   "viewport": {
+    "width": 1440,
+    "height": 900,
+    "deviceScaleFactor": 2
+   },
+   "presetIntroSeen": false,
+   "readySelector": ".loader",
+   "durationSec": 7.6,
+   "cursor": {
+    "kind": "pointer",
+    "start": {
+     "x": 1560,
+     "y": 1010
+    }
+   },
+   "actions": [
+    {
+     "t": 2.4,
+     "type": "moveTo",
+     "x": 980,
+     "y": 700,
+     "durationSec": 1.4
+    },
+    {
+     "t": 3.9,
+     "type": "hover",
+     "selector": ".hero__title",
+     "tight": true,
+     "anchor": [
+      0.75,
+      0.72
+     ],
+     "durationSec": 0.9,
+     "why": "rest in the empty space right of 'For Less.' (not on the full stop)"
+    }
+   ],
+   "zooms": [
+    {
+     "at": 3.8,
+     "until": 6.4,
+     "depth": 1.5,
+     "focus": ".hero__title",
+     "tight": true,
+     "follow": false
+    }
+   ],
+   "scene": {
+    "trimSec": 1.07,
+    "durationSec": 6.53,
+    "enter": "match-cut",
+    "why": "the loader's word has finished rising at 1.5 s; the sting lands on it 14 frames after the window starts (1.07 s + 0.47 s)"
+   },
+   "css": ".status--open .status__dot { background: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); } #finder-q::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; } .split-card__hours { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }"
+  },
+  {
+   "id": "2-scroll",
+   "describe": "Eased scroll to 'Find Your Fit.'; on to the Trucks card, the cursor (a hand over the link) hovers it (photo zooms ~4%) under a 2.0x zoom framed between the cards; zoom out and SETTLE at 1x, scroll to the visit card, 1.8x on the card ('Open Now · Tue – Sat, 10 AM – 7 PM'); settle, scroll to the finder, click the field (I-beam), type 'F-150' (the pointer hides while typing); zoom out lands on the cut.",
+   "url": "/",
+   "viewport": {
+    "width": 1440,
+    "height": 900,
+    "deviceScaleFactor": 2
+   },
+   "presetIntroSeen": true,
+   "prerollSec": 6.6,
+   "readySelector": ".hero__title",
+   "css": ".lineup + .band__fine { visibility: hidden; } .status--open .status__dot { background: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); } #finder-q::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; } .split-card__hours { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }",
+   "durationSec": 17.0,
+   "cursor": {
+    "kind": "pointer",
+    "start": {
+     "fromShot": "1-hero",
+     "x": 365,
+     "y": 568
+    }
+   },
+   "actions": [
+    {
+     "t": 0.2,
+     "type": "scrollTo",
+     "selector": "section.band--black:not(.glass-band) .band__title",
+     "align": "start",
+     "offset": 150,
+     "durationSec": 1.6
+    },
+    {
+     "t": 0.3,
+     "type": "moveTo",
+     "x": 64,
+     "y": 560,
+     "durationSec": 1.0,
+     "why": "park in the gutter while hidden by the scrolls, so the Trucks hover starts when the cursor arrives"
+    },
+    {
+     "t": 2.0,
+     "type": "scrollTo",
+     "selector": "a.model[href=\"/inventory?body=Truck\"]",
+     "align": "center",
+     "durationSec": 1.3
+    },
+    {
+     "t": 3.3,
+     "type": "hover",
+     "selector": "a.model[href=\"/inventory?body=Truck\"]",
+     "anchor": [
+      0.42,
+      0.55
+     ],
+     "durationSec": 0.9
+    },
+    {
+     "t": 7.3,
+     "type": "scrollTo",
+     "selector": ".split-card",
+     "align": "center",
+     "durationSec": 1.5
+    },
+    {
+     "t": 8.8,
+     "type": "hover",
+     "selector": ".split-card__hours",
+     "tight": true,
+     "anchor": [
+      1.05,
+      0.6
+     ],
+     "durationSec": 0.7
+    },
+    {
+     "t": 12.2,
+     "type": "scrollTo",
+     "selector": "#finder-q",
+     "align": "center",
+     "offset": 60,
+     "durationSec": 1.3
+    },
+    {
+     "t": 13.6,
+     "type": "click",
+     "selector": "#finder-q",
+     "anchor": [
+      0.22,
+      0.5
+     ],
+     "durationSec": 0.7
+    },
+    {
+     "t": 14.6,
+     "type": "type",
+     "text": "F-150",
+     "perCharSec": 0.14
+    }
+   ],
+   "zooms": [
+    {
+     "at": 3.6,
+     "until": 6.0,
+     "depth": 2.0,
+     "focus": {
+      "x": 375,
+      "y": 385
+     },
+     "follow": false,
+     "why": "Trucks card (x 132-705, y 136-708 after its reveal): a 720x450 view at x 15-735, y 160-610 shows 'Trucks', the truck and the floor; its right edge falls in the gutter before the red Coupe, its bottom above the 'Ask About Availability' pill"
+    },
+    {
+     "at": 8.7,
+     "until": 10.9,
+     "depth": 1.8,
+     "focus": {
+      "x": 400,
+      "y": 422
+     },
+     "follow": false,
+     "why": "the visit card (y 204-639) centred: 33 px of page above and below, the hours line in the lower third"
+    },
+    {
+     "at": 13.3,
+     "until": 16.0,
+     "depth": 1.5,
+     "focus": "#finder-q",
+     "anchor": [
+      0.35,
+      0.5
+     ],
+     "follow": true
+    }
+   ],
+   "scene": {
+    "trimSec": 0,
+    "durationSec": 17.0,
+    "why": "the last key lands 56 frames before the end (as before), so shot 3's caret blink phase still matches"
+   }
+  },
+  {
+   "id": "3-buy",
+   "describe": "From the finder (F-150 still typed, pointer hidden) scroll to the black 'We Buy Cars, Too.' band; hover 'We Buy Trucks' (photo zooms ~4.5%) under a 2.0x zoom framed on the tile row; zoom out and hold. Ends on this band: the Discover tiles and the review are never in frame.",
+   "url": "/",
+   "viewport": {
+    "width": 1440,
+    "height": 900,
+    "deviceScaleFactor": 2
+   },
+   "presetIntroSeen": true,
+   "prerollSec": 2.4,
+   "readySelector": ".hero__title",
+   "durationSec": 5.7,
+   "cursor": {
+    "kind": "pointer",
+    "start": {
+     "fromShot": "2-scroll",
+     "x": 254,
+     "y": 489
+    }
+   },
+   "actions": [
+    {
+     "t": -2.3,
+     "type": "scrollTo",
+     "selector": "#finder-q",
+     "align": "center",
+     "offset": 60,
+     "durationSec": 0.1
+    },
+    {
+     "t": -1.2,
+     "type": "click",
+     "selector": "#finder-q",
+     "anchor": [
+      0.22,
+      0.5
+     ],
+     "durationSec": 0.1
+    },
+    {
+     "t": -1.0,
+     "type": "type",
+     "text": "F-150",
+     "durationSec": 0.25
+    },
+    {
+     "t": 0.3,
+     "type": "scrollTo",
+     "selector": ".glass-band .band__title",
+     "align": "start",
+     "offset": 150,
+     "durationSec": 1.6
+    },
+    {
+     "t": 2.0,
+     "type": "hover",
+     "selector": ".glass-band .teasers a.tile",
+     "contains": "We buy trucks",
+     "anchor": [
+      0.5,
+      0.55
+     ],
+     "durationSec": 0.9
+    }
+   ],
+   "zooms": [
+    {
+     "at": 2.3,
+     "until": 4.5,
+     "depth": 2.0,
+     "focus": {
+      "x": 740,
+      "y": 623
+     },
+     "follow": false,
+     "why": "tiles at y 492-723 between the photo (ends y 396) and the band's end (y 851): a 720x450 view at x 380-1100, y 398-848 is all black band and tiles; the 'We Buy Cars' label is fully out (x 270-370), 'We Buy SUVs' fully in"
+    }
+   ],
+   "scene": {
+    "trimSec": 0,
+    "durationSec": 5.7
+   },
+   "css": ".status--open .status__dot { background: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); } #finder-q::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; } .split-card__hours { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }"
+  },
+  {
+   "id": "4-menu",
+   "describe": "Same scroll as shot 3's end (the We Buy band, cursor on the We Buy Trucks tile); click 'Menu' (top left); the drawer slides in; 1.8x zoom onto the 'Admin · Staff Sign-In To The Sale Desk' row; the cursor (hand) rests on it (no click in part A). CUT POINT for part B.",
+   "url": "/",
+   "viewport": {
+    "width": 1440,
+    "height": 900,
+    "deviceScaleFactor": 2
+   },
+   "presetIntroSeen": true,
+   "prerollSec": 6.5,
+   "readySelector": ".hero__title",
+   "css": ".status--open .status__dot { background: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); } #finder-q::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; } .split-card__hours { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }",
+   "durationSec": 6.0,
+   "cursor": {
+    "kind": "pointer",
+    "start": {
+     "fromShot": "3-buy",
+     "x": 720,
+     "y": 635
+    }
+   },
+   "actions": [
+    {
+     "t": -5.0,
+     "type": "scrollTo",
+     "selector": ".glass-band .band__title",
+     "align": "start",
+     "offset": 150,
+     "durationSec": 0.1
+    },
+    {
+     "t": -3.0,
+     "type": "moveTo",
+     "x": 726,
+     "y": 622,
+     "durationSec": 0.2,
+     "why": "jiggle after the set-up scroll so the tile under the cursor takes its hover state"
+    },
+    {
+     "t": -2.0,
+     "type": "hover",
+     "selector": ".glass-band .teasers a.tile",
+     "contains": "We buy trucks",
+     "anchor": [
+      0.5,
+      0.55
+     ],
+     "durationSec": 0.3
+    },
+    {
+     "t": 0.4,
+     "type": "click",
+     "selector": ".header__menu",
+     "durationSec": 1.1
+    },
+    {
+     "t": 2.3,
+     "type": "hover",
+     "selector": ".drawer__link--admin",
+     "anchor": [
+      0.7,
+      0.42
+     ],
+     "durationSec": 0.9
+    }
+   ],
+   "zooms": [
+    {
+     "at": 2.2,
+     "until": null,
+     "depth": 1.8,
+     "focus": ".drawer__link--admin",
+     "follow": true
+    }
+   ],
+   "scene": {
+    "trimSec": 0,
+    "durationSec": 6.0
+   },
+   "cutAfter": "part-b"
+  },
+  {
+   "id": "6-desk-signin",
+   "part": "B1",
+   "describe": "",
+   "url": "/admin/login",
+   "base": "http://localhost:5190",
+   "clock": "2026-10-02T14:00:00-05:00",
+   "timezone": "America/Chicago",
+   "viewport": {
+    "width": 1440,
+    "height": 900,
+    "deviceScaleFactor": 2
+   },
+   "cookies": [],
+   "prerollSec": 0.4,
+   "readySelector": "#email",
+   "durationSec": 4.1667,
+   "css": "nextjs-portal{display:none!important} .text-\\[\\#3F5A43\\]{color:var(--tj-ink,#111)!important} .bg-\\[\\#3F5A43\\]{background-color:var(--tj-ink,#111)!important} .ed-nav-identity-handle{filter:blur(4px)} .ed-admin > .ed-sale-head ~ div{display:none!important} #email{color:transparent!important;text-shadow:0 0 10px rgba(17,17,17,.9)!important;caret-color:#111} #email::placeholder{color:transparent!important;text-shadow:none!important} [data-onboarding-step=\"signature\"] .ed-start-fields > .space-y-2{min-height:181.5px} html:not(.b-enter) .ed-access{opacity:0} html.b-enter .ed-access{animation:bDeskIn .5s cubic-bezier(.2,.7,.2,1) .1s both} @keyframes bDeskIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}",
+   "cursor": {
+    "kind": "pointer",
+    "start": {
+     "x": 344.8,
+     "y": 542.1
+    }
+   },
+   "actions": [
+    {
+     "t": -0.034,
+     "type": "click",
+     "x": 344.8,
+     "y": 542.1,
+     "durationSec": 0.034,
+     "why": "the Admin click from shot 4 lands on frame 0 (on the empty ground left of the leaf)"
+    },
+    {
+     "t": 0.0,
+     "type": "eval",
+     "js": "document.documentElement.classList.add('b-enter')",
+     "why": "starts the video-only fade-in on frame 0 (a CSS animation would otherwise run during the warm-up)"
+    },
+    {
+     "t": 0.5,
+     "type": "click",
+     "selector": "#email",
+     "anchor": [
+      0.16,
+      0.5
+     ],
+     "durationSec": 0.6
+    },
+    {
+     "t": 1.25,
+     "type": "type",
+     "text": "owner@example.dev",
+     "perCharSec": 0.058
+    },
+    {
+     "t": 2.4,
+     "type": "click",
+     "selector": "#password",
+     "anchor": [
+      0.16,
+      0.5
+     ],
+     "durationSec": 0.4
+    },
+    {
+     "t": 2.9,
+     "type": "type",
+     "text": "demo-passw",
+     "perCharSec": 0.055
+    },
+    {
+     "t": 3.55,
+     "type": "click",
+     "selector": "form button[type=submit]",
+     "contains": "Sign In",
+     "anchor": [
+      0.5,
+      0.5
+     ],
+     "durationSec": 0.45
+    }
+   ],
+   "zooms": [
+    {
+     "at": -0.034,
+     "inSec": 0.034,
+     "until": 0.1,
+     "outSec": 0.8,
+     "depth": 1.8,
+     "focus": {
+      "x": 260,
+      "y": 549.4
+     },
+     "follow": true,
+     "why": "opens on shot 4's last camera (1.8x, focus 260,549.4 leaning to the cursor) so the cursor does not move at the cut"
+    },
+    {
+     "at": -0.034,
+     "inSec": 0.034,
+     "until": null,
+     "depth": 1.5,
+     "focus": {
+      "x": 720,
+      "y": 470
+     },
+     "follow": false,
+     "why": "the leaf's form: Team Access, both fields and Sign In"
+    }
+   ],
+   "cutFrames": 125,
+   "cutWhy": "ends on frame 124, the last frame of the sign-in page (Sign In pressed at 121, 'Signing In…'); frame 125 is the navigation: 7 opens on the onboarding page's first frames",
+   "cssWhy": "partB.captureCss (pasted, see partB.captureCss.why) + this shot's own rules"
+  },
+  {
+   "id": "7-desk-onboard",
+   "part": "B2",
+   "describe": "",
+   "url": "/admin/account/onboarding",
+   "base": "http://localhost:5190",
+   "clock": "2026-10-02T14:00:00-05:00",
+   "timezone": "America/Chicago",
+   "viewport": {
+    "width": 1440,
+    "height": 900,
+    "deviceScaleFactor": 2
+   },
+   "cookies": [
+    {
+     "name": "tj-local-admin-preview",
+     "value": "owner@example.dev"
+    }
+   ],
+   "prerollSec": 0,
+   "readySelector": "input[name=firstName]",
+   "durationSec": 8.1667,
+   "cursor": {
+    "kind": "pointer",
+    "start": {
+     "fromShot": "6-desk-signin",
+     "x": 720,
+     "y": 606
+    }
+   },
+   "actions": [
+    {
+     "t": 0.25,
+     "type": "click",
+     "selector": "input[name=firstName]",
+     "anchor": [
+      0.1,
+      0.5
+     ],
+     "durationSec": 0.55
+    },
+    {
+     "t": 0.95,
+     "type": "type",
+     "text": "Maria",
+     "perCharSec": 0.085
+    },
+    {
+     "t": 1.45,
+     "type": "click",
+     "selector": "input[name=lastName]",
+     "anchor": [
+      0.1,
+      0.5
+     ],
+     "durationSec": 0.4
+    },
+    {
+     "t": 1.95,
+     "type": "type",
+     "text": "Lopez",
+     "perCharSec": 0.085
+    },
+    {
+     "t": 2.5,
+     "type": "click",
+     "selector": "button.ed-btn-dark",
+     "contains": "Next",
+     "durationSec": 0.45
+    },
+    {
+     "t": 3.45,
+     "type": "draw",
+     "selector": "[data-onboarding-step=\"signature\"] canvas",
+     "units": "px",
+     "strokes": [
+      [
+       [
+        36,
+        96
+       ],
+       [
+        46,
+        60
+       ],
+       [
+        53,
+        26
+       ],
+       [
+        58,
+        14
+       ],
+       [
+        63,
+        20
+       ],
+       [
+        68,
+        50
+       ],
+       [
+        72,
+        80
+       ],
+       [
+        76,
+        58
+       ],
+       [
+        83,
+        28
+       ],
+       [
+        88,
+        20
+       ],
+       [
+        93,
+        26
+       ],
+       [
+        98,
+        60
+       ],
+       [
+        102,
+        88
+       ],
+       [
+        112,
+        80
+       ],
+       [
+        126,
+        62
+       ],
+       [
+        118,
+        58
+       ],
+       [
+        108,
+        64
+       ],
+       [
+        106,
+        78
+       ],
+       [
+        112,
+        88
+       ],
+       [
+        122,
+        82
+       ],
+       [
+        128,
+        66
+       ],
+       [
+        128,
+        62
+       ],
+       [
+        130,
+        80
+       ],
+       [
+        134,
+        88
+       ],
+       [
+        140,
+        76
+       ],
+       [
+        146,
+        58
+       ],
+       [
+        149,
+        64
+       ],
+       [
+        154,
+        59
+       ],
+       [
+        160,
+        60
+       ],
+       [
+        161,
+        72
+       ],
+       [
+        163,
+        87
+       ],
+       [
+        170,
+        74
+       ],
+       [
+        176,
+        58
+       ],
+       [
+        177,
+        72
+       ],
+       [
+        180,
+        86
+       ],
+       [
+        186,
+        88
+       ],
+       [
+        194,
+        80
+       ],
+       [
+        204,
+        62
+       ],
+       [
+        196,
+        58
+       ],
+       [
+        186,
+        64
+       ],
+       [
+        185,
+        78
+       ],
+       [
+        192,
+        88
+       ],
+       [
+        202,
+        80
+       ],
+       [
+        206,
+        64
+       ],
+       [
+        207,
+        78
+       ],
+       [
+        212,
+        88
+       ],
+       [
+        224,
+        82
+       ],
+       [
+        238,
+        70
+       ]
+      ],
+      [
+       [
+        256,
+        66
+       ],
+       [
+        268,
+        44
+       ],
+       [
+        282,
+        24
+       ],
+       [
+        292,
+        12
+       ],
+       [
+        294,
+        6
+       ],
+       [
+        287,
+        7
+       ],
+       [
+        280,
+        16
+       ],
+       [
+        277,
+        40
+       ],
+       [
+        273,
+        66
+       ],
+       [
+        269,
+        90
+       ],
+       [
+        263,
+        100
+       ],
+       [
+        257,
+        97
+       ],
+       [
+        262,
+        91
+       ],
+       [
+        276,
+        93
+       ],
+       [
+        292,
+        88
+       ],
+       [
+        302,
+        74
+       ],
+       [
+        312,
+        62
+       ],
+       [
+        320,
+        62
+       ],
+       [
+        322,
+        72
+       ],
+       [
+        316,
+        84
+       ],
+       [
+        306,
+        86
+       ],
+       [
+        302,
+        74
+       ],
+       [
+        310,
+        64
+       ],
+       [
+        322,
+        62
+       ],
+       [
+        330,
+        62
+       ],
+       [
+        332,
+        84
+       ],
+       [
+        334,
+        108
+       ],
+       [
+        333,
+        94
+       ],
+       [
+        334,
+        74
+       ],
+       [
+        342,
+        62
+       ],
+       [
+        352,
+        62
+       ],
+       [
+        356,
+        72
+       ],
+       [
+        350,
+        84
+       ],
+       [
+        338,
+        86
+       ],
+       [
+        346,
+        86
+       ],
+       [
+        360,
+        80
+       ],
+       [
+        372,
+        70
+       ],
+       [
+        370,
+        60
+       ],
+       [
+        360,
+        64
+       ],
+       [
+        356,
+        78
+       ],
+       [
+        364,
+        88
+       ],
+       [
+        376,
+        84
+       ],
+       [
+        384,
+        68
+       ],
+       [
+        392,
+        62
+       ],
+       [
+        402,
+        62
+       ],
+       [
+        406,
+        66
+       ],
+       [
+        394,
+        82
+       ],
+       [
+        388,
+        88
+       ],
+       [
+        398,
+        90
+       ],
+       [
+        404,
+        100
+       ],
+       [
+        400,
+        112
+       ],
+       [
+        388,
+        114
+       ],
+       [
+        384,
+        106
+       ],
+       [
+        396,
+        98
+       ],
+       [
+        420,
+        92
+       ],
+       [
+        460,
+        84
+       ],
+       [
+        500,
+        74
+       ]
+      ],
+      [
+       [
+        176,
+        44
+       ],
+       [
+        180,
+        41
+       ]
+      ]
+     ],
+     "inkSec": 1.7,
+     "liftSec": 0.14,
+     "approachSec": 0.45,
+     "why": "storyboard.signature: the same strokes the off-camera member signs with",
+     "timeScale": 3,
+     "subSteps": 2
+    },
+    {
+     "t": 6.0,
+     "type": "click",
+     "selector": "button.ed-btn-dark",
+     "contains": "Save Signature",
+     "durationSec": 0.5
+    },
+    {
+     "t": 7.45,
+     "type": "click",
+     "selector": "button.ed-btn-dark",
+     "contains": "Start Working",
+     "durationSec": 0.55
+    }
+   ],
+   "zooms": [
+    {
+     "at": -0.034,
+     "inSec": 0.034,
+     "until": null,
+     "depth": 1.5,
+     "focus": {
+      "x": 720,
+      "y": 470
+     },
+     "follow": false,
+     "why": "continues B1's last camera"
+    },
+    {
+     "at": 2.5,
+     "until": 6.05,
+     "depth": 1.8,
+     "focus": {
+      "x": 720,
+      "y": 490
+     },
+     "follow": false,
+     "why": "the pad (y 430-550) with the question above and Save below"
+    }
+   ],
+   "cutFrames": 245,
+   "cutWhy": "ends on frame 244 (Start Working pressed at 241, released at 244); frame 245 is the navigation to Handle A Sale: 8 opens there",
+   "css": "nextjs-portal{display:none!important} .text-\\[\\#3F5A43\\]{color:var(--tj-ink,#111)!important} .bg-\\[\\#3F5A43\\]{background-color:var(--tj-ink,#111)!important} .ed-nav-identity-handle{filter:blur(4px)} .ed-admin > .ed-sale-head ~ div{display:none!important} #email{color:transparent!important;text-shadow:0 0 10px rgba(17,17,17,.9)!important;caret-color:#111} #email::placeholder{color:transparent!important;text-shadow:none!important} [data-onboarding-step=\"signature\"] .ed-start-fields > .space-y-2{min-height:181.5px}",
+   "cssWhy": "partB.captureCss, pasted (see partB.captureCss.why)"
+  },
+  {
+   "id": "8-desk-sale-start",
+   "part": "B3a",
+   "describe": "",
+   "url": "/admin/sales",
+   "base": "http://localhost:5190",
+   "clock": "2026-10-02T14:00:00-05:00",
+   "timezone": "America/Chicago",
+   "viewport": {
+    "width": 1440,
+    "height": 900,
+    "deviceScaleFactor": 2
+   },
+   "cookies": [
+    {
+     "name": "tj-local-admin-preview",
+     "value": "owner@example.dev"
+    }
+   ],
+   "prerollSec": 0.8,
+   "readySelector": "a[href=\"/admin/sales/new\"]",
+   "durationSec": 3.6667,
+   "cursor": {
+    "kind": "pointer",
+    "start": {
+     "fromShot": "7-desk-onboard",
+     "x": 720,
+     "y": 530
+    }
+   },
+   "actions": [
+    {
+     "t": 0.45,
+     "type": "click",
+     "selector": "a[href=\"/admin/sales/new\"]",
+     "anchor": [
+      0.5,
+      0.5
+     ],
+     "durationSec": 0.8
+    },
+    {
+     "t": 1.95,
+     "type": "click",
+     "selector": "button.ed-pick",
+     "contains": "Camry",
+     "anchor": [
+      0.45,
+      0.5
+     ],
+     "durationSec": 0.6
+    },
+    {
+     "t": 2.8,
+     "type": "fill",
+     "selector": "select[name=language]",
+     "value": "en",
+     "why": "a native select's popup is not drawn in a capture: English is set as the car is picked"
+    },
+    {
+     "t": 3.05,
+     "type": "click",
+     "selector": "button.tj-action-primary",
+     "contains": "Next",
+     "durationSec": 0.5
+    }
+   ],
+   "zooms": [
+    {
+     "at": -0.034,
+     "inSec": 0.034,
+     "until": 0.15,
+     "outSec": 1.0,
+     "depth": 1.5,
+     "focus": {
+      "x": 720,
+      "y": 470
+     },
+     "follow": false,
+     "why": "opens on B2's last camera, then pulls back to show the desk"
+    },
+    {
+     "at": 1.45,
+     "inSec": 1.2,
+     "until": null,
+     "depth": 1.4,
+     "focus": {
+      "x": 720,
+      "y": 490
+     },
+     "follow": false,
+     "why": "the car step; the same camera as B3b's buyer step (1.4x: the buyer form runs y 180-810)"
+    }
+   ],
+   "css": "nextjs-portal{display:none!important} .text-\\[\\#3F5A43\\]{color:var(--tj-ink,#111)!important} .bg-\\[\\#3F5A43\\]{background-color:var(--tj-ink,#111)!important} .ed-nav-identity-handle{filter:blur(4px)} .ed-admin > .ed-sale-head ~ div{display:none!important} #email{color:transparent!important;text-shadow:0 0 10px rgba(17,17,17,.9)!important;caret-color:#111} #email::placeholder{color:transparent!important;text-shadow:none!important} [data-onboarding-step=\"signature\"] .ed-start-fields > .space-y-2{min-height:181.5px} section[aria-label=\"Sales in progress\"] li.ed-sale-row-wrap:not(:has(> a[href=\"/admin/sales/preview-active-deal\"])){display:none!important} section[aria-label=\"Sales in progress\"] > .ed-desk-state{display:none!important} .tj-admin .ed-pick .ed-pick-media{display:none!important} .tj-admin .ed-pick:has(.ed-pick-empty){grid-template-columns:minmax(0,1fr)!important} .tj-admin .ed-pick:has(.ed-pick-empty) .ed-pick-body{padding:18px 22px!important}",
+   "cssWhy": "partB.captureCss (pasted, see partB.captureCss.why) + this shot: Handle A Sale keeps only the seeded 'Marcus Reed' row (li 1, a[href=/admin/sales/preview-active-deal]); the six seeded 'Jordan Example' rows (li 2-7) and any walk-made deal are hidden, with the '7 open.' count. The car tiles' grey 'No photo' boxes are hidden (tile size unchanged: 312x104, so the click lands where it did); the tile text stays.",
+   "cutFrames": 110,
+   "cutWhy": "ends on frame 109 (Next pressed at 107); the step blanks at 110: jump-cut to 9's buyer step"
+  },
+  {
+   "id": "9-desk-buyer",
+   "part": "B3b",
+   "describe": "",
+   "url": "/admin/sales/new",
+   "base": "http://localhost:5190",
+   "clock": "2026-10-02T14:00:00-05:00",
+   "timezone": "America/Chicago",
+   "viewport": {
+    "width": 1440,
+    "height": 900,
+    "deviceScaleFactor": 2
+   },
+   "cookies": [
+    {
+     "name": "tj-local-admin-preview",
+     "value": "owner@example.dev"
+    }
+   ],
+   "prerollSec": 2.0,
+   "readySelector": "button.ed-pick",
+   "durationSec": 3.2,
+   "cursor": {
+    "kind": "pointer",
+    "start": {
+     "fromShot": "8-desk-sale-start",
+     "x": 445.4,
+     "y": 697.2
+    }
+   },
+   "actions": [
+    {
+     "t": -1.9,
+     "type": "domClick",
+     "selector": "button.ed-pick",
+     "contains": "Camry"
+    },
+    {
+     "t": -1.7,
+     "type": "fill",
+     "selector": "select[name=language]",
+     "value": "en"
+    },
+    {
+     "t": -1.5,
+     "type": "domClick",
+     "selector": "button.tj-action-primary",
+     "contains": "Next"
+    },
+    {
+     "t": -1.3,
+     "type": "domClick",
+     "selector": "label.ed-title-kind",
+     "contains": "Clean title"
+    },
+    {
+     "t": -1.1,
+     "type": "domClick",
+     "selector": "button.tj-action-primary",
+     "contains": "Next"
+    },
+    {
+     "t": 0.25,
+     "type": "click",
+     "selector": "input[name=buyerFirstName]",
+     "anchor": [
+      0.12,
+      0.5
+     ],
+     "durationSec": 0.5
+    },
+    {
+     "t": 0.85,
+     "type": "type",
+     "text": "James",
+     "perCharSec": 0.085
+    },
+    {
+     "t": 1.4,
+     "type": "click",
+     "selector": "input[name=buyerLastName]",
+     "anchor": [
+      0.12,
+      0.5
+     ],
+     "durationSec": 0.45
+    },
+    {
+     "t": 1.95,
+     "type": "type",
+     "text": "Carter",
+     "perCharSec": 0.085
+    },
+    {
+     "t": 2.6,
+     "type": "click",
+     "selector": "button.tj-action-primary",
+     "contains": "Next",
+     "durationSec": 0.5
+    }
+   ],
+   "zooms": [
+    {
+     "at": -0.034,
+     "inSec": 0.034,
+     "until": null,
+     "depth": 1.4,
+     "focus": {
+      "x": 720,
+      "y": 490
+     },
+     "follow": false,
+     "why": "B3a's last camera"
+    }
+   ],
+   "cutFrames": 96,
+   "cutWhy": "ends on frame 95 (Next pressed at 93); the step blanks at 96: jump-cut to 10's address step",
+   "css": "nextjs-portal{display:none!important} .text-\\[\\#3F5A43\\]{color:var(--tj-ink,#111)!important} .bg-\\[\\#3F5A43\\]{background-color:var(--tj-ink,#111)!important} .ed-nav-identity-handle{filter:blur(4px)} .ed-admin > .ed-sale-head ~ div{display:none!important} #email{color:transparent!important;text-shadow:0 0 10px rgba(17,17,17,.9)!important;caret-color:#111} #email::placeholder{color:transparent!important;text-shadow:none!important} [data-onboarding-step=\"signature\"] .ed-start-fields > .space-y-2{min-height:181.5px}",
+   "cssWhy": "partB.captureCss, pasted (see partB.captureCss.why)"
+  },
+  {
+   "id": "10-desk-readback",
+   "part": "B3c + B4 (first tap)",
+   "describe": "",
+   "url": "/admin/sales/new",
+   "base": "http://localhost:5190",
+   "clock": "2026-10-02T14:00:00-05:00",
+   "timezone": "America/Chicago",
+   "viewport": {
+    "width": 1440,
+    "height": 900,
+    "deviceScaleFactor": 2
+   },
+   "cookies": [
+    {
+     "name": "tj-local-admin-preview",
+     "value": "owner@example.dev"
+    }
+   ],
+   "prerollSec": 4.0,
+   "readySelector": "button.ed-pick",
+   "durationSec": 5.8,
+   "cursor": {
+    "kind": "pointer",
+    "start": {
+     "fromShot": "9-desk-buyer",
+     "x": 445,
+     "y": 706
+    }
+   },
+   "actions": [
+    {
+     "t": -3.9,
+     "type": "domClick",
+     "selector": "button.ed-pick",
+     "contains": "Camry"
+    },
+    {
+     "t": -3.72,
+     "type": "fill",
+     "selector": "select[name=language]",
+     "value": "en"
+    },
+    {
+     "t": -3.54,
+     "type": "domClick",
+     "selector": "button.tj-action-primary",
+     "contains": "Next"
+    },
+    {
+     "t": -3.36,
+     "type": "domClick",
+     "selector": "label.ed-title-kind",
+     "contains": "Clean title"
+    },
+    {
+     "t": -3.18,
+     "type": "domClick",
+     "selector": "button.tj-action-primary",
+     "contains": "Next"
+    },
+    {
+     "type": "fill",
+     "selector": "input[name=buyerFirstName]",
+     "value": "James",
+     "t": -2.9
+    },
+    {
+     "type": "fill",
+     "selector": "input[name=buyerLastName]",
+     "value": "Carter",
+     "t": -2.74
+    },
+    {
+     "type": "domClick",
+     "selector": "button.tj-action-primary",
+     "contains": "Next",
+     "t": -2.58
+    },
+    {
+     "type": "fill",
+     "selector": "input[name=buyerPhone]",
+     "value": "7135550142",
+     "t": -2.42
+    },
+    {
+     "type": "domClick",
+     "selector": "button.tj-action-primary",
+     "contains": "Next",
+     "t": -2.26
+    },
+    {
+     "type": "fill",
+     "selector": "select[name=buyerIdKind]",
+     "value": "stateLicence",
+     "t": -2.1
+    },
+    {
+     "type": "fill",
+     "selector": "select[name=buyerIdState]",
+     "value": "TX",
+     "t": -1.94
+    },
+    {
+     "type": "fill",
+     "selector": "input[name=buyerIdNumber]",
+     "value": "41927365",
+     "t": -1.78
+    },
+    {
+     "type": "domClick",
+     "selector": "button.tj-action-primary",
+     "contains": "Next",
+     "t": -1.62
+    },
+    {
+     "type": "fill",
+     "selector": "input[name=buyerStreet]",
+     "value": "1418 Belrose Dr",
+     "t": -1.46
+    },
+    {
+     "type": "fill",
+     "selector": "input[name=buyerCity]",
+     "value": "Houston",
+     "t": -1.3
+    },
+    {
+     "type": "fill",
+     "selector": "input[name=buyerZip]",
+     "value": "77034",
+     "t": -1.14
+    },
+    {
+     "type": "fill",
+     "selector": "input[name=buyerCounty]",
+     "value": "Harris",
+     "t": -0.98
+    },
+    {
+     "t": 0.3,
+     "type": "click",
+     "selector": "form button[type=submit]",
+     "contains": "Start Sale",
+     "durationSec": 0.6
+    },
+    {
+     "t": 1.4,
+     "type": "hold",
+     "selector": "[data-confirm-hold]",
+     "anchor": [
+      0.5,
+      0.5
+     ],
+     "durationSec": 0.5,
+     "holdSec": 2.2,
+     "why": "the button fills in 1.2 s (CONFIRM_HOLD_MS), then reads Release; let go at 2.2 s"
+    },
+    {
+     "t": 5.1,
+     "type": "click",
+     "selector": "main button",
+     "contains": "Cash",
+     "durationSec": 0.6
+    }
+   ],
+   "zooms": [
+    {
+     "at": -0.034,
+     "inSec": 0.034,
+     "until": null,
+     "depth": 1.4,
+     "focus": {
+      "x": 720,
+      "y": 490
+     },
+     "follow": false,
+     "why": "B3b's last camera"
+    },
+    {
+     "at": 1.0,
+     "inSec": 1.0,
+     "until": 4.15,
+     "outSec": 1.0,
+     "depth": 2.0,
+     "focus": {
+      "x": 720,
+      "y": 450
+     },
+     "follow": false,
+     "why": "the read-back card (x 474-966, y 321-579) while the button fills"
+    }
+   ],
+   "cutFrames": 174,
+   "cutWhy": "ends on frame 173 (Cash pressed at 171); the answer feedback starts at 174: jump-cut to 11's registration question",
+   "css": "nextjs-portal{display:none!important} .text-\\[\\#3F5A43\\]{color:var(--tj-ink,#111)!important} .bg-\\[\\#3F5A43\\]{background-color:var(--tj-ink,#111)!important} .ed-nav-identity-handle{filter:blur(4px)} .ed-admin > .ed-sale-head ~ div{display:none!important} #email{color:transparent!important;text-shadow:0 0 10px rgba(17,17,17,.9)!important;caret-color:#111} #email::placeholder{color:transparent!important;text-shadow:none!important} [data-onboarding-step=\"signature\"] .ed-start-fields > .space-y-2{min-height:181.5px}",
+   "cssWhy": "partB.captureCss, pasted (see partB.captureCss.why)"
+  },
+  {
+   "id": "11-desk-guide",
+   "part": "B4",
+   "describe": "",
+   "url": "/admin/sales/{deal}/guide/plan:registration",
+   "base": "http://localhost:5190",
+   "clock": "2026-10-02T14:00:00-05:00",
+   "timezone": "America/Chicago",
+   "vars": {},
+   "setup": "sale.cjs with james-carter-to-registration.json (answers funding Cash, paid 4000, price Yes, then stops at plan:registration): its deal.txt is --var deal",
+   "viewport": {
+    "width": 1440,
+    "height": 900,
+    "deviceScaleFactor": 2
+   },
+   "cookies": [
+    {
+     "name": "tj-local-admin-preview",
+     "value": "owner@example.dev"
+    }
+   ],
+   "prerollSec": 0.8,
+   "readySelector": "main button",
+   "durationSec": 3.5667,
+   "cursor": {
+    "kind": "pointer",
+    "start": {
+     "fromShot": "10-desk-readback",
+     "x": 557,
+     "y": 414.8
+    }
+   },
+   "actions": [
+    {
+     "t": 0.3,
+     "type": "click",
+     "selector": "main button",
+     "contains": "We Do",
+     "durationSec": 0.55
+    },
+    {
+     "t": 1.55,
+     "type": "click",
+     "selector": "main button",
+     "contains": "No plate yet",
+     "durationSec": 0.6
+    },
+    {
+     "t": 2.85,
+     "type": "click",
+     "selector": "main button",
+     "contains": "The Buyer, Here Today",
+     "durationSec": 0.6
+    }
+   ],
+   "zooms": [
+    {
+     "at": -0.034,
+     "inSec": 0.034,
+     "until": null,
+     "depth": 1.4,
+     "focus": {
+      "x": 720,
+      "y": 490
+     },
+     "follow": false,
+     "why": "B3c's last camera (static 1.4x: the question column x 474-966 and every answer stay in frame; a following camera would trail the cursor and jump at both cuts)"
+    }
+   ],
+   "cutFrames": 107,
+   "cutWhy": "ends on frame 106 (The Buyer, Here Today pressed at 104); the answer feedback starts at 107: jump-cut to 12's packet",
+   "css": "nextjs-portal{display:none!important} .text-\\[\\#3F5A43\\]{color:var(--tj-ink,#111)!important} .bg-\\[\\#3F5A43\\]{background-color:var(--tj-ink,#111)!important} .ed-nav-identity-handle{filter:blur(4px)} .ed-admin > .ed-sale-head ~ div{display:none!important} #email{color:transparent!important;text-shadow:0 0 10px rgba(17,17,17,.9)!important;caret-color:#111} #email::placeholder{color:transparent!important;text-shadow:none!important} [data-onboarding-step=\"signature\"] .ed-start-fields > .space-y-2{min-height:181.5px}",
+   "cssWhy": "partB.captureCss, pasted (see partB.captureCss.why)"
+  },
+  {
+   "id": "12-desk-signed",
+   "part": "B5",
+   "describe": "",
+   "url": "/admin/sales/{deal}/packet",
+   "base": "http://localhost:5190",
+   "clock": "2026-10-02T14:00:00-05:00",
+   "timezone": "America/Chicago",
+   "vars": {},
+   "setup": "sale.cjs with james-carter.json, then ceremony-carter.cjs on its deal (every document signed by the buyer), as the same member right after B2: its deal.txt is --var deal",
+   "viewport": {
+    "width": 1440,
+    "height": 900,
+    "deviceScaleFactor": 2
+   },
+   "cookies": [
+    {
+     "name": "tj-local-admin-preview",
+     "value": "owner@example.dev"
+    }
+   ],
+   "prerollSec": 1.0,
+   "readySelector": ".packet-progress",
+   "durationSec": 3.3667,
+   "cursor": {
+    "kind": "pointer",
+    "start": {
+     "fromShot": "11-desk-guide",
+     "x": 557,
+     "y": 517.6
+    }
+   },
+   "actions": [
+    {
+     "t": -0.9,
+     "type": "eval",
+     "js": "document.addEventListener('click', (e) => { const a = e.target.closest && e.target.closest('a[target=_blank]'); if (a) e.preventDefault(); }, true)",
+     "why": "the Open / Print click is the cut to B6 (the 130-U, drawn in Remotion): it must not open a tab in the capture"
+    },
+    {
+     "t": 0.35,
+     "type": "hover",
+     "selector": ".packet-progress",
+     "anchor": [
+      0.62,
+      0.62
+     ],
+     "durationSec": 0.8
+    },
+    {
+     "t": 2.45,
+     "type": "click",
+     "selector": "a.ed-packet-action[target=_blank]",
+     "nth": 1,
+     "anchor": [
+      0.5,
+      0.5
+     ],
+     "durationSec": 0.75,
+     "why": "Form 130-U → Open / Print"
+    }
+   ],
+   "zooms": [
+    {
+     "at": -0.034,
+     "inSec": 0.034,
+     "until": 0.1,
+     "outSec": 1.0,
+     "depth": 1.4,
+     "focus": {
+      "x": 720,
+      "y": 490
+     },
+     "follow": false,
+     "why": "B4's last camera (static 1.4x, as 11 ends)"
+    },
+    {
+     "at": 0.1,
+     "inSec": 1.2,
+     "until": 2.4,
+     "outSec": 1.0,
+     "depth": 1.8,
+     "focus": ".packet-progress",
+     "follow": false,
+     "why": "Ready To Print · 2 / 2 signed"
+    }
+   ],
+   "cutFrames": 101,
+   "cutWhy": "ends on frame 100 (Open / Print on the 130-U pressed at 97, released at 100): the cut to B6, the 130-U opening",
+   "css": "nextjs-portal{display:none!important} .text-\\[\\#3F5A43\\]{color:var(--tj-ink,#111)!important} .bg-\\[\\#3F5A43\\]{background-color:var(--tj-ink,#111)!important} .ed-nav-identity-handle{filter:blur(4px)} .ed-admin > .ed-sale-head ~ div{display:none!important} #email{color:transparent!important;text-shadow:0 0 10px rgba(17,17,17,.9)!important;caret-color:#111} #email::placeholder{color:transparent!important;text-shadow:none!important} [data-onboarding-step=\"signature\"] .ed-start-fields > .space-y-2{min-height:181.5px}",
+   "cssWhy": "partB.captureCss, pasted (see partB.captureCss.why)"
+  },
+  {
+   "id": "5-phone",
+   "describe": "An iPhone slides in (opaque at once, x + scale + tilt, motion blur) while the desktop window recedes and blurs; the 390-wide capture: hero, then three iOS swipes (the finger drags the page 1:1, lets go, the page coasts) down the lineup cards (SUVs, Sedans, Trucks), resting on the Trucks card; the status bar takes the page's top colour; the phone drops out of frame.",
+   "url": "/",
+   "viewport": {
+    "width": 390,
+    "height": 797,
+    "deviceScaleFactor": 2
+   },
+   "mobile": true,
+   "presetIntroSeen": true,
+   "prerollSec": 0.6,
+   "readySelector": ".hero__title",
+   "durationSec": 9.0,
+   "cursor": {
+    "kind": "touch"
+   },
+   "actions": [
+    {
+     "t": 2.0,
+     "type": "scrollTo",
+     "selector": "section.band--black:not(.glass-band) .band__title",
+     "align": "start",
+     "offset": 90,
+     "touch": {
+      "x": 250,
+      "y": 690
+     },
+     "dragSec": 0.25
+    },
+    {
+     "t": 3.9,
+     "type": "scrollBy",
+     "y": 430,
+     "touch": {
+      "x": 240,
+      "y": 620
+     }
+    },
+    {
+     "t": 5.8,
+     "type": "scrollBy",
+     "y": 450,
+     "touch": {
+      "x": 255,
+      "y": 610
+     }
+    }
+   ],
+   "zooms": [],
+   "scene": {
+    "trimSec": 0,
+    "durationSec": 9.0,
+    "behind": "last frame of 4-menu (or of part B) in its window"
+   },
+   "css": ".status--open .status__dot { background: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); } #finder-q::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; } .split-card__hours { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }"
+  },
+  {
+   "id": "6-outro",
+   "kind": "remotion",
+   "composition": "Outro",
+   "durationSec": 3.8,
+   "describe": "Drawn under the phone as it drops away: full-colour logo (discount-logo-reverse.png), then 'www.discountusedcarsandtrucks.com' (42 px), '(713) 900-5050 · 8108 Gulf Fwy, Houston' and 'Tue – Sat 10 AM – 7 PM' (30 px, 82% white) word by word; ios_received; slow push 1.00 → 1.03; the logo exits and the frame fades to black over the last 0.4 s."
+  }
+ ],
+ "totalSec": {
+  "partA": 49.0,
+  "breakdown": {
+   "0-intro": 1.4,
+   "1-hero": 6.53,
+   "2-scroll": 17.0,
+   "3-buy": 5.7,
+   "4-menu": 6.0,
+   "5-phone": 9.0,
+   "6-outro": 3.8
+  },
+  "partB": 34.37,
+  "film": 83.6
+ },
+ "captureCss": {
+  "why": "Video-only fixes injected into every captured shot (the site source is untouched): the green 'Open Now' dot becomes the text colour (brand: black, white and the logo's red only), Chromium's blue search-clear × is hidden, and the hours line is centre-aligned (the status pill sat ~6 px low). The same rules would fix the live site.",
+  "css": ".status--open .status__dot { background: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); } #finder-q::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; } .split-card__hours { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }"
+ },
+ "partB": {
+  "title": "Discount Used Cars and Trucks: desk demo, part B (the sale desk)",
+  "notes": [
+   "Part B (the sale desk). Same 1440x900 window at DSF 2 as part A; base http://localhost:5190 (the desk's dev server: the preview mock is off under NODE_ENV=production, so `next start` cannot run it; captureCss hides nextjs-portal, the dev indicator, checked in every frame).",
+   "Server: start-desk.sh (setsid, DESK_PREVIEW_MEMBER=fresh: a member with no name, no signature, onboarding not completed, NO temporary password, so onboarding opens on the name step). The mock's state lives in the server process: restart it before re-capturing 6 or 7.",
+   "Capture order on one fresh server (each shot's cursor starts where the previous capture ended): 6-desk-signin, 7-desk-onboard (this onboards Maria Lopez on camera; the same strokes are the member's saved signature for every later document), 8-desk-sale-start (before any walk-made deal exists; its css hides every row but Marcus Reed anyway), 9-desk-buyer, then the B4 set-up (sale.cjs with james-carter-to-registration.json → deal.txt) and 11-desk-guide --var deal=<that deal>, then 10-desk-readback (creates its own deal), then the off-camera complete sale (sale.cjs james-carter.json + ceremony-carter.cjs) and 12-desk-signed --var deal=<that deal>. Run 2 (2026-10-02): B4 set-up deal preview-deals-3, 10's deal preview-deals-4, off-camera deal preview-deals-5.",
+   "Every shot ends on the frame before its click's navigation (cutFrames / cutWhy on each shot), and the next shot opens on the new page with the cursor at the same point: 6→7 (sign-in → onboarding entrance), 7→8 (onboarding done → Handle A Sale), 8→9, 9→10, 10→11, 11→12 are jump-cuts in time on a click; 12 ends on Open / Print for the 130-U (the cut to B6). The camera at every cut is static (follow false) so it cannot jump: 1.5x focus 720,470 for 6→7→8; 1.4x focus 720,490 for 8→12.",
+   "Demo data: staff member Maria Lopez (fictional), buyer James Carter (fictional), 1418 Belrose Dr, Houston, TX 77034, Harris County, Texas licence 41927365, phone 713-555-0142, the mock lot's 2019 Toyota Camry SE (VIN 4T1B11HK5KU812345). No 'Example' and no '12345678' anywhere on screen: the sign-in email placeholder (you@example.com…) is hidden, the typed email and the nav identity handle are blurred, and shot 8 hides the six seeded 'Jordan Example' rows.",
+   "B6 (Remotion, not a capture): the off-camera deal's 130-U page 1 at 300 dpi is clients/discount-used-cars-demo/public/docs/130u-p1.png (2550x3300, from 130-U_Carter_812345.pdf); the bill of sale page 1 is public/docs/bill-of-sale-p1.png. Boxes (px in those PNGs, x0,y0,x1,y1): 130-U seller signature image 402,2871,890,2962 (ink 429,2873,~780,2962); printed name 'Discount Used Cars And Trucks, LLC (Maria Lopez)' 1227,2889,2139,2943; seller date 2163,2884,2382,2944; seller band (signature + printed name + date + labels) 392,2860,2392,2992. Money on the 130-U: box 38(a) '$ 3663.06' 1046,2243,1194,2299 (blur it if the page is shown legibly). Bill of sale money column 1800,2590,2390,3020 ($3,663.06 / $0.00 / $336.94 / $4,000.00).",
+   "Merged into the part A storyboard on 2026-10-02 (Compose v2). Each part B shot carries base http://localhost:5190 (capture.cjs: a shot's base wins over storyboard.base), its own clock and timezone, and partB.captureCss pasted into its css. storyboard.captureCss (part A's site fixes) is still prepended by capture.cjs; none of its selectors exist on the desk, so it changes no pixel.",
+   "Clock: 2026-10-02T14:00:00-05:00 (a Friday; the dealer is open Tue-Sat), the date the off-camera deal's documents were signed (the server's real date). Only 7-desk-onboard shows a client-side date (the pad's 'Signed: 10/02/2026'); it was re-captured with this clock. 6 and 8-12 were captured with 2026-10-01 and show no client-side date (12's 'Signed Oct 2, 2026' comes from the server).",
+   "Composition (clients/discount-used-cars-demo/src/demo/timeline.ts, Finish): parts A and B in one DesktopScene; the Admin click drawn on shot 4 6 frames before the cut; every B cut opens on the first fully painted frame (project.partB.cuts: 6 from 12; 8 split 12-41 | 55-109 around its skeleton; 10 split 7-107 | 134-173 around the dialog close); cameras re-aimed with zoomFocus / zoomShift: 6 opens at shot 4's 1.8x and pulls back to SIGN_IN 1.45x on 720,482 from the cut; 7's zooms leave at 182 (Start Working at 1.0); 8 wide, then WIZARD 1.32x on 720,490; READ_BACK 2.0x on 720,472; PACKET 1.62x on 720,356 held to the click. B6 is DocScene (theme.doc, project.doc), 4.3 s. Part B = 868 desk frames + 129 doc frames = 33.2 s; the film is 2474 frames (82.47 s)."
+  ],
+  "captureCss": {
+   "why": "Video-only CSS for every part-B shot (the desk source is never edited): the Next.js dev indicator (nextjs-portal) is hidden; the two green #3F5A43 accents are drawn in ink (black and white brand); the nav's identity handle (the preview account's email) is blurred; the stray block after the sale head is hidden; the sign-in email field is a privacy blur (typed text transparent with a soft dark shadow) and its placeholder 'you@example.com or your handle' is hidden (no 'example' on screen); the onboarding signature step keeps its height so the pad does not jump.",
+   "css": "nextjs-portal{display:none!important} .text-\\[\\#3F5A43\\]{color:var(--tj-ink,#111)!important} .bg-\\[\\#3F5A43\\]{background-color:var(--tj-ink,#111)!important} .ed-nav-identity-handle{filter:blur(4px)} .ed-admin > .ed-sale-head ~ div{display:none!important} #email{color:transparent!important;text-shadow:0 0 10px rgba(17,17,17,.9)!important;caret-color:#111} #email::placeholder{color:transparent!important;text-shadow:none!important} [data-onboarding-step=\"signature\"] .ed-start-fields > .space-y-2{min-height:181.5px}"
+  },
+  "signature": {
+   "who": "Maria Lopez (fictional staff member)",
+   "pad": [
+    638,
+    120
+   ],
+   "units": "px",
+   "inkSec": 1.7,
+   "liftSec": 0.14,
+   "strokes": [
+    [
+     [
+      36,
+      96
+     ],
+     [
+      46,
+      60
+     ],
+     [
+      53,
+      26
+     ],
+     [
+      58,
+      14
+     ],
+     [
+      63,
+      20
+     ],
+     [
+      68,
+      50
+     ],
+     [
+      72,
+      80
+     ],
+     [
+      76,
+      58
+     ],
+     [
+      83,
+      28
+     ],
+     [
+      88,
+      20
+     ],
+     [
+      93,
+      26
+     ],
+     [
+      98,
+      60
+     ],
+     [
+      102,
+      88
+     ],
+     [
+      112,
+      80
+     ],
+     [
+      126,
+      62
+     ],
+     [
+      118,
+      58
+     ],
+     [
+      108,
+      64
+     ],
+     [
+      106,
+      78
+     ],
+     [
+      112,
+      88
+     ],
+     [
+      122,
+      82
+     ],
+     [
+      128,
+      66
+     ],
+     [
+      128,
+      62
+     ],
+     [
+      130,
+      80
+     ],
+     [
+      134,
+      88
+     ],
+     [
+      140,
+      76
+     ],
+     [
+      146,
+      58
+     ],
+     [
+      149,
+      64
+     ],
+     [
+      154,
+      59
+     ],
+     [
+      160,
+      60
+     ],
+     [
+      161,
+      72
+     ],
+     [
+      163,
+      87
+     ],
+     [
+      170,
+      74
+     ],
+     [
+      176,
+      58
+     ],
+     [
+      177,
+      72
+     ],
+     [
+      180,
+      86
+     ],
+     [
+      186,
+      88
+     ],
+     [
+      194,
+      80
+     ],
+     [
+      204,
+      62
+     ],
+     [
+      196,
+      58
+     ],
+     [
+      186,
+      64
+     ],
+     [
+      185,
+      78
+     ],
+     [
+      192,
+      88
+     ],
+     [
+      202,
+      80
+     ],
+     [
+      206,
+      64
+     ],
+     [
+      207,
+      78
+     ],
+     [
+      212,
+      88
+     ],
+     [
+      224,
+      82
+     ],
+     [
+      238,
+      70
+     ]
+    ],
+    [
+     [
+      256,
+      66
+     ],
+     [
+      268,
+      44
+     ],
+     [
+      282,
+      24
+     ],
+     [
+      292,
+      12
+     ],
+     [
+      294,
+      6
+     ],
+     [
+      287,
+      7
+     ],
+     [
+      280,
+      16
+     ],
+     [
+      277,
+      40
+     ],
+     [
+      273,
+      66
+     ],
+     [
+      269,
+      90
+     ],
+     [
+      263,
+      100
+     ],
+     [
+      257,
+      97
+     ],
+     [
+      262,
+      91
+     ],
+     [
+      276,
+      93
+     ],
+     [
+      292,
+      88
+     ],
+     [
+      302,
+      74
+     ],
+     [
+      312,
+      62
+     ],
+     [
+      320,
+      62
+     ],
+     [
+      322,
+      72
+     ],
+     [
+      316,
+      84
+     ],
+     [
+      306,
+      86
+     ],
+     [
+      302,
+      74
+     ],
+     [
+      310,
+      64
+     ],
+     [
+      322,
+      62
+     ],
+     [
+      330,
+      62
+     ],
+     [
+      332,
+      84
+     ],
+     [
+      334,
+      108
+     ],
+     [
+      333,
+      94
+     ],
+     [
+      334,
+      74
+     ],
+     [
+      342,
+      62
+     ],
+     [
+      352,
+      62
+     ],
+     [
+      356,
+      72
+     ],
+     [
+      350,
+      84
+     ],
+     [
+      338,
+      86
+     ],
+     [
+      346,
+      86
+     ],
+     [
+      360,
+      80
+     ],
+     [
+      372,
+      70
+     ],
+     [
+      370,
+      60
+     ],
+     [
+      360,
+      64
+     ],
+     [
+      356,
+      78
+     ],
+     [
+      364,
+      88
+     ],
+     [
+      376,
+      84
+     ],
+     [
+      384,
+      68
+     ],
+     [
+      392,
+      62
+     ],
+     [
+      402,
+      62
+     ],
+     [
+      406,
+      66
+     ],
+     [
+      394,
+      82
+     ],
+     [
+      388,
+      88
+     ],
+     [
+      398,
+      90
+     ],
+     [
+      404,
+      100
+     ],
+     [
+      400,
+      112
+     ],
+     [
+      388,
+      114
+     ],
+     [
+      384,
+      106
+     ],
+     [
+      396,
+      98
+     ],
+     [
+      420,
+      92
+     ],
+     [
+      460,
+      84
+     ],
+     [
+      500,
+      74
+     ]
+    ],
+    [
+     [
+      176,
+      44
+     ],
+     [
+      180,
+      41
+     ]
+    ]
+   ],
+   "timeScale": 3
+  },
+  "window": {
+   "url": "desk.discountusedcarsandtrucks.com",
+   "lights": "mono"
+  }
+ }
+}

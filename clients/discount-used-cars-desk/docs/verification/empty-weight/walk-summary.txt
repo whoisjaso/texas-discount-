@@ -1,0 +1,222 @@
+Empty weight walks and direct checks, port 5192, run 10/02/2026 (UTC 10/03 00:05 to 00:42).
+Fresh dev server per size; in-memory preview; DESK_ALLOW_UNSET_FACTS=true.
+
+== lane 390 Sat Oct  3 00:05:04 UTC 2026
+estimate-confirm 390 sale=0 ceremony=0 deal=/admin/sales/preview-deals-2 | EXPECT OK form130U/review :: Estimate (EPA test data), confirmed by CONTRAST FAILURES 0  | RECEIPT All Signed. PACKET Ready To Print 2 / 2 signed CEREMONY CONTRAST FAILURES 0 
+title-on-file 390 sale=0 ceremony=0 deal=/admin/sales/preview-deals-6 | EXPECT OK form130U/review :: Texas title CONTRAST FAILURES 0  | RECEIPT All Signed. PACKET Ready To Print 2 / 2 signed CEREMONY CONTRAST FAILURES 0 
+no-source 390 sale=0 ceremony=0 deal=/admin/sales/preview-deals-10 | EXPECT OK form130U/emptyWeight :: Not on any record EXPECT OK form130U/review :: Texas title CONTRAST FAILURES 0  | RECEIPT All Signed. PACKET Ready To Print 2 / 2 signed CEREMONY CONTRAST FAILURES 0 
+unfiled 390 sale=0 ceremony=skipped deal=/admin/sales/preview-deals-14 | NO ANSWER FOR form130U/emptyWeight CONTRAST FAILURES 0  | 
+unfiled 390 ceremony=0 | RECEIPT All Signed. PACKET Ready To Print 2 / 2 signed CEREMONY CONTRAST FAILURES 0 
+cash-otd 390 sale=0 ceremony=0 deal=/admin/sales/preview-deals-18 | CONTRAST FAILURES 0  | RECEIPT All Signed. PACKET Ready To Print 2 / 2 signed CEREMONY CONTRAST FAILURES 0 
+bank 390 sale=0 ceremony=0 deal=/admin/sales/preview-deals-22 | CONTRAST FAILURES 0  | RECEIPT All Signed. PACKET Ready To Print 2 / 2 signed CEREMONY CONTRAST FAILURES 0 
+bhph-trade 390 sale=0 ceremony=0 deal=/admin/sales/preview-deals-25 | CONTRAST FAILURES 0  | RECEIPT All Signed. PACKET Ready To Print 3 / 3 signed CEREMONY CONTRAST FAILURES 0 
+buyer-files 390 sale=0 ceremony=0 deal=/admin/sales/preview-deals-30 | CONTRAST FAILURES 0  | RECEIPT All Signed. PACKET Ready To Print 3 / 3 signed CEREMONY CONTRAST FAILURES 0 
+cash-balance 390 sale=0 ceremony=0 deal=/admin/sales/preview-deals-35 | CONTRAST FAILURES 0  | RECEIPT All Signed. PACKET Ready To Print 2 / 2 signed CEREMONY CONTRAST FAILURES 0 
+altima-stop 390 sale=0 ceremony=skipped deal=/admin/sales/preview-deals-38 | NO ANSWER FOR form130U/applicantType CONTRAST FAILURES 0  | 
+== lane 390 done Sat Oct  3 00:23:06 UTC 2026
+== lane 1440 Sat Oct  3 00:23:27 UTC 2026
+estimate-confirm 1440 sale=0 ceremony=0 deal=/admin/sales/preview-deals-2 | EXPECT OK form130U/review :: Estimate (EPA test data), confirmed by CONTRAST FAILURES 0  | RECEIPT All Signed. PACKET Ready To Print 2 / 2 signed CEREMONY CONTRAST FAILURES 0 
+title-on-file 1440 sale=0 ceremony=0 deal=/admin/sales/preview-deals-6 | EXPECT OK form130U/review :: Texas title CONTRAST FAILURES 0  | RECEIPT All Signed. PACKET Ready To Print 2 / 2 signed CEREMONY CONTRAST FAILURES 0 
+no-source 1440 sale=0 ceremony=0 deal=/admin/sales/preview-deals-10 | EXPECT OK form130U/emptyWeight :: Not on any record EXPECT OK form130U/review :: Texas title CONTRAST FAILURES 0  | RECEIPT All Signed. PACKET Ready To Print 2 / 2 signed CEREMONY CONTRAST FAILURES 0 
+unfiled 1440 sale=0 ceremony=skipped deal=/admin/sales/preview-deals-14 | NO ANSWER FOR form130U/emptyWeight CONTRAST FAILURES 0  | 
+unfiled 1440 ceremony=0 | RECEIPT All Signed. PACKET Ready To Print 2 / 2 signed CEREMONY CONTRAST FAILURES 0 
+cash-otd 1440 sale=0 ceremony=0 deal=/admin/sales/preview-deals-18 | CONTRAST FAILURES 0  | RECEIPT All Signed. PACKET Ready To Print 2 / 2 signed CEREMONY CONTRAST FAILURES 0 
+bank 1440 sale=0 ceremony=0 deal=/admin/sales/preview-deals-22 | CONTRAST FAILURES 0  | RECEIPT All Signed. PACKET Ready To Print 2 / 2 signed CEREMONY CONTRAST FAILURES 0 
+bhph-trade 1440 sale=0 ceremony=0 deal=/admin/sales/preview-deals-25 | CONTRAST FAILURES 0  | RECEIPT All Signed. PACKET Ready To Print 3 / 3 signed CEREMONY CONTRAST FAILURES 0 
+buyer-files 1440 sale=0 ceremony=0 deal=/admin/sales/preview-deals-30 | CONTRAST FAILURES 0  | RECEIPT All Signed. PACKET Ready To Print 3 / 3 signed CEREMONY CONTRAST FAILURES 0 
+cash-balance 1440 sale=0 ceremony=0 deal=/admin/sales/preview-deals-35 | CONTRAST FAILURES 0  | RECEIPT All Signed. PACKET Ready To Print 2 / 2 signed CEREMONY CONTRAST FAILURES 0 
+altima-stop 1440 sale=0 ceremony=skipped deal=/admin/sales/preview-deals-38 | NO ANSWER FOR form130U/applicantType CONTRAST FAILURES 0  | 
+== lane 1440 done Sat Oct  3 00:41:56 UTC 2026
+BOTH_DONE
+
+== box 11 in the filed 130-U PDFs, 390
+estimate-confirm 130-U_Ortiz_812345.pdf FIELD '11 Empty Weight' = '3500' page 1
+title-on-file 130-U_Hayes_234567.pdf FIELD '11 Empty Weight' = '3300' page 1
+no-source 130-U_Cantu_512345.pdf FIELD '11 Empty Weight' = '2400' page 1
+unfiled 130-U_Reyes_812345.pdf FIELD '11 Empty Weight' = '3500' page 1
+
+== form_data of every filed 130-U, 390 (GET /api/documents/agreements/<id>)
+FORM130U agreements-4 deal=preview-deals-2 {"emptyWeight": "3500", "_emptyWeightSource": "estimate_epa", "_emptyWeightFrom": "deal", "_emptyWeightReading": "3325", "_emptyWeightRule": "plus100RoundUp", "_emptyWeightBy": "owner@example.dev", "_emptyWeightById": "local-admin-preview", "_emptyWeightAt": "2026-10-03T00:06:14.217Z", "_emptyWeightReason": ""}
+   _emptyWeightEstimate {"source":"epa","curbLbs":3325,"lowLbs":3137,"highLbs":3388,"confidence":"high","cls":"passenger","epa":{"yearUsed":2019,"etwMedian":3625,"models":["CAMRY","CAMRY LE/SE","CAMRY XLE/XSE"],"sourceUrls":["https://www.epa.gov/sites/default/files/2020-10/19tstcar-2020-10-02.xlsx"]},"canada":{"curbLbs":3472,"lowLbs":3296,"highLbs":3549},"vpic":{"curbLbs":3572},"tableBuilt":"2026-10-02"}
+FORM130U agreements-8 deal=preview-deals-6 {"emptyWeight": "3300", "_emptyWeightSource": "texas_title", "_emptyWeightFrom": "vehicle", "_emptyWeightReading": "3252", "_emptyWeightRule": "roundUp", "_emptyWeightBy": "Preview Fixture", "_emptyWeightAt": "2026-10-01T15:00:00.000Z", "_emptyWeightReason": "Preview fixture, not a real title", "_emptyWeightById": ""}
+FORM130U agreements-12 deal=preview-deals-10 {"emptyWeight": "2400", "_emptyWeightSource": "texas_title", "_emptyWeightFrom": "deal", "_emptyWeightReading": "2340", "_emptyWeightRule": "roundUp", "_emptyWeightBy": "owner@example.dev", "_emptyWeightById": "local-admin-preview", "_emptyWeightAt": "2026-10-03T00:09:36.781Z", "_emptyWeightReason": ""}
+FORM130U agreements-16 deal=preview-deals-14 {"emptyWeight": "3500", "_emptyWeightSource": "estimate_epa", "_emptyWeightFrom": "deal", "_emptyWeightReading": "3325", "_emptyWeightRule": "plus100RoundUp", "_emptyWeightBy": "owner@example.dev", "_emptyWeightById": "local-admin-preview", "_emptyWeightAt": "2026-10-03T00:11:29.084Z", "_emptyWeightReason": ""}
+   _emptyWeightEstimate {"source":"epa","curbLbs":3325,"lowLbs":3137,"highLbs":3388,"confidence":"high","cls":"passenger","epa":{"yearUsed":2019,"etwMedian":3625,"models":["CAMRY","CAMRY LE/SE","CAMRY XLE/XSE"],"sourceUrls":["https://www.epa.gov/sites/default/files/2020-10/19tstcar-2020-10-02.xlsx"]},"canada":{"curbLbs":3472,"lowLbs":3296,"highLbs":3549},"vpic":{"curbLbs":3572},"tableBuilt":"2026-10-02"}
+FORM130U agreements-20 deal=preview-deals-18 {"emptyWeight": "3400", "_emptyWeightSource": "texas_title", "_emptyWeightFrom": "deal", "_emptyWeightReading": "3340", "_emptyWeightRule": "roundUp", "_emptyWeightBy": "owner@example.dev", "_emptyWeightById": "local-admin-preview", "_emptyWeightAt": "2026-10-03T00:13:09.703Z", "_emptyWeightReason": ""}
+FORM130U agreements-24 deal=preview-deals-22 {"emptyWeight": "3400", "_emptyWeightSource": "texas_title", "_emptyWeightFrom": "deal", "_emptyWeightReading": "3340", "_emptyWeightRule": "roundUp", "_emptyWeightBy": "owner@example.dev", "_emptyWeightById": "local-admin-preview", "_emptyWeightAt": "2026-10-03T00:14:50.448Z", "_emptyWeightReason": ""}
+FORM130U agreements-27 deal=preview-deals-25 {"emptyWeight": "4400", "_emptyWeightSource": "texas_title", "_emptyWeightFrom": "deal", "_emptyWeightReading": "4400", "_emptyWeightRule": "roundUp", "_emptyWeightBy": "owner@example.dev", "_emptyWeightById": "local-admin-preview", "_emptyWeightAt": "2026-10-03T00:16:36.225Z", "_emptyWeightReason": ""}
+FORM130U agreements-37 deal=preview-deals-35 {"emptyWeight": "3100", "_emptyWeightSource": "texas_title", "_emptyWeightFrom": "deal", "_emptyWeightReading": "3100", "_emptyWeightRule": "roundUp", "_emptyWeightBy": "owner@example.dev", "_emptyWeightById": "local-admin-preview", "_emptyWeightAt": "2026-10-03T00:20:32.387Z", "_emptyWeightReason": ""}
+
+== direct: unfiled, 390
+SHOT b1-estimate-card /admin/sales/preview-deals-14/paperwork/form130U/emptyWeight
+ESTIMATE SCREEN Form 130-U What Is The Empty Weight? Estimate 3,500 lb Estimate from EPA test data for the 2019 Toyota Camry 2.5 L: EPA tested the Camry, Camry LE/SE and Camry XLE/XSE (2019) at 3,625 lb, which is the car plus 300 lb, so about 3,325 lb (3,137 to 3,388 lb). Box 11: plus 100 lb for a passenger vehicle, rounded up to the next 100. Transport Canada lists 3,472 lb. The VIN decode lists 3,572 lb. Confirm This Weight Or type it from a document Weight as printed, in pounds Which document is it from? Texas Title Out-Of-State Title MCO Weight Certificate KBB Or JD Power In pounds. Box 11; it is on the Texas title (WEIGHT) or the out-of-state title. The door jamb shows GVWR, not the empty weight. Next
+CONFIRM BUTTONS 1
+SHOT b2-review-not-settled /admin/sales/preview-deals-14/paperwork/form130U/review
+UNSETTLED ROW Empty Weight
+Not settled yet Settle It
+SHOT b3-file-refused /admin/sales/preview-deals-14/paperwork/form130U/review
+REFUSAL [
+  'Settle the empty weight (box 11) first: confirm it, or type it from the title.',
+  ''
+] | URL /admin/sales/preview-deals-14/paperwork/form130U/review
+AFTER CONFIRM /admin/sales/preview-deals-14/paperwork/form130U/review
+SHOT b4-review-confirmed /admin/sales/preview-deals-14/paperwork/form130U/review
+REVIEW ROW Empty Weight 3,500 lb Change Estimate (EPA test data), confirmed by owner@example.dev on 10/02/2026
+AFTER FILE /admin/sales/preview-deals-14/guide/document%3Aform130U | ALERT [ 'Sale - Discount Used Cars and Trucks' ]
+SHOT b5-filed /admin/sales/preview-deals-14/guide/document%3Aform130U
+SHOT b6-sale-page /admin/sales/preview-deals-14
+SALE LINE Empty weight: 3,500 lb · Estimate (EPA test data), confirmed by owner@example.dev on 10/02/2026
+HANDOFF Empty weight (lbs.) 3500 Source: Estimate (EPA test data), confirmed by owner@example.dev on 10/02/2026
+PAGEERRORS 0
+
+== direct: handoff, 390
+estimate-confirm SALE LINE Empty weight: 3,500 lb · Estimate (EPA test data), confirmed by owner@example.dev on 10/02/2026
+estimate-confirm HANDOFF Empty weight (lbs.) 3500 Source: Estimate (EPA test data), confirmed by owner@example.dev on 10/02/2026
+estimate-confirm PAGEERRORS 0
+title-on-file SALE LINE Empty weight: 3,300 lb · Texas title, entered by Preview Fixture on 10/01/2026
+title-on-file HANDOFF Empty weight (lbs.) 3300 Source: Texas title, entered by Preview Fixture on 10/01/2026
+title-on-file PAGEERRORS 0
+no-source SALE LINE Empty weight: 2,400 lb · Texas title, entered by owner@example.dev on 10/02/2026
+no-source HANDOFF Empty weight (lbs.) 2400 Source: Texas title, entered by owner@example.dev on 10/02/2026
+no-source PAGEERRORS 0
+cash-otd SALE LINE Empty weight: 3,400 lb · Texas title, entered by owner@example.dev on 10/02/2026
+cash-otd HANDOFF Empty weight (lbs.) 3400 Source: Texas title, entered by owner@example.dev on 10/02/2026
+cash-otd PAGEERRORS 0
+unfiled SALE LINE Empty weight: 3,500 lb · Estimate (EPA test data), confirmed by owner@example.dev on 10/02/2026
+unfiled HANDOFF Empty weight (lbs.) 3500 Source: Estimate (EPA test data), confirmed by owner@example.dev on 10/02/2026
+unfiled PAGEERRORS 0
+
+== direct: override, 390
+SHOT 10-altima-review /admin/sales/preview-deals-38/paperwork/form130U/review
+REVIEW ROW Empty Weight 3,300 lb Change Texas title, entered by Preview Fixture on 10/01/2026 Why it differs: Preview fixture, not a real title
+SHOT 11-altima-change /admin/sales/preview-deals-38/paperwork/form130U/emptyWeight?change=emptyWeight
+CHANGE TEXT Form 130-U What Is The Empty Weight? On file: 3,300 lb (Texas title). Weight as printed, in pounds Which document is it from? Texas Title Out-Of-State Title MCO Weight Certificate KBB Or JD Power In pounds. Box 11; it is on the Texas title (WEIGHT) or the out-of-state title. The door jamb shows GVWR
+SHOT 12-altima-no-reason /admin/sales/preview-deals-38/paperwork/form130U/emptyWeight?change=emptyWeight
+REFUSAL NONE | URL /admin/sales/preview-deals-38/paperwork/form130U/emptyWeight?change=emptyWeight
+SHOT 13-altima-saved /admin/sales/preview-deals-38/paperwork/form130U/review
+REVIEW ROW AFTER Empty Weight 3,400 lb Change Texas title, entered by owner@example.dev on 10/02/2026 Why it differs: Title reissued after a bed liner was fitted
+SHOT 14-altima-sale-page /admin/sales/preview-deals-38
+SALE LINE Empty weight: 3,400 lb · Texas title, entered by owner@example.dev on 10/02/2026
+HANDOFF Empty weight (lbs.) 3400 Source: Texas title, entered by owner@example.dev on 10/02/2026
+PAGEERRORS 0
+
+== direct: shots, 390
+SHOT 01-truck-needs-document /admin/sales/preview-truck-deal/paperwork/form130U/emptyWeight
+TRUCK TEXT Form 130-U What Is The Empty Weight? This one needs the weight from a document: the title, the MCO or a weight certificate. A pickup or work truck is never filed on an estimate. For reference only: estimated at about 4,950 lb. Weight as printed, in pounds Which document is it from? Texas Title Out-Of-State Title MCO Weight Certificate KBB Or JD Power In pounds. Box 11; it is on the Texas title (WE
+CONFIRM BUTTONS ON TRUCK 0
+SHOT 02-truck-typed-5012 /admin/sales/preview-truck-deal/paperwork/form130U/emptyWeight
+LIVE Box 11 will read 5,100 lb (rounded up to the next 100).
+SHOT 03-truck-carrying-capacity /admin/sales/preview-truck-deal/paperwork/form130U/carryingCapacity
+CAPACITY VALUE 1000 | Form 130-U What Is The Carrying Capacity? What Is The Carrying Capacity? TxDMV minimum for this empty weight (Registration Manual Table 2-1) Trucks and vans only. The GVWR on the door jamb less the empty weight, or the buyer's own figure. Next Not applicable
+SHOT 04-truck-sale-page /admin/sales/preview-truck-deal
+SALE LINE Empty weight: 5,100 lb · Texas title, entered by owner@example.dev on 10/02/2026
+HANDOFF Empty weight (lbs.) 5100 Source: Texas title, entered by owner@example.dev on 10/02/2026
+SHOT 05-legacy-bmw /admin/sales/preview-active-deal/paperwork/form130U/emptyWeight
+BMW TEXT Form 130-U What Is The Empty Weight? Estimate 4,100 lb Estimate from EPA test data for the 2019 BMW 530i 2.0 L: EPA tested the 530I Xdrive (2019) at 4,250 lb, which is the car plus 300 lb, so about 3,950 lb (3,825 to 4,075 lb). Box 11: plus 100 lb for a passenger vehicle, rounded up to the next 100. Transport Canada lists 3,878 lb. Confirm This Weight On the vehicle record: 3,765 lb. Where it came from was not recorded. Or type it from a document Weight as printed, in pounds Which document is it
+BMW INPUT STARTS ""
+SHOT 06-legacy-bmw-sale-page /admin/sales/preview-active-deal
+BMW SALE LINE Empty weight: About 3,950 lb · Estimate, not confirmed (EPA test data)
+BMW HANDOFF Empty weight (lbs.) 3765 Source not recorded; confirm it on the 130-U Add on the 130-U
+PAGEERRORS 0
+
+== direct: bmw-handoff, 390
+ROW Empty weight (lbs.) 3765 Source not recorded; confirm it on the 130-U Add on the 130-U
+COPY BUTTONS IN ROW 0
+FIX LINK /admin/sales/preview-active-deal/guide/document:form130U
+PAGEERRORS 0
+
+== box 11 in the filed 130-U PDFs, 1440
+estimate-confirm 130-U_Ortiz_812345.pdf FIELD '11 Empty Weight' = '3500' page 1
+title-on-file 130-U_Hayes_234567.pdf FIELD '11 Empty Weight' = '3300' page 1
+no-source 130-U_Cantu_512345.pdf FIELD '11 Empty Weight' = '2400' page 1
+unfiled 130-U_Reyes_812345.pdf FIELD '11 Empty Weight' = '3500' page 1
+
+== form_data of every filed 130-U, 1440 (GET /api/documents/agreements/<id>)
+FORM130U agreements-4 deal=preview-deals-2 {"emptyWeight": "3500", "_emptyWeightSource": "estimate_epa", "_emptyWeightFrom": "deal", "_emptyWeightReading": "3325", "_emptyWeightRule": "plus100RoundUp", "_emptyWeightBy": "owner@example.dev", "_emptyWeightById": "local-admin-preview", "_emptyWeightAt": "2026-10-03T00:24:36.610Z", "_emptyWeightReason": ""}
+   _emptyWeightEstimate {"source":"epa","curbLbs":3325,"lowLbs":3137,"highLbs":3388,"confidence":"high","cls":"passenger","epa":{"yearUsed":2019,"etwMedian":3625,"models":["CAMRY","CAMRY LE/SE","CAMRY XLE/XSE"],"sourceUrls":["https://www.epa.gov/sites/default/files/2020-10/19tstcar-2020-10-02.xlsx"]},"canada":{"curbLbs":3472,"lowLbs":3296,"highLbs":3549},"vpic":{"curbLbs":3572},"tableBuilt":"2026-10-02"}
+FORM130U agreements-8 deal=preview-deals-6 {"emptyWeight": "3300", "_emptyWeightSource": "texas_title", "_emptyWeightFrom": "vehicle", "_emptyWeightReading": "3252", "_emptyWeightRule": "roundUp", "_emptyWeightBy": "Preview Fixture", "_emptyWeightAt": "2026-10-01T15:00:00.000Z", "_emptyWeightReason": "Preview fixture, not a real title", "_emptyWeightById": ""}
+FORM130U agreements-12 deal=preview-deals-10 {"emptyWeight": "2400", "_emptyWeightSource": "texas_title", "_emptyWeightFrom": "deal", "_emptyWeightReading": "2340", "_emptyWeightRule": "roundUp", "_emptyWeightBy": "owner@example.dev", "_emptyWeightById": "local-admin-preview", "_emptyWeightAt": "2026-10-03T00:28:08.638Z", "_emptyWeightReason": ""}
+FORM130U agreements-16 deal=preview-deals-14 {"emptyWeight": "3500", "_emptyWeightSource": "estimate_epa", "_emptyWeightFrom": "deal", "_emptyWeightReading": "3325", "_emptyWeightRule": "plus100RoundUp", "_emptyWeightBy": "owner@example.dev", "_emptyWeightById": "local-admin-preview", "_emptyWeightAt": "2026-10-03T00:30:07.567Z", "_emptyWeightReason": ""}
+   _emptyWeightEstimate {"source":"epa","curbLbs":3325,"lowLbs":3137,"highLbs":3388,"confidence":"high","cls":"passenger","epa":{"yearUsed":2019,"etwMedian":3625,"models":["CAMRY","CAMRY LE/SE","CAMRY XLE/XSE"],"sourceUrls":["https://www.epa.gov/sites/default/files/2020-10/19tstcar-2020-10-02.xlsx"]},"canada":{"curbLbs":3472,"lowLbs":3296,"highLbs":3549},"vpic":{"curbLbs":3572},"tableBuilt":"2026-10-02"}
+FORM130U agreements-20 deal=preview-deals-18 {"emptyWeight": "3400", "_emptyWeightSource": "texas_title", "_emptyWeightFrom": "deal", "_emptyWeightReading": "3340", "_emptyWeightRule": "roundUp", "_emptyWeightBy": "owner@example.dev", "_emptyWeightById": "local-admin-preview", "_emptyWeightAt": "2026-10-03T00:31:47.368Z", "_emptyWeightReason": ""}
+FORM130U agreements-24 deal=preview-deals-22 {"emptyWeight": "3400", "_emptyWeightSource": "texas_title", "_emptyWeightFrom": "deal", "_emptyWeightReading": "3340", "_emptyWeightRule": "roundUp", "_emptyWeightBy": "owner@example.dev", "_emptyWeightById": "local-admin-preview", "_emptyWeightAt": "2026-10-03T00:33:34.466Z", "_emptyWeightReason": ""}
+FORM130U agreements-27 deal=preview-deals-25 {"emptyWeight": "4400", "_emptyWeightSource": "texas_title", "_emptyWeightFrom": "deal", "_emptyWeightReading": "4400", "_emptyWeightRule": "roundUp", "_emptyWeightBy": "owner@example.dev", "_emptyWeightById": "local-admin-preview", "_emptyWeightAt": "2026-10-03T00:35:24.133Z", "_emptyWeightReason": ""}
+FORM130U agreements-37 deal=preview-deals-35 {"emptyWeight": "3100", "_emptyWeightSource": "texas_title", "_emptyWeightFrom": "deal", "_emptyWeightReading": "3100", "_emptyWeightRule": "roundUp", "_emptyWeightBy": "owner@example.dev", "_emptyWeightById": "local-admin-preview", "_emptyWeightAt": "2026-10-03T00:39:21.434Z", "_emptyWeightReason": ""}
+
+== direct: unfiled, 1440
+SHOT b1-estimate-card /admin/sales/preview-deals-14/paperwork/form130U/emptyWeight
+ESTIMATE SCREEN Form 130-U What Is The Empty Weight? Estimate 3,500 lb Estimate from EPA test data for the 2019 Toyota Camry 2.5 L: EPA tested the Camry, Camry LE/SE and Camry XLE/XSE (2019) at 3,625 lb, which is the car plus 300 lb, so about 3,325 lb (3,137 to 3,388 lb). Box 11: plus 100 lb for a passenger vehicle, rounded up to the next 100. Transport Canada lists 3,472 lb. The VIN decode lists 3,572 lb. Confirm This Weight Or type it from a document Weight as printed, in pounds Which document is it from? Texas Title Out-Of-State Title MCO Weight Certificate KBB Or JD Power In pounds. Box 11; it is on the Texas title (WEIGHT) or the out-of-state title. The door jamb shows GVWR, not the empty weight. Next
+CONFIRM BUTTONS 1
+SHOT b2-review-not-settled /admin/sales/preview-deals-14/paperwork/form130U/review
+UNSETTLED ROW Empty Weight
+Not settled yet Settle It
+SHOT b3-file-refused /admin/sales/preview-deals-14/paperwork/form130U/review
+REFUSAL [
+  'Settle the empty weight (box 11) first: confirm it, or type it from the title.',
+  ''
+] | URL /admin/sales/preview-deals-14/paperwork/form130U/review
+AFTER CONFIRM /admin/sales/preview-deals-14/paperwork/form130U/review
+SHOT b4-review-confirmed /admin/sales/preview-deals-14/paperwork/form130U/review
+REVIEW ROW Empty Weight 3,500 lb Change Estimate (EPA test data), confirmed by owner@example.dev on 10/02/2026
+AFTER FILE /admin/sales/preview-deals-14/guide/document%3Aform130U | ALERT [ 'Sale - Discount Used Cars and Trucks' ]
+SHOT b5-filed /admin/sales/preview-deals-14/guide/document%3Aform130U
+SHOT b6-sale-page /admin/sales/preview-deals-14
+SALE LINE Empty weight: 3,500 lb · Estimate (EPA test data), confirmed by owner@example.dev on 10/02/2026
+HANDOFF Empty weight (lbs.) 3500 Source: Estimate (EPA test data), confirmed by owner@example.dev on 10/02/2026
+PAGEERRORS 0
+
+== direct: handoff, 1440
+estimate-confirm SALE LINE Empty weight: 3,500 lb · Estimate (EPA test data), confirmed by owner@example.dev on 10/02/2026
+estimate-confirm HANDOFF Empty weight (lbs.) 3500 Source: Estimate (EPA test data), confirmed by owner@example.dev on 10/02/2026
+estimate-confirm PAGEERRORS 0
+title-on-file SALE LINE Empty weight: 3,300 lb · Texas title, entered by Preview Fixture on 10/01/2026
+title-on-file HANDOFF Empty weight (lbs.) 3300 Source: Texas title, entered by Preview Fixture on 10/01/2026
+title-on-file PAGEERRORS 0
+no-source SALE LINE Empty weight: 2,400 lb · Texas title, entered by owner@example.dev on 10/02/2026
+no-source HANDOFF Empty weight (lbs.) 2400 Source: Texas title, entered by owner@example.dev on 10/02/2026
+no-source PAGEERRORS 0
+cash-otd SALE LINE Empty weight: 3,400 lb · Texas title, entered by owner@example.dev on 10/02/2026
+cash-otd HANDOFF Empty weight (lbs.) 3400 Source: Texas title, entered by owner@example.dev on 10/02/2026
+cash-otd PAGEERRORS 0
+unfiled SALE LINE Empty weight: 3,500 lb · Estimate (EPA test data), confirmed by owner@example.dev on 10/02/2026
+unfiled HANDOFF Empty weight (lbs.) 3500 Source: Estimate (EPA test data), confirmed by owner@example.dev on 10/02/2026
+unfiled PAGEERRORS 0
+
+== direct: override, 1440
+SHOT 10-altima-review /admin/sales/preview-deals-38/paperwork/form130U/review
+REVIEW ROW Empty Weight 3,300 lb Change Texas title, entered by Preview Fixture on 10/01/2026 Why it differs: Preview fixture, not a real title
+SHOT 11-altima-change /admin/sales/preview-deals-38/paperwork/form130U/emptyWeight?change=emptyWeight
+CHANGE TEXT Form 130-U What Is The Empty Weight? On file: 3,300 lb (Texas title). Weight as printed, in pounds Which document is it from? Texas Title Out-Of-State Title MCO Weight Certificate KBB Or JD Power In pounds. Box 11; it is on the Texas title (WEIGHT) or the out-of-state title. The door jamb shows GVWR
+SHOT 12-altima-no-reason /admin/sales/preview-deals-38/paperwork/form130U/emptyWeight?change=emptyWeight
+REFUSAL Say why it is different from the document on file. | URL /admin/sales/preview-deals-38/paperwork/form130U/emptyWeight?change=emptyWeight
+SHOT 13-altima-saved /admin/sales/preview-deals-38/paperwork/form130U/review
+REVIEW ROW AFTER Empty Weight 3,400 lb Change Texas title, entered by owner@example.dev on 10/02/2026 Why it differs: Title reissued after a bed liner was fitted
+SHOT 14-altima-sale-page /admin/sales/preview-deals-38
+SALE LINE Empty weight: 3,400 lb · Texas title, entered by owner@example.dev on 10/02/2026
+HANDOFF Empty weight (lbs.) 3400 Source: Texas title, entered by owner@example.dev on 10/02/2026
+PAGEERRORS 0
+
+== direct: shots, 1440
+SHOT 01-truck-needs-document /admin/sales/preview-truck-deal/paperwork/form130U/emptyWeight
+TRUCK TEXT Form 130-U What Is The Empty Weight? This one needs the weight from a document: the title, the MCO or a weight certificate. A pickup or work truck is never filed on an estimate. For reference only: estimated at about 4,950 lb. Weight as printed, in pounds Which document is it from? Texas Title Out-Of-State Title MCO Weight Certificate KBB Or JD Power In pounds. Box 11; it is on the Texas title (WE
+CONFIRM BUTTONS ON TRUCK 0
+SHOT 02-truck-typed-5012 /admin/sales/preview-truck-deal/paperwork/form130U/emptyWeight
+LIVE Box 11 will read 5,100 lb (rounded up to the next 100).
+SHOT 03-truck-carrying-capacity /admin/sales/preview-truck-deal/paperwork/form130U/carryingCapacity
+CAPACITY VALUE 1000 | Form 130-U What Is The Carrying Capacity? What Is The Carrying Capacity? TxDMV minimum for this empty weight (Registration Manual Table 2-1) Trucks and vans only. The GVWR on the door jamb less the empty weight, or the buyer's own figure. Next Not applicable
+SHOT 04-truck-sale-page /admin/sales/preview-truck-deal
+SALE LINE Empty weight: 5,100 lb · Texas title, entered by owner@example.dev on 10/02/2026
+HANDOFF Empty weight (lbs.) 5100 Source: Texas title, entered by owner@example.dev on 10/02/2026
+SHOT 05-legacy-bmw /admin/sales/preview-active-deal/paperwork/form130U/emptyWeight
+BMW TEXT Form 130-U What Is The Empty Weight? Estimate 4,100 lb Estimate from EPA test data for the 2019 BMW 530i 2.0 L: EPA tested the 530I Xdrive (2019) at 4,250 lb, which is the car plus 300 lb, so about 3,950 lb (3,825 to 4,075 lb). Box 11: plus 100 lb for a passenger vehicle, rounded up to the next 100. Transport Canada lists 3,878 lb. Confirm This Weight On the vehicle record: 3,765 lb. Where it came from was not recorded. Or type it from a document Weight as printed, in pounds Which document is it
+BMW INPUT STARTS ""
+SHOT 06-legacy-bmw-sale-page /admin/sales/preview-active-deal
+BMW SALE LINE Empty weight: About 3,950 lb · Estimate, not confirmed (EPA test data)
+BMW HANDOFF Empty weight (lbs.) 3765 Source not recorded; confirm it on the 130-U Add on the 130-U
+PAGEERRORS 0
+
+== direct: bmw-handoff, 1440
+ROW Empty weight (lbs.) 3765 Source not recorded; confirm it on the 130-U Add on the 130-U
+COPY BUTTONS IN ROW 0
+FIX LINK /admin/sales/preview-active-deal/guide/document:form130U
+PAGEERRORS 0

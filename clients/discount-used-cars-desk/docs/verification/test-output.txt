@@ -1,0 +1,9 @@
+
+ RUN  v4.1.6 /home/user/team-wt/clients/discount-used-cars-desk
+
+
+ Test Files  279 passed (279)
+      Tests  3066 passed (3066)
+   Start at  01:33:23
+   Duration  103.86s (transform 7.78s, setup 0ms, import 83.32s, tests 70.42s, environment 7.44s)
+

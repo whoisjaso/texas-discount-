@@ -1,0 +1,43 @@
+{
+ "_note": "Part B's set-up deal for 11-desk-guide (runbook B4): Start A Sale for the demo buyer, Cash, paid in full, then stops on the plan's first question (plan:registration), which 11 films. The demo address must NOT exist (lesson B13). Filled by `fill-client.cjs scenario <client-inputs.json> <this file> --out $SCRATCH/<name>.json` ({{DEMO_*}} from client-inputs.json → demo). Read by premium-dealer-build scripts/desk-walk/sale.cjs (unknown keys like these notes are ignored). Before every run: `node $S/scripts/desk/validate-scenario.cjs <filled file>` refuses an answer key the desk no longer asks (the paperwork corridor changes; see the desk's docs/verification/paperwork-pages/corridor-changes.md).",
+ "stopAt": "plan:registration",
+ "deskCorridor": "16c80f4cffcce9c4",
+ "deskCommit": "bec3e0f",
+ "walked": "2026-10-02 (part B run 2) and 2026-10-03 (narrated captures); re-walked 2026-10-03 on the page-by-page corridor to plan:registration (desk bec3e0f +10 uncommitted, corridor 16c80f4cffcce9c4), Discount desk",
+ "car": "2019 Toyota Camry SE",
+ "language": "en",
+ "title": "Clean title",
+ "first": "James",
+ "last": "Carter",
+ "phone": "{{DEMO_PHONE}}",
+ "idNumber": "41927365",
+ "street": "{{DEMO_STREET}}",
+ "city": "{{DEMO_CITY}}",
+ "zip": "{{DEMO_ZIP}}",
+ "county": "{{DEMO_COUNTY}}",
+ "answers": {
+  "funding": {
+   "button": "Cash",
+   "exact": true
+  },
+  "paid": [
+   {
+    "fill": "main input",
+    "value": "4000"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "price": [
+   {
+    "button": "Yes"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ]
+ }
+}

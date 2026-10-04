@@ -1,0 +1,37 @@
+{
+ "deskCommit": "unknown",
+ "dirty": null,
+ "scenario": "scenarios/bank.json",
+ "deal": "/admin/sales/preview-deals-20",
+ "viewport": [
+  390,
+  844
+ ],
+ "ended": "packet",
+ "screens": [
+  "funding",
+  "lender",
+  "paid",
+  "price",
+  "plan:registration",
+  "plate",
+  "plan:title-signer",
+  "plan:inspection",
+  "plan:insurance",
+  "document:billOfSale",
+  "billOfSale/odometerStatus",
+  "billOfSale/tradeIn",
+  "billOfSale/conditionType",
+  "billOfSale/review",
+  "document:billOfSale",
+  "document:form130U",
+  "form130U/applicationType",
+  "form130U/applicantType",
+  "form130U/emptyWeight",
+  "form130U/review",
+  "document:form130U",
+  "title"
+ ],
+ "contrastFailures": 0,
+ "at": "2026-10-03T21:40:22.533Z"
+}

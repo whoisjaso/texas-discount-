@@ -1,0 +1,38 @@
+{
+ "deskCommit": "bec3e0f",
+ "dirty": 10,
+ "scenario": "/tmp/claude-0/-home-user-texas-discount-/32ac3a60-8835-5a00-89b8-298767621e65/scratchpad/fixr/sc2/james-carter.json",
+ "deal": "/admin/sales/preview-deals-4",
+ "viewport": [
+  1440,
+  900
+ ],
+ "ended": "packet",
+ "screens": [
+  "funding",
+  "paid",
+  "price",
+  "plan:registration",
+  "plate",
+  "plan:title-signer",
+  "plan:inspection",
+  "plan:insurance",
+  "document:billOfSale",
+  "billOfSale/odometerStatus",
+  "billOfSale/paymentMethod",
+  "billOfSale/tradeIn",
+  "billOfSale/conditionType",
+  "billOfSale/review",
+  "document:billOfSale",
+  "document:form130U",
+  "form130U/applicationType",
+  "form130U/applicantType",
+  "form130U/emptyWeight",
+  "form130U/review",
+  "document:form130U",
+  "title",
+  "packet"
+ ],
+ "contrastFailures": 0,
+ "at": "2026-10-03T21:28:15.466Z"
+}

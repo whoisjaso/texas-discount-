@@ -1,0 +1,22 @@
+{
+  "name": "recordly-demo",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Recordly / Screen Studio style product demo: captured site shots in a macOS window, auto-zoom, smoothed cursor, iPhone cut, iOS sounds.",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "still": "remotion still src/index.ts",
+    "render": "remotion render src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.532",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "remotion": "4.0.532"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.31",
+    "typescript": "5.9.3"
+  }
+}

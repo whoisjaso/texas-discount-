@@ -1,0 +1,3064 @@
+[
+ {
+  "id": "01-site-a",
+  "sec": 8.2,
+  "text": "Your customers find you on their phone before they ever drive to Gulf Freeway. So the first thing they see is a showroom, not a lot.",
+  "heard": "Your customers find you on their phone before they ever drive to Gulf Freeway. So the first thing they see is a showroom, not a lot.",
+  "words": [
+   {
+    "w": "Your",
+    "s": 0.0,
+    "e": 0.44
+   },
+   {
+    "w": "customers",
+    "s": 0.44,
+    "e": 0.88
+   },
+   {
+    "w": "find",
+    "s": 0.88,
+    "e": 1.22
+   },
+   {
+    "w": "you",
+    "s": 1.22,
+    "e": 1.38
+   },
+   {
+    "w": "on",
+    "s": 1.38,
+    "e": 1.5
+   },
+   {
+    "w": "their",
+    "s": 1.5,
+    "e": 1.62
+   },
+   {
+    "w": "phone",
+    "s": 1.62,
+    "e": 1.94
+   },
+   {
+    "w": "before",
+    "s": 1.94,
+    "e": 2.3
+   },
+   {
+    "w": "they",
+    "s": 2.3,
+    "e": 2.48
+   },
+   {
+    "w": "ever",
+    "s": 2.48,
+    "e": 2.74
+   },
+   {
+    "w": "drive",
+    "s": 2.74,
+    "e": 3.12
+   },
+   {
+    "w": "to",
+    "s": 3.12,
+    "e": 3.36
+   },
+   {
+    "w": "Gulf",
+    "s": 3.36,
+    "e": 3.54
+   },
+   {
+    "w": "Freeway.",
+    "s": 3.54,
+    "e": 4.0
+   },
+   {
+    "w": "So",
+    "s": 4.56,
+    "e": 4.74
+   },
+   {
+    "w": "the",
+    "s": 4.74,
+    "e": 4.86
+   },
+   {
+    "w": "first",
+    "s": 4.86,
+    "e": 5.06
+   },
+   {
+    "w": "thing",
+    "s": 5.06,
+    "e": 5.3
+   },
+   {
+    "w": "they",
+    "s": 5.3,
+    "e": 5.46
+   },
+   {
+    "w": "see",
+    "s": 5.46,
+    "e": 5.74
+   },
+   {
+    "w": "is",
+    "s": 5.74,
+    "e": 6.0
+   },
+   {
+    "w": "a",
+    "s": 6.0,
+    "e": 6.16
+   },
+   {
+    "w": "showroom,",
+    "s": 6.16,
+    "e": 6.62
+   },
+   {
+    "w": "not",
+    "s": 6.98,
+    "e": 7.2
+   },
+   {
+    "w": "a",
+    "s": 7.2,
+    "e": 7.34
+   },
+   {
+    "w": "lot.",
+    "s": 7.34,
+    "e": 7.54
+   }
+  ]
+ },
+ {
+  "id": "02-site-b",
+  "sec": 11.55,
+  "text": "Every truck, car and SUV, searchable in seconds, with your number one tap away. Fewer tire-kickers calling to ask what you have. More buyers walking in knowing what they want.",
+  "heard": "Every truck, car, and SUV searchable in seconds with your number one tap away. Fewer tire kickers calling to ask what you have, more buyers walking and knowing what they want.",
+  "words": [
+   {
+    "w": "Every",
+    "s": 0.0,
+    "e": 0.56
+   },
+   {
+    "w": "truck,",
+    "s": 0.56,
+    "e": 0.9
+   },
+   {
+    "w": "car,",
+    "s": 1.42,
+    "e": 1.42
+   },
+   {
+    "w": "and",
+    "s": 1.64,
+    "e": 1.68
+   },
+   {
+    "w": "SUV",
+    "s": 1.68,
+    "e": 2.1
+   },
+   {
+    "w": "searchable",
+    "s": 2.1,
+    "e": 3.08
+   },
+   {
+    "w": "in",
+    "s": 3.08,
+    "e": 3.26
+   },
+   {
+    "w": "seconds",
+    "s": 3.26,
+    "e": 3.74
+   },
+   {
+    "w": "with",
+    "s": 3.74,
+    "e": 4.08
+   },
+   {
+    "w": "your",
+    "s": 4.08,
+    "e": 4.26
+   },
+   {
+    "w": "number",
+    "s": 4.26,
+    "e": 4.4
+   },
+   {
+    "w": "one",
+    "s": 4.4,
+    "e": 4.7
+   },
+   {
+    "w": "tap",
+    "s": 4.7,
+    "e": 4.96
+   },
+   {
+    "w": "away.",
+    "s": 4.96,
+    "e": 5.3
+   },
+   {
+    "w": "Fewer",
+    "s": 5.96,
+    "e": 6.28
+   },
+   {
+    "w": "tire",
+    "s": 6.28,
+    "e": 6.48
+   },
+   {
+    "w": "kickers",
+    "s": 6.48,
+    "e": 6.92
+   },
+   {
+    "w": "calling",
+    "s": 6.92,
+    "e": 7.2
+   },
+   {
+    "w": "to",
+    "s": 7.2,
+    "e": 7.44
+   },
+   {
+    "w": "ask",
+    "s": 7.44,
+    "e": 7.66
+   },
+   {
+    "w": "what",
+    "s": 7.66,
+    "e": 7.84
+   },
+   {
+    "w": "you",
+    "s": 7.84,
+    "e": 7.98
+   },
+   {
+    "w": "have,",
+    "s": 7.98,
+    "e": 8.44
+   },
+   {
+    "w": "more",
+    "s": 8.72,
+    "e": 9.02
+   },
+   {
+    "w": "buyers",
+    "s": 9.02,
+    "e": 9.36
+   },
+   {
+    "w": "walking",
+    "s": 9.36,
+    "e": 9.76
+   },
+   {
+    "w": "and",
+    "s": 9.76,
+    "e": 10.06
+   },
+   {
+    "w": "knowing",
+    "s": 10.06,
+    "e": 10.26
+   },
+   {
+    "w": "what",
+    "s": 10.26,
+    "e": 10.5
+   },
+   {
+    "w": "they",
+    "s": 10.5,
+    "e": 10.66
+   },
+   {
+    "w": "want.",
+    "s": 10.66,
+    "e": 10.92
+   }
+  ]
+ },
+ {
+  "id": "03-site-c",
+  "sec": 6.125,
+  "text": "And when somebody wants to sell, the site takes the trade-in lead for you, while you're with another customer.",
+  "heard": "And when somebody wants to sell, the site takes the trade -in lead for you, while you're with another customer.",
+  "words": [
+   {
+    "w": "And",
+    "s": 0.0,
+    "e": 0.44
+   },
+   {
+    "w": "when",
+    "s": 0.44,
+    "e": 0.56
+   },
+   {
+    "w": "somebody",
+    "s": 0.56,
+    "e": 0.9
+   },
+   {
+    "w": "wants",
+    "s": 0.9,
+    "e": 1.14
+   },
+   {
+    "w": "to",
+    "s": 1.14,
+    "e": 1.36
+   },
+   {
+    "w": "sell,",
+    "s": 1.36,
+    "e": 1.6
+   },
+   {
+    "w": "the",
+    "s": 2.0,
+    "e": 2.1
+   },
+   {
+    "w": "site",
+    "s": 2.1,
+    "e": 2.32
+   },
+   {
+    "w": "takes",
+    "s": 2.32,
+    "e": 2.6
+   },
+   {
+    "w": "the",
+    "s": 2.6,
+    "e": 2.82
+   },
+   {
+    "w": "trade",
+    "s": 2.82,
+    "e": 3.02
+   },
+   {
+    "w": "-in",
+    "s": 3.02,
+    "e": 3.2
+   },
+   {
+    "w": "lead",
+    "s": 3.2,
+    "e": 3.38
+   },
+   {
+    "w": "for",
+    "s": 3.38,
+    "e": 3.6
+   },
+   {
+    "w": "you,",
+    "s": 3.6,
+    "e": 3.86
+   },
+   {
+    "w": "while",
+    "s": 4.1,
+    "e": 4.32
+   },
+   {
+    "w": "you're",
+    "s": 4.32,
+    "e": 4.58
+   },
+   {
+    "w": "with",
+    "s": 4.58,
+    "e": 4.7
+   },
+   {
+    "w": "another",
+    "s": 4.7,
+    "e": 4.96
+   },
+   {
+    "w": "customer.",
+    "s": 4.96,
+    "e": 5.4
+   }
+  ]
+ },
+ {
+  "id": "04-signin-a",
+  "sec": 4.45,
+  "text": "Behind the site is the part that pays for itself: your sale desk.",
+  "heard": "Behind the site is the part that pays for itself, your sale desk.",
+  "words": [
+   {
+    "w": "Behind",
+    "s": 0.0,
+    "e": 0.6
+   },
+   {
+    "w": "the",
+    "s": 0.6,
+    "e": 0.76
+   },
+   {
+    "w": "site",
+    "s": 0.76,
+    "e": 1.02
+   },
+   {
+    "w": "is",
+    "s": 1.02,
+    "e": 1.24
+   },
+   {
+    "w": "the",
+    "s": 1.24,
+    "e": 1.38
+   },
+   {
+    "w": "part",
+    "s": 1.38,
+    "e": 1.54
+   },
+   {
+    "w": "that",
+    "s": 1.54,
+    "e": 1.74
+   },
+   {
+    "w": "pays",
+    "s": 1.74,
+    "e": 1.96
+   },
+   {
+    "w": "for",
+    "s": 1.96,
+    "e": 2.2
+   },
+   {
+    "w": "itself,",
+    "s": 2.2,
+    "e": 2.52
+   },
+   {
+    "w": "your",
+    "s": 3.1,
+    "e": 3.22
+   },
+   {
+    "w": "sale",
+    "s": 3.22,
+    "e": 3.5
+   },
+   {
+    "w": "desk.",
+    "s": 3.5,
+    "e": 3.92
+   }
+  ]
+ },
+ {
+  "id": "05-signin-b",
+  "sec": 6.625,
+  "text": "The first time your salesperson signs in, they type their legal name, and draw their signature. Once.",
+  "heard": "The first time your salesperson signs in, they type their legal name and draw their signature. Once.",
+  "words": [
+   {
+    "w": "The",
+    "s": 0.0,
+    "e": 0.42
+   },
+   {
+    "w": "first",
+    "s": 0.42,
+    "e": 0.64
+   },
+   {
+    "w": "time",
+    "s": 0.64,
+    "e": 0.84
+   },
+   {
+    "w": "your",
+    "s": 0.84,
+    "e": 1.0
+   },
+   {
+    "w": "salesperson",
+    "s": 1.0,
+    "e": 1.52
+   },
+   {
+    "w": "signs",
+    "s": 1.52,
+    "e": 1.94
+   },
+   {
+    "w": "in,",
+    "s": 1.94,
+    "e": 2.32
+   },
+   {
+    "w": "they",
+    "s": 2.62,
+    "e": 2.74
+   },
+   {
+    "w": "type",
+    "s": 2.74,
+    "e": 2.96
+   },
+   {
+    "w": "their",
+    "s": 2.96,
+    "e": 3.14
+   },
+   {
+    "w": "legal",
+    "s": 3.14,
+    "e": 3.38
+   },
+   {
+    "w": "name",
+    "s": 3.38,
+    "e": 3.76
+   },
+   {
+    "w": "and",
+    "s": 3.76,
+    "e": 4.06
+   },
+   {
+    "w": "draw",
+    "s": 4.06,
+    "e": 4.32
+   },
+   {
+    "w": "their",
+    "s": 4.32,
+    "e": 4.48
+   },
+   {
+    "w": "signature.",
+    "s": 4.48,
+    "e": 4.9
+   },
+   {
+    "w": "Once.",
+    "s": 5.74,
+    "e": 5.98
+   }
+  ]
+ },
+ {
+  "id": "06-signin-c",
+  "sec": 3.725,
+  "text": "Remember that signature. You're going to see why it matters.",
+  "heard": "Remember that signature. You're going to see why it matters.",
+  "words": [
+   {
+    "w": "Remember",
+    "s": 0.0,
+    "e": 0.64
+   },
+   {
+    "w": "that",
+    "s": 0.64,
+    "e": 0.92
+   },
+   {
+    "w": "signature.",
+    "s": 0.92,
+    "e": 1.3
+   },
+   {
+    "w": "You're",
+    "s": 1.86,
+    "e": 2.0
+   },
+   {
+    "w": "going",
+    "s": 2.0,
+    "e": 2.1
+   },
+   {
+    "w": "to",
+    "s": 2.1,
+    "e": 2.26
+   },
+   {
+    "w": "see",
+    "s": 2.26,
+    "e": 2.4
+   },
+   {
+    "w": "why",
+    "s": 2.4,
+    "e": 2.6
+   },
+   {
+    "w": "it",
+    "s": 2.6,
+    "e": 2.74
+   },
+   {
+    "w": "matters.",
+    "s": 2.74,
+    "e": 3.04
+   }
+  ]
+ },
+ {
+  "id": "07-car-a",
+  "sec": 6.375,
+  "text": "Pick the car off your lot. Year, make, model, VIN. Already on every form. Nobody types them.",
+  "heard": "Pick the car off your lot. Year, make, model, vin. Already on every form. Nobody types them.",
+  "words": [
+   {
+    "w": "Pick",
+    "s": 0.0,
+    "e": 0.42
+   },
+   {
+    "w": "the",
+    "s": 0.42,
+    "e": 0.6
+   },
+   {
+    "w": "car",
+    "s": 0.6,
+    "e": 0.78
+   },
+   {
+    "w": "off",
+    "s": 0.78,
+    "e": 0.96
+   },
+   {
+    "w": "your",
+    "s": 0.96,
+    "e": 1.14
+   },
+   {
+    "w": "lot.",
+    "s": 1.14,
+    "e": 1.46
+   },
+   {
+    "w": "Year,",
+    "s": 2.06,
+    "e": 2.22
+   },
+   {
+    "w": "make,",
+    "s": 2.46,
+    "e": 2.5
+   },
+   {
+    "w": "model,",
+    "s": 2.62,
+    "e": 2.9
+   },
+   {
+    "w": "vin.",
+    "s": 3.1,
+    "e": 3.24
+   },
+   {
+    "w": "Already",
+    "s": 3.58,
+    "e": 3.68
+   },
+   {
+    "w": "on",
+    "s": 3.68,
+    "e": 3.92
+   },
+   {
+    "w": "every",
+    "s": 3.92,
+    "e": 4.18
+   },
+   {
+    "w": "form.",
+    "s": 4.18,
+    "e": 4.58
+   },
+   {
+    "w": "Nobody",
+    "s": 5.06,
+    "e": 5.22
+   },
+   {
+    "w": "types",
+    "s": 5.22,
+    "e": 5.56
+   },
+   {
+    "w": "them.",
+    "s": 5.56,
+    "e": 5.84
+   }
+  ]
+ },
+ {
+  "id": "08-car-b",
+  "sec": 9.925,
+  "text": "Miles change, so the desk brings in the number from inventory, and lets you correct it to what the dash says today. Every document prints that same number.",
+  "heard": "Miles change, so the desk brings in the number from inventory and lets you correct it to what the dash says today. Every document prints that same number.",
+  "words": [
+   {
+    "w": "Miles",
+    "s": 0.0,
+    "e": 0.64
+   },
+   {
+    "w": "change,",
+    "s": 0.64,
+    "e": 1.04
+   },
+   {
+    "w": "so",
+    "s": 1.38,
+    "e": 1.6
+   },
+   {
+    "w": "the",
+    "s": 1.6,
+    "e": 1.76
+   },
+   {
+    "w": "desk",
+    "s": 1.76,
+    "e": 2.04
+   },
+   {
+    "w": "brings",
+    "s": 2.04,
+    "e": 2.38
+   },
+   {
+    "w": "in",
+    "s": 2.38,
+    "e": 2.62
+   },
+   {
+    "w": "the",
+    "s": 2.62,
+    "e": 2.72
+   },
+   {
+    "w": "number",
+    "s": 2.72,
+    "e": 2.9
+   },
+   {
+    "w": "from",
+    "s": 2.9,
+    "e": 3.14
+   },
+   {
+    "w": "inventory",
+    "s": 3.14,
+    "e": 3.66
+   },
+   {
+    "w": "and",
+    "s": 3.66,
+    "e": 4.36
+   },
+   {
+    "w": "lets",
+    "s": 4.36,
+    "e": 4.54
+   },
+   {
+    "w": "you",
+    "s": 4.54,
+    "e": 4.76
+   },
+   {
+    "w": "correct",
+    "s": 4.76,
+    "e": 5.06
+   },
+   {
+    "w": "it",
+    "s": 5.06,
+    "e": 5.26
+   },
+   {
+    "w": "to",
+    "s": 5.26,
+    "e": 5.42
+   },
+   {
+    "w": "what",
+    "s": 5.42,
+    "e": 5.56
+   },
+   {
+    "w": "the",
+    "s": 5.56,
+    "e": 5.7
+   },
+   {
+    "w": "dash",
+    "s": 5.7,
+    "e": 5.94
+   },
+   {
+    "w": "says",
+    "s": 5.94,
+    "e": 6.24
+   },
+   {
+    "w": "today.",
+    "s": 6.24,
+    "e": 6.6
+   },
+   {
+    "w": "Every",
+    "s": 7.36,
+    "e": 7.56
+   },
+   {
+    "w": "document",
+    "s": 7.56,
+    "e": 8.04
+   },
+   {
+    "w": "prints",
+    "s": 8.04,
+    "e": 8.32
+   },
+   {
+    "w": "that",
+    "s": 8.32,
+    "e": 8.58
+   },
+   {
+    "w": "same",
+    "s": 8.58,
+    "e": 8.9
+   },
+   {
+    "w": "number.",
+    "s": 8.9,
+    "e": 9.28
+   }
+  ]
+ },
+ {
+  "id": "09-car-c",
+  "sec": 14.1,
+  "text": "A lot of your buyers are more comfortable in Spanish. Mark the sale Spanish, and their signing screens, their acknowledgments and the Buyer's Guide come up in Spanish. English-speaking buyer? Leave it in English, and keep moving.",
+  "heard": "A lot of your buyers are more comfortable in Spanish. Mark the sales Spanish and their signing screens, their acknowledgments, and the buyer's guide come up in Spanish. English -speaking buyer, leave it in English and keep moving.",
+  "words": [
+   {
+    "w": "A",
+    "s": 0.0,
+    "e": 0.42
+   },
+   {
+    "w": "lot",
+    "s": 0.42,
+    "e": 0.58
+   },
+   {
+    "w": "of",
+    "s": 0.58,
+    "e": 0.72
+   },
+   {
+    "w": "your",
+    "s": 0.72,
+    "e": 0.8
+   },
+   {
+    "w": "buyers",
+    "s": 0.8,
+    "e": 1.12
+   },
+   {
+    "w": "are",
+    "s": 1.12,
+    "e": 1.38
+   },
+   {
+    "w": "more",
+    "s": 1.38,
+    "e": 1.56
+   },
+   {
+    "w": "comfortable",
+    "s": 1.56,
+    "e": 1.94
+   },
+   {
+    "w": "in",
+    "s": 1.94,
+    "e": 2.28
+   },
+   {
+    "w": "Spanish.",
+    "s": 2.28,
+    "e": 2.7
+   },
+   {
+    "w": "Mark",
+    "s": 3.54,
+    "e": 3.66
+   },
+   {
+    "w": "the",
+    "s": 3.66,
+    "e": 3.84
+   },
+   {
+    "w": "sales",
+    "s": 3.84,
+    "e": 4.1
+   },
+   {
+    "w": "Spanish",
+    "s": 4.1,
+    "e": 4.56
+   },
+   {
+    "w": "and",
+    "s": 4.56,
+    "e": 5.0
+   },
+   {
+    "w": "their",
+    "s": 5.0,
+    "e": 5.16
+   },
+   {
+    "w": "signing",
+    "s": 5.16,
+    "e": 5.44
+   },
+   {
+    "w": "screens,",
+    "s": 5.44,
+    "e": 6.0
+   },
+   {
+    "w": "their",
+    "s": 6.52,
+    "e": 6.58
+   },
+   {
+    "w": "acknowledgments,",
+    "s": 6.58,
+    "e": 7.3
+   },
+   {
+    "w": "and",
+    "s": 7.46,
+    "e": 7.54
+   },
+   {
+    "w": "the",
+    "s": 7.54,
+    "e": 7.66
+   },
+   {
+    "w": "buyer's",
+    "s": 7.66,
+    "e": 8.06
+   },
+   {
+    "w": "guide",
+    "s": 8.06,
+    "e": 8.28
+   },
+   {
+    "w": "come",
+    "s": 8.28,
+    "e": 8.54
+   },
+   {
+    "w": "up",
+    "s": 8.54,
+    "e": 8.7
+   },
+   {
+    "w": "in",
+    "s": 8.7,
+    "e": 8.88
+   },
+   {
+    "w": "Spanish.",
+    "s": 8.88,
+    "e": 9.3
+   },
+   {
+    "w": "English",
+    "s": 10.08,
+    "e": 10.36
+   },
+   {
+    "w": "-speaking",
+    "s": 10.36,
+    "e": 10.76
+   },
+   {
+    "w": "buyer,",
+    "s": 10.76,
+    "e": 11.22
+   },
+   {
+    "w": "leave",
+    "s": 11.74,
+    "e": 11.88
+   },
+   {
+    "w": "it",
+    "s": 11.88,
+    "e": 12.04
+   },
+   {
+    "w": "in",
+    "s": 12.04,
+    "e": 12.18
+   },
+   {
+    "w": "English",
+    "s": 12.18,
+    "e": 12.48
+   },
+   {
+    "w": "and",
+    "s": 12.48,
+    "e": 12.86
+   },
+   {
+    "w": "keep",
+    "s": 12.86,
+    "e": 13.04
+   },
+   {
+    "w": "moving.",
+    "s": 13.04,
+    "e": 13.42
+   }
+  ]
+ },
+ {
+  "id": "10-buyer-a",
+  "sec": 8.35,
+  "text": "Scan the back of the license, and the name and number fill in. You check them against the card. Only what you confirm goes on paper.",
+  "heard": "Scan the back of the license, and the name and number fill in. You check them against the card. Only what you confirm goes on paper.",
+  "words": [
+   {
+    "w": "Scan",
+    "s": 0.0,
+    "e": 0.58
+   },
+   {
+    "w": "the",
+    "s": 0.58,
+    "e": 0.74
+   },
+   {
+    "w": "back",
+    "s": 0.74,
+    "e": 0.92
+   },
+   {
+    "w": "of",
+    "s": 0.92,
+    "e": 1.06
+   },
+   {
+    "w": "the",
+    "s": 1.06,
+    "e": 1.16
+   },
+   {
+    "w": "license,",
+    "s": 1.16,
+    "e": 1.5
+   },
+   {
+    "w": "and",
+    "s": 1.92,
+    "e": 1.96
+   },
+   {
+    "w": "the",
+    "s": 1.96,
+    "e": 2.08
+   },
+   {
+    "w": "name",
+    "s": 2.08,
+    "e": 2.34
+   },
+   {
+    "w": "and",
+    "s": 2.34,
+    "e": 2.56
+   },
+   {
+    "w": "number",
+    "s": 2.56,
+    "e": 2.82
+   },
+   {
+    "w": "fill",
+    "s": 2.82,
+    "e": 3.1
+   },
+   {
+    "w": "in.",
+    "s": 3.1,
+    "e": 3.38
+   },
+   {
+    "w": "You",
+    "s": 3.94,
+    "e": 4.06
+   },
+   {
+    "w": "check",
+    "s": 4.06,
+    "e": 4.3
+   },
+   {
+    "w": "them",
+    "s": 4.3,
+    "e": 4.5
+   },
+   {
+    "w": "against",
+    "s": 4.5,
+    "e": 4.76
+   },
+   {
+    "w": "the",
+    "s": 4.76,
+    "e": 4.96
+   },
+   {
+    "w": "card.",
+    "s": 4.96,
+    "e": 5.26
+   },
+   {
+    "w": "Only",
+    "s": 5.82,
+    "e": 6.0
+   },
+   {
+    "w": "what",
+    "s": 6.0,
+    "e": 6.2
+   },
+   {
+    "w": "you",
+    "s": 6.2,
+    "e": 6.36
+   },
+   {
+    "w": "confirm",
+    "s": 6.36,
+    "e": 6.78
+   },
+   {
+    "w": "goes",
+    "s": 6.78,
+    "e": 7.12
+   },
+   {
+    "w": "on",
+    "s": 7.12,
+    "e": 7.36
+   },
+   {
+    "w": "paper.",
+    "s": 7.36,
+    "e": 7.6
+   }
+  ]
+ },
+ {
+  "id": "11-buyer-b",
+  "sec": 4.95,
+  "text": "Type the street, and the desk looks up the city, the ZIP, and the county for you.",
+  "heard": "Type the street, and the desk looks up the city, the zip, and the county for you.",
+  "words": [
+   {
+    "w": "Type",
+    "s": 0.0,
+    "e": 0.48
+   },
+   {
+    "w": "the",
+    "s": 0.48,
+    "e": 0.64
+   },
+   {
+    "w": "street,",
+    "s": 0.64,
+    "e": 0.94
+   },
+   {
+    "w": "and",
+    "s": 1.28,
+    "e": 1.36
+   },
+   {
+    "w": "the",
+    "s": 1.36,
+    "e": 1.48
+   },
+   {
+    "w": "desk",
+    "s": 1.48,
+    "e": 1.74
+   },
+   {
+    "w": "looks",
+    "s": 1.74,
+    "e": 1.98
+   },
+   {
+    "w": "up",
+    "s": 1.98,
+    "e": 2.16
+   },
+   {
+    "w": "the",
+    "s": 2.16,
+    "e": 2.3
+   },
+   {
+    "w": "city,",
+    "s": 2.3,
+    "e": 2.56
+   },
+   {
+    "w": "the",
+    "s": 2.84,
+    "e": 2.88
+   },
+   {
+    "w": "zip,",
+    "s": 2.88,
+    "e": 3.08
+   },
+   {
+    "w": "and",
+    "s": 3.48,
+    "e": 3.58
+   },
+   {
+    "w": "the",
+    "s": 3.58,
+    "e": 3.7
+   },
+   {
+    "w": "county",
+    "s": 3.7,
+    "e": 3.94
+   },
+   {
+    "w": "for",
+    "s": 3.94,
+    "e": 4.2
+   },
+   {
+    "w": "you.",
+    "s": 4.2,
+    "e": 4.4
+   }
+  ]
+ },
+ {
+  "id": "12-buyer-c",
+  "sec": 3.075,
+  "text": "Remember that county. We'll come back to it.",
+  "heard": "Remember that county. We'll come back to it.",
+  "words": [
+   {
+    "w": "Remember",
+    "s": 0.0,
+    "e": 0.6
+   },
+   {
+    "w": "that",
+    "s": 0.6,
+    "e": 0.86
+   },
+   {
+    "w": "county.",
+    "s": 0.86,
+    "e": 1.28
+   },
+   {
+    "w": "We'll",
+    "s": 1.74,
+    "e": 1.84
+   },
+   {
+    "w": "come",
+    "s": 1.84,
+    "e": 1.98
+   },
+   {
+    "w": "back",
+    "s": 1.98,
+    "e": 2.2
+   },
+   {
+    "w": "to",
+    "s": 2.2,
+    "e": 2.4
+   },
+   {
+    "w": "it.",
+    "s": 2.4,
+    "e": 2.6
+   }
+  ]
+ },
+ {
+  "id": "13-buyer-d",
+  "sec": 15.925,
+  "text": "The address on an ID isn't always where somebody lives. So the desk makes you read the mailing address back to them, and hold to confirm. The title goes to the right door the first time. No returned mail. No angry phone call three weeks later.",
+  "heard": "The address on an ID isn't always where somebody lives, so the desk makes you read the mailing address back to them and hold to confirm. The title goes to the right door the first time. No returned mail. No angry phone call three weeks later.",
+  "words": [
+   {
+    "w": "The",
+    "s": 0.0,
+    "e": 0.42
+   },
+   {
+    "w": "address",
+    "s": 0.42,
+    "e": 0.76
+   },
+   {
+    "w": "on",
+    "s": 0.76,
+    "e": 0.98
+   },
+   {
+    "w": "an",
+    "s": 0.98,
+    "e": 1.12
+   },
+   {
+    "w": "ID",
+    "s": 1.12,
+    "e": 1.48
+   },
+   {
+    "w": "isn't",
+    "s": 1.48,
+    "e": 2.02
+   },
+   {
+    "w": "always",
+    "s": 2.02,
+    "e": 2.34
+   },
+   {
+    "w": "where",
+    "s": 2.34,
+    "e": 2.6
+   },
+   {
+    "w": "somebody",
+    "s": 2.6,
+    "e": 2.92
+   },
+   {
+    "w": "lives,",
+    "s": 2.92,
+    "e": 3.36
+   },
+   {
+    "w": "so",
+    "s": 3.78,
+    "e": 4.06
+   },
+   {
+    "w": "the",
+    "s": 4.06,
+    "e": 4.22
+   },
+   {
+    "w": "desk",
+    "s": 4.22,
+    "e": 4.52
+   },
+   {
+    "w": "makes",
+    "s": 4.52,
+    "e": 4.78
+   },
+   {
+    "w": "you",
+    "s": 4.78,
+    "e": 5.02
+   },
+   {
+    "w": "read",
+    "s": 5.02,
+    "e": 5.24
+   },
+   {
+    "w": "the",
+    "s": 5.24,
+    "e": 5.38
+   },
+   {
+    "w": "mailing",
+    "s": 5.38,
+    "e": 5.68
+   },
+   {
+    "w": "address",
+    "s": 5.68,
+    "e": 6.04
+   },
+   {
+    "w": "back",
+    "s": 6.04,
+    "e": 6.36
+   },
+   {
+    "w": "to",
+    "s": 6.36,
+    "e": 6.54
+   },
+   {
+    "w": "them",
+    "s": 6.54,
+    "e": 6.76
+   },
+   {
+    "w": "and",
+    "s": 6.76,
+    "e": 7.18
+   },
+   {
+    "w": "hold",
+    "s": 7.18,
+    "e": 7.46
+   },
+   {
+    "w": "to",
+    "s": 7.46,
+    "e": 7.68
+   },
+   {
+    "w": "confirm.",
+    "s": 7.68,
+    "e": 8.1
+   },
+   {
+    "w": "The",
+    "s": 8.88,
+    "e": 9.0
+   },
+   {
+    "w": "title",
+    "s": 9.0,
+    "e": 9.28
+   },
+   {
+    "w": "goes",
+    "s": 9.28,
+    "e": 9.54
+   },
+   {
+    "w": "to",
+    "s": 9.54,
+    "e": 9.76
+   },
+   {
+    "w": "the",
+    "s": 9.76,
+    "e": 9.86
+   },
+   {
+    "w": "right",
+    "s": 9.86,
+    "e": 10.08
+   },
+   {
+    "w": "door",
+    "s": 10.08,
+    "e": 10.3
+   },
+   {
+    "w": "the",
+    "s": 10.3,
+    "e": 10.46
+   },
+   {
+    "w": "first",
+    "s": 10.46,
+    "e": 10.68
+   },
+   {
+    "w": "time.",
+    "s": 10.68,
+    "e": 11.08
+   },
+   {
+    "w": "No",
+    "s": 11.64,
+    "e": 11.84
+   },
+   {
+    "w": "returned",
+    "s": 11.84,
+    "e": 12.24
+   },
+   {
+    "w": "mail.",
+    "s": 12.24,
+    "e": 12.6
+   },
+   {
+    "w": "No",
+    "s": 13.18,
+    "e": 13.36
+   },
+   {
+    "w": "angry",
+    "s": 13.36,
+    "e": 13.66
+   },
+   {
+    "w": "phone",
+    "s": 13.66,
+    "e": 14.08
+   },
+   {
+    "w": "call",
+    "s": 14.08,
+    "e": 14.36
+   },
+   {
+    "w": "three",
+    "s": 14.36,
+    "e": 14.66
+   },
+   {
+    "w": "weeks",
+    "s": 14.66,
+    "e": 14.92
+   },
+   {
+    "w": "later.",
+    "s": 14.92,
+    "e": 15.28
+   }
+  ]
+ },
+ {
+  "id": "14-money-a",
+  "sec": 6.675,
+  "text": "Sometimes you advertise out the door. Sometimes it's price plus tax and fees. You know how it goes.",
+  "heard": "Sometimes, you advertise out the door, sometimes it's price plus tax and fees, you know how it goes.",
+  "words": [
+   {
+    "w": "Sometimes,",
+    "s": 0.0,
+    "e": 0.72
+   },
+   {
+    "w": "you",
+    "s": 0.78,
+    "e": 0.98
+   },
+   {
+    "w": "advertise",
+    "s": 0.98,
+    "e": 1.4
+   },
+   {
+    "w": "out",
+    "s": 1.4,
+    "e": 1.7
+   },
+   {
+    "w": "the",
+    "s": 1.7,
+    "e": 1.84
+   },
+   {
+    "w": "door,",
+    "s": 1.84,
+    "e": 2.06
+   },
+   {
+    "w": "sometimes",
+    "s": 2.66,
+    "e": 2.98
+   },
+   {
+    "w": "it's",
+    "s": 2.98,
+    "e": 3.28
+   },
+   {
+    "w": "price",
+    "s": 3.28,
+    "e": 3.46
+   },
+   {
+    "w": "plus",
+    "s": 3.46,
+    "e": 3.74
+   },
+   {
+    "w": "tax",
+    "s": 3.74,
+    "e": 4.14
+   },
+   {
+    "w": "and",
+    "s": 4.14,
+    "e": 4.38
+   },
+   {
+    "w": "fees,",
+    "s": 4.38,
+    "e": 4.7
+   },
+   {
+    "w": "you",
+    "s": 5.14,
+    "e": 5.3
+   },
+   {
+    "w": "know",
+    "s": 5.3,
+    "e": 5.42
+   },
+   {
+    "w": "how",
+    "s": 5.42,
+    "e": 5.58
+   },
+   {
+    "w": "it",
+    "s": 5.58,
+    "e": 5.72
+   },
+   {
+    "w": "goes.",
+    "s": 5.72,
+    "e": 5.98
+   }
+  ]
+ },
+ {
+  "id": "15-money-b",
+  "sec": 15.825,
+  "text": "Type the number you shook hands on, and tap whether tax and fees were inside it. The desk does the tax, title, registration and doc fee math, and shows you exactly what's still owed. No calculator. No mistakes that come out of your pocket.",
+  "heard": "Type the number you shook hands on, and tap whether tax and fees were inside it. The desk does the tax, title, registration, and doc fee math, and shows you exactly what's still owed. No calculator. No mistakes that come out of your pocket.",
+  "words": [
+   {
+    "w": "Type",
+    "s": 0.0,
+    "e": 0.48
+   },
+   {
+    "w": "the",
+    "s": 0.48,
+    "e": 0.66
+   },
+   {
+    "w": "number",
+    "s": 0.66,
+    "e": 0.82
+   },
+   {
+    "w": "you",
+    "s": 0.82,
+    "e": 1.04
+   },
+   {
+    "w": "shook",
+    "s": 1.04,
+    "e": 1.22
+   },
+   {
+    "w": "hands",
+    "s": 1.22,
+    "e": 1.5
+   },
+   {
+    "w": "on,",
+    "s": 1.5,
+    "e": 1.84
+   },
+   {
+    "w": "and",
+    "s": 2.06,
+    "e": 2.22
+   },
+   {
+    "w": "tap",
+    "s": 2.22,
+    "e": 2.48
+   },
+   {
+    "w": "whether",
+    "s": 2.48,
+    "e": 2.78
+   },
+   {
+    "w": "tax",
+    "s": 2.78,
+    "e": 3.14
+   },
+   {
+    "w": "and",
+    "s": 3.14,
+    "e": 3.46
+   },
+   {
+    "w": "fees",
+    "s": 3.46,
+    "e": 3.68
+   },
+   {
+    "w": "were",
+    "s": 3.68,
+    "e": 3.96
+   },
+   {
+    "w": "inside",
+    "s": 3.96,
+    "e": 4.38
+   },
+   {
+    "w": "it.",
+    "s": 4.38,
+    "e": 4.7
+   },
+   {
+    "w": "The",
+    "s": 5.12,
+    "e": 5.28
+   },
+   {
+    "w": "desk",
+    "s": 5.28,
+    "e": 5.54
+   },
+   {
+    "w": "does",
+    "s": 5.54,
+    "e": 5.8
+   },
+   {
+    "w": "the",
+    "s": 5.8,
+    "e": 6.0
+   },
+   {
+    "w": "tax,",
+    "s": 6.0,
+    "e": 6.36
+   },
+   {
+    "w": "title,",
+    "s": 6.72,
+    "e": 7.1
+   },
+   {
+    "w": "registration,",
+    "s": 7.38,
+    "e": 7.84
+   },
+   {
+    "w": "and",
+    "s": 8.18,
+    "e": 8.28
+   },
+   {
+    "w": "doc",
+    "s": 8.28,
+    "e": 8.48
+   },
+   {
+    "w": "fee",
+    "s": 8.48,
+    "e": 8.7
+   },
+   {
+    "w": "math,",
+    "s": 8.7,
+    "e": 9.06
+   },
+   {
+    "w": "and",
+    "s": 9.38,
+    "e": 9.54
+   },
+   {
+    "w": "shows",
+    "s": 9.54,
+    "e": 9.78
+   },
+   {
+    "w": "you",
+    "s": 9.78,
+    "e": 10.02
+   },
+   {
+    "w": "exactly",
+    "s": 10.02,
+    "e": 10.4
+   },
+   {
+    "w": "what's",
+    "s": 10.4,
+    "e": 10.86
+   },
+   {
+    "w": "still",
+    "s": 10.86,
+    "e": 11.06
+   },
+   {
+    "w": "owed.",
+    "s": 11.06,
+    "e": 11.36
+   },
+   {
+    "w": "No",
+    "s": 12.08,
+    "e": 12.3
+   },
+   {
+    "w": "calculator.",
+    "s": 12.3,
+    "e": 12.82
+   },
+   {
+    "w": "No",
+    "s": 13.46,
+    "e": 13.64
+   },
+   {
+    "w": "mistakes",
+    "s": 13.64,
+    "e": 14.02
+   },
+   {
+    "w": "that",
+    "s": 14.02,
+    "e": 14.32
+   },
+   {
+    "w": "come",
+    "s": 14.32,
+    "e": 14.48
+   },
+   {
+    "w": "out",
+    "s": 14.48,
+    "e": 14.64
+   },
+   {
+    "w": "of",
+    "s": 14.64,
+    "e": 14.72
+   },
+   {
+    "w": "your",
+    "s": 14.72,
+    "e": 14.84
+   },
+   {
+    "w": "pocket.",
+    "s": 14.84,
+    "e": 15.1
+   }
+  ]
+ },
+ {
+  "id": "16-money-c",
+  "sec": 11.575,
+  "text": "And if they leave owing you money, the bill of sale and the title application name your dealership as lienholder, automatically. Your money is protected on paper before they drive off.",
+  "heard": "And if they leave owing you money, the bill of sale and the title application name your dealership as lienholder, automatically. Your money is protected on paper before they drive off.",
+  "words": [
+   {
+    "w": "And",
+    "s": 0.0,
+    "e": 0.44
+   },
+   {
+    "w": "if",
+    "s": 0.44,
+    "e": 0.54
+   },
+   {
+    "w": "they",
+    "s": 0.54,
+    "e": 0.7
+   },
+   {
+    "w": "leave",
+    "s": 0.7,
+    "e": 0.94
+   },
+   {
+    "w": "owing",
+    "s": 0.94,
+    "e": 1.24
+   },
+   {
+    "w": "you",
+    "s": 1.24,
+    "e": 1.46
+   },
+   {
+    "w": "money,",
+    "s": 1.46,
+    "e": 1.7
+   },
+   {
+    "w": "the",
+    "s": 2.24,
+    "e": 2.3
+   },
+   {
+    "w": "bill",
+    "s": 2.3,
+    "e": 2.46
+   },
+   {
+    "w": "of",
+    "s": 2.46,
+    "e": 2.66
+   },
+   {
+    "w": "sale",
+    "s": 2.66,
+    "e": 3.0
+   },
+   {
+    "w": "and",
+    "s": 3.0,
+    "e": 3.32
+   },
+   {
+    "w": "the",
+    "s": 3.32,
+    "e": 3.46
+   },
+   {
+    "w": "title",
+    "s": 3.46,
+    "e": 3.78
+   },
+   {
+    "w": "application",
+    "s": 3.78,
+    "e": 4.38
+   },
+   {
+    "w": "name",
+    "s": 4.38,
+    "e": 4.84
+   },
+   {
+    "w": "your",
+    "s": 4.84,
+    "e": 5.08
+   },
+   {
+    "w": "dealership",
+    "s": 5.08,
+    "e": 5.58
+   },
+   {
+    "w": "as",
+    "s": 5.58,
+    "e": 5.9
+   },
+   {
+    "w": "lienholder,",
+    "s": 5.9,
+    "e": 6.44
+   },
+   {
+    "w": "automatically.",
+    "s": 6.84,
+    "e": 7.38
+   },
+   {
+    "w": "Your",
+    "s": 8.3,
+    "e": 8.4
+   },
+   {
+    "w": "money",
+    "s": 8.4,
+    "e": 8.62
+   },
+   {
+    "w": "is",
+    "s": 8.62,
+    "e": 8.88
+   },
+   {
+    "w": "protected",
+    "s": 8.88,
+    "e": 9.24
+   },
+   {
+    "w": "on",
+    "s": 9.24,
+    "e": 9.52
+   },
+   {
+    "w": "paper",
+    "s": 9.52,
+    "e": 9.82
+   },
+   {
+    "w": "before",
+    "s": 9.82,
+    "e": 10.24
+   },
+   {
+    "w": "they",
+    "s": 10.24,
+    "e": 10.42
+   },
+   {
+    "w": "drive",
+    "s": 10.42,
+    "e": 10.68
+   },
+   {
+    "w": "off.",
+    "s": 10.68,
+    "e": 10.94
+   }
+  ]
+ },
+ {
+  "id": "17-plan-a",
+  "sec": 9.375,
+  "text": "Who files the title? One tap, and the desk builds the right packet. The 130-U when you file it, the responsibility form when they do.",
+  "heard": "who files the title, one tap, and the desk builds the right packet. The 130U, when you file it, the responsibility form when they do.",
+  "words": [
+   {
+    "w": "who",
+    "s": 0.0,
+    "e": 0.42
+   },
+   {
+    "w": "files",
+    "s": 0.42,
+    "e": 0.74
+   },
+   {
+    "w": "the",
+    "s": 0.74,
+    "e": 0.98
+   },
+   {
+    "w": "title,",
+    "s": 0.98,
+    "e": 1.28
+   },
+   {
+    "w": "one",
+    "s": 1.72,
+    "e": 1.96
+   },
+   {
+    "w": "tap,",
+    "s": 1.96,
+    "e": 2.28
+   },
+   {
+    "w": "and",
+    "s": 2.62,
+    "e": 2.74
+   },
+   {
+    "w": "the",
+    "s": 2.74,
+    "e": 2.86
+   },
+   {
+    "w": "desk",
+    "s": 2.86,
+    "e": 3.14
+   },
+   {
+    "w": "builds",
+    "s": 3.14,
+    "e": 3.46
+   },
+   {
+    "w": "the",
+    "s": 3.46,
+    "e": 3.7
+   },
+   {
+    "w": "right",
+    "s": 3.7,
+    "e": 3.92
+   },
+   {
+    "w": "packet.",
+    "s": 3.92,
+    "e": 4.4
+   },
+   {
+    "w": "The",
+    "s": 5.06,
+    "e": 5.2
+   },
+   {
+    "w": "130U,",
+    "s": 5.2,
+    "e": 5.92
+   },
+   {
+    "w": "when",
+    "s": 6.02,
+    "e": 6.08
+   },
+   {
+    "w": "you",
+    "s": 6.08,
+    "e": 6.24
+   },
+   {
+    "w": "file",
+    "s": 6.24,
+    "e": 6.48
+   },
+   {
+    "w": "it,",
+    "s": 6.48,
+    "e": 6.72
+   },
+   {
+    "w": "the",
+    "s": 6.9,
+    "e": 7.0
+   },
+   {
+    "w": "responsibility",
+    "s": 7.0,
+    "e": 7.62
+   },
+   {
+    "w": "form",
+    "s": 7.62,
+    "e": 8.18
+   },
+   {
+    "w": "when",
+    "s": 8.18,
+    "e": 8.4
+   },
+   {
+    "w": "they",
+    "s": 8.4,
+    "e": 8.56
+   },
+   {
+    "w": "do.",
+    "s": 8.56,
+    "e": 8.76
+   }
+  ]
+ },
+ {
+  "id": "18-plan-b",
+  "sec": 9.125,
+  "text": "Inspection? Tap where it stands, and the buyer's copy says in writing whether it's done, yours, or theirs. If it's theirs, it's on paper.",
+  "heard": "Inspection, tap where it stands, and the buyer's copy says in writing whether it's done, yours, or theirs. If it's theirs, it's on paper.",
+  "words": [
+   {
+    "w": "Inspection,",
+    "s": 0.0,
+    "e": 0.84
+   },
+   {
+    "w": "tap",
+    "s": 1.22,
+    "e": 1.42
+   },
+   {
+    "w": "where",
+    "s": 1.42,
+    "e": 1.62
+   },
+   {
+    "w": "it",
+    "s": 1.62,
+    "e": 1.72
+   },
+   {
+    "w": "stands,",
+    "s": 1.72,
+    "e": 2.12
+   },
+   {
+    "w": "and",
+    "s": 2.5,
+    "e": 2.64
+   },
+   {
+    "w": "the",
+    "s": 2.64,
+    "e": 2.76
+   },
+   {
+    "w": "buyer's",
+    "s": 2.76,
+    "e": 3.18
+   },
+   {
+    "w": "copy",
+    "s": 3.18,
+    "e": 3.4
+   },
+   {
+    "w": "says",
+    "s": 3.4,
+    "e": 3.74
+   },
+   {
+    "w": "in",
+    "s": 3.74,
+    "e": 3.98
+   },
+   {
+    "w": "writing",
+    "s": 3.98,
+    "e": 4.28
+   },
+   {
+    "w": "whether",
+    "s": 4.28,
+    "e": 4.52
+   },
+   {
+    "w": "it's",
+    "s": 4.52,
+    "e": 4.84
+   },
+   {
+    "w": "done,",
+    "s": 4.84,
+    "e": 5.1
+   },
+   {
+    "w": "yours,",
+    "s": 5.36,
+    "e": 5.62
+   },
+   {
+    "w": "or",
+    "s": 5.86,
+    "e": 5.94
+   },
+   {
+    "w": "theirs.",
+    "s": 5.94,
+    "e": 6.26
+   },
+   {
+    "w": "If",
+    "s": 6.94,
+    "e": 7.08
+   },
+   {
+    "w": "it's",
+    "s": 7.08,
+    "e": 7.3
+   },
+   {
+    "w": "theirs,",
+    "s": 7.3,
+    "e": 7.54
+   },
+   {
+    "w": "it's",
+    "s": 7.78,
+    "e": 8.0
+   },
+   {
+    "w": "on",
+    "s": 8.0,
+    "e": 8.14
+   },
+   {
+    "w": "paper.",
+    "s": 8.14,
+    "e": 8.38
+   }
+  ]
+ },
+ {
+  "id": "19-payoff-a",
+  "sec": 6.675,
+  "text": "Here's the title application. The county? Already filled in. That's the one you confirmed at the start.",
+  "heard": "Here's the title application. The county, already filled in. That's the one you confirmed at the start.",
+  "words": [
+   {
+    "w": "Here's",
+    "s": 0.0,
+    "e": 0.56
+   },
+   {
+    "w": "the",
+    "s": 0.56,
+    "e": 0.72
+   },
+   {
+    "w": "title",
+    "s": 0.72,
+    "e": 1.04
+   },
+   {
+    "w": "application.",
+    "s": 1.04,
+    "e": 1.66
+   },
+   {
+    "w": "The",
+    "s": 2.4,
+    "e": 2.44
+   },
+   {
+    "w": "county,",
+    "s": 2.44,
+    "e": 2.8
+   },
+   {
+    "w": "already",
+    "s": 3.28,
+    "e": 3.44
+   },
+   {
+    "w": "filled",
+    "s": 3.44,
+    "e": 3.76
+   },
+   {
+    "w": "in.",
+    "s": 3.76,
+    "e": 4.06
+   },
+   {
+    "w": "That's",
+    "s": 4.42,
+    "e": 4.74
+   },
+   {
+    "w": "the",
+    "s": 4.74,
+    "e": 4.84
+   },
+   {
+    "w": "one",
+    "s": 4.84,
+    "e": 4.94
+   },
+   {
+    "w": "you",
+    "s": 4.94,
+    "e": 5.06
+   },
+   {
+    "w": "confirmed",
+    "s": 5.06,
+    "e": 5.48
+   },
+   {
+    "w": "at",
+    "s": 5.48,
+    "e": 5.68
+   },
+   {
+    "w": "the",
+    "s": 5.68,
+    "e": 5.8
+   },
+   {
+    "w": "start.",
+    "s": 5.8,
+    "e": 6.08
+   }
+  ]
+ },
+ {
+  "id": "20-payoff-b",
+  "sec": 16.225,
+  "text": "And the seller line. The county now wants the company and the person who signed. So it prints Discount Used Cars And Trucks, L L C, and the salesperson's name in parentheses, with the signature they drew on day one. That's why we asked for it.",
+  "heard": "the seller line. The county now wants the company and the person who signed. So it prints discount used cars and trucks LLC and the salesperson's name in parentheses with the signature they drew on day one. That's why we asked for it.",
+  "words": [
+   {
+    "w": "the",
+    "s": 0.0,
+    "e": 0.56
+   },
+   {
+    "w": "seller",
+    "s": 0.56,
+    "e": 0.8
+   },
+   {
+    "w": "line.",
+    "s": 0.8,
+    "e": 1.2
+   },
+   {
+    "w": "The",
+    "s": 1.78,
+    "e": 1.94
+   },
+   {
+    "w": "county",
+    "s": 1.94,
+    "e": 2.2
+   },
+   {
+    "w": "now",
+    "s": 2.2,
+    "e": 2.54
+   },
+   {
+    "w": "wants",
+    "s": 2.54,
+    "e": 2.78
+   },
+   {
+    "w": "the",
+    "s": 2.78,
+    "e": 2.98
+   },
+   {
+    "w": "company",
+    "s": 2.98,
+    "e": 3.3
+   },
+   {
+    "w": "and",
+    "s": 3.3,
+    "e": 3.6
+   },
+   {
+    "w": "the",
+    "s": 3.6,
+    "e": 3.72
+   },
+   {
+    "w": "person",
+    "s": 3.72,
+    "e": 4.04
+   },
+   {
+    "w": "who",
+    "s": 4.04,
+    "e": 4.24
+   },
+   {
+    "w": "signed.",
+    "s": 4.24,
+    "e": 4.56
+   },
+   {
+    "w": "So",
+    "s": 5.34,
+    "e": 5.4
+   },
+   {
+    "w": "it",
+    "s": 5.4,
+    "e": 5.54
+   },
+   {
+    "w": "prints",
+    "s": 5.54,
+    "e": 5.8
+   },
+   {
+    "w": "discount",
+    "s": 5.8,
+    "e": 6.32
+   },
+   {
+    "w": "used",
+    "s": 6.32,
+    "e": 6.66
+   },
+   {
+    "w": "cars",
+    "s": 6.66,
+    "e": 7.06
+   },
+   {
+    "w": "and",
+    "s": 7.06,
+    "e": 7.36
+   },
+   {
+    "w": "trucks",
+    "s": 7.36,
+    "e": 7.8
+   },
+   {
+    "w": "LLC",
+    "s": 7.8,
+    "e": 8.44
+   },
+   {
+    "w": "and",
+    "s": 8.44,
+    "e": 9.34
+   },
+   {
+    "w": "the",
+    "s": 9.34,
+    "e": 9.44
+   },
+   {
+    "w": "salesperson's",
+    "s": 9.44,
+    "e": 10.34
+   },
+   {
+    "w": "name",
+    "s": 10.34,
+    "e": 10.54
+   },
+   {
+    "w": "in",
+    "s": 10.54,
+    "e": 10.78
+   },
+   {
+    "w": "parentheses",
+    "s": 10.78,
+    "e": 11.3
+   },
+   {
+    "w": "with",
+    "s": 11.3,
+    "e": 11.88
+   },
+   {
+    "w": "the",
+    "s": 11.88,
+    "e": 12.04
+   },
+   {
+    "w": "signature",
+    "s": 12.04,
+    "e": 12.4
+   },
+   {
+    "w": "they",
+    "s": 12.4,
+    "e": 12.7
+   },
+   {
+    "w": "drew",
+    "s": 12.7,
+    "e": 12.92
+   },
+   {
+    "w": "on",
+    "s": 12.92,
+    "e": 13.22
+   },
+   {
+    "w": "day",
+    "s": 13.22,
+    "e": 13.42
+   },
+   {
+    "w": "one.",
+    "s": 13.42,
+    "e": 13.8
+   },
+   {
+    "w": "That's",
+    "s": 14.2,
+    "e": 14.7
+   },
+   {
+    "w": "why",
+    "s": 14.7,
+    "e": 14.86
+   },
+   {
+    "w": "we",
+    "s": 14.86,
+    "e": 15.02
+   },
+   {
+    "w": "asked",
+    "s": 15.02,
+    "e": 15.32
+   },
+   {
+    "w": "for",
+    "s": 15.32,
+    "e": 15.54
+   },
+   {
+    "w": "it.",
+    "s": 15.54,
+    "e": 15.7
+   }
+  ]
+ },
+ {
+  "id": "21-payoff-c",
+  "sec": 4.725,
+  "text": "Every document, signed and named, without anybody touching a pen.",
+  "heard": "Every document, signed and named, without anybody touching a pen.",
+  "words": [
+   {
+    "w": "Every",
+    "s": 0.0,
+    "e": 0.58
+   },
+   {
+    "w": "document,",
+    "s": 0.58,
+    "e": 1.08
+   },
+   {
+    "w": "signed",
+    "s": 1.38,
+    "e": 1.68
+   },
+   {
+    "w": "and",
+    "s": 1.68,
+    "e": 1.92
+   },
+   {
+    "w": "named,",
+    "s": 1.92,
+    "e": 2.26
+   },
+   {
+    "w": "without",
+    "s": 2.66,
+    "e": 2.9
+   },
+   {
+    "w": "anybody",
+    "s": 2.9,
+    "e": 3.32
+   },
+   {
+    "w": "touching",
+    "s": 3.32,
+    "e": 3.66
+   },
+   {
+    "w": "a",
+    "s": 3.66,
+    "e": 3.88
+   },
+   {
+    "w": "pen.",
+    "s": 3.88,
+    "e": 4.08
+   }
+  ]
+ },
+ {
+  "id": "22-stored-a",
+  "sec": 4.35,
+  "text": "The buyer scans a code, and signs every page on their own phone.",
+  "heard": "The buyer scans a code and signs every page on their own phone.",
+  "words": [
+   {
+    "w": "The",
+    "s": 0.0,
+    "e": 0.4
+   },
+   {
+    "w": "buyer",
+    "s": 0.4,
+    "e": 0.64
+   },
+   {
+    "w": "scans",
+    "s": 0.64,
+    "e": 0.98
+   },
+   {
+    "w": "a",
+    "s": 0.98,
+    "e": 1.16
+   },
+   {
+    "w": "code",
+    "s": 1.16,
+    "e": 1.48
+   },
+   {
+    "w": "and",
+    "s": 1.48,
+    "e": 1.96
+   },
+   {
+    "w": "signs",
+    "s": 1.96,
+    "e": 2.22
+   },
+   {
+    "w": "every",
+    "s": 2.22,
+    "e": 2.58
+   },
+   {
+    "w": "page",
+    "s": 2.58,
+    "e": 2.86
+   },
+   {
+    "w": "on",
+    "s": 2.86,
+    "e": 3.1
+   },
+   {
+    "w": "their",
+    "s": 3.1,
+    "e": 3.2
+   },
+   {
+    "w": "own",
+    "s": 3.2,
+    "e": 3.38
+   },
+   {
+    "w": "phone.",
+    "s": 3.38,
+    "e": 3.68
+   }
+  ]
+ },
+ {
+  "id": "23-stored-b",
+  "sec": 12.125,
+  "text": "And every signed document stays with the sale. If a customer files a complaint, or somebody comes asking questions months from now, search their name, and pull up the paperwork in seconds.",
+  "heard": "and every signed document stays with the sale. If a customer files a complaint or somebody comes asking questions months from now, search their name and pull up the paperwork in seconds.",
+  "words": [
+   {
+    "w": "and",
+    "s": 0.0,
+    "e": 0.44
+   },
+   {
+    "w": "every",
+    "s": 0.44,
+    "e": 0.78
+   },
+   {
+    "w": "signed",
+    "s": 0.78,
+    "e": 1.1
+   },
+   {
+    "w": "document",
+    "s": 1.1,
+    "e": 1.58
+   },
+   {
+    "w": "stays",
+    "s": 1.58,
+    "e": 1.94
+   },
+   {
+    "w": "with",
+    "s": 1.94,
+    "e": 2.2
+   },
+   {
+    "w": "the",
+    "s": 2.2,
+    "e": 2.34
+   },
+   {
+    "w": "sale.",
+    "s": 2.34,
+    "e": 2.66
+   },
+   {
+    "w": "If",
+    "s": 3.4,
+    "e": 3.5
+   },
+   {
+    "w": "a",
+    "s": 3.5,
+    "e": 3.68
+   },
+   {
+    "w": "customer",
+    "s": 3.68,
+    "e": 4.0
+   },
+   {
+    "w": "files",
+    "s": 4.0,
+    "e": 4.46
+   },
+   {
+    "w": "a",
+    "s": 4.46,
+    "e": 4.76
+   },
+   {
+    "w": "complaint",
+    "s": 4.76,
+    "e": 5.18
+   },
+   {
+    "w": "or",
+    "s": 5.18,
+    "e": 5.74
+   },
+   {
+    "w": "somebody",
+    "s": 5.74,
+    "e": 6.08
+   },
+   {
+    "w": "comes",
+    "s": 6.08,
+    "e": 6.34
+   },
+   {
+    "w": "asking",
+    "s": 6.34,
+    "e": 6.76
+   },
+   {
+    "w": "questions",
+    "s": 6.76,
+    "e": 7.14
+   },
+   {
+    "w": "months",
+    "s": 7.14,
+    "e": 7.48
+   },
+   {
+    "w": "from",
+    "s": 7.48,
+    "e": 7.74
+   },
+   {
+    "w": "now,",
+    "s": 7.74,
+    "e": 8.1
+   },
+   {
+    "w": "search",
+    "s": 8.5,
+    "e": 8.78
+   },
+   {
+    "w": "their",
+    "s": 8.78,
+    "e": 9.06
+   },
+   {
+    "w": "name",
+    "s": 9.06,
+    "e": 9.38
+   },
+   {
+    "w": "and",
+    "s": 9.38,
+    "e": 9.88
+   },
+   {
+    "w": "pull",
+    "s": 9.88,
+    "e": 10.1
+   },
+   {
+    "w": "up",
+    "s": 10.1,
+    "e": 10.26
+   },
+   {
+    "w": "the",
+    "s": 10.26,
+    "e": 10.4
+   },
+   {
+    "w": "paperwork",
+    "s": 10.4,
+    "e": 10.8
+   },
+   {
+    "w": "in",
+    "s": 10.8,
+    "e": 11.1
+   },
+   {
+    "w": "seconds.",
+    "s": 11.1,
+    "e": 11.38
+   }
+  ]
+ },
+ {
+  "id": "24-close",
+  "sec": 8.0,
+  "text": "More buyers through the door. Less time on paperwork. Fewer mistakes that cost you money. Discount Used Cars and Trucks.",
+  "heard": "More buyers through the door less time on paperwork fewer mistakes that cost you money discount used cars and trucks",
+  "words": [
+   {
+    "w": "More",
+    "s": 0.0,
+    "e": 0.54
+   },
+   {
+    "w": "buyers",
+    "s": 0.54,
+    "e": 0.96
+   },
+   {
+    "w": "through",
+    "s": 0.96,
+    "e": 1.22
+   },
+   {
+    "w": "the",
+    "s": 1.22,
+    "e": 1.36
+   },
+   {
+    "w": "door",
+    "s": 1.36,
+    "e": 1.64
+   },
+   {
+    "w": "less",
+    "s": 1.64,
+    "e": 2.18
+   },
+   {
+    "w": "time",
+    "s": 2.18,
+    "e": 2.46
+   },
+   {
+    "w": "on",
+    "s": 2.46,
+    "e": 2.62
+   },
+   {
+    "w": "paperwork",
+    "s": 2.62,
+    "e": 3.1
+   },
+   {
+    "w": "fewer",
+    "s": 3.1,
+    "e": 3.74
+   },
+   {
+    "w": "mistakes",
+    "s": 3.74,
+    "e": 4.24
+   },
+   {
+    "w": "that",
+    "s": 4.24,
+    "e": 4.52
+   },
+   {
+    "w": "cost",
+    "s": 4.52,
+    "e": 4.76
+   },
+   {
+    "w": "you",
+    "s": 4.76,
+    "e": 4.96
+   },
+   {
+    "w": "money",
+    "s": 4.96,
+    "e": 5.38
+   },
+   {
+    "w": "discount",
+    "s": 5.38,
+    "e": 6.1
+   },
+   {
+    "w": "used",
+    "s": 6.1,
+    "e": 6.44
+   },
+   {
+    "w": "cars",
+    "s": 6.44,
+    "e": 6.84
+   },
+   {
+    "w": "and",
+    "s": 6.84,
+    "e": 7.08
+   },
+   {
+    "w": "trucks",
+    "s": 7.08,
+    "e": 7.46
+   }
+  ]
+ }
+]

@@ -1,0 +1,990 @@
+{
+ "deal": "/admin/sales/preview-deals-33",
+ "results": [
+  {
+   "screen": "guide/plan:registration",
+   "lang": "en",
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": {
+    "cls": "tj-choice",
+    "w": 314,
+    "h": 116,
+    "radius": "6px",
+    "border": "1px rgb(216, 216, 219)",
+    "bg": "rgb(255, 255, 255)",
+    "font": "22px 550"
+   },
+   "back": true,
+   "backText": "Back",
+   "cardsFill": {
+    "rowW": 640,
+    "rowLeft": 400,
+    "h1Left": 400
+   }
+  },
+  {
+   "screen": "billOfSale/odometerStatus",
+   "lang": "en",
+   "kind": "choice",
+   "isTap": true,
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": {
+    "cls": "ed-pay-choice",
+    "w": 224,
+    "h": 132,
+    "radius": "8px",
+    "border": "1px rgb(11, 11, 12)",
+    "bg": "rgb(255, 255, 255)",
+    "font": "17px 400"
+   },
+   "back": false,
+   "backText": null,
+   "cardsFill": {
+    "rowW": 460,
+    "rowLeft": 400,
+    "h1Left": 400
+   },
+   "h1": "Is That The Real Mileage?",
+   "taps": 3,
+   "tapLabels": [
+    "Yes, That Is The Real Mileage",
+    "It Has Rolled Over",
+    "No, Not The Real Mileage"
+   ],
+   "listRows": 0,
+   "inputs": 0,
+   "untranslated": false,
+   "sameLabels": [],
+   "bad": [
+    "no Back (first question of the document)"
+   ]
+  },
+  {
+   "screen": "billOfSale/tradeIn",
+   "lang": "en",
+   "kind": "choice",
+   "isTap": true,
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": {
+    "cls": "ed-pay-choice",
+    "w": 63,
+    "h": 132,
+    "radius": "8px",
+    "border": "1px rgb(0, 0, 0)",
+    "bg": "rgb(238, 239, 242)",
+    "font": "17px 400"
+   },
+   "back": true,
+   "backText": "Back",
+   "cardsFill": {
+    "rowW": 139,
+    "rowLeft": 561,
+    "h1Left": 400
+   },
+   "h1": "Is There A Trade-In?",
+   "taps": 2,
+   "tapLabels": [
+    "No",
+    "Yes"
+   ],
+   "listRows": 0,
+   "inputs": 0,
+   "untranslated": false,
+   "sameLabels": [],
+   "bad": []
+  },
+  {
+   "screen": "BACK",
+   "lang": "en",
+   "from": "billOfSale/tradeIn",
+   "to": "billOfSale/odometerStatus",
+   "expected": "billOfSale/odometerStatus",
+   "ok": true,
+   "marked": [
+    "Yes, That Is The Real Mileage"
+   ],
+   "inputValue": null
+  },
+  {
+   "screen": "billOfSale/odometerStatus",
+   "lang": "en",
+   "kind": "choice",
+   "isTap": true,
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": {
+    "cls": "ed-pay-choice",
+    "w": 224,
+    "h": 132,
+    "radius": "8px",
+    "border": "1px rgb(0, 0, 0)",
+    "bg": "rgb(238, 239, 242)",
+    "font": "17px 400"
+   },
+   "back": false,
+   "backText": null,
+   "cardsFill": {
+    "rowW": 460,
+    "rowLeft": 400,
+    "h1Left": 400
+   },
+   "h1": "Is That The Real Mileage?",
+   "taps": 3,
+   "tapLabels": [
+    "Yes, That Is The Real Mileage",
+    "It Has Rolled Over",
+    "No, Not The Real Mileage"
+   ],
+   "listRows": 0,
+   "inputs": 0,
+   "untranslated": false,
+   "sameLabels": [],
+   "bad": [
+    "no Back"
+   ]
+  },
+  {
+   "screen": "billOfSale/tradeIn",
+   "lang": "en",
+   "kind": "choice",
+   "isTap": true,
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": {
+    "cls": "ed-pay-choice",
+    "w": 63,
+    "h": 132,
+    "radius": "8px",
+    "border": "1px rgb(0, 0, 0)",
+    "bg": "rgb(238, 239, 242)",
+    "font": "17px 400"
+   },
+   "back": true,
+   "backText": "Back",
+   "cardsFill": {
+    "rowW": 139,
+    "rowLeft": 561,
+    "h1Left": 400
+   },
+   "h1": "Is There A Trade-In?",
+   "taps": 2,
+   "tapLabels": [
+    "No",
+    "Yes"
+   ],
+   "listRows": 0,
+   "inputs": 0,
+   "untranslated": false,
+   "sameLabels": [],
+   "bad": []
+  },
+  {
+   "screen": "billOfSale/tradeInVin",
+   "lang": "en",
+   "kind": "vin",
+   "isTap": false,
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": null,
+   "back": true,
+   "backText": "Back",
+   "cardsFill": null,
+   "h1": "What Is The Trade-In's VIN?",
+   "taps": 0,
+   "tapLabels": [],
+   "listRows": 0,
+   "inputs": 1,
+   "untranslated": false,
+   "sameLabels": [],
+   "bad": []
+  },
+  {
+   "screen": "billOfSale/tradeInDescription",
+   "lang": "en",
+   "kind": "text",
+   "isTap": false,
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": null,
+   "back": true,
+   "backText": "Back",
+   "cardsFill": null,
+   "h1": "What Are They Trading In?",
+   "taps": 0,
+   "tapLabels": [],
+   "listRows": 0,
+   "inputs": 1,
+   "untranslated": false,
+   "sameLabels": [],
+   "bad": []
+  },
+  {
+   "screen": "billOfSale/tradeInAllowance",
+   "lang": "en",
+   "kind": "money",
+   "isTap": false,
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": null,
+   "back": true,
+   "backText": "Back",
+   "cardsFill": null,
+   "h1": "What Are We Allowing For It?",
+   "taps": 0,
+   "tapLabels": [],
+   "listRows": 0,
+   "inputs": 1,
+   "untranslated": false,
+   "sameLabels": [],
+   "bad": []
+  },
+  {
+   "screen": "billOfSale/conditionType",
+   "lang": "en",
+   "kind": "choice",
+   "isTap": true,
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": {
+    "cls": "ed-pay-choice",
+    "w": 170,
+    "h": 132,
+    "radius": "8px",
+    "border": "1px rgb(0, 0, 0)",
+    "bg": "rgb(238, 239, 242)",
+    "font": "17px 400"
+   },
+   "back": true,
+   "backText": "Back",
+   "cardsFill": {
+    "rowW": 353,
+    "rowLeft": 454,
+    "h1Left": 400
+   },
+   "h1": "Sold As-Is Or With A Warranty?",
+   "taps": 2,
+   "tapLabels": [
+    "As-Is",
+    "With A Warranty"
+   ],
+   "listRows": 0,
+   "inputs": 0,
+   "untranslated": false,
+   "sameLabels": [],
+   "bad": []
+  },
+  {
+   "screen": "billOfSale/warrantyKind",
+   "lang": "en",
+   "kind": "choice",
+   "isTap": true,
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": {
+    "cls": "ed-pay-choice",
+    "w": 180,
+    "h": 132,
+    "radius": "8px",
+    "border": "1px rgb(216, 216, 219)",
+    "bg": "rgb(255, 255, 255)",
+    "font": "17px 400"
+   },
+   "back": true,
+   "backText": "Back",
+   "cardsFill": {
+    "rowW": 373,
+    "rowLeft": 444,
+    "h1Left": 400
+   },
+   "h1": "Full Or Limited Warranty?",
+   "taps": 2,
+   "tapLabels": [
+    "Limited Warranty",
+    "Full Warranty"
+   ],
+   "listRows": 0,
+   "inputs": 0,
+   "untranslated": false,
+   "sameLabels": [],
+   "bad": []
+  },
+  {
+   "screen": "billOfSale/warrantyLaborPercent",
+   "lang": "en",
+   "kind": "number",
+   "isTap": false,
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": null,
+   "back": true,
+   "backText": "Back",
+   "cardsFill": null,
+   "h1": "What Share Of The Labor Do We Pay?",
+   "taps": 0,
+   "tapLabels": [],
+   "listRows": 0,
+   "inputs": 1,
+   "untranslated": false,
+   "sameLabels": [],
+   "bad": []
+  },
+  {
+   "screen": "billOfSale/warrantyPartsPercent",
+   "lang": "en",
+   "kind": "number",
+   "isTap": false,
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": null,
+   "back": true,
+   "backText": "Back",
+   "cardsFill": null,
+   "h1": "What Share Of The Parts Do We Pay?",
+   "taps": 0,
+   "tapLabels": [],
+   "listRows": 0,
+   "inputs": 1,
+   "untranslated": false,
+   "sameLabels": [],
+   "bad": []
+  },
+  {
+   "screen": "billOfSale/warrantySystems",
+   "lang": "en",
+   "kind": "multi",
+   "isTap": true,
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": {
+    "cls": "ed-list-row",
+    "w": 186,
+    "h": 52,
+    "radius": "10px",
+    "border": "1px rgb(216, 216, 219)",
+    "bg": "rgb(255, 255, 255)",
+    "font": "15px 400"
+   },
+   "back": true,
+   "backText": "Back",
+   "cardsFill": {
+    "rowW": 186,
+    "rowLeft": 537,
+    "h1Left": 400
+   },
+   "h1": "Which Systems Does It Cover?",
+   "taps": 15,
+   "tapLabels": [
+    "Frame & Body",
+    "Engine",
+    "Transmission & Drive Shaft",
+    "Differential",
+    "Cooling System",
+    "Electrical System",
+    "Fuel System",
+    "Accessories",
+    "Brake System",
+    "Air Bags",
+    "Steering System",
+    "Suspension System",
+    "Tires",
+    "Wheels",
+    "Exhaust System"
+   ],
+   "listRows": 0,
+   "inputs": 0,
+   "untranslated": false,
+   "sameLabels": [],
+   "bad": []
+  },
+  {
+   "screen": "billOfSale/warrantyDuration",
+   "lang": "en",
+   "kind": "text",
+   "isTap": false,
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": null,
+   "back": true,
+   "backText": "Back",
+   "cardsFill": null,
+   "h1": "How Long Is The Warranty?",
+   "taps": 0,
+   "tapLabels": [],
+   "listRows": 0,
+   "inputs": 1,
+   "untranslated": false,
+   "sameLabels": [],
+   "bad": []
+  },
+  {
+   "screen": "billOfSale/review",
+   "lang": "en",
+   "review": {
+    "rows": 74,
+    "missing": 0,
+    "pages": 4,
+    "h1": "Does This Look Right?"
+   }
+  },
+  {
+   "screen": "form130U/applicationType",
+   "lang": "en",
+   "kind": "choice",
+   "isTap": true,
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": {
+    "cls": "ed-pay-choice",
+    "w": 217,
+    "h": 132,
+    "radius": "8px",
+    "border": "1px rgb(11, 11, 12)",
+    "bg": "rgb(255, 255, 255)",
+    "font": "17px 400"
+   },
+   "back": false,
+   "backText": null,
+   "cardsFill": {
+    "rowW": 446,
+    "rowLeft": 407,
+    "h1Left": 400
+   },
+   "h1": "What Are We Applying For?",
+   "taps": 3,
+   "tapLabels": [
+    "Title And Registration",
+    "Title Only",
+    "Registration Only"
+   ],
+   "listRows": 0,
+   "inputs": 0,
+   "untranslated": false,
+   "sameLabels": [],
+   "bad": [
+    "no Back (first question of the document)"
+   ]
+  },
+  {
+   "screen": "form130U/applicantType",
+   "lang": "en",
+   "kind": "choice",
+   "isTap": true,
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": {
+    "cls": "ed-pay-choice",
+    "w": 125,
+    "h": 132,
+    "radius": "8px",
+    "border": "1px rgb(0, 0, 0)",
+    "bg": "rgb(238, 239, 242)",
+    "font": "17px 400"
+   },
+   "back": true,
+   "backText": "Back",
+   "cardsFill": {
+    "rowW": 263,
+    "rowLeft": 499,
+    "h1Left": 400
+   },
+   "h1": "Is The Buyer A Person Or A Business?",
+   "taps": 2,
+   "tapLabels": [
+    "A Person",
+    "A Business"
+   ],
+   "listRows": 0,
+   "inputs": 0,
+   "untranslated": false,
+   "sameLabels": [],
+   "bad": []
+  },
+  {
+   "screen": "BACK",
+   "lang": "en",
+   "from": "form130U/applicantType",
+   "to": "form130U/applicationType",
+   "expected": "form130U/applicationType",
+   "ok": true,
+   "marked": [
+    "Title And Registration"
+   ],
+   "inputValue": null
+  },
+  {
+   "screen": "form130U/applicationType",
+   "lang": "en",
+   "kind": "choice",
+   "isTap": true,
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": {
+    "cls": "ed-pay-choice",
+    "w": 217,
+    "h": 132,
+    "radius": "8px",
+    "border": "1px rgb(0, 0, 0)",
+    "bg": "rgb(238, 239, 242)",
+    "font": "17px 400"
+   },
+   "back": false,
+   "backText": null,
+   "cardsFill": {
+    "rowW": 446,
+    "rowLeft": 407,
+    "h1Left": 400
+   },
+   "h1": "What Are We Applying For?",
+   "taps": 3,
+   "tapLabels": [
+    "Title And Registration",
+    "Title Only",
+    "Registration Only"
+   ],
+   "listRows": 0,
+   "inputs": 0,
+   "untranslated": false,
+   "sameLabels": [],
+   "bad": [
+    "no Back"
+   ]
+  },
+  {
+   "screen": "form130U/applicantType",
+   "lang": "en",
+   "kind": "choice",
+   "isTap": true,
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": {
+    "cls": "ed-pay-choice",
+    "w": 125,
+    "h": 132,
+    "radius": "8px",
+    "border": "1px rgb(0, 0, 0)",
+    "bg": "rgb(238, 239, 242)",
+    "font": "17px 400"
+   },
+   "back": true,
+   "backText": "Back",
+   "cardsFill": {
+    "rowW": 263,
+    "rowLeft": 499,
+    "h1Left": 400
+   },
+   "h1": "Is The Buyer A Person Or A Business?",
+   "taps": 2,
+   "tapLabels": [
+    "A Person",
+    "A Business"
+   ],
+   "listRows": 0,
+   "inputs": 0,
+   "untranslated": false,
+   "sameLabels": [],
+   "bad": []
+  },
+  {
+   "screen": "form130U/businessName",
+   "lang": "en",
+   "kind": "text",
+   "isTap": false,
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": null,
+   "back": true,
+   "backText": "Back",
+   "cardsFill": null,
+   "h1": "What Is The Business's Legal Name?",
+   "taps": 0,
+   "tapLabels": [],
+   "listRows": 0,
+   "inputs": 1,
+   "untranslated": false,
+   "sameLabels": [],
+   "bad": []
+  },
+  {
+   "screen": "form130U/businessFein",
+   "lang": "en",
+   "kind": "text",
+   "isTap": false,
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": null,
+   "back": true,
+   "backText": "Back",
+   "cardsFill": null,
+   "h1": "What Is The Business's FEIN?",
+   "taps": 0,
+   "tapLabels": [],
+   "listRows": 0,
+   "inputs": 1,
+   "untranslated": false,
+   "sameLabels": [],
+   "bad": []
+  },
+  {
+   "screen": "form130U/renewalReminders",
+   "lang": "en",
+   "kind": "choice",
+   "isTap": true,
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": {
+    "cls": "ed-pay-choice",
+    "w": 216,
+    "h": 132,
+    "radius": "8px",
+    "border": "1px rgb(216, 216, 219)",
+    "bg": "rgb(255, 255, 255)",
+    "font": "17px 400"
+   },
+   "back": true,
+   "backText": "Back",
+   "cardsFill": {
+    "rowW": 444,
+    "rowLeft": 408,
+    "h1Left": 400
+   },
+   "h1": "Email Them Registration Renewal Reminders?",
+   "taps": 2,
+   "tapLabels": [
+    "Yes, Email Reminders",
+    "No"
+   ],
+   "listRows": 0,
+   "inputs": 0,
+   "untranslated": false,
+   "sameLabels": [],
+   "bad": []
+  },
+  {
+   "screen": "form130U/countyOfResidence",
+   "lang": "en",
+   "kind": "list",
+   "isTap": true,
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": {
+    "cls": "ed-pay-choice",
+    "w": 236,
+    "h": 96,
+    "radius": "8px",
+    "border": "1px rgb(0, 0, 0)",
+    "bg": "rgb(238, 239, 242)",
+    "font": "17px 400"
+   },
+   "back": false,
+   "backText": null,
+   "cardsFill": {
+    "rowW": 236,
+    "rowLeft": 512,
+    "h1Left": 400
+   },
+   "h1": "Which County Do They Live In?",
+   "taps": 1,
+   "tapLabels": [
+    "Harris"
+   ],
+   "listRows": 15,
+   "inputs": 1,
+   "untranslated": false,
+   "sameLabels": [],
+   "bad": [
+    "no Back"
+   ]
+  },
+  {
+   "screen": "form130U/review",
+   "lang": "en",
+   "review": {
+    "rows": 50,
+    "missing": 0,
+    "pages": 1,
+    "h1": "Does This Look Right?"
+   }
+  },
+  {
+   "screen": "financing/paymentFrequency",
+   "lang": "en",
+   "kind": "choice",
+   "isTap": true,
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": {
+    "cls": "ed-pay-choice",
+    "w": 180,
+    "h": 132,
+    "radius": "8px",
+    "border": "1px rgb(11, 11, 12)",
+    "bg": "rgb(255, 255, 255)",
+    "font": "17px 400"
+   },
+   "back": false,
+   "backText": null,
+   "cardsFill": {
+    "rowW": 373,
+    "rowLeft": 444,
+    "h1Left": 400
+   },
+   "h1": "How Often Do They Pay?",
+   "taps": 3,
+   "tapLabels": [
+    "Weekly",
+    "Every Two Weeks",
+    "Monthly"
+   ],
+   "listRows": 0,
+   "inputs": 0,
+   "untranslated": false,
+   "sameLabels": [],
+   "bad": [
+    "no Back (first question of the document)"
+   ]
+  },
+  {
+   "screen": "financing/termsBy",
+   "lang": "en",
+   "kind": "choice",
+   "isTap": true,
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": {
+    "cls": "ed-pay-choice",
+    "w": 224,
+    "h": 132,
+    "radius": "8px",
+    "border": "1px rgb(216, 216, 219)",
+    "bg": "rgb(255, 255, 255)",
+    "font": "17px 400"
+   },
+   "back": true,
+   "backText": "Back",
+   "cardsFill": {
+    "rowW": 460,
+    "rowLeft": 400,
+    "h1Left": 400
+   },
+   "h1": "What Did You Agree On?",
+   "taps": 3,
+   "tapLabels": [
+    "The Payment Amount",
+    "The Number Of Payments",
+    "Both Of Those"
+   ],
+   "listRows": 0,
+   "inputs": 0,
+   "untranslated": false,
+   "sameLabels": [],
+   "bad": []
+  },
+  {
+   "screen": "BACK",
+   "lang": "en",
+   "from": "financing/termsBy",
+   "to": "financing/paymentFrequency",
+   "expected": "financing/paymentFrequency",
+   "ok": true,
+   "marked": [
+    "Monthly"
+   ],
+   "inputValue": null
+  },
+  {
+   "screen": "financing/paymentFrequency",
+   "lang": "en",
+   "kind": "choice",
+   "isTap": true,
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": {
+    "cls": "ed-pay-choice",
+    "w": 180,
+    "h": 132,
+    "radius": "8px",
+    "border": "1px rgb(216, 216, 219)",
+    "bg": "rgb(255, 255, 255)",
+    "font": "17px 400"
+   },
+   "back": false,
+   "backText": null,
+   "cardsFill": {
+    "rowW": 373,
+    "rowLeft": 444,
+    "h1Left": 400
+   },
+   "h1": "How Often Do They Pay?",
+   "taps": 3,
+   "tapLabels": [
+    "Weekly",
+    "Every Two Weeks",
+    "Monthly"
+   ],
+   "listRows": 0,
+   "inputs": 0,
+   "untranslated": false,
+   "sameLabels": [],
+   "bad": [
+    "no Back"
+   ]
+  },
+  {
+   "screen": "financing/termsBy",
+   "lang": "en",
+   "kind": "choice",
+   "isTap": true,
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": {
+    "cls": "ed-pay-choice",
+    "w": 224,
+    "h": 132,
+    "radius": "8px",
+    "border": "1px rgb(216, 216, 219)",
+    "bg": "rgb(255, 255, 255)",
+    "font": "17px 400"
+   },
+   "back": true,
+   "backText": "Back",
+   "cardsFill": {
+    "rowW": 460,
+    "rowLeft": 400,
+    "h1Left": 400
+   },
+   "h1": "What Did You Agree On?",
+   "taps": 3,
+   "tapLabels": [
+    "The Payment Amount",
+    "The Number Of Payments",
+    "Both Of Those"
+   ],
+   "listRows": 0,
+   "inputs": 0,
+   "untranslated": false,
+   "sameLabels": [],
+   "bad": []
+  },
+  {
+   "screen": "financing/numberOfPayments",
+   "lang": "en",
+   "kind": "choice",
+   "isTap": true,
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": {
+    "cls": "ed-pay-choice",
+    "w": 173,
+    "h": 132,
+    "radius": "8px",
+    "border": "1px rgb(0, 0, 0)",
+    "bg": "rgb(238, 239, 242)",
+    "font": "17px 400"
+   },
+   "back": true,
+   "backText": "Back",
+   "cardsFill": {
+    "rowW": 359,
+    "rowLeft": 451,
+    "h1Left": 400
+   },
+   "h1": "How Many Payments?",
+   "taps": 2,
+   "tapLabels": [
+    "36 Payments",
+    "Another Number"
+   ],
+   "listRows": 0,
+   "inputs": 0,
+   "untranslated": false,
+   "sameLabels": [],
+   "bad": []
+  },
+  {
+   "screen": "financing/apr",
+   "lang": "en",
+   "kind": "choice",
+   "isTap": true,
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": {
+    "cls": "ed-pay-choice",
+    "w": 169,
+    "h": 132,
+    "radius": "8px",
+    "border": "1px rgb(11, 11, 12)",
+    "bg": "rgb(255, 255, 255)",
+    "font": "17px 400"
+   },
+   "back": true,
+   "backText": "Back",
+   "cardsFill": {
+    "rowW": 350,
+    "rowLeft": 455,
+    "h1Left": 400
+   },
+   "h1": "What Is The Rate?",
+   "taps": 2,
+   "tapLabels": [
+    "18.00%",
+    "Another Rate"
+   ],
+   "listRows": 0,
+   "inputs": 0,
+   "untranslated": false,
+   "sameLabels": [],
+   "bad": []
+  },
+  {
+   "screen": "financing/firstPaymentDate",
+   "lang": "en",
+   "kind": "dateChoice",
+   "isTap": true,
+   "h1Count": 1,
+   "h1Font": "\"Barlow Semi Condensed\" 42px 450",
+   "card": {
+    "cls": "ed-pay-choice",
+    "w": 155,
+    "h": 132,
+    "radius": "8px",
+    "border": "1px rgb(11, 11, 12)",
+    "bg": "rgb(255, 255, 255)",
+    "font": "17px 400"
+   },
+   "back": true,
+   "backText": "Back",
+   "cardsFill": {
+    "rowW": 322,
+    "rowLeft": 469,
+    "h1Left": 400
+   },
+   "h1": "When Is The First Payment Due?",
+   "taps": 3,
+   "tapLabels": [
+    "In One Month",
+    "In Two Months",
+    "Another Date"
+   ],
+   "listRows": 0,
+   "inputs": 0,
+   "untranslated": false,
+   "sameLabels": [],
+   "bad": []
+  },
+  {
+   "screen": "financing/review",
+   "lang": "en",
+   "review": {
+    "rows": 39,
+    "missing": 0,
+    "pages": 3,
+    "h1": "Does This Look Right?"
+   }
+  }
+ ],
+ "failures": [],
+ "errors": []
+}

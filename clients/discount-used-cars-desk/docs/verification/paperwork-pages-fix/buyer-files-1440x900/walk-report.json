@@ -1,0 +1,35 @@
+{
+ "deskCommit": "unknown",
+ "dirty": null,
+ "scenario": "scenarios/buyer-files.json",
+ "deal": "/admin/sales/preview-deals-24",
+ "viewport": [
+  1440,
+  900
+ ],
+ "ended": "packet",
+ "screens": [
+  "funding",
+  "paid",
+  "price",
+  "plan:registration",
+  "plan:price-includes",
+  "plan:inspection",
+  "plan:insurance",
+  "document:billOfSale",
+  "billOfSale/odometerStatus",
+  "billOfSale/paymentMethod",
+  "billOfSale/tradeIn",
+  "billOfSale/conditionType",
+  "billOfSale/review",
+  "document:billOfSale",
+  "document:vehicleResponsibility",
+  "vehicleResponsibility/review",
+  "document:vehicleResponsibility",
+  "document:insuranceAcknowledgment",
+  "insuranceAcknowledgment/review",
+  "document:insuranceAcknowledgment"
+ ],
+ "contrastFailures": 0,
+ "at": "2026-10-03T20:58:46.268Z"
+}

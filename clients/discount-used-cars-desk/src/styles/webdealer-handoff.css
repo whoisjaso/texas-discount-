@@ -1,0 +1,21 @@
+/* Keep the value and its copy action together on a phone. */
+@media (max-width: 639px) {
+  .ed-handoff-list .ed-handoff-row {
+    grid-template-columns: minmax(0, 1fr) 44px;
+    column-gap: 12px;
+  }
+
+  .ed-handoff-row .ed-handoff-label,
+  .ed-handoff-row .ed-handoff-value,
+  .ed-handoff-row .ed-handoff-missing {
+    grid-column: 1;
+  }
+
+  .ed-handoff-row .ed-handoff-copy {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

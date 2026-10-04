@@ -1,0 +1,52 @@
+.ed-ask-actions:has(.ed-hold-confirm) {
+  flex-wrap: wrap;
+}
+
+.ed-ask-actions .ed-hold-confirm {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-width: 15rem;
+  min-height: 48px;
+  justify-content: space-between;
+  gap: 12px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.ed-hold-confirm-fill {
+  position: absolute;
+  inset: 0;
+  background: rgb(255 255 255 / 20%);
+  transform-origin: left center;
+  pointer-events: none;
+}
+
+.ed-hold-confirm-label,
+.ed-hold-confirm-value {
+  position: relative;
+}
+
+.ed-hold-confirm-value {
+  min-width: 4ch;
+  font-family: var(--font-geist-mono), monospace;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+@media (max-width: 480px) {
+  .ed-ask-actions:has(.ed-hold-confirm) {
+    flex-direction: column-reverse;
+  }
+  .ed-ask-actions:has(.ed-hold-confirm) .tj-action-base {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ed-hold-confirm-fill {
+    display: none;
+  }
+}

@@ -1,0 +1,348 @@
+{
+  "_note": "The worked example: these inputs reproduce clients/discount-used-cars-demo (part A, approved as out/demo-v1.mp4; with partB, the site + desk film out/discount-demo.mp4). Paths are relative to the repo root.",
+  "slug": "discount-used-cars",
+  "client": "Discount Used Cars and Trucks (Houston)",
+  "siteDir": "clients/discount-used-cars-site",
+  "domain": "discountusedcarsandtrucks.com",
+  "partBDomain": "desk.discountusedcarsandtrucks.com",
+  "_partBDomain": "Owner-confirmed desk host (on the film's fact list), shown in the URL pill from the first desk frame.",
+  "partB": {
+    "cuts": {
+      "signinPainted": 12,
+      "saleSkeleton": [
+        42,
+        55
+      ],
+      "readbackRelease": [
+        108,
+        134
+      ]
+    },
+    "docFileName": "130-U_Carter_812345.pdf",
+    "clock": "2026-10-02T14:00:00-05:00",
+    "_onboarding": "Not set: the shipped film (2026-10-02) predates Your Fees, so its 'fresh' owner met no fees step. Before re-capturing on today's desk, ask the user (D-16): owner-fees (with partB.demoFee) or sales."
+  },
+  "deskClock": "2026-10-02T14:00:00-05:00",
+  "_deskClock": "The day the off-camera deals were signed (the server's date), 14:00 CDT; the pad's \"Signed: 10/02/2026\" matches the documents.",
+  "demo": {
+    "phone": "7135550142",
+    "addressPartB": {
+      "street": "1418 Belrose Dr",
+      "city": "Houston",
+      "zip": "77034",
+      "county": "Harris",
+      "checkedOn": "2026-10-02",
+      "how": "searched before capture (lesson B13): the real Belrose Dr is in 77035 and numbered 55xx-59xx, so 1418 in 77034 is no household"
+    },
+    "addressNarrated": {
+      "street": "10418 Almeda Genoa Rd",
+      "city": "Houston",
+      "zip": "77034",
+      "county": "Harris",
+      "checkedOn": "2026-10-02",
+      "how": "Census geocoder onelineaddress (Public_AR_Current) returned a match in Harris County; no home listing found at that number (lessons N2, B13)"
+    }
+  },
+  "deskUrl": "https://desk.discountusedcarsandtrucks.com",
+  "facts": [
+    "www.discountusedcarsandtrucks.com",
+    "(713) 900-5050",
+    "8108 Gulf Fwy, Houston",
+    "Tue – Sat 10 AM – 7 PM"
+  ],
+  "outroLines": [
+    "www.discountusedcarsandtrucks.com",
+    "(713) 900-5050 · 8108 Gulf Fwy, Houston",
+    "Tue – Sat 10 AM – 7 PM"
+  ],
+  "brand": {
+    "mark": "clients/discount-used-cars-site/public/brand/discount-mark.png",
+    "logoReverse": "clients/discount-used-cars-site/public/brand/discount-logo-reverse.png"
+  },
+  "word": "DISCOUNT",
+  "introKey": "discount.intro.seen",
+  "clock": "2026-09-30T14:00:00-05:00",
+  "timezone": "America/Chicago",
+  "loader": {
+    "viewport": [
+      1440,
+      900
+    ],
+    "stage": [
+      540,
+      378.53,
+      360,
+      142.94
+    ],
+    "mark": [
+      540,
+      378.53,
+      360,
+      48.94
+    ],
+    "word": [
+      607.5,
+      451.47,
+      240,
+      45
+    ],
+    "wordFont": {
+      "size": 30,
+      "lineHeight": 45,
+      "weight": 600,
+      "trackingEm": 0.5,
+      "color": "#FFFFFF"
+    },
+    "cover": [
+      520,
+      366,
+      400,
+      136
+    ],
+    "coverColor": "#000000",
+    "wordDoneSec": 1.5
+  },
+  "stingMarkWidth": 600,
+  "logoWidth": 760,
+  "storyboard": {
+    "HERO_ANCHOR": [
+      0.75,
+      0.72
+    ],
+    "BODY": "Truck",
+    "BODY_FOCUS": {
+      "x": 375,
+      "y": 385
+    },
+    "HOURS_FOCUS": {
+      "x": 400,
+      "y": 422
+    },
+    "FINDER_QUERY": "F-150",
+    "SERVICE_TILE": "We buy trucks",
+    "SERVICE_FOCUS": {
+      "x": 740,
+      "y": 623
+    },
+    "PHONE_SWIPE_2": 430,
+    "PHONE_SWIPE_3": 450
+  },
+  "overrides": [],
+  "_narration": "The narrated long cut's variables (assets/narration/script-template.md, 'Variables'). scripts/fill-narration.cjs fills the house script with them and gives the approved 24 lines exactly (fill-narration.cjs selftest; narration-lines.json beside this file is the shipped set, clients/discount-used-cars-demo/narration/lines-timed.json without its lengths).",
+  "narration": {
+    "ROAD_SAID": "Gulf Freeway",
+    "STOCK_SAID": "truck, car and SUV",
+    "FEES_SAID": "tax, title, registration and doc fee",
+    "LEGAL_NAME_SAID": "Discount Used Cars And Trucks, L L C",
+    "DEALER_NAME_SAID": "Discount Used Cars and Trucks",
+    "CLOSE_TAGLINE": "More buyers through the door. Less time on paperwork. Fewer mistakes that cost you money.",
+    "SELL_BAND_NAME": "We Buy Cars",
+    "LEGAL_NAME": "Discount Used Cars And Trucks, LLC",
+    "DEMO_STAFF": "Maria Lopez",
+    "DEMO_BUYER": "James Carter",
+    "DEMO_CAR": "2019 Toyota Camry SE",
+    "DEMO_ADDRESS": "10418 Almeda Genoa Rd, Houston 77034",
+    "DEMO_COUNTY": "Harris",
+    "SELL_BAND": true,
+    "SPANISH_DOCS": true,
+    "SELLER_LIEN": true,
+    "checked": {
+      "on": "2026-10-02",
+      "how": "Every claim checked against the desk's code and filmed on its preview mock in one whole sale (clients/discount-used-cars-demo/narration/script-v1.md and README.md).",
+      "features": [
+        "site-hero-road",
+        "site-lineup-finder",
+        "site-sell-band",
+        "desk-admin-row",
+        "onboarding-signature",
+        "car-from-inventory",
+        "odometer-from-inventory",
+        "spanish-documents",
+        "id-scan",
+        "address-lookup",
+        "address-readback",
+        "price-and-fees-question",
+        "receipt-math",
+        "seller-lien",
+        "who-files",
+        "inspection-status",
+        "130u-county",
+        "130u-seller-line",
+        "phone-signing",
+        "past-sales"
+      ]
+    },
+    "cut": [],
+    "speak": {},
+    "anchors": {
+      "01-site-a": {
+        "seg": "1",
+        "event": "frame"
+      },
+      "02-site-b": {
+        "seg": "2a",
+        "event": "frame"
+      },
+      "03-site-c": {
+        "seg": "3",
+        "event": "frame"
+      },
+      "04-signin-a": {
+        "seg": "4",
+        "event": "frame"
+      },
+      "05-signin-b": {
+        "seg": "7a",
+        "event": "type",
+        "nth": 0
+      },
+      "06-signin-c": {
+        "seg": "7a",
+        "event": "draw",
+        "nth": 0,
+        "end": true
+      },
+      "07-car-a": {
+        "seg": "20",
+        "event": "frame"
+      },
+      "08-car-b": {
+        "seg": "20",
+        "event": "click",
+        "nth": 1
+      },
+      "09-car-c": {
+        "seg": "20",
+        "event": "click",
+        "nth": 2
+      },
+      "10-buyer-a": {
+        "seg": "21a",
+        "event": "click",
+        "nth": 0
+      },
+      "11-buyer-b": {
+        "seg": "21c",
+        "event": "type",
+        "nth": 0
+      },
+      "12-buyer-c": {
+        "seg": "21c",
+        "event": "frame"
+      },
+      "13-buyer-d": {
+        "seg": "21c",
+        "event": "hold",
+        "nth": 0
+      },
+      "14-money-a": {
+        "seg": "22b",
+        "event": "frame"
+      },
+      "15-money-b": {
+        "seg": "22b",
+        "event": "click",
+        "nth": 2
+      },
+      "16-money-c": {
+        "overlay": "docA",
+        "event": "doc",
+        "doc": 0,
+        "key": 0
+      },
+      "17-plan-a": {
+        "seg": "23a",
+        "event": "frame"
+      },
+      "18-plan-b": {
+        "seg": "23d",
+        "event": "frame"
+      },
+      "19-payoff-a": {
+        "overlay": "docB",
+        "event": "doc",
+        "doc": 0,
+        "key": 0
+      },
+      "20-payoff-b": {
+        "overlay": "docB",
+        "event": "doc",
+        "doc": 0,
+        "key": 1
+      },
+      "21-payoff-c": {
+        "overlay": "docB",
+        "event": "doc",
+        "doc": 0,
+        "key": 4
+      },
+      "22-stored-a": {
+        "seg": "24",
+        "event": "frame"
+      },
+      "23-stored-b": {
+        "seg": "27c",
+        "event": "type",
+        "nth": 0
+      },
+      "24-close": {
+        "outro": true,
+        "event": "frame"
+      }
+    },
+    "exceptions": {
+      "11-buyer-b": "typing starts 0.13 s before 'street' (the cursor is already in the field; the address is typed as the line names it)",
+      "21-payoff-c": "the push back to the whole certification block starts as the line starts, 1.0 s before 'signed'; the caption lands 0.2 s before the word",
+      "23-stored-b": "'Carter' starts typing 0.07 s before 'search' (heard as one movement)"
+    },
+    "_anchors": "Each line's key word and the action it names (scripts/narrated-plan.cjs reads them, prints the lip-to-picture table and gates it). Derived from the shipped plan.ts and its README table."
+  },
+  "_zoomCopy": "Written by measure-site.cjs --storyboard … --into: the text each zoom shows (follow zooms approximate). The README lists it for the owner.",
+  "zoomCopy": {
+    "1-hero zoom 0 (1.5x)": [
+      "Cars & trucks.",
+      "For less.",
+      "Easy financing and fair prices at 8108 Gulf Freeway, Houston.",
+      "Explore the inventory",
+      "Get pre-qualified"
+    ],
+    "2-scroll zoom 0 (2x)": [
+      "Trucks"
+    ],
+    "2-scroll zoom 1 (1.8x)": [
+      "Visit us on the Gulf Freeway",
+      "8108 Gulf Fwy",
+      "Houston, TX 77017",
+      "On the southbound Gulf Freeway feeder, between Dixie Dr & Delwood St",
+      ". Walk the lot, sit in the car, or bring yours in for an offer.",
+      "Open now",
+      "Tue – Sat, 10 AM – 7 PM",
+      "Get directions"
+    ],
+    "2-scroll zoom 2 (1.5x), approx.": [
+      "Find your next pre-owned vehicle.",
+      "Search the lot by make, model or colour. Every price is shown plainly, or call for today’s price.",
+      "Make, model or colour",
+      "Search"
+    ],
+    "3-buy zoom 0 (2x)": [
+      "We buy trucks",
+      "We buy SUVs"
+    ],
+    "4-menu zoom 0 (1.8x), approx.": [
+      "Financing",
+      "Easy financing, clear terms",
+      "Visit & Contact",
+      "8108 Gulf Fwy, Houston",
+      "Admin",
+      "Staff sign-in to the sale desk",
+      "Call",
+      "(713) 900-5050",
+      "Open now",
+      "Tue – Sat, 10 AM – 7 PM",
+      "Go to We Buy Cars",
+      "We buy cars",
+      "We buy trucks"
+    ]
+  }
+}

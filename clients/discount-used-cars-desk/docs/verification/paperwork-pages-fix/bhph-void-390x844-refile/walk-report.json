@@ -1,0 +1,25 @@
+{
+ "deskCommit": "unknown",
+ "dirty": null,
+ "scenario": "scenarios/bhph-void.json",
+ "deal": "/admin/sales/preview-deals-15",
+ "viewport": [
+  390,
+  844
+ ],
+ "ended": "packet",
+ "screens": [
+  "document:billOfSale",
+  "billOfSale/review",
+  "document:billOfSale",
+  "document:form130U",
+  "form130U/review",
+  "document:form130U",
+  "document:financing",
+  "financing/review",
+  "document:financing",
+  "title"
+ ],
+ "contrastFailures": 0,
+ "at": "2026-10-03T21:46:19.449Z"
+}

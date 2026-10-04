@@ -1,0 +1,101 @@
+{
+ "car": "2019 Toyota Camry SE",
+ "language": "en",
+ "title": "Clean title",
+ "first": "James",
+ "last": "Carter",
+ "phone": "7135550142",
+ "idNumber": "41927365",
+ "street": "10418 Almeda Genoa Rd",
+ "city": "Houston",
+ "zip": "77034",
+ "county": "Harris",
+ "answers": {
+  "funding": {
+   "button": "Cash",
+   "exact": true
+  },
+  "paid": [
+   {
+    "fill": "main input",
+    "value": "9500"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "price": [
+   {
+    "button": "No"
+   },
+   {
+    "button": "They are paying some other amount today"
+   },
+   {
+    "fill": ".ed-money-adjust-field input",
+    "value": "6000"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "plan:registration": {
+   "button": "We Do"
+  },
+  "plate": {
+   "button": "No plate yet"
+  },
+  "plan:title-signer": {
+   "button": "The Buyer, Here Today"
+  },
+  "plan:inspection": {
+   "button": "Already Passed"
+  },
+  "plan:insurance": {
+   "button": "Yes, Shown Today"
+  },
+  "odometerStatus": {
+   "button": "Yes, That Is The Real Mileage"
+  },
+  "paymentMethod": {
+   "text": "Cash"
+  },
+  "tradeIn": {
+   "text": "No"
+  },
+  "conditionType": {
+   "text": "As-Is"
+  },
+  "countyOfResidence": {
+   "button": "Next",
+   "exact": true
+  },
+  "applicationType": {
+   "text": "Title And Registration"
+  },
+  "applicantType": {
+   "text": "A Person"
+  },
+  "emptyWeight": [
+   {
+    "fill": "main input",
+    "value": "3340"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
+  "carryingCapacity": {
+   "button": "Next",
+   "exact": true
+  },
+  "issuingState": {
+   "button": "Next",
+   "exact": true
+  }
+ },
+ "mileage": 89517
+}

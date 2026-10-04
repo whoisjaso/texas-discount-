@@ -1,0 +1,227 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { PDFDocument, StandardFonts } from "pdf-lib";
+import { fontFor } from "@/lib/pdf/unicode-text";
+import { dealership, dealerSignerPrintedName, factOr } from "@/lib/dealership-config";
+import { fillDealerPrintedName, type PrintedNameLayout } from "@/lib/forms/dealer-printed-name-field";
+import { VTR61_COMPONENTS, type Vtr61Part } from "@/lib/vehicles/title-work-evidence";
+
+/**
+ * The real VTR-61, Rebuilt Vehicle Statement, filled from the car.
+ *
+ * `public/forms/VTR-61.pdf` is the TxDMV form (Rev 01/25) with its own
+ * fields. The desk fills what the car and the dealership already know: the
+ * VIN, year, make, model and body style; the dealership as owner, with its
+ * address; the dealership as rebuilder when it did the work; the date the
+ * work was finished and what it was; and page 2, the component parts, from
+ * the title work's own record of them, each with where it came from and
+ * the donor VIN when it came off another car. The certifications are
+ * signed in ink by the rebuilder and by us, so the signature lines are left
+ * for the pen.
+ *
+ * Wherever the dealership is the owner or the rebuilder, the
+ * "Printed Name (Same as Signature)" beside that signature line is the
+ * dealer's legal name with the person who prints the form in parentheses,
+ * "Legal Name, LLC (First Last)", exactly as the 130-U seller line prints it
+ * (owner's decision 10/01/2026; SOP 130-U bullet: "wherever a state form asks
+ * for the dealer's printed name beside a dealer signature"). The person is
+ * the cleared, onboarded member printing it (`dealerSignerName`; the routes
+ * refuse anyone else), with the same fit rules and two-line layout as the
+ * seller line. The entity rows above stay the entity alone: they name the
+ * owner and the rebuilder, not who signs for them. A party that is not the
+ * dealership prints its own name, as typed.
+ *
+ * Field names are the form's own, read from its AcroForm; a form revision
+ * that renames them fails loudly here rather than filling the wrong box.
+ */
+
+const PDF_PATH = join(process.cwd(), "public", "forms", "VTR-61.pdf");
+
+export type Vtr61Input = {
+  vin: string;
+  year?: string | number | null;
+  make?: string | null;
+  model?: string | null;
+  bodyStyle?: string | null;
+  /** Standalone Templates records its actual owner; inventory defaults remain. */
+  ownerName?: string | null;
+  /** The rebuilder, when not the dealership. */
+  rebuilderName?: string | null;
+  /** The form's address row belongs to the rebuilder. */
+  rebuilderAddress?: string | null;
+  /** When the work was finished, as the desk types it. */
+  dateWorkCompleted?: string | null;
+  /** The rebuilder's account of the work, for the details box. */
+  workPerformed?: string | null;
+  /** Page 2: the component parts used, from the title work's record. */
+  parts?: readonly Vtr61Part[] | null;
+  /** When no part was replaced, the statement that says so, printed in the details box. */
+  laborStatement?: string | null;
+  /**
+   * The person printing the form, named as onboarding saved them (the
+   * parentheses of the dealer's printed name). Null or absent prints the
+   * "[Not set: signer name]" marker, never the entity alone; the routes
+   * refuse that unless DESK_ALLOW_UNSET_FACTS lifts it for a demo.
+   */
+  dealerSignerName?: string | null;
+};
+
+const FIELDS = {
+  vin: "Vehicle Identification Number",
+  year: "Year",
+  make: "Make",
+  bodyStyle: "Body Style",
+  model: "Model",
+  ownerName: "First Name or Entity Name Middle Name Last Name Suffix if any",
+  rebuilderName: "First Name or Entity Name Middle Name Last Name Suffix if any_2",
+  ownerAddress: "Address City State Zip",
+  dateWorkCompleted: "Date Work Completed",
+  workPerformed: "1",
+  rebuilderPrintedName: "Printed Name (Same as Signature)",
+  ownerPrintedName: "Printed Name (Same as Signature)_2",
+} as const;
+
+/*
+  The two printed-name boxes, measured on public/forms/VTR-61.pdf (Rev
+  01/25). Both are 226.43pt wide. The rebuilder's sits at y 221.55 and is
+  23.64 tall, with its rule at y 224.5 to 224.9 and the certification text
+  above ending at y 245.3; the owner's sits at y 141.52 and is 22.33 tall,
+  with its rule at y 143.6 to 144.1 and the text above ending at y 164.4.
+  Two lines at 7.25pt on these baselines clear both rules (the lower line's
+  descenders end about 2.3pt above the higher rule) and stay inside both
+  boxes and under the text above.
+*/
+const VTR61_PRINTED_NAME_BASELINES = { upper: 14.6, lower: 7.2 } as const;
+
+const PRINTED_NAME_LAYOUT: Record<"owner" | "rebuilder", PrintedNameLayout> = {
+  owner: { baselines: VTR61_PRINTED_NAME_BASELINES, label: "VTR-61 owner's printed name", box: "owner's printed name box" },
+  rebuilder: {
+    baselines: VTR61_PRINTED_NAME_BASELINES,
+    label: "VTR-61 rebuilder's printed name",
+    box: "rebuilder's printed name box",
+  },
+};
+
+function clean(value: unknown): string {
+  return value === null || value === undefined ? "" : String(value).trim();
+}
+
+/**
+ * An entity name folded so the dealership is recognised however it was typed:
+ * case, spacing, "&" for "and", the punctuation, and the closing "LLC" (or
+ * "L.L.C.") ignored. The standalone form takes the owner and the rebuilder as
+ * free text, and "Discount Used Cars & Trucks LLC" is still the dealership:
+ * read as a stranger, it would print the entity alone beside the dealer's
+ * signature and skip the cleared, onboarded signer the pairing requires.
+ */
+function foldEntityName(value: string): string {
+  return value
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[.,'’"]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/ (llc|l l c|limited liability company)$/, "")
+    .trim();
+}
+
+/** Whether a typed party is the dealership: its legal name or the name it trades under. */
+function isDealershipName(typed: string): boolean {
+  const folded = foldEntityName(typed);
+  if (!folded) return false;
+  return [dealership.legalName, dealership.name].some((name) => Boolean(name) && foldEntityName(name ?? "") === folded);
+}
+
+/**
+ * Which of the two certifying parties is the dealership: the owner when the
+ * form is filled for the dealership's own car (no owner given) or names the
+ * dealership, and the rebuilder when it is the owner (no other rebuilder
+ * given) or names the dealership (`isDealershipName`: however the name was
+ * typed). Exported so the routes ask for a signer exactly when the form will
+ * print one.
+ */
+export function vtr61DealerParties(input: Pick<Vtr61Input, "ownerName" | "rebuilderName">): {
+  owner: boolean;
+  rebuilder: boolean;
+} {
+  const isDealer = isDealershipName;
+  const owner = input.ownerName === undefined || isDealer(clean(input.ownerName));
+  const rebuilderGiven = clean(input.rebuilderName);
+  const rebuilder = rebuilderGiven ? isDealer(rebuilderGiven) : owner;
+  return { owner, rebuilder };
+}
+
+export async function fillVtr61(input: Vtr61Input): Promise<Uint8Array> {
+  const bytes = await readFile(PDF_PATH);
+  const pdf = await PDFDocument.load(bytes);
+  const form = pdf.getForm();
+  const helvetica = await pdf.embedFont(StandardFonts.Helvetica);
+
+  const dealerParty = vtr61DealerParties(input);
+  // The dealership's entity rows print its legal name, however it was typed.
+  const legal = factOr(dealership.legalName, "dealer legal name");
+  const owner = input.ownerName === undefined || dealerParty.owner ? legal : clean(input.ownerName);
+  const rebuilder = dealerParty.rebuilder ? legal : clean(input.rebuilderName) || owner;
+  // The pairing, never the entity alone, beside a signature the dealership gives.
+  const printedByDealer = dealerSignerPrintedName(input.dealerSignerName);
+  const address = input.rebuilderAddress === undefined ? `${dealership.address.street}, ${dealership.address.locality}, ${dealership.address.region} ${dealership.address.postalCode}` : clean(input.rebuilderAddress);
+
+  // The details box carries the work, and the no-parts statement when
+  // there is one, because the county reads an empty page 2 as unfinished
+  // unless the statement says why it is empty.
+  const details = [clean(input.workPerformed), clean(input.laborStatement)].filter(Boolean).join(" ");
+
+  const values: Record<string, string> = {
+    [FIELDS.vin]: clean(input.vin).toUpperCase(),
+    [FIELDS.year]: clean(input.year),
+    [FIELDS.make]: clean(input.make),
+    [FIELDS.model]: clean(input.model),
+    [FIELDS.bodyStyle]: clean(input.bodyStyle),
+    [FIELDS.ownerName]: owner,
+    [FIELDS.ownerAddress]: address,
+    [FIELDS.rebuilderName]: rebuilder,
+    [FIELDS.dateWorkCompleted]: clean(input.dateWorkCompleted),
+    [FIELDS.workPerformed]: details,
+  };
+  // A party that is not the dealership prints its own name in its box, as
+  // before; the dealership's boxes are filled below by the printed-name rules.
+  if (!dealerParty.rebuilder) values[FIELDS.rebuilderPrintedName] = rebuilder;
+  if (!dealerParty.owner) values[FIELDS.ownerPrintedName] = owner;
+
+  /*
+    Page 2, one line per component. The form has one origin box and one
+    number box per part, so two entries for the same component share the
+    boxes, separated. The donor VIN goes inside the origin box, because
+    that is what the form's own instructions ask: "purchased from, name
+    and complete address" or the vehicle it came from.
+  */
+  for (const component of VTR61_COMPONENTS) {
+    const entries = (input.parts ?? []).filter((part) => part.component === component.key);
+    if (entries.length === 0) continue;
+    values[component.origin] = entries
+      .map((part) => [part.origin, part.donorVin ? `Donor VIN ${part.donorVin}` : ""].filter(Boolean).join(", "))
+      .join("; ");
+    values[component.number] = entries.map((part) => part.partNumber).filter(Boolean).join("; ");
+  }
+
+  // Helvetica, unless a name or an origin has a letter it cannot print.
+  const { font } = await fontFor(pdf, helvetica, [...Object.values(values), printedByDealer]);
+  for (const [name, value] of Object.entries(values)) {
+    const field = form.getTextField(name);
+    field.setText(value);
+    field.updateAppearances(font);
+  }
+
+  // Explicit, like the 130-U seller line: a name the form cannot print, or
+  // one the box would clip, refuses the render rather than leaving a blank
+  // or cut-off box beside the signature.
+  if (dealerParty.rebuilder) {
+    fillDealerPrintedName(form, font, FIELDS.rebuilderPrintedName, printedByDealer, PRINTED_NAME_LAYOUT.rebuilder);
+  }
+  if (dealerParty.owner) {
+    fillDealerPrintedName(form, font, FIELDS.ownerPrintedName, printedByDealer, PRINTED_NAME_LAYOUT.owner);
+  }
+
+  return pdf.save();
+}
