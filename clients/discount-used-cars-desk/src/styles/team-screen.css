@@ -1,0 +1,180 @@
+/*
+  The team screen (/admin/dealership/team). Paper surfaces, ruled rows, the
+  theme's own tokens only: ink on plane, muted for the quiet lines, the
+  accent only on the check that marks a fact as true.
+*/
+
+.ed-team-heading {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--tj-ink);
+}
+
+.ed-team-fine {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--tj-muted);
+}
+
+.ed-team-list {
+  margin-top: 12px;
+  border-top: 1px solid var(--tj-line);
+}
+
+.ed-team-row {
+  display: grid;
+  gap: 14px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--tj-line);
+}
+
+.ed-team-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 4px;
+}
+
+@media (min-width: 900px) {
+  .ed-team-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    align-items: start;
+    gap: 24px;
+  }
+}
+
+.ed-team-who {
+  min-width: 0;
+}
+
+.ed-team-name {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--tj-ink);
+  overflow-wrap: anywhere;
+}
+
+.ed-team-you {
+  font-weight: 500;
+  color: var(--tj-muted);
+}
+
+.ed-team-email {
+  margin-top: 2px;
+  font-size: 14px;
+  color: var(--tj-ink);
+  overflow-wrap: anywhere;
+}
+
+.ed-team-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 8px;
+}
+
+.ed-team-facts li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--tj-ink);
+}
+
+/* A fact that holds is marked with the accent and a filled check, never colour alone. */
+.ed-team-facts svg {
+  flex: none;
+  color: var(--tj-accent);
+}
+
+.ed-team-approve,
+.ed-team-controls {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ed-team-select {
+  font-size: 16px;
+}
+
+.ed-team-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: 8px;
+}
+
+@media (min-width: 900px) {
+  .ed-team-actions {
+    display: flex;
+    flex-wrap: wrap;
+  }
+}
+
+.ed-team-name-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 4px;
+  padding: 14px;
+  border: 1px solid var(--tj-line);
+  border-radius: var(--radius-small);
+  background: var(--tj-surface);
+}
+
+.ed-team-name-form .ed-input {
+  font-size: 16px;
+}
+
+.ed-team-name-boxes {
+  display: grid;
+  gap: 10px;
+}
+
+@media (min-width: 600px) {
+  .ed-team-name-boxes {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.ed-team-secret {
+  margin: 12px 0 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--tj-line);
+  border-radius: var(--radius-small);
+  background: var(--tj-surface);
+  color: var(--tj-ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.ed-team-history {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.ed-team-history li {
+  display: grid;
+  gap: 2px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--tj-ink);
+}
+
+.ed-team-when {
+  font-size: 12px;
+  color: var(--tj-muted);
+}
+
+.ed-team-quiet {
+  padding: 0 4px;
+}
+
+.ed-team-password {
+  margin-bottom: 16px;
+}

@@ -24,6 +24,12 @@ export const ADMIN_WORKSPACE_COOKIE = "discount-admin-workspace";
 
 export const DEALERSHIP_HOME = "/admin/sales";
 
+/**
+ * The team screen. /admin/team (the owner-alert email's link) resolves here,
+ * as does the signature page's "Open Team Access".
+ */
+export const TEAM_SCREEN = "/admin/dealership/team";
+
 export const WORKSPACE_DASHBOARDS: Record<AdminWorkspace, string> = {
   dealership: DEALERSHIP_HOME,
 };
@@ -102,7 +108,7 @@ export function getCanonicalWorkspaceRoute(
     "/admin/agreements": { dealership: "/admin/dealership/agreements" },
     "/admin/analytics": { dealership: "/admin/dealership/analytics" },
     "/admin/automation": { dealership: "/admin/dealership/automation" },
-    "/admin/team": { dealership: "/admin/dealership/team" },
+    "/admin/team": { dealership: TEAM_SCREEN },
     "/admin/customers": { dealership: "/admin/dealership/customers" },
     "/admin/fleet-census": { dealership: "/admin/dealership/fleet-census" },
   };

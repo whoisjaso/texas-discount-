@@ -4,6 +4,7 @@ import StaffSignatureClient from "./StaffSignatureClient";
 import { AdminPageHeader, AdminShell } from "@/components/admin/ui";
 import { getCurrentAdminAccess } from "@/lib/admin/current-admin";
 import { roleOpensAdminRoute } from "@/lib/admin/route-permissions";
+import { TEAM_SCREEN } from "@/lib/admin/workspace";
 import { getStaffSignature } from "@/lib/actions/staff-signature";
 import { dealership } from "@/lib/dealership-config";
 
@@ -49,7 +50,7 @@ export default async function AdminAccountSignaturePage() {
       />
       <StaffSignatureClient
         canSign={access.member?.can_sign_contracts === true}
-        canOpenTeam={roleOpensAdminRoute(access.role, "/admin/dealership/team")}
+        canOpenTeam={roleOpensAdminRoute(access.role, TEAM_SCREEN)}
         name={signature.name}
         recordedLabel={recordedLabel(signature.updatedAt)}
         signature={signature.dataUrl}

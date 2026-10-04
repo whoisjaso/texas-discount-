@@ -182,7 +182,11 @@ describe("a reset reaches the database, and an unreadable one is said out loud",
   it("is called by every path that records a reset", () => {
     const source = readFileSync("src/lib/actions/team-access.ts", "utf8");
     expect(source.match(/await endSessionsBefore\(/g)).toHaveLength(3);
-    expect(source.match(/password_reset_at: passwordResetAt,/g)?.length).toBeGreaterThanOrEqual(5);
+    // The auth-only approval, the roster approval (one metadata object for an
+    // existing account and a new one alike), its record, and the reset.
+    expect(source.match(/password_reset_at: passwordResetAt,/g)?.length).toBeGreaterThanOrEqual(4);
+    const approval = source.slice(source.indexOf("export async function reviewTeamAccessAction"), source.indexOf("async function resetApprovedMemberAccess"));
+    expect(approval.match(/app_metadata: appMetadata,/g)).toHaveLength(2);
   });
 
   it("logs a reset time nobody can read rather than passing over it", () => {

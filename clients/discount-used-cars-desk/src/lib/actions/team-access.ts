@@ -4,14 +4,27 @@ import { randomBytes } from "crypto";
 import { endSessionsBefore } from "@/lib/auth/end-sessions";
 import { revalidatePath } from "next/cache";
 import type { User } from "@supabase/supabase-js";
-import { requireCurrentAdminPermission } from "@/lib/admin/current-admin";
+import { getCurrentAdminAccess, requireCurrentAdminPermission } from "@/lib/admin/current-admin";
 import { createServiceClient } from "@/lib/supabase/service";
 import {
+  hasTeamPermission,
   isTeamRole,
   ROLE_LABELS,
-  roleSignsByDefault,
   type TeamRole,
 } from "@/lib/operations/team";
+import {
+  approvalKeepsClearance,
+  approvalRefusal,
+  checkCorrectedName,
+  clearanceAtApproval,
+  nameCorrectionRefusal,
+  removalRefusal,
+  resetRefusal,
+  signingRefusal,
+  teamRefusalSentence,
+  type TeamActor,
+} from "@/lib/onboarding/team-rules";
+import { SIGNED_OUT_RESET_MESSAGE } from "@/lib/auth/password-reset-cutoff";
 import type { TeamMember } from "@/lib/operations/types";
 import { SITE_URL } from "@/lib/dealership-config";
 import { sendEmail, recipientFingerprint } from "@/lib/email/send";
@@ -48,8 +61,15 @@ export type TeamAccessReviewState = {
   ok: boolean;
   message?: string;
   error?: string;
+  /** Why it was refused, when a team rule refused it (team-rules.ts, or a name problem). */
+  code?: string;
   email?: string;
   fullName?: string;
+  /**
+   * Shown once. Every approval issues one (an account that already existed
+   * for the address gets it in place of its old password); a reset only when
+   * it had to create the account (SOP "First sign-in: onboarding", item 1).
+   */
   temporaryPassword?: string;
 };
 
@@ -107,15 +127,11 @@ function existingRequestResult(status: unknown): TeamAccessRequestState | null {
   return null;
 }
 
-/**
- * The signing clearance an approval starts a person with: Owner, Manager and
- * Registration cleared, every other role not (owner's decision 10/01/2026;
- * `roleSignsByDefault`). Only the default: an owner turns signing on or off
- * for one person afterwards, and nothing here rewrites that choice except a
- * fresh approval.
- */
-function canRoleSignContracts(role: TeamRole): boolean {
-  return roleSignsByDefault(role);
+/** Added to an action's answer when the change went through but its history line did not. */
+const NOT_RECORDED = "The change was made but could not be recorded.";
+
+function withRecordNote(message: string, recorded: boolean): string {
+  return recorded ? message : `${message} ${NOT_RECORDED}`;
 }
 
 function siteBaseUrl(): string {
@@ -353,7 +369,7 @@ async function saveAuthOnlyAccessRequest({
     if (error) return { ok: false, error: "Access request could not be created yet." };
   }
 
-  revalidatePath("/admin/team");
+  revalidateTeam();
   await notifyOwnerOfAccessRequest({ email, fullName, note, role });
   return {
     ok: true,
@@ -362,6 +378,13 @@ async function saveAuthOnlyAccessRequest({
   };
 }
 
+/**
+ * The history line for an approval, a denial, a removal or a reset. Its
+ * failure never undoes the access change (a removal must hold even when the
+ * record cannot be written), so it returns whether the line was written and
+ * the action says so when it was not (`withRecordNote`). supabase-js does not
+ * throw on a refused insert: the returned error is what counts.
+ */
 async function logTeamActivity({
   actorId,
   body,
@@ -372,20 +395,8 @@ async function logTeamActivity({
   body: string;
   eventType: string;
   metadata: Record<string, unknown>;
-}) {
-  try {
-    const service = createServiceClient();
-    await service.from("team_activity_events").insert({
-      actor_id: actorId,
-      event_type: eventType,
-      entity_type: "team_member",
-      entity_id: typeof metadata.member_id === "string" ? metadata.member_id : null,
-      body,
-      metadata,
-    });
-  } catch {
-    // Activity should never block access-control changes.
-  }
+}): Promise<boolean> {
+  return recordTeamChange(createServiceClient(), { actorId, eventType, body, metadata });
 }
 
 export async function requestTeamAccessAction(
@@ -511,8 +522,7 @@ export async function requestTeamAccessAction(
         ?? { ok: false, error: "Access request could not be checked. Try again." };
     }
 
-    revalidatePath("/admin/team");
-    revalidatePath("/admin/operations");
+    revalidateTeam();
     await notifyOwnerOfAccessRequest({ email, fullName, note, role });
     return {
       ok: true,
@@ -526,10 +536,12 @@ export async function requestTeamAccessAction(
 
 async function reviewAuthOnlyAccess(
   formData: FormData,
-  actorId: string | null,
-  approverRole: TeamRole | null,
+  actor: TeamActor,
+  actorLabel: string,
 ): Promise<TeamAccessReviewState> {
   const service = createServiceClient();
+  const actorId = actor.memberId;
+  const approverRole = actor.role;
   const intent = cleanText(formData.get("intent"));
   const userId = cleanText(formData.get("member_id"));
   const role = safeApprovalRole(cleanText(formData.get("role")), approverRole);
@@ -546,6 +558,14 @@ async function reviewAuthOnlyAccess(
       ? user.user_metadata.full_name
       : user.email ?? "Associate";
   const email = user.email?.trim().toLowerCase() ?? "";
+  // The team rules hold here too (team-rules.ts): only an owner changes an
+  // owner's account, and an active account is never re-approved.
+  if (user.app_metadata?.desk_role === "owner" && approverRole !== "owner") {
+    return { ok: false, error: teamRefusalSentence("ownerChangesOwner"), code: "ownerChangesOwner" };
+  }
+  if (intent !== "deny" && user.app_metadata?.access_status === "active") {
+    return { ok: false, error: `${fullName} already has access.`, code: "alreadyActive" };
+  }
 
   if (intent === "deny") {
     const { error: updateError } = await service.auth.admin.updateUserById(user.id, {
@@ -557,17 +577,39 @@ async function reviewAuthOnlyAccess(
     });
     if (updateError) return { ok: false, error: updateError.message };
 
-    await logTeamActivity({
+    const recorded = await logTeamActivity({
       actorId,
       eventType: "team_access_denied",
-      body: `${fullName} was denied dashboard access.`,
-      metadata: { member_id: user.id, email, auth_only: true },
+      body: `${actorLabel} denied ${fullName}'s access request.`,
+      metadata: {
+        member_id: user.id,
+        email,
+        auth_only: true,
+        actor_email: actor.email,
+        previous_status: user.app_metadata?.access_status ?? null,
+        previous_role: user.app_metadata?.desk_role ?? null,
+      },
     });
 
-    revalidatePath("/admin/team");
-    return { ok: true, message: `${fullName} was denied.` };
+    revalidateTeam();
+    return { ok: true, message: withRecordNote(`${fullName} was denied.`, recorded) };
   }
 
+  // The same clearance rule as the roster's (team-rules.ts): a non-owner
+  // approving somebody who had access keeps the clearance an owner left.
+  const previousRole = user.app_metadata?.desk_role;
+  const canSign = clearanceAtApproval(
+    actor,
+    {
+      id: user.id,
+      auth_user_id: user.id,
+      email,
+      role: isTeamRole(previousRole) ? previousRole : role,
+      status: user.app_metadata?.access_status === "inactive" ? "inactive" : "pending",
+      can_sign_contracts: user.app_metadata?.can_sign_contracts === true,
+    },
+    role,
+  );
   const temporaryPassword = generatedTemporaryPassword();
   // Every device signed in before this moment is signed out (owner's
   // decision 10/02/2026; password-reset-cutoff.ts).
@@ -580,7 +622,7 @@ async function reviewAuthOnlyAccess(
       access_status: "active",
       desk_role: role,
       requires_password_change: true,
-      can_sign_contracts: canRoleSignContracts(role),
+      can_sign_contracts: canSign,
       password_reset_at: passwordResetAt,
     },
     user_metadata: {
@@ -592,11 +634,21 @@ async function reviewAuthOnlyAccess(
   // And the database ends the sessions it started before now (best effort).
   await endSessionsBefore(service, user.id, passwordResetAt);
 
-  await logTeamActivity({
+  const recorded = await logTeamActivity({
     actorId,
     eventType: "team_access_approved",
-    body: `${fullName} was approved as ${ROLE_LABELS[role]}.`,
-    metadata: { member_id: user.id, email, role, auth_only: true, password_reset_at: passwordResetAt },
+    body: `${actorLabel} approved ${fullName} as ${ROLE_LABELS[role]}.`,
+    metadata: {
+      member_id: user.id,
+      email,
+      role,
+      can_sign_contracts: canSign,
+      auth_only: true,
+      password_reset_at: passwordResetAt,
+      actor_email: actor.email,
+      previous_status: user.app_metadata?.access_status ?? null,
+      previous_role: user.app_metadata?.desk_role ?? null,
+    },
   });
 
   const emailResult = await sendTeamApprovalEmail({
@@ -605,24 +657,153 @@ async function reviewAuthOnlyAccess(
     role,
   });
 
-  revalidatePath("/admin/team");
+  revalidateTeam();
   return {
     ok: true,
     email,
     fullName,
     temporaryPassword,
-    message: approvalMessage(
-      "Approved. The associate will be sent to finish profile onboarding after first login.",
-      emailResult,
+    message: withRecordNote(
+      approvalMessage(
+        "Approved. The associate will be sent to finish profile onboarding after first login.",
+        emailResult,
+      ),
+      recorded,
     ),
   };
+}
+
+/**
+ * The caller, if they may manage the team (`team:manage`: Owner, Manager),
+ * with the service client the writes go through.
+ *
+ * The role is the roster's (current-admin.ts), so every refusal below is
+ * decided on the server, whatever the screen showed. Local preview's session
+ * carries no service client, so `requireCurrentAdminPermission` turns it away
+ * as signed out; there, and only there (preview is always off in
+ * production), the same role check runs against the preview session and the
+ * in-memory mock stands in for the database, so the team screen can be walked
+ * under `next dev`.
+ */
+async function teamManagerAccess(): Promise<
+  | {
+      ok: true;
+      service: ReturnType<typeof createServiceClient>;
+      role: TeamRole | null;
+      member: TeamMember | null;
+      user: { id: string; email?: string | null } | null;
+    }
+  | { ok: false; error: string }
+> {
+  const access = await requireCurrentAdminPermission("team:manage");
+  if (access.ok || !isLocalAdminPreviewEnabled()) return access;
+  const preview = await getCurrentAdminAccess();
+  if (preview.signedOut === "passwordReset") return { ok: false, error: SIGNED_OUT_RESET_MESSAGE };
+  if (!preview.user) return { ok: false, error: "Not signed in." };
+  if (!hasTeamPermission(preview.role, "team:manage")) {
+    return { ok: false, error: teamRefusalSentence("notTeamManager") };
+  }
+  return { ...preview, ok: true, service: createServiceClient() };
+}
+
+function actorOf(access: {
+  role: TeamRole | null;
+  member: TeamMember | null;
+  user: { id: string; email?: string | null } | null;
+}): TeamActor {
+  return {
+    role: access.role,
+    memberId: access.member?.id ?? null,
+    authUserId: access.user?.id ?? null,
+    email: access.user?.email ?? null,
+  };
+}
+
+/** The name an activity line gives the person acting. */
+function actorName(access: { member: TeamMember | null; user: { email?: string | null } | null }): string {
+  return access.member?.full_name?.trim() || access.user?.email?.trim() || "An owner";
+}
+
+/** The team screen lives at /admin/dealership/team; /admin/team resolves to it. */
+function revalidateTeam() {
+  revalidatePath("/admin/team");
+  revalidatePath("/admin/dealership/team");
+  revalidatePath("/admin/operations");
+}
+
+/** Active owners other than this row, for the last-owner rule. */
+async function otherActiveOwners(
+  service: ReturnType<typeof createServiceClient>,
+  memberId: string,
+): Promise<number | null> {
+  const { data, error } = await service
+    .from("team_members")
+    .select("id")
+    .eq("role", "owner")
+    .eq("status", "active");
+  if (error) return null;
+  return ((data ?? []) as Array<{ id: string }>).filter((row) => row.id !== memberId).length;
+}
+
+/** Said when neither the record nor the put-back could be written: the change stands. */
+const SAVED_NOT_RECORDED =
+  "The change was saved but could not be recorded or undone. Check the member and try again.";
+
+/**
+ * Puts a roster row back after its change could not be recorded. Whether it
+ * worked decides what the owner is told: "not made" only when it was undone.
+ */
+async function putBack(
+  service: ReturnType<typeof createServiceClient>,
+  memberId: string,
+  patch: Record<string, unknown>,
+): Promise<boolean> {
+  try {
+    const { error } = await service
+      .from("team_members")
+      .update({ ...patch, updated_at: new Date().toISOString() })
+      .eq("id", memberId);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * A change an owner makes to a person's clearance or name is on record, or it
+ * is not made: the row is written, then the activity line, and when the line
+ * cannot be written the row is put back (the fee screens' rule: a failed log
+ * puts it back).
+ */
+async function recordTeamChange(
+  service: ReturnType<typeof createServiceClient>,
+  row: {
+    actorId: string | null;
+    eventType: string;
+    body: string;
+    metadata: Record<string, unknown>;
+  },
+): Promise<boolean> {
+  try {
+    const { error } = await service.from("team_activity_events").insert({
+      actor_id: row.actorId,
+      event_type: row.eventType,
+      entity_type: "team_member",
+      entity_id: typeof row.metadata.member_id === "string" ? row.metadata.member_id : null,
+      body: row.body,
+      metadata: row.metadata,
+    });
+    return !error;
+  } catch {
+    return false;
+  }
 }
 
 export async function reviewTeamAccessAction(
   _prevState: TeamAccessReviewState,
   formData: FormData,
 ): Promise<TeamAccessReviewState> {
-  const access = await requireCurrentAdminPermission("team:manage");
+  const access = await teamManagerAccess();
   if (!access.ok) return { ok: false, error: access.error };
 
   const intent = cleanText(formData.get("intent"));
@@ -641,7 +822,7 @@ export async function reviewTeamAccessAction(
     .maybeSingle();
 
   if (memberError?.code === "PGRST205") {
-    return await reviewAuthOnlyAccess(formData, access.member?.id ?? null, access.role);
+    return await reviewAuthOnlyAccess(formData, actorOf(access), actorName(access));
   }
 
   if (memberError || !memberRaw) {
@@ -650,88 +831,133 @@ export async function reviewTeamAccessAction(
 
   const member = memberRaw as TeamMember;
   const email = member.email?.trim().toLowerCase();
+  const actor = actorOf(access);
+  const who = member.full_name || email || "a team member";
+  // What the history line keeps besides its words: who acted, by address too
+  // (an owner signed in with no roster row has no actor_id), and what the
+  // person had before.
+  const trail = {
+    actor_email: access.user?.email ?? null,
+    previous_status: member.status,
+    previous_role: member.role,
+  };
 
   if (intent === "deny") {
+    /*
+      Deny a request, or remove an active member's access: the row goes
+      inactive, which the roster treats as no role at once (current-admin.ts,
+      and private.current_team_role() in the database). Never yourself, never
+      an owner by a manager, never the last active owner.
+    */
+    const removing = member.status === "active";
+    const others = removing && member.role === "owner" ? await otherActiveOwners(access.service, member.id) : 1;
+    if (others === null) return { ok: false, error: "The team could not be checked. Try again." };
+    const refusal = removalRefusal(actor, member, others);
+    if (refusal) return { ok: false, error: refusal.error, code: refusal.code };
+
     const { error } = await access.service
       .from("team_members")
       .update({
         status: "inactive",
-        last_invite_error: "Access request denied by owner.",
+        last_invite_error: removing
+          ? `Access removed by ${actorName(access)}.`
+          : `Access request denied by ${actorName(access)}.`,
         updated_at: new Date().toISOString(),
       })
       .eq("id", member.id);
 
     if (error) return { ok: false, error: error.message };
 
-    await logTeamActivity({
+    if (removing && member.auth_user_id) {
+      // The account's own record says so too, so an older reading of it can
+      // never stand in for the roster (only the one key is sent). Best effort:
+      // the roster row is the authority.
+      try {
+        await access.service.auth.admin.updateUserById(member.auth_user_id, {
+          app_metadata: { access_status: "inactive" },
+        });
+      } catch {
+        // The roster decides; the account's copy is the extra.
+      }
+    }
+
+    const recorded = await logTeamActivity({
       actorId: access.member?.id ?? null,
-      eventType: "team_access_denied",
-      body: `${member.full_name} was denied dashboard access.`,
-      metadata: { member_id: member.id, email },
+      eventType: removing ? "team_access_removed" : "team_access_denied",
+      body: removing
+        ? `${actorName(access)} removed ${who}'s access.`
+        : `${actorName(access)} denied ${who}'s access request.`,
+      metadata: { member_id: member.id, email, role: member.role, ...trail },
     });
 
-    revalidatePath("/admin/team");
-    revalidatePath("/admin/operations");
-    return { ok: true, message: `${member.full_name} was denied.` };
+    revalidateTeam();
+    return {
+      ok: true,
+      message: withRecordNote(removing ? `${who} no longer has access.` : `${who} was denied.`, recorded),
+    };
   }
+
+  const refusal = approvalRefusal(actor, member, role);
+  if (refusal) return { ok: false, error: refusal.error, code: refusal.code };
 
   if (!email) {
     return { ok: false, error: "This request needs an email before approval." };
   }
 
-  const temporaryPassword = generatedTemporaryPassword();
+  /*
+    The clearance (SOP item 4): the role's default for a new request, or when
+    an owner approves; what an owner left on the row when anyone else approves
+    a person who had access before, so Remove Access then Approve Again is no
+    way round "only an owner changes who is cleared to sign".
+  */
+  const canSign = clearanceAtApproval(actor, member, role);
+  const clearanceKept = approvalKeepsClearance(actor, member);
+
   // Every device signed in to this account before now is signed out (owner's
   // decision 10/02/2026; password-reset-cutoff.ts).
   const passwordResetAt = new Date().toISOString();
-  let authUserId = member.auth_user_id;
+  const appMetadata = {
+    access_status: "active",
+    desk_role: role,
+    requires_password_change: true,
+    can_sign_contracts: canSign,
+    password_reset_at: passwordResetAt,
+  };
+  let authUserId = member.auth_user_id ?? (await findAuthUserIdByEmail(email));
+  /*
+    Every approval issues a temporary password, shown once on the team screen
+    (SOP "First sign-in: onboarding", item 1). An approval only ever reaches a
+    person without access (an active row is refused above), and an account
+    that already exists for the address may carry a password somebody else
+    knows: one registered for the address before the person asked (Supabase's
+    public sign-up; listUsers finds unconfirmed accounts too), or the one an
+    owner removed access over. So the approval replaces it, exactly as it
+    creates one for an address with no account, and the old password stops
+    working at once. The password is handed over in person, never emailed, so
+    a failed email cannot lock anybody out. A reset (an active member) still
+    never changes a password.
+  */
+  const temporaryPassword = generatedTemporaryPassword();
+  const accountExisted = Boolean(authUserId);
 
   if (authUserId) {
     const { error } = await access.service.auth.admin.updateUserById(authUserId, {
       password: temporaryPassword,
       email_confirm: true,
-      app_metadata: {
-        access_status: "active",
-        desk_role: role,
-        requires_password_change: true,
-        can_sign_contracts: canRoleSignContracts(role),
-        password_reset_at: passwordResetAt,
-      },
+      app_metadata: appMetadata,
       user_metadata: { full_name: member.full_name },
     });
     if (error) return { ok: false, error: error.message };
   } else {
-    authUserId = await findAuthUserIdByEmail(email);
-    if (authUserId) {
-      const { error } = await access.service.auth.admin.updateUserById(authUserId, {
-        password: temporaryPassword,
-        email_confirm: true,
-        app_metadata: {
-          access_status: "active",
-          desk_role: role,
-          requires_password_change: true,
-          can_sign_contracts: canRoleSignContracts(role),
-          password_reset_at: passwordResetAt,
-        },
-        user_metadata: { full_name: member.full_name },
-      });
-      if (error) return { ok: false, error: error.message };
-    } else {
-      const { data, error } = await access.service.auth.admin.createUser({
-        email,
-        password: temporaryPassword,
-        email_confirm: true,
-        app_metadata: {
-          access_status: "active",
-          desk_role: role,
-          requires_password_change: true,
-          can_sign_contracts: canRoleSignContracts(role),
-          password_reset_at: passwordResetAt,
-        },
-        user_metadata: { full_name: member.full_name },
-      });
-      if (error) return { ok: false, error: error.message };
-      authUserId = data.user?.id ?? null;
-    }
+    const { data, error } = await access.service.auth.admin.createUser({
+      email,
+      password: temporaryPassword,
+      email_confirm: true,
+      app_metadata: appMetadata,
+      user_metadata: { full_name: member.full_name },
+    });
+    if (error) return { ok: false, error: error.message };
+    authUserId = data.user?.id ?? null;
   }
 
   // The database ends the account's sessions started before now (best effort).
@@ -743,7 +969,7 @@ export async function reviewTeamAccessAction(
       auth_user_id: authUserId,
       role,
       status: "active",
-      can_sign_contracts: canRoleSignContracts(role),
+      can_sign_contracts: canSign,
       invited_at: new Date().toISOString(),
       last_invite_error: null,
       updated_at: new Date().toISOString(),
@@ -759,23 +985,38 @@ export async function reviewTeamAccessAction(
   });
   await recordApprovalEmailResult(access.service, member.id, emailResult);
 
-  await logTeamActivity({
+  const recorded = await logTeamActivity({
     actorId: access.member?.id ?? null,
     eventType: "team_access_approved",
-    body: `${member.full_name} was approved as ${ROLE_LABELS[role]}.`,
-    metadata: { member_id: member.id, email, role, password_reset_at: passwordResetAt },
+    body: `${actorName(access)} approved ${who} as ${ROLE_LABELS[role]}.`,
+    metadata: {
+      member_id: member.id,
+      email,
+      role,
+      can_sign_contracts: canSign,
+      previous_can_sign_contracts: member.can_sign_contracts === true,
+      clearance_kept: clearanceKept,
+      account_created: !accountExisted,
+      password_replaced: accountExisted,
+      password_reset_at: passwordResetAt,
+      ...trail,
+    },
   });
 
-  revalidatePath("/admin/team");
-  revalidatePath("/admin/operations");
+  const handOver = accountExisted
+    ? `${who}'s account already existed, and its old password no longer works. Give them the temporary password below in person: it is shown once, and they choose their own at first sign-in.`
+    : `Give ${who} the temporary password below in person: it is shown once, and they choose their own at first sign-in.`;
+  const clearanceLine = clearanceKept ? ` Signing stays ${canSign ? "on" : "off"}, as an owner left it.` : "";
+
+  revalidateTeam();
   return {
     ok: true,
     email,
     fullName: member.full_name,
     temporaryPassword,
-    message: approvalMessage(
-      "Approved. The associate will be sent to finish profile onboarding after first login.",
-      emailResult,
+    message: withRecordNote(
+      approvalMessage(`Approved as ${ROLE_LABELS[role]}. ${handOver}${clearanceLine}`, emailResult),
+      recorded,
     ),
   };
 }
@@ -791,7 +1032,8 @@ async function resetApprovedMemberAccess({
       ok: true;
       email: string;
       fullName: string;
-      temporaryPassword: string;
+      /** Only when the reset had to create the account: an existing password is never changed. */
+      temporaryPassword?: string;
       emailResult: ApprovalEmailResult;
       passwordResetAt: string;
     }
@@ -813,8 +1055,7 @@ async function resetApprovedMemberAccess({
   }
   existingUser ??= await findAuthUserByEmail(email);
 
-  const fullName = member.display_name || member.full_name;
-  const temporaryPassword = generatedTemporaryPassword();
+  const fullName = member.full_name?.trim() || member.display_name || email;
   /*
     The reset signs out every device signed in before it (owner's decision
     10/02/2026): the account records the moment, and the proxy, the admin
@@ -837,12 +1078,13 @@ async function resetApprovedMemberAccess({
     ...(existingUser?.user_metadata ?? {}),
     avatar_url: member.avatar_url ?? existingUser?.user_metadata?.avatar_url ?? null,
     bio: member.bio ?? existingUser?.user_metadata?.bio ?? null,
-    display_name: fullName,
+    display_name: member.display_name || fullName,
     full_name: fullName,
     username: member.username ?? existingUser?.user_metadata?.username ?? null,
   };
 
   let authUserId = existingUser?.id ?? member.auth_user_id;
+  let temporaryPassword: string | undefined;
   if (authUserId) {
     // Deliberately NOT rotating the password: overwriting a working
     // credential to initiate an email is how a failed send became a
@@ -856,6 +1098,9 @@ async function resetApprovedMemberAccess({
     // The database ends the sessions it started before the reset (best effort).
     await endSessionsBefore(service, authUserId, passwordResetAt);
   } else {
+    // No account yet: created as at approval, with a temporary password the
+    // team screen shows once (SOP item 1).
+    temporaryPassword = generatedTemporaryPassword();
     const { data, error } = await service.auth.admin.createUser({
       email,
       password: temporaryPassword,
@@ -890,7 +1135,7 @@ async function resetApprovedMemberAccess({
     ok: true,
     email,
     fullName,
-    temporaryPassword,
+    ...(temporaryPassword ? { temporaryPassword } : {}),
     emailResult,
     passwordResetAt,
   };
@@ -900,7 +1145,7 @@ export async function resetTeamMemberAccessAction(
   _prevState: TeamAccessReviewState,
   formData: FormData,
 ): Promise<TeamAccessReviewState> {
-  const access = await requireCurrentAdminPermission("team:manage");
+  const access = await teamManagerAccess();
   if (!access.ok) return { ok: false, error: access.error };
 
   const memberId = cleanText(formData.get("member_id"));
@@ -917,26 +1162,41 @@ export async function resetTeamMemberAccessAction(
   }
 
   const member = memberRaw as TeamMember;
+  const refusal = resetRefusal(actorOf(access), member);
+  if (refusal) return { ok: false, error: refusal.error, code: refusal.code };
+
   const reset = await resetApprovedMemberAccess({ member, service: access.service });
   if (!reset.ok) return { ok: false, error: reset.error };
 
-  await logTeamActivity({
+  const recorded = await logTeamActivity({
     actorId: access.member?.id ?? null,
     eventType: "team_access_reset",
-    body: `${reset.fullName} was sent a fresh setup email.`,
-    metadata: { member_id: member.id, email: reset.email, role: member.role, password_reset_at: reset.passwordResetAt },
+    body: `${reset.fullName}'s access was reset by ${actorName(access)}.`,
+    metadata: {
+      member_id: member.id,
+      email: reset.email,
+      role: member.role,
+      can_sign_contracts: member.can_sign_contracts === true,
+      account_created: Boolean(reset.temporaryPassword),
+      password_reset_at: reset.passwordResetAt,
+      actor_email: access.user?.email ?? null,
+    },
   });
 
-  revalidatePath("/admin/team");
-  revalidatePath("/admin/operations");
+  revalidateTeam();
   return {
     ok: true,
     email: reset.email,
     fullName: reset.fullName,
-    temporaryPassword: reset.temporaryPassword,
-    message: approvalMessage(
-      "Temporary password reset. The associate will finish profile onboarding after login.",
-      reset.emailResult,
+    ...(reset.temporaryPassword ? { temporaryPassword: reset.temporaryPassword } : {}),
+    message: withRecordNote(
+      approvalMessage(
+        reset.temporaryPassword
+          ? `${reset.fullName} had no account, so one was created. Give them the temporary password below in person: it is shown once.`
+          : `Access reset. ${reset.fullName}'s devices are signed out, and they choose a new password at the next sign-in. Their password itself is not changed.`,
+        reset.emailResult,
+      ),
+      recorded,
     ),
   };
 }
@@ -948,7 +1208,7 @@ export async function resetAcceptedTeamAccessAction(
   void _prevState;
   void _formData;
 
-  const access = await requireCurrentAdminPermission("team:manage");
+  const access = await teamManagerAccess();
   if (!access.ok) return { ok: false, error: access.error };
 
   const { data, error } = await access.service
@@ -959,44 +1219,204 @@ export async function resetAcceptedTeamAccessAction(
 
   if (error) return { ok: false, error: "Active team could not be loaded." };
 
-  const currentEmail = access.user?.email?.trim().toLowerCase();
-  const members = ((data ?? []) as TeamMember[]).filter((member) => {
-    const email = member.email?.trim().toLowerCase();
-    return member.role !== "owner" && !!email && email !== currentEmail;
-  });
+  const actor = actorOf(access);
+  // The same rule as one reset at a time: never an owner, never yourself.
+  const members = ((data ?? []) as TeamMember[]).filter((member) => resetRefusal(actor, member) === null);
 
   if (members.length === 0) {
     return { ok: false, error: "No active non-owner team members with email were found." };
   }
 
-  const sentNames: string[] = [];
+  const resetNames: string[] = [];
+  const unsentNames: string[] = [];
   const failedNames: string[] = [];
+  const unrecordedNames: string[] = [];
   for (const member of members) {
     const reset = await resetApprovedMemberAccess({ member, service: access.service });
-    if (reset.ok && reset.emailResult.sent) {
-      sentNames.push(reset.fullName);
-      await logTeamActivity({
-        actorId: access.member?.id ?? null,
-        eventType: "team_access_reset",
-        body: `${reset.fullName} was sent a fresh setup email.`,
-        metadata: { member_id: member.id, email: reset.email, role: member.role, bulk: true, password_reset_at: reset.passwordResetAt },
-      });
-    } else {
+    if (!reset.ok) {
       failedNames.push(member.full_name);
+      continue;
+    }
+    resetNames.push(reset.fullName);
+    if (!reset.emailResult.sent) unsentNames.push(reset.fullName);
+    const recorded = await logTeamActivity({
+      actorId: access.member?.id ?? null,
+      eventType: "team_access_reset",
+      body: `${reset.fullName}'s access was reset by ${actorName(access)}.`,
+      metadata: {
+        member_id: member.id,
+        email: reset.email,
+        role: member.role,
+        bulk: true,
+        account_created: Boolean(reset.temporaryPassword),
+        password_reset_at: reset.passwordResetAt,
+        actor_email: access.user?.email ?? null,
+      },
+    });
+    if (!recorded) unrecordedNames.push(reset.fullName);
+  }
+
+  revalidateTeam();
+  const problems = [
+    unsentNames.length > 0 ? `Setup emails did not send to: ${unsentNames.join(", ")}.` : "",
+    failedNames.length > 0 ? `Not reset: ${failedNames.join(", ")}.` : "",
+    unrecordedNames.length > 0
+      ? `Reset, but the change could not be recorded for: ${unrecordedNames.join(", ")}.`
+      : "",
+  ].filter(Boolean);
+  return {
+    ok: resetNames.length > 0,
+    message:
+      resetNames.length > 0
+        ? `Access reset for ${resetNames.length} active team member${resetNames.length === 1 ? "" : "s"}. They choose a new password at the next sign-in.`
+        : undefined,
+    error: problems.length > 0 ? problems.join(" ") : undefined,
+  };
+}
+
+async function loadTeamMember(
+  service: ReturnType<typeof createServiceClient>,
+  memberId: string,
+): Promise<TeamMember | null> {
+  if (!memberId) return null;
+  const { data, error } = await service.from("team_members").select("*").eq("id", memberId).maybeSingle();
+  if (error || !data) return null;
+  return data as TeamMember;
+}
+
+/**
+ * Cleared To Sign, turned on or off for one person (SOP item 4): an owner's
+ * decision alone. The roster row is the authority (filing and the VTR-61 read
+ * it); the account's copy follows, best effort. On record with who, when, from
+ * and to, or not made at all.
+ */
+export async function setTeamMemberSigningAction(
+  _prevState: TeamAccessReviewState,
+  formData: FormData,
+): Promise<TeamAccessReviewState> {
+  const access = await teamManagerAccess();
+  if (!access.ok) return { ok: false, error: access.error };
+
+  const member = await loadTeamMember(access.service, cleanText(formData.get("member_id")));
+  if (!member) return { ok: false, error: "Team member not found." };
+
+  const refusal = signingRefusal(actorOf(access), member);
+  if (refusal) return { ok: false, error: refusal.error, code: refusal.code };
+
+  const choice = cleanText(formData.get("can_sign"));
+  if (choice !== "true" && choice !== "false") return { ok: false, error: "Choose on or off." };
+  const next = choice === "true";
+  const previous = member.can_sign_contracts === true;
+  const name = member.full_name?.trim() || member.email || "This team member";
+  if (next === previous) {
+    return { ok: true, message: `${name} is already ${next ? "cleared" : "not cleared"} to sign.` };
+  }
+
+  const { error } = await access.service
+    .from("team_members")
+    .update({ can_sign_contracts: next, updated_at: new Date().toISOString() })
+    .eq("id", member.id);
+  if (error) return { ok: false, error: "The change could not be saved. Try again." };
+
+  const recorded = await recordTeamChange(access.service, {
+    actorId: access.member?.id ?? null,
+    eventType: "team_member_signing_changed",
+    body: `${actorName(access)} turned signing ${next ? "on" : "off"} for ${name}.`,
+    metadata: { member_id: member.id, previous_can_sign_contracts: previous, can_sign_contracts: next },
+  });
+  if (!recorded) {
+    if (!(await putBack(access.service, member.id, { can_sign_contracts: previous }))) {
+      revalidateTeam();
+      return { ok: false, error: SAVED_NOT_RECORDED };
+    }
+    return { ok: false, error: "The change could not be recorded, so it was not made. Try again." };
+  }
+
+  if (member.auth_user_id) {
+    try {
+      // Only the one key: the account keeps every other key as it stands.
+      await access.service.auth.admin.updateUserById(member.auth_user_id, {
+        app_metadata: { can_sign_contracts: next },
+      });
+    } catch {
+      // The roster row decides; the account's copy is the extra.
     }
   }
 
-  revalidatePath("/admin/team");
-  revalidatePath("/admin/operations");
+  revalidateTeam();
   return {
-    ok: sentNames.length > 0,
-    message:
-      sentNames.length > 0
-        ? `Setup emails sent to ${sentNames.length} active team member${sentNames.length === 1 ? "" : "s"}.`
-        : undefined,
-    error:
-      failedNames.length > 0
-        ? `Some setup emails did not send: ${failedNames.join(", ")}.`
-        : undefined,
+    ok: true,
+    fullName: name,
+    message: next
+      ? `${name} is cleared to sign.${member.signature_data_url ? "" : " They draw their signature on Your Signature before filing."}`
+      : `${name} is no longer cleared to sign. Paper they already filed keeps its signature.`,
+  };
+}
+
+/**
+ * Correct Name (SOP item 6): the legal name that prints in the parentheses on
+ * the 130-U seller line, the VTR-61's printed name and under every dealer
+ * line, corrected by an owner with the onboarding name step's own rules. A
+ * filed copy keeps the name it was filed with (`form_data.dealerSignerName`);
+ * only paper filed after the change prints the new one. On record with the
+ * old and new name, or not made at all.
+ */
+export async function correctTeamMemberNameAction(
+  _prevState: TeamAccessReviewState,
+  formData: FormData,
+): Promise<TeamAccessReviewState> {
+  const access = await teamManagerAccess();
+  if (!access.ok) return { ok: false, error: access.error };
+
+  const member = await loadTeamMember(access.service, cleanText(formData.get("member_id")));
+  if (!member) return { ok: false, error: "Team member not found." };
+
+  const refusal = nameCorrectionRefusal(actorOf(access), member);
+  if (refusal) return { ok: false, error: refusal.error, code: refusal.code };
+
+  const name = checkCorrectedName(formData.get("firstName"), formData.get("lastName"));
+  if (!name.ok) return { ok: false, error: name.error, code: name.problem.code };
+
+  const previous = { full_name: member.full_name ?? "", display_name: member.display_name ?? null };
+  if (previous.full_name === name.fullName && previous.display_name === name.first) {
+    return { ok: true, fullName: name.fullName, message: `${name.fullName} is already the name on file.` };
+  }
+
+  const { error } = await access.service
+    .from("team_members")
+    .update({ full_name: name.fullName, display_name: name.first, updated_at: new Date().toISOString() })
+    .eq("id", member.id);
+  if (error) return { ok: false, error: "The name could not be saved. Try again." };
+
+  const recorded = await recordTeamChange(access.service, {
+    actorId: access.member?.id ?? null,
+    eventType: "team_member_name_corrected",
+    body: previous.full_name.trim()
+      ? `${actorName(access)} corrected ${previous.full_name.trim()}'s name to ${name.fullName}.`
+      : `${actorName(access)} set ${member.email || "a team member"}'s name to ${name.fullName}.`,
+    metadata: {
+      member_id: member.id,
+      previous_full_name: previous.full_name,
+      previous_display_name: previous.display_name,
+      full_name: name.fullName,
+      display_name: name.first,
+      // What the change reaches: paper filed from now on. A filed copy keeps
+      // the name it was filed with (form_data.dealerSignerName).
+      applies_to: "documents filed after this change",
+    },
+  });
+  if (!recorded) {
+    if (!(await putBack(access.service, member.id, previous))) {
+      revalidateTeam();
+      return { ok: false, error: SAVED_NOT_RECORDED };
+    }
+    return { ok: false, error: "The change could not be recorded, so it was not made. Try again." };
+  }
+
+  revalidateTeam();
+  return {
+    ok: true,
+    fullName: name.fullName,
+    message: `Name corrected to ${name.fullName}. Paper filed from now on prints it; copies already filed keep the name they were filed with.`,
   };
 }
