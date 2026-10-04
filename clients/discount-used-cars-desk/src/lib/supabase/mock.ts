@@ -80,6 +80,23 @@ type MockStore = {
    */
   feeSchedule?: Record<string, unknown> | null;
   feeChanges?: Array<Record<string, unknown>>;
+  /**
+   * Auth accounts preview has created (an approval or a reset of a member
+   * with none), by id, and the user_metadata written onto any account. The
+   * fixture team's own accounts are constants (PREVIEW_TEAM_ACCOUNTS).
+   */
+  authUsers?: Map<string, MockAuthUser>;
+  userMetadata?: Map<string, Record<string, unknown>>;
+  /** Every end_sessions_before call, for walks and tests to read. */
+  endedSessions?: Array<{ userId: string; at: string }>;
+};
+
+type MockAuthUser = {
+  id: string;
+  email: string;
+  app_metadata: Record<string, unknown>;
+  user_metadata: Record<string, unknown>;
+  created_at: string;
 };
 const store: MockStore = ((globalThis as { __tjMockStore?: MockStore }).__tjMockStore ??= {
   written: new Map(),
@@ -91,6 +108,9 @@ const store: MockStore = ((globalThis as { __tjMockStore?: MockStore }).__tjMock
 // older store gains it here rather than on restart.
 const authMetadata = (store.authMetadata ??= new Map());
 store.feeChanges ??= [];
+const authUsers = (store.authUsers ??= new Map());
+const userMetadataWrites = (store.userMetadata ??= new Map());
+store.endedSessions ??= [];
 const written = store.written;
 const uploaded = store.uploaded;
 
@@ -128,9 +148,17 @@ export function resetMockWrites(): void {
   uploaded.clear();
   inserted.clear();
   authMetadata.clear();
+  authUsers.clear();
+  userMetadataWrites.clear();
+  store.endedSessions = [];
   store.previewResetAt = null;
   store.feeSchedule = null;
   store.feeChanges = [];
+}
+
+/** Every end_sessions_before call preview has received. Read by tests and by walks. */
+export function mockEndedSessions(): Array<{ userId: string; at: string }> {
+  return [...(store.endedSessions ?? [])];
 }
 
 /**
@@ -475,6 +503,7 @@ function getPreviewRows(table: string): Array<Record<string, unknown>> {
  * preview is always off when NODE_ENV is production.
  */
 function previewTeamMembers(): Array<Record<string, unknown>> {
+  const team = PREVIEW_TEAM.map((row) => ({ ...row }));
   const flag = process.env.DESK_PREVIEW_MEMBER?.trim();
   if (
     flag !== "fresh" &&
@@ -482,9 +511,10 @@ function previewTeamMembers(): Array<Record<string, unknown>> {
     flag !== "fresh-temporary-password" &&
     flag !== "fresh-reset" &&
     flag !== "fresh-sales"
-  ) return [];
+  ) return team;
   const at = "2026-10-01T15:00:00.000Z";
   return [
+    ...team,
     {
       id: "preview-team-member-1",
       auth_user_id: "local-admin-preview",
@@ -508,6 +538,188 @@ function previewTeamMembers(): Array<Record<string, unknown>> {
       updated_at: at,
     },
   ];
+}
+
+/**
+ * The team the team screen shows in preview (/admin/dealership/team), so every
+ * action on it can be walked under `next dev`: three access requests (pending,
+ * no account yet, so an approval creates one with a temporary password), six
+ * members (an owner, a manager, a registration clerk and a salesperson who
+ * finished onboarding, a salesperson who has not, each with an account) and
+ * one person whose access was removed. Fixture people at example.test
+ * addresses, never anyone at the dealership; none of them is the preview
+ * session (`local-admin-preview`), so preview without DESK_PREVIEW_MEMBER
+ * still has no roster row of its own.
+ *
+ * Signing in on the preview form with one of these addresses signs the
+ * preview in as that member, with the account the mock holds for it
+ * (current-admin.ts): that is how a walk approves a request and then meets
+ * Choose A Password as the person approved. Production never reaches any of
+ * this: the service client is the real one whenever preview is off.
+ */
+const PREVIEW_TEAM_AT = "2026-09-20T15:00:00.000Z";
+
+function previewTeamRow(row: Record<string, unknown>): Record<string, unknown> {
+  return {
+    auth_user_id: null,
+    display_name: null,
+    username: null,
+    bio: null,
+    avatar_url: null,
+    phone: null,
+    language_preference: "en",
+    can_sign_contracts: false,
+    signature_data_url: null,
+    signature_updated_at: null,
+    invited_at: null,
+    last_invite_error: null,
+    onboarding_completed_at: null,
+    approved_email_sent_at: null,
+    approved_email_error: null,
+    created_at: PREVIEW_TEAM_AT,
+    updated_at: PREVIEW_TEAM_AT,
+    ...row,
+  };
+}
+
+const PREVIEW_TEAM: Array<Record<string, unknown>> = [
+  previewTeamRow({
+    id: "preview-team-owner",
+    auth_user_id: "preview-auth-owner",
+    full_name: "Maria Lopez",
+    display_name: "Maria",
+    email: "maria.lopez@example.test",
+    role: "owner",
+    status: "active",
+    can_sign_contracts: true,
+    onboarding_completed_at: "2026-09-20T16:00:00.000Z",
+  }),
+  previewTeamRow({
+    id: "preview-team-manager",
+    auth_user_id: "preview-auth-manager",
+    full_name: "Carlos Mendez",
+    display_name: "Carlos",
+    email: "carlos.mendez@example.test",
+    role: "manager",
+    status: "active",
+    can_sign_contracts: true,
+    onboarding_completed_at: "2026-09-21T16:00:00.000Z",
+  }),
+  previewTeamRow({
+    id: "preview-team-registration",
+    auth_user_id: "preview-auth-registration",
+    full_name: "Brenda Ortiz",
+    display_name: "Brenda",
+    email: "brenda.ortiz@example.test",
+    role: "registration",
+    status: "active",
+    can_sign_contracts: true,
+    onboarding_completed_at: "2026-09-22T16:00:00.000Z",
+  }),
+  previewTeamRow({
+    id: "preview-team-sales",
+    auth_user_id: "preview-auth-sales",
+    full_name: "Jason Price",
+    display_name: "Jason",
+    email: "jason.price@example.test",
+    role: "sales",
+    status: "active",
+    can_sign_contracts: false,
+    onboarding_completed_at: "2026-09-23T16:00:00.000Z",
+  }),
+  previewTeamRow({
+    id: "preview-team-sales-new",
+    auth_user_id: "preview-auth-sales-new",
+    // As the single signup box left it: onboarding asks for it again.
+    full_name: "Tyler Grant",
+    email: "tyler.grant@example.test",
+    role: "sales",
+    status: "active",
+    can_sign_contracts: false,
+  }),
+  previewTeamRow({
+    id: "preview-team-former",
+    auth_user_id: "preview-auth-former",
+    full_name: "Rob Hayes",
+    display_name: "Rob",
+    email: "rob.hayes@example.test",
+    role: "sales",
+    status: "inactive",
+    last_invite_error: "Access removed by Maria Lopez.",
+    onboarding_completed_at: "2026-09-10T16:00:00.000Z",
+  }),
+  previewTeamRow({
+    id: "preview-request-1",
+    full_name: "Diego Ramirez",
+    email: "diego.ramirez@example.test",
+    role: "sales",
+    status: "pending",
+    last_invite_error: "Access requested for Sales.",
+    created_at: "2026-10-03T16:20:00.000Z",
+    updated_at: "2026-10-03T16:20:00.000Z",
+  }),
+  previewTeamRow({
+    id: "preview-request-2",
+    full_name: "Ashley Nguyen",
+    email: "ashley.nguyen@example.test",
+    role: "registration",
+    status: "pending",
+    last_invite_error: "Access requested for Registration.",
+    created_at: "2026-10-03T18:05:00.000Z",
+    updated_at: "2026-10-03T18:05:00.000Z",
+  }),
+  previewTeamRow({
+    id: "preview-request-3",
+    full_name: "Kevin Brooks",
+    email: "kevin.brooks@example.test",
+    role: "lot",
+    status: "pending",
+    last_invite_error: "Access requested for Lot.",
+    created_at: "2026-10-04T13:40:00.000Z",
+    updated_at: "2026-10-04T13:40:00.000Z",
+  }),
+];
+
+/** The fixture team's own auth accounts, by id (no password is ever kept). */
+const PREVIEW_TEAM_ACCOUNTS: Map<string, MockAuthUser> = new Map(
+  PREVIEW_TEAM.filter((row) => typeof row.auth_user_id === "string").map((row) => {
+    const id = row.auth_user_id as string;
+    const active = row.status === "active";
+    return [
+      id,
+      {
+        id,
+        email: row.email as string,
+        app_metadata: {
+          access_status: active ? "active" : "inactive",
+          desk_role: row.role,
+          can_sign_contracts: row.can_sign_contracts,
+          // The member who never finished onboarding is still on the
+          // temporary password the approval issued.
+          ...(row.onboarding_completed_at ? {} : { requires_password_change: true }),
+        },
+        user_metadata: { full_name: row.full_name },
+        created_at: PREVIEW_TEAM_AT,
+      },
+    ];
+  }),
+);
+
+/** An account preview holds (the fixture team's, or one it created), with every write laid over it. */
+function previewAccount(id: string): MockAuthUser | null {
+  const base = PREVIEW_TEAM_ACCOUNTS.get(id) ?? authUsers.get(id);
+  if (!base) return null;
+  return {
+    ...base,
+    app_metadata: { ...base.app_metadata, ...authMetadata.get(id) },
+    user_metadata: { ...base.user_metadata, ...userMetadataWrites.get(id) },
+  };
+}
+
+function previewAccounts(): MockAuthUser[] {
+  return [...new Set([...PREVIEW_TEAM_ACCOUNTS.keys(), ...authUsers.keys()])]
+    .map((id) => previewAccount(id))
+    .filter((user): user is MockAuthUser => user !== null);
 }
 
 const previewDeals = [
@@ -1383,13 +1595,57 @@ export function createMockSupabaseClient(user: User | null = null): SupabaseClie
      */
     admin: {
       async getUserById(id: string) {
+        const account = previewAccount(id);
+        if (account) return { data: { user: account }, error: null };
         return { data: { user: { id, app_metadata: previewAppMetadata(id) } }, error: null };
       },
-      async updateUserById(id: string, attributes: { app_metadata?: Record<string, unknown> } = {}) {
+      async updateUserById(
+        id: string,
+        attributes: { app_metadata?: Record<string, unknown>; user_metadata?: Record<string, unknown> } = {},
+      ) {
         if (attributes.app_metadata) {
           authMetadata.set(id, { ...authMetadata.get(id), ...attributes.app_metadata });
         }
+        if (attributes.user_metadata) {
+          userMetadataWrites.set(id, { ...userMetadataWrites.get(id), ...attributes.user_metadata });
+        }
+        const account = previewAccount(id);
+        if (account) return { data: { user: account }, error: null };
         return { data: { user: { id, app_metadata: previewAppMetadata(id) } }, error: null };
+      },
+      /*
+        The team actions' other three calls (team-access.ts): find an account
+        by address, create one for a member who has none (the password is
+        never kept), and mint the setup link's token (no mail leaves preview:
+        the email sender is not configured there).
+      */
+      async listUsers() {
+        return { data: { users: previewAccounts() }, error: null };
+      },
+      async createUser(attributes: {
+        email?: string;
+        app_metadata?: Record<string, unknown>;
+        user_metadata?: Record<string, unknown>;
+      } = {}) {
+        const email = attributes.email?.trim().toLowerCase();
+        if (!email) return { data: { user: null }, error: { message: "mock: an email is required" } };
+        if (previewAccounts().some((account) => account.email === email)) {
+          return { data: { user: null }, error: { message: "A user with this email address has already been registered" } };
+        }
+        minted.count += 1;
+        const created: MockAuthUser = {
+          id: `preview-auth-${minted.count}`,
+          email,
+          app_metadata: { ...(attributes.app_metadata ?? {}) },
+          user_metadata: { ...(attributes.user_metadata ?? {}) },
+          created_at: new Date().toISOString(),
+        };
+        authUsers.set(created.id, created);
+        return { data: { user: previewAccount(created.id) }, error: null };
+      },
+      async generateLink() {
+        minted.count += 1;
+        return { data: { properties: { hashed_token: `preview-setup-link-${minted.count}` } }, error: null };
       },
     },
   };
@@ -1478,6 +1734,13 @@ export function createMockSupabaseClient(user: User | null = null): SupabaseClie
         },
       });
       return { data: { vehicle_id: vehicle.id, customer_id: customer.id }, error: null };
+    }
+    if (name === "end_sessions_before") {
+      // Recorded, as the database function would end them (service role only).
+      if (typeof args.p_user === "string" && typeof args.p_at === "string") {
+        store.endedSessions = [...(store.endedSessions ?? []), { userId: args.p_user, at: args.p_at }];
+      }
+      return { data: null, error: null };
     }
     if (name === "void_filed_documents") return voidFiledDocuments(args);
     if (name === "save_dealer_fee_schedule") return saveDealerFeeSchedule(args);

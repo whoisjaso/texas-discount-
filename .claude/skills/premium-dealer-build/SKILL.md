@@ -245,8 +245,15 @@ specification, items 1-9; build all of it here, before Start A Sale), with Secur
 Fees). In this order:
 1. Where members come from: the first Owner (a one-time bootstrap the owner runs in their own Supabase project,
    since nobody can request the owner role: SOP, onboarding item 1), the access request, the approval (a
-   temporary password, the role, and the default signers: Owner, Manager and Registration cleared to sign,
-   every other role not), the reset (it never changes an existing password).
+   temporary password every time, shown once, replacing the password of any account already at the address;
+   the role; and the default signers: Owner, Manager and Registration cleared to sign, every other role not,
+   though a manager's Approve Again keeps the clearance an owner left), the reset (it never changes an
+   existing password), and **the team screen** they happen on (`/admin/dealership/team`; `/admin/team`, the
+   email's link, resolves to it): approve, deny, Cleared To Sign and Correct Name (Owner only), Reset and
+   Remove Access, each rule refused on the server and in the database (`*_team_member_guards.sql`; Team
+   History written by the server alone, `*_team_history_server_only.sql`), never only hidden, and every
+   access change a history line naming who made it. The owner turns off Supabase's public sign-up. Without
+   the screen nobody can approve a new member, so onboarding cannot start.
 2. The onboarding page, then the redirect to it: the page must exist first (the Vega's port redirected new
    members to a route that did not exist and locked them out).
 3. Choose A Password, only on a temporary password, built with **a password reset signs out every device**
@@ -281,8 +288,9 @@ guided end-to-end walk of the whole unit (SOP, onboarding item 9) at 1440 and 39
 (`FEES=<walk input>`), `fresh` (`FEES_TRY=225.01` and the walk input, then `FEES=later`), `fresh-sales`
 (`PREVIEW_ADMIN=sales:<email>`, `FEES=none`), `fresh-cannot-sign` (an Owner not cleared to sign:
 `onboard.cjs … cannot-sign` with `FEES=<walk input>`; no signature screen), `fresh-reset` (`reset.cjs`, which
-exits 1 on a missing sign-out, notice, 401 or Choose A Password), each on a fresh server, 0 page errors, 0
-contrast failures. The walk input is the doc fee recorded at Phase 0, never invented.
+exits 1 on a missing sign-out, notice, 401 or Choose A Password), `team.cjs` (the team screen, then the approved
+member's first sign-in), each on a fresh server, 0 page errors, 0 contrast failures. The walk input is the doc
+fee recorded at Phase 0, never invented.
 
 **4.4 Start A Sale and the corridor.** SOP: The architecture, in six rules; Routes; Start A Sale; VIN
 decoding; The buyer's ID; The corridor; Funding; The sale plan; Salvage; Bilingual. One record, answers in
@@ -479,8 +487,8 @@ owner item.
   `try-file.cjs` (set the fee with or without a filing; press File and assert the refusal, `APPLY=1` applies
   today's fees), `gov.cjs` (a sale's government fees from webDEALER; `EXPECT_REFUSAL=1` on a server with the
   flag off), `void.cjs` (void the filed bill of sale, `VOID_LANG=es` for the Spanish desk; `bhph-void.json`
-  with `RESUME_DEAL` files again), `freeze.cjs` (held screens refuse, EN and ES) and `reset.cjs` (a reset
-  signs out old devices). Every script reads `DESK_BASE` (default `http://localhost:5190`) through
+  with `RESUME_DEAL` files again), `freeze.cjs` (held screens refuse, EN and ES), `reset.cjs` (a reset
+  signs out old devices) and `team.cjs` (the team screen; prints TEAM WALK OK). Every script reads `DESK_BASE` (default `http://localhost:5190`) through
   `desk-base.cjs`, which aborts any request to another local port.
 - `scripts/check-fee-module.cjs [deskDir]`: diffs the desk's `src/lib/legal/texas-dealer-fees.ts` (and its fee
   migration's caps) against the rulebook's section 5.10 JSON. Run it on every build and every January; it

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { WarningCircle } from "@phosphor-icons/react";
 import SignaturePad from "@/components/documents/SignaturePad";
+import { TEAM_SCREEN } from "@/lib/admin/workspace";
 import { AdminButton, AdminCard } from "@/components/admin/ui";
 import {
   clearStaffSignatureAction,
@@ -67,7 +68,7 @@ export default function StaffSignatureClient({
             actually opens for, so nobody is sent to a door that will not. */}
         {canOpenTeam ? (
           <p className="mt-4">
-            <Link href="/admin/dealership/team" className="ed-link text-[color:var(--tj-ink)] underline">
+            <Link href={TEAM_SCREEN} className="ed-link text-[color:var(--tj-ink)] underline">
               Open Team Access
             </Link>
           </p>

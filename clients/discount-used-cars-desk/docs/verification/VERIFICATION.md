@@ -15,6 +15,189 @@ passed on the command line and never written to a file:
 
 The desk this one was forked from has the same requirements.
 
+## 000000000. The team screen (10/04/2026)
+
+An independent review confirmed a gap: the desk named a team screen
+everywhere and had none. `route-permissions.ts` opened `/admin/team` and
+`/admin/dealership/team` to `team:manage`, `workspace.ts` mapped one to the
+other, the owner-alert email for an access request linked to
+`${siteBaseUrl()}/admin/team`, every team action revalidated `/admin/team`,
+and the signature page's "Open Team Access" pointed at
+`/admin/dealership/team`, but neither route had a page. An owner could not
+approve, deny or reset anyone, change who is cleared to sign, or correct a
+name from the desk, so no new salesperson's onboarding (temporary password,
+Choose A Password, legal name, signature) could start. This round builds the
+screen on the existing actions and the SOP ("First sign-in: onboarding",
+items 1, 4, 6 to 9 and Security). README, "The team screen", is the owner's
+guide.
+
+**Server.** The local dev server on port **5193** only (the git worktree
+`claude/desk-team-screen`), started in its own process group (`setsid`) and
+stopped by its PGID, the port checked free after each stop (`lsof`);
+`next-env.d.ts` equal to `HEAD` after every stop and the build. One fresh
+server per walk size, `DESK_PREVIEW_MEMBER` unset (the mock's fixture team),
+`DESK_ALLOW_UNSET_FACTS=true`, throwaway `ADMIN_SESSION_SECRET` and
+`INTERNAL_RENDER_TOKEN` on the command line, `CHROME_PATH`, and
+`NEXT_PUBLIC_SITE_URL=http://localhost:5193`.
+
+### What was built
+
+| Piece | What |
+|---|---|
+| `/admin/dealership/team` (`page.tsx`, `TeamClient.tsx`, `src/styles/team-screen.css`) | Access Requests (name, email, role asked for, when; Approve As with Owner offered only to an owner and the role's signing default in words; Deny with the hold); Team Members (legal name, role, Onboarding Finished or not, Cleared To Sign, Signature On File; Turn Signing On/Off and Correct Name for an owner, shown disabled with the reason to a manager; Reset Access, never for an owner or yourself; Remove Access, never yourself, never the last active owner); No Access (Approve Again; for a manager, "Stays not cleared to sign, as an owner left it" in place of the role's default); Team History; Reset Everyone. A temporary password is shown once after every approval, and after a reset only when it created the account (review fix round, below). The page checks `team:manage` itself |
+| `/admin/team` | Redirects to the screen: the email's link and the alias land on a real page |
+| Sidebar and More sheet | "Team" beside "Your Fees" (`TEAM_SCREEN`), filtered by the same route table: Owner and Manager |
+| `src/lib/onboarding/team-rules.ts` | The rules, pure: `team:manage` acts; Owner only from an owner; no change to an owner's row by a non-owner; the last active owner never removed or demoted; nobody resets or removes themselves; an active member is never re-approved (no demotion through approval); clearance and name Owner only, and a non-owner's Approve Again keeps the clearance an owner left (`clearanceAtApproval`, review fix round); Correct Name by the onboarding name step's own rules |
+| `src/lib/actions/team-access.ts` | The four existing actions ask the rules on the server; every approval issues a temporary password, replacing the password of an account that already exists for the address (review fix round; it first shipped keeping it); a reset returns a temporary password only when it created the account; every approval, denial, removal and reset is a history line naming who acted, or says it could not be recorded; Remove Access also marks the auth account inactive. Two new actions, `setTeamMemberSigningAction` and `correctTeamMemberNameAction`, Owner only, each on record in `team_activity_events` (who, from and to) or put back when the record cannot be written |
+| `supabase/migrations/20261004000000_team_member_guards.sql` | Additive: one trigger holding the same rules for a signed-in session that goes around the desk (a manager's session could write any `team_members` column; a member could delete their own row), and the last active owner for everyone, the service role included. Review fix round: also a row's account and address, stored signature and finished onboarding, and its way back to a request (not yet applied anywhere, so corrected in place) |
+| `supabase/migrations/20261004000001_team_history_server_only.sql` (review fix round) | Additive: one trigger; a signed-in session may not write a Team History line (`team_activity_events` with `entity_type` `team_member`), which the policy "activity: staff write" let every role do |
+| `src/lib/supabase/mock.ts`, `src/lib/admin/current-admin.ts` | The preview's fixture team (three requests, five members, one with no access, all at example.test), the auth calls the actions make (`listUsers`, `createUser`, `generateLink`, `end_sessions_before`), and a preview sign-in as the roster member whose account the mock holds, so the approved person's first sign-in can be walked. Behind the preview switch only |
+
+### The actions and what each refuses on the server
+
+Every refusal below is decided in the action with the role read from the
+roster (`requireCurrentAdminPermission`; in preview the same check against
+the preview session), by `team-rules.ts`, and for a signed-in session going
+around the desk by the database trigger.
+
+| Action | Refused |
+|---|---|
+| `reviewTeamAccessAction` approve | not `team:manage`; Owner from a non-owner ("Only an owner can approve another owner."); an owner's row by a non-owner; an active member (no re-approval, so no demotion); no email. Not refused but held: a non-owner's approval of a person who had access writes the clearance already on the row, never the role's default |
+| `reviewTeamAccessAction` deny (a request) or Remove Access (an active member) | not `team:manage`; yourself; an owner's row by a non-owner; the last active owner ("This is the last active owner. Approve another owner first, so the desk is never left without one."); someone already without access |
+| `resetTeamMemberAccessAction` | not `team:manage`; yourself; an owner's account; not active; no email |
+| `resetAcceptedTeamAccessAction` | not `team:manage`; it resets only members the single reset would (never an owner, never you) |
+| `setTeamMemberSigningAction` (new) | not `team:manage`; a non-owner ("Only an owner can change who is cleared to sign."); not active; anything but on or off; a change whose record cannot be written (put back) |
+| `correctTeamMemberNameAction` (new) | not `team:manage`; a non-owner ("Only an owner can correct a team member's name."); not active; every name the onboarding step refuses (empty, over 60, a character other than letters, spaces, apostrophes, periods and hyphens, one the state form's font cannot print, "(First Last)" too wide for the 130-U seller box at 7.25pt); a change whose record cannot be written (put back) |
+| Database (`team_members_guard`) | a session without `admin:all`: making an owner, changing or deleting an owner's row, changing `can_sign_contracts`, `full_name`, `display_name`, `auth_user_id`, `email`, `signature_data_url`, `signature_updated_at` or `onboarding_completed_at`, turning a row back to `pending`, inserting a row already cleared or carrying a signature or a finished onboarding (`owner_only`); a session without `team:manage` deleting a row (`forbidden`); anybody, the service role included, removing, demoting or deleting the last active owner (`last_owner`) |
+
+### Static checks
+
+| Check | Result |
+|---|---|
+| `npx tsc --noEmit` | 0 errors |
+| `npx eslint` | 0 errors; the same 4 warnings as before, none in a file this round touched |
+| `npx vitest run --maxWorkers=2` | 279 files, 3,066 tests, all passed after the review fix round (`test-output.txt`, that run's own output); 277 and 3,029 when the screen was first built; 268 and 2,936 before it |
+| `npx next build` | compiled; `/admin/dealership/team` and `/admin/team` built; `next-env.d.ts` restored to `HEAD` |
+| `node --check team.cjs` | OK |
+
+### Tests added (130, the review fix round's 37 included)
+
+| File | Tests | What it holds |
+|---|---|---|
+| `the-team-screen-opens-for-owners-and-managers-and-every-link-lands-on-it` | 8 | the route table (Owner and Manager only, both paths), the page and the redirect exist, the page checks `team:manage` itself, the owner-alert email's link (sent through `requestTeamAccessAction`) and the signature page's "Open Team Access" land on a real page, Team in the sidebar and More sheet, every action revalidates the screen |
+| `the-team-screen-refuses-on-the-server` | 16 | the real actions through the real access check on the preview mock: every refusal above, each writing nothing, and the owner's clearance and name changes on record |
+| `the-team-rules-say-who-may-change-whose-access` | 30 | the pure rules, role by role; the clearance an approval writes (review fix round) |
+| `every-approval-issues-a-temporary-password-and-a-reset-never-replaces-one` (was `a-temporary-password-is-issued-only-for-a-new-account`; review fix round) | 13 | approval creates the account with a temporary password (shown once) and the role's default clearance for five roles; an existing account (linked or found by email) has its password replaced by the temporary one, never twice the same; a reset keeps clearance, sets the flag, stamps `password_reset_at`, ends older sessions, and returns a temporary password only when it created the account; an approval or reset whose line cannot be written says so |
+| `a-corrected-name-follows-the-onboarding-rules` | 10 | each refusal with the onboarding step's own code, the seller-line fit, sentences about the person, kept as typed |
+| `a-corrected-name-does-not-change-a-filed-copy` | 3 | a 130-U and a bill of sale filed as "Brenda Ortiz" still print that name after the correction, opened by her; her next filing prints the corrected one; the correction writes only the roster row and its record |
+| `a-team-change-is-on-record-or-not-made` | 9 | who, from and to on record; put back when the record fails; told it stands unrecorded when the put-back fails too (review fix round); nothing written for no change or a refused name |
+| `the-database-holds-the-team-rules` | 21 | PGlite, every migration, `set role authenticated`: a manager's session refused each change (and, review fix round, a row's account, address, signature, finished onboarding and way back to a request), a member refused deleting their own row, an owner allowed, the last owner held even for the service role, the bootstrap and a new request unaffected; no signed-in session writes a Team History line |
+| `approving-again-keeps-the-owners-clearance-and-no-known-password` (review fix round) | 8 | through the real access check on the preview mock: an account registered at the address before the request is taken with a new temporary password; Approve Again issues one; a manager's Remove Access then Approve Again keeps an owner's Turn Signing Off, never clears a Sales member approved as Manager, and keeps Turn Signing On; a manager's approval of a new request and an owner's Approve Again write the role's default |
+| `team-history-says-who-approved-and-who-denied` (review fix round) | 4 | the approval, denial and removal lines name who acted (by name, or by address for an owner with no roster row) and keep the status and role before; a manager's denial note reads "Access request denied by Carlos Mendez." |
+| `the-preview-team-is-walkable-and-never-reaches-production` | 6 | the fixture team, the preview session unchanged without the flag, signing in as the approved member (role, row, flag, stamp, ended sessions, sent to onboarding), a removed member has no role, production never gets the mock |
+| `admin-route-permissions` (2 rows) | +2 | `/admin/dealership/team` and `/admin/team` in the matrix |
+
+`a-reset-account-signs-in-again-and-a-cookie-vouches-for-one-account` counted
+textual copies of the approval's reset stamp (five); the three approval
+copies are now one metadata object used by both the update and the create,
+so it counts four and checks the object is used twice.
+
+### The walk (`team.cjs`), both sizes
+
+| Size | Result | Checks | Page errors | Contrast failures | Theme |
+|---|---|---|---|---|---|
+| 1440×900 | `TEAM WALK OK`, exit 0 | 54 passed | 0 | 0 | `THEME OK` (accent `rgb(0, 0, 0)`, ground `rgb(238, 239, 242)`, Barlow Semi Condensed, black band) |
+| 390×844 | `TEAM WALK OK`, exit 0 | 54 passed | 0 | 0 | `THEME OK` (the same; the tab bar is the band) |
+
+These are the review fix round's runs (48 checks each when the screen was
+first built; the six new ones are the manager's Approve Again and the
+history naming who approved and denied). What each walked, in order (logs:
+`team-screen/team-walk-*.log`; 19 screenshots per size, compressed to at
+most 1600 px, 128 colours, 6.5 MB to 2.3 MB): `/admin/team` landed on `/admin/dealership/team`; Team beside Your
+Fees for the owner. Diego Ramirez approved as Sales (Owner offered; "Sales
+starts not cleared to sign"; a temporary password shown once; the approval
+email "skipped because email is not configured", as preview has no sender).
+Ashley Nguyen denied with the hold, then under No Access. Signing turned on
+for Jason Price. Correct Name for Brenda Ortiz: "Ortiz 2" refused ("Use only
+letters, spaces, apostrophes, periods and hyphens in the last name."), then
+"Ortiz de la Cruz" saved as typed. Jason Price reset ("Their password itself
+is not changed.", no temporary password, clearance kept). Maria Lopez's
+Remove Access, disabled as the last active owner, pressed anyway: refused by
+the server. Team History named all five changes and who made each
+("owner@example.dev approved Diego Ramirez as Sales.", "owner@example.dev
+denied Ashley Nguyen's access request."); the signature page's "Open Team
+Access" landed on the screen. As a manager: Team present, Your Fees absent,
+Owner not offered, the reason on screen, the clearance, Correct Name and an
+owner's Remove Access disabled; each pressed anyway (the walk calls the
+control's own click handler, as a client ignoring the disabled state would)
+and refused by the server. Then Approve Again for Rob Hayes (No Access,
+Sales, not cleared) as Registration: beside the button "Stays not cleared to
+sign, as an owner left it. Only an owner changes it."; the answer "Approved
+as Registration. Rob Hayes's account already existed, and its old password
+no longer works. Give them the temporary password below in person: ...
+Signing stays off, as an owner left it."; a temporary password shown once;
+his row Not Cleared To Sign; the history "manager@example.dev approved Rob
+Hayes as Registration.". Diego Ramirez signed in on the form with the
+temporary password: Choose A Password, What Is Your Name?, no signature screen
+(Sales starts not cleared), You Are All Set, Handle A Sale. Jason Price
+signed in: Choose A Password (the reset sent him through onboarding), then
+Draw Your Signature (signing was turned on for him and he had none), then
+straight to Handle A Sale (the page's "Done is done" for a member who
+finished before). Turning signing on alone would not have sent him to
+onboarding: a finished member draws it on Your Signature before filing
+(review fix round, correctness-2).
+
+Onboarding still runs: `onboard.cjs` as `DESK_PREVIEW_MEMBER=fresh-temporary-password`
+at 390×844 on its own fresh server (`FEES=later`, no figure typed): sign-in,
+Choose A Password, What Is Your Name?, Draw Your Signature, Do You Write
+Finance Contracts? then Set These Later, You Are All Set, Handle A Sale;
+`PAGE ERRORS 0`, `CONTRAST FAILURES 0`, exit 0
+(`team-screen/onboard-fresh-temporary-password-390x844.log`, 7 screenshots).
+
+### Review fix round (10/04/2026): 11 confirmed findings
+
+An independent review of the screen (security and correctness), each finding
+checked by a skeptic, confirmed 11. Each fix below has a test that failed
+before it and passes after (run first against the unchanged code: 26 action
+and rule tests failed, and 8 database cases with the guard as it was), except
+the two that are words only.
+
+| Finding | What was wrong | What changed | Test |
+|---|---|---|---|
+| security-1 (major) | An approval that found an account already at the address (`member.auth_user_id`, or `listUsers`, unconfirmed accounts included) kept its password: an account registered at a future employee's address through Supabase's public sign-up, or the one an owner removed access over, came back with the access and confirmed | Every approval issues a temporary password, shown once; an existing account's password is replaced (`team-access.ts`, the approve branch, and the message says the old one no longer works). A reset is unchanged. README: the owner turns off **Allow new users to sign up** (step 11); SOP item 1 and Delivery the same | `every-approval-issues-a-temporary-password-and-a-reset-never-replaces-one` (renamed from `a-temporary-password-is-issued-only-for-a-new-account`), `approving-again-keeps-the-owners-clearance-and-no-known-password` |
+| security-2 / correctness-1 (major) | A manager's Remove Access then Approve Again wrote the role's default clearance over an owner's Turn Signing Off (or cleared a Sales member by approving them as Manager) | `clearanceAtApproval` and `approvalKeepsClearance` (`team-rules.ts`): the role's default for a new request or an owner's approval; otherwise the clearance on the row, written to the row and the account. The screen says it beside a manager's Approve Again. The database refuses a manager's session turning a row back into a request, the one way round it | `the-team-rules-say-who-may-change-whose-access`, `approving-again-keeps-the-owners-clearance-and-no-known-password`, `the-database-holds-the-team-rules`; the walk's manager Approve Again |
+| security-3 / correctness-5 (major) | The guard let a manager's session replace a stored signature, re-point a cleared signer's row at another account or address, and clear `onboarding_completed_at` (reopening the name step around Correct Name) | `20261004000000_team_member_guards.sql` (not applied anywhere, so corrected in place): `auth_user_id`, `email`, `signature_data_url`, `signature_updated_at`, `onboarding_completed_at` and a return to `pending` are owner-only for a signed-in session, and so is inserting a row already carrying a signature or a finished onboarding | `the-database-holds-the-team-rules` (5 new cases) |
+| security-4 (minor) | "activity: staff write" let any role insert a Team History line with any actor and words | New additive migration `20261004000001_team_history_server_only.sql`: a signed-in session may not write a `team_member` activity row; the desk writes them as the service role; other activity unchanged | `the-database-holds-the-team-rules` (Team History, 4 cases) |
+| security-5 / correctness-3 (minor) | The approval and denial lines did not name who acted; `logTeamActivity` ignored the insert's error; nothing kept what the person had before | The lines read "<who> approved <name> as <role>." and "<who> denied <name>'s access request."; metadata keeps `actor_email`, `previous_status`, `previous_role` (and the clearance before and after); `logTeamActivity` returns whether the line was written, and an approval, denial, removal or reset that could not be recorded says "The change was made but could not be recorded." | `team-history-says-who-approved-and-who-denied`, `every-approval-...` |
+| correctness-4 (minor) | A manager's denial was noted "Access request denied by owner." | "Access request denied by <who>." | `team-history-says-who-approved-and-who-denied` |
+| correctness-6 (minor) | When the record failed, the put-back's own error was ignored and the owner was told "not made" regardless | The put-back is checked; when it fails too: "The change was saved but could not be recorded or undone. Check the member and try again." | `a-team-change-is-on-record-or-not-made` (2 new) |
+| correctness-2 (minor) | README and SOP said turning signing on for someone with no signature asks for one at the next sign-in; a finished member goes straight to Handle A Sale | Words only: they draw it on Your Signature before they can file; a reset also asks for it in onboarding (README, SOP item 4, the walk's notes) | none (behaviour unchanged) |
+| correctness-8 (minor) | `test-output.txt` carried the main checkout's header with this worktree's counts | Replaced with this round's own run in the worktree, unedited | none (evidence) |
+
+### Not built, and why
+
+- **Spanish.** The team screen is in English, like the signature page and
+  the existing team actions' messages (the onboarding corridor, Your Fees and
+  the paperwork stay bilingual). Translating it means codes for every team
+  action's refusal; not asked for here.
+- **Changing an active member's role.** Not on the screen: the existing
+  approve action on an active member would reset their password as well, so
+  approval of an active member is refused (that is also what keeps an owner
+  from being demoted through it). A role change is Remove Access, then
+  Approve Again with the new role (a new temporary password; an owner's
+  writes the new role's signing default, a manager's keeps the person's
+  clearance as an owner left it).
+- **The auth-only fallback** (`reviewAuthOnlyAccess`, for a deployment
+  without the `team_members` table) still issues a temporary password on
+  approval: its account was created by the request with a password nobody
+  was shown. It now refuses an owner's account to a non-owner and an
+  already-active account, and (review fix round) keeps an owner's clearance
+  on a non-owner's re-approval and names who acted in its history lines.
+  This desk always has the table.
+- **The migrations are not applied** to any database; the owner applies
+  them (README, Owner's manual steps, step 2), and turns off Supabase's
+  public sign-up (step 11).
+
 ## 00000000. Paperwork, page by page: the fix round, walked (10/03/2026)
 
 The page-by-page paperwork (README "Paperwork, page by page"; SOP

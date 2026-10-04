@@ -74,6 +74,14 @@ onboarding not completed, and is sent to `/admin/account/onboarding` first.
 What onboarding saves lasts until the dev server restarts. Leave it empty for
 the ordinary preview. It is ignored in production.
 
+With `DESK_PREVIEW_MEMBER` unset, the preview also holds a fixture team for
+the team screen (`/admin/dealership/team`): three access requests, five
+members and one person with no access, all at `example.test` addresses (see
+"The team screen" below). Signing in on the preview form with the address of
+a member whose account the preview holds (one an approval just created, say)
+signs in as that member, so an approved salesperson's first sign-in can be
+walked. None of it exists in production.
+
 The preview "fresh" member is an Owner, so its first sign-in includes Your
 Fees (see "Dealer fees" below) after Draw Your Signature. Set
 `DESK_PREVIEW_MEMBER=fresh-sales` and the preview cookie `sales:<email>` to
@@ -275,6 +283,74 @@ answer is recorded); then **Hold To Void**.
   fewer documents than the full set or skips the "Not Yet" answer; who voided
   is always the signed-in session's own team row. The older document routes
   cannot rewrite, trash or duplicate a sale's filed bill of sale either.
+
+## The team screen
+
+**Team** in the sidebar (under More on a phone), beside Your Fees, for the
+Owner and the Manager: `/admin/dealership/team`. The access-request email
+links to `/admin/team`, which opens it, and so does "Open Team Access" on the
+signature page.
+
+- **Access Requests.** Each person who asked at `/admin/signup`: name,
+  email, the role they asked for and when. **Approve As** a role (Owner is
+  offered only to an owner) says whether that role starts cleared to sign:
+  Owner, Manager and Registration do, every other role does not. Every
+  approval issues a **temporary password, shown once**: give it to them in
+  person; they choose their own at their first sign-in (Choose A Password).
+  Someone with no account gets one created; an account that already existed
+  for the address (registered there before they asked, or the one they had
+  before they lost access) gets the temporary password in place of its old
+  one, so a password somebody else may know never comes in with the
+  approval. **Deny** asks first and needs a 1.2-second hold.
+- **Team Members.** Each member's legal name (from onboarding), role,
+  whether onboarding is finished, and whether they are cleared to sign.
+  - **Turn Signing On / Off** (Owner only): who may file and print the paper
+    that carries their name and signature. Turning it on for someone with no
+    signature yet: they draw it on Your Signature
+    (`/admin/account/signature`) before they can file; a reset also asks for
+    it in onboarding.
+  - **Correct Name** (Owner only): the legal first and last name, with the
+    same rules as onboarding. The 130-U seller line and the VTR-61 print the
+    corrected name on paper filed from now on; copies already filed keep the
+    name they were filed with.
+  - **Reset Access** (not an owner, not yourself; hold to confirm): signs
+    every device out and sends the member to Choose A Password at their
+    next sign-in. Their password is not changed and their signing choice is
+    kept.
+  - **Remove Access** (not yourself; hold to confirm): the member can no
+    longer sign in to the desk. The last active owner cannot be removed.
+- **No Access.** People denied or removed, with **Approve Again** (a new
+  temporary password, shown once). An owner's Approve Again starts the
+  person on the role's signing default; a manager's keeps the clearance an
+  owner left on them, and the screen says which, so Remove Access then
+  Approve Again is never a manager's way to change who signs.
+- **Team History.** Every approval, denial, removal, reset, clearance change
+  and name correction, with who (named in the line itself) and when; a
+  clearance or name change that cannot be recorded is not made, and an
+  access change that cannot be recorded is made and says so ("The change
+  was made but could not be recorded."). Only the desk's server writes it: a
+  signed-in session cannot post a line into it
+  (`supabase/migrations/20261004000001_team_history_server_only.sql`).
+- **Reset Everyone** (hold to confirm): resets every active member except
+  owners and you.
+
+What only an owner may do is shown to a manager disabled, with the reason.
+The rules are the server's (`src/lib/onboarding/team-rules.ts`, asked again
+by every action in `src/lib/actions/team-access.ts`) and the database's
+(`supabase/migrations/20261004000000_team_member_guards.sql`), not only the
+screen's: a manager cannot approve or change an owner, nobody removes or
+demotes the last active owner or resets or removes themselves, and only an
+owner changes who is cleared to sign or a name. A manager's own session
+going around the desk is refused the same, and also any change to a row's
+account or address, its stored signature, or whether its onboarding is
+finished, and turning a row back into a fresh request. The first Owner is not made
+here: they bootstrap their own account once in Supabase (SOP, "First sign-in:
+onboarding", item 1).
+
+The walk that checks all of it is
+`.claude/skills/premium-dealer-build/scripts/desk-walk/team.cjs`, on a fresh
+dev server with `DESK_PREVIEW_MEMBER` unset (`docs/verification/VERIFICATION.md`,
+"Team screen").
 
 ## Dealer fees: set once, used on every sale
 
@@ -582,7 +658,9 @@ only) the markers print instead of a refusal.
    `supabase/migrations/20260926000000_discount_sale_desk.sql`, then
    `supabase/migrations/20261002000000_void_filed_documents.sql`, then
    `supabase/migrations/20261002000001_vehicle_empty_weight.sql` (step 16),
-   then `supabase/migrations/20261003000000_dealer_fee_schedule.sql` (step 8)
+   then `supabase/migrations/20261003000000_dealer_fee_schedule.sql` (step 8),
+   then `supabase/migrations/20261004000000_team_member_guards.sql` and
+   `supabase/migrations/20261004000001_team_history_server_only.sql` (step 11)
    (`supabase db push`). All are additive. The first creates the tables,
    RLS, the role-permission map, the step-data merge and complete-sale
    functions, the public inventory view, realtime on `deals`, and the three
@@ -679,14 +757,29 @@ only) the markers print instead of a refusal.
    (Tex. Fin. Code ch. 348, never below the 18% optional ceiling of §303.009)
    with counsel before selling buy here pay here.
 11. **Clear the signers and onboard every staff member.**
+   - *Turn off public sign-up first.* In the Supabase dashboard,
+     Authentication, Sign In / Providers: turn off **Allow new users to sign
+     up**. Supabase allows it by default, and the project URL and anon key
+     are public, so anybody could otherwise register an account at a future
+     employee's address before that person asks. The desk never needs it:
+     every desk account is created by the desk's server (an approval or a
+     reset), which the setting does not block, and an approval replaces the
+     password of any account it finds for the address. After turning it off,
+     check once that an approved member can still sign in with Google.
+   - *Approve each staff member on the team screen* (**Team** in the
+     sidebar; "The team screen" above). Apply
+     `supabase/migrations/20261004000000_team_member_guards.sql` and
+     `supabase/migrations/20261004000001_team_history_server_only.sql` first:
+     they hold the screen's rules, and its history, in the database too.
    - *Who is cleared to sign:* approval turns signing on for the Owner,
      Manager and Registration roles by default (owner's decision
      10/01/2026). Every other role (a salesperson, say) starts not cleared;
      if that person will file sale documents or print the VTR-61, an owner
-     turns `can_sign_contracts` on for that one person on their
-     `team_members` row in Supabase (or off for someone cleared by default).
-     A reset keeps that per-person choice. Only a cleared member can file:
-     the dealer line carries the filer's own name and signature. The default
+     presses **Turn Signing On** for that one person on the team screen (or
+     **Turn Signing Off** for someone cleared by default). A reset keeps that
+     per-person choice, and so does a manager's Approve Again. Only a cleared
+     member can file: the dealer line carries the filer's own name and
+     signature. The default
      applies at approval only: members approved before 10/01/2026 keep the
      value they have (an Owner approved earlier started not cleared), so
      check the existing Owner, Manager and Registration rows and turn
@@ -706,9 +799,11 @@ only) the markers print instead of a refusal.
      device that signs in after the reset reaches Choose A Password, and
      choosing it keeps that device signed in. A reset does not change the
      password of an account that already has one (the emailed link does),
-     so if the old password itself may be known to someone else, set that
-     member's `team_members.status` to something other than `active` first
-     (the password screen refuses an inactive member). To sign out every
+     so if the old password itself may be known to someone else, use
+     **Remove Access** on the team screen at once (the password screen
+     refuses an inactive member), then **Approve Again**: an approval
+     replaces the password with a new temporary one, shown once, so the
+     known one stops working. To sign out every
      device of a member without the team screen, run in the SQL editor,
      with that member's auth user id:
 
@@ -740,11 +835,11 @@ only) the markers print instead of a refusal.
      `Discount Used Cars And Trucks, LLC (First Last)` with their stroke on
      the dealer line.
    - *After onboarding the name is the owner's to change:* a finished member
-     cannot rewrite their own name (the screen sends them back to work). The
-     desk has no rename screen yet, so a correction is an owner (team:manage)
-     editing that member's `full_name` ("First Last") and `display_name`
-     (first name) row in Supabase. The member's own name write at onboarding
-     is logged in `team_activity_events`.
+     cannot rewrite their own name (the screen sends them back to work). An
+     owner corrects it with **Correct Name** on the team screen (the same
+     rules as onboarding; paper filed afterwards prints the new name, filed
+     copies keep theirs). Every name write, the member's own at onboarding
+     and an owner's correction, is logged in `team_activity_events`.
    - *An owner who signs in through `ADMIN_EMAIL`* without a team row has no
      name to print and cannot file until a row is added for them.
 12. **Upload the dealer's signature** at `/admin/account/signature`. It prints

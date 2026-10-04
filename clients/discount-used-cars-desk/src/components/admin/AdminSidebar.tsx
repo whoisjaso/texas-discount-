@@ -3,13 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClockCounterClockwise, DotsThree as MoreHorizontal, PenNib as Settings, Receipt, SignOut as LogOut, Signature as FileSignature, Handshake as HandshakeIcon, Timer, X } from "@phosphor-icons/react";
+import { ClockCounterClockwise, DotsThree as MoreHorizontal, PenNib as Settings, Receipt, SignOut as LogOut, Signature as FileSignature, Handshake as HandshakeIcon, Timer, UsersThree, X } from "@phosphor-icons/react";
 import type { Icon } from "@phosphor-icons/react";
 import { ROLE_LABELS, type TeamRole } from "@/lib/operations/team";
 import { roleOpensAdminRoute } from "@/lib/admin/route-permissions";
 import { logoutAdmin } from "@/lib/actions/auth";
 import type { TeamMember } from "@/lib/operations/types";
-import type { AdminWorkspace } from "@/lib/admin/workspace";
+import { TEAM_SCREEN, type AdminWorkspace } from "@/lib/admin/workspace";
 import Wordmark from "@/components/site/shared/Wordmark";
 import CommandPalette from "@/components/admin/CommandPalette";
 import { brand } from "@/lib/dealership-config";
@@ -52,8 +52,15 @@ const PRIMARY: NavItem[] = [
  * "Your Fees" is the owner's (admin:all): the dealer-set fees and their Texas
  * limits, set at first sign-in and changed here later. Without it a saved
  * fee had no way back but typing the address.
+ *
+ * "Team" is the owner's and the manager's (team:manage): access requests,
+ * who is cleared to sign, resets and name corrections. The access-request
+ * email and the signature page both point at it.
  */
-const SECONDARY: NavItem[] = [{ label: "Your Fees", href: "/admin/dealership/fees", icon: Receipt }];
+const SECONDARY: NavItem[] = [
+  { label: "Your Fees", href: "/admin/dealership/fees", icon: Receipt },
+  { label: "Team", href: TEAM_SCREEN, icon: UsersThree },
+];
 
 /**
  * The dealer's saved signature: every packet prints it on the dealer line, so

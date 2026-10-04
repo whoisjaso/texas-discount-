@@ -74,6 +74,9 @@ describe("the concrete-URL matrix", () => {
     [`/admin/documents/bill-of-sale`, ["owner", "manager"], ["sales", "viewer"]],
     // Team.
     [`/admin/team/api-keys`, ["owner", "manager"], ["sales", "finance", "viewer"]],
+    // The team screen and the alias the access-request email links to.
+    [`/admin/dealership/team`, ["owner", "manager"], ["sales", "finance", "registration", "mechanic", "social", "lot", "viewer"]],
+    [`/admin/team`, ["owner", "manager"], ["sales", "finance", "registration", "mechanic", "social", "lot", "viewer"]],
     // Everyone's screens.
     [`/admin/home`, [...TEAM_ROLES], []],
     [`/admin/account/signature`, [...TEAM_ROLES], []],

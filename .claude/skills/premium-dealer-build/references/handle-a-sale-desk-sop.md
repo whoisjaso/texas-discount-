@@ -359,6 +359,47 @@ create table dealer_fee_schedule_changes (
 --   the same session; it checks what is written instead.
 ```
 
+**Team guards (an additive migration, `*_team_member_guards.sql`, after the
+fee schedule; "First sign-in: onboarding", item 1).** The policy on
+`team_members` lets any `team:manage` session write any column of any row and
+any member delete their own row, so one trigger holds the team screen's rules
+in the database:
+
+```sql
+-- Trigger team_members_guard, before insert, update or delete, not security
+--   definer (current_user is the caller):
+--   a signed-in session (current_user authenticated or anon) without
+--     admin:all may not make an owner, change or delete an owner's row, change
+--     can_sign_contracts, full_name or display_name, change what makes a row
+--     a person's (auth_user_id, email, signature_data_url,
+--     signature_updated_at, onboarding_completed_at: re-pointed, cleared or
+--     replaced, each would let another account file as the signer, put a
+--     forged stroke on the dealer line, or reopen the name step around
+--     Correct Name), turn a row back to status 'pending' (its next approval
+--     would write the role's default clearance), or insert a row already
+--     cleared to sign or already carrying a signature or a finished
+--     onboarding ('owner_only'); a session without team:manage may not
+--     delete a row ('forbidden'). The member's own signature and onboarding
+--     are written by the server as the service role, so they are unaffected;
+--   nobody, the service role included, removes, demotes or deletes the last
+--     active owner ('last_owner'), counted under one transaction-scoped
+--     advisory lock so two removals cannot each count the other.
+```
+
+**Team History, server only (an additive migration,
+`*_team_history_server_only.sql`, after the team guards).** The policy
+"activity: staff write" lets every role insert any `team_activity_events`
+row, so a salesperson could post a line into the record the team screen
+shows as Team History:
+
+```sql
+-- Trigger team_activity_events_guard, before insert or update: a signed-in
+--   session (current_user authenticated or anon) may not write a row whose
+--   entity_type is 'team_member' ('team_history_server_only'). The desk
+--   writes those lines as the service role; every other kind of activity a
+--   staff session records is as it was.
+```
+
 Each deal keeps its own copy in `step_data.fees` (`titleFee`, `docFee`,
 `registrationFee`, `docFeeCapCents`, `occcFiling`, `scheduleVersion`,
 `source`, `takenAt`, `rulebookAsOf`), written at Start A Sale, and its
@@ -408,8 +449,8 @@ Tests, Verification) carry the detail of their own rules and point back here.
 **What onboarding includes, in full** (each item is specified below):
 
 1. Where a member comes from: the first Owner (a one-time bootstrap), the
-   access request, the approval (a temporary password, the role, the default
-   signing clearance) and the reset.
+   access request, the approval (a temporary password, the role, the
+   default signing clearance) and the reset, on the team screen.
 2. The page, one question per screen: Choose A Password (only on a temporary
    password), What Is Your Name?, Draw Your Signature (only when cleared to
    sign), Your Fees (Owner only: six screens held to the Texas limits) and
@@ -421,7 +462,8 @@ Tests, Verification) carry the detail of their own rules and point back here.
    VTR-61's printed name and under every dealer line; the one stored
    signature on every dealer line; the fee schedule every new sale copies.
 6. Changing an answer later: the signature page, Your Fees settings and the
-   posted notice, a reset, an owner for the name.
+   posted notice, a reset, and the team screen (an owner for the name and for
+   who is cleared to sign).
 7. The routes, files and navigation it needs.
 8. Build order and the preview members that exercise it.
 9. Its tests, and the end-to-end check that walks all of it.
@@ -457,23 +499,55 @@ backfills it.
 **Everyone else** asks for access at
 `/admin/signup` (`requestTeamAccessAction`: name, email, an optional phone and
 a role from the public list, confirmed with a six-digit code before the
-request is recorded). An owner or manager (`team:manage`) approves it with a
-role, or denies it (`reviewTeamAccessAction`). The approval issues a
-generated temporary password on the auth account, sets
-`requires_password_change` and the role's default `can_sign_contracts` there,
-and stamps `password_reset_at` (Security); the welcome email carries an
-invite link, never the password. A reset (`resetTeamMemberAccessAction`; an
-active member only, never an owner account from the team screen) never
-changes the password of an account that already has one (overwriting a
-working credential is how a failed email once locked a member out): it sets
+request is recorded). The owner-alert email links to `/admin/team`, which
+resolves to **the team screen**, `/admin/dealership/team` (Owner and Manager,
+`team:manage`). There an owner or manager approves the request with a role,
+or denies it (`reviewTeamAccessAction`); the role picker offers Owner only to
+an owner and says whether the chosen role starts cleared to sign (item 4).
+The approval sets `requires_password_change` and the clearance (item 4) on
+the auth account, stamps `password_reset_at` and ends the account's older
+sessions (Security). **Every approval issues a generated temporary
+password,** which the team screen shows once ("give it in person"): it
+creates the account when the address has none, and it replaces the password
+of an account that already exists for the address. An approval only reaches
+a person without access, and such an account may carry a password somebody
+else knows: one registered at the address before the person asked
+(Supabase's public sign-up is on by default and the anon key is public, so
+the owner also turns sign-up off: Delivery), or the one an owner removed
+access over. An approval never adopts it. The welcome email carries an
+invite link, never the password. A reset (`resetTeamMemberAccessAction`,
+Reset Access; an active member only, never an owner account, never yourself)
+never changes the password of an account that already has one (overwriting a working credential
+is how a failed email once locked a member out): it sets
 `requires_password_change`, keeps the person's own signing clearance, stamps
 `password_reset_at`, ends the account's older sessions and emails the setup
 link. Only a member with no auth account yet gets a generated temporary
-password, created as at approval. The team screen shows a temporary password
-only when the reset created the account (the reference's
-`resetApprovedMemberAccess` returns one, with "Temporary password reset.", in
-every case: correct that when the team screen is built). Either way the
-member's next sign-in lands in onboarding at Choose A Password.
+password, created as at approval, and only then does the screen show one.
+Either way the member's next sign-in lands in onboarding at Choose A Password.
+Remove Access (a deny on an active member) sets the row inactive, which the
+roster reads as no role at once; an owner who suspects a password is known
+uses it, and Approve Again later issues a new temporary password, so the
+known one never comes back with the access. Every approval, denial, removal
+and reset is a Team History line that names who acted (by name, or by the
+address of an owner with no roster row) and keeps the status and role the
+person had before; when the line cannot be written the access change still
+stands and the action says "The change was made but could not be
+recorded.".
+
+**The team screen's rules are the server's** (`src/lib/onboarding/team-rules.ts`,
+asked again by every action with the role read from the roster, and held by
+the database for a session that goes around the desk: migration
+`*_team_member_guards.sql`, Data model). Refused, with the reason: a role
+without `team:manage`; Owner from anyone but an owner, and any change to an
+owner's row by a non-owner; removing or demoting the last active owner (by
+anybody, the service role included); resetting or removing yourself;
+re-approving an active member (an approval is never a role change); and the
+clearance and the name (items 4 and 6) from anyone but an owner, Remove
+Access then Approve Again included: a non-owner's approval of a person who
+had access keeps the clearance an owner left on the row
+(`clearanceAtApproval`), and the screen says so beside Approve Again. A control a
+manager may not use is shown disabled with the reason, never hidden as if it
+did not exist, and the server refuses it anyway.
 
 **2. The page.** One question per screen, the same corridor styling, the
 counter counting only the screens this member gets ("Step 1 Of 4"), English
@@ -598,11 +672,22 @@ account is still flagged `requires_password_change`). Build it after the page
 (item 8): a redirect to a missing route locks every new member out.
 
 **4. Who is cleared to sign** (`can_sign_contracts`) is a per-person fact. Its
-starting value, written when an owner approves the member, is cleared for
-the Owner, Manager and Registration roles and not cleared for every other
-role (owner's decision 10/01/2026). An owner turns it on or off for one
-person afterwards; a reset never rewrites that choice (the auth account's
-mirror of it keeps the person's value, not the role's). The default applies
+starting value, written when a new request is approved (by an owner or a
+manager) or when an owner approves anyone, is cleared for the Owner, Manager
+and Registration roles and not cleared for every other role (owner's
+decision 10/01/2026; `ROLES_CLEARED_TO_SIGN_BY_DEFAULT`). A manager's Approve
+Again for a person who had access keeps the clearance an owner left on the
+row, never the role's default. An
+owner turns it on or off for one person afterwards, on the team screen (Turn
+Signing On / Off, `setTeamMemberSigningAction`, Owner only; a manager sees it
+disabled with the reason and the server refuses it); a reset never rewrites
+that choice (the auth account's mirror of it keeps the person's value, not
+the role's). Turning it on for a member with no signature does not send a
+finished member back to onboarding: they draw it on Your Signature
+(`/admin/account/signature`) before they can file, and filing refuses them
+until they do; a reset (or onboarding not yet finished) asks for it at Draw
+Your Signature. Turning it off keeps their stroke off new paper, never off
+paper already filed. The default applies
 at approval only: nothing backfills members approved before it, so an Owner
 approved earlier stays not cleared until an owner turns signing on for them.
 
@@ -633,19 +718,30 @@ though the documents are built later ("How the paper looks"):
 Change per fee, a stale tab refused, every change logged with who, when, from
 and to) and its posted notice at `/admin/dealership/fees/notice`. The
 password: a reset (item 1), which brings back Choose A Password and Done
-only. The name: through an owner (above). Signing clearance: an owner, per
-person (item 4).
+only. The name: Correct Name on the team screen (`correctTeamMemberNameAction`,
+Owner only), with the name step's own rules (legal first and last, 60
+characters each, the characters and the WinAnsi font, "(First Last)" fitting
+the 130-U seller box at 7.25pt). The 130-U seller line and the VTR-61 print
+the corrected name on paper filed AFTER the change only: a filed copy keeps
+the name it was filed with (`form_data.dealerSignerName`). Signing clearance:
+an owner, per person (item 4). Both are on record in `team_activity_events`
+(who, when, from and to), and a change whose record cannot be written is put
+back and refused.
 
 **7. Routes, files and navigation.**
 
 | Route or file | What |
 |---|---|
 | `/admin/signup` | The access request |
+| `/admin/dealership/team` (`page.tsx`, `TeamClient.tsx`); `/admin/team` redirects there | The team screen: requests (approve, deny), members (finished onboarding or not, Cleared To Sign, Correct Name, Reset Access, Remove Access), No Access (approve again), Reset Everyone, Team History (Owner and Manager: `team:manage`) |
 | `/admin/account/onboarding` (`page.tsx`, `OnboardingFlow.tsx`) | The screens above |
 | `/admin/account/signature` | The stored signature, later |
 | `/admin/dealership/fees` | Your Fees settings (Owner only: `admin:all`) |
 | `/admin/dealership/fees/notice` | The posted notice, linked from Your Fees; any role that reads sales (`sales:read`) may open and print it, since it states no figure |
-| `src/lib/actions/team-access.ts` | Request, approval, deny, reset (temporary password, default clearance, `password_reset_at`) |
+| `src/lib/actions/team-access.ts` | Request, approval (a temporary password every time, the clearance by `clearanceAtApproval`, `password_reset_at`), deny and remove, reset (a temporary password only when it creates the account, the person's own clearance), clearance (`setTeamMemberSigningAction`) and name (`correctTeamMemberNameAction`) |
+| `src/lib/onboarding/team-rules.ts`, `src/lib/admin/team-roster.ts` | Who may change whose access (pure, asked by every action); what the team screen reads |
+| `supabase/migrations/*_team_member_guards.sql` | The same rules in the database for a signed-in session, and the last active owner for everyone |
+| `supabase/migrations/*_team_history_server_only.sql` | Team History lines written by the server alone |
 | `src/lib/actions/team-onboarding.ts` | Choose A Password, the name, Done |
 | `src/lib/actions/staff-signature.ts`, `src/lib/actions/dealer-fees.ts` | The signature save; the fee schedule save |
 | `src/lib/onboarding/staff-name.ts` | The name rules (characters, WinAnsi, the 7.25pt fit) |
@@ -655,9 +751,15 @@ person (item 4).
 
 "Your Fees" appears in the Owner's sidebar and the phone's More sheet and
 nowhere else; every other role is refused the page and the save
-(`notOwner`).
+(`notOwner`). "Team" sits beside it for the Owner and the Manager
+(`team:manage`); the owner-alert email (`/admin/team`) and the signature
+page's "Open Team Access" land on it.
 
-**8. Build order and the preview members.** The page must exist before the
+**8. Build order and the preview members.** Build the team screen with the
+access request and the approval (item 1): without it nobody can approve a new
+member, so onboarding cannot start for anyone but the bootstrapped Owner (the
+reference desk shipped the routes' names, the email link and the signature
+page's link with no page behind them). The page must exist before the
 redirect is deployed: a redirect to a missing route locks every new member
 out (the Vega's port did exactly that). Test it with a fresh member in the
 preview mock (no name, no signature, onboarding not completed), and with one
@@ -670,15 +772,21 @@ nothing sends the account back, so Handle A Sale opens. The preview members:
 `fresh-temporary-password` (Choose A Password first),
 `fresh-reset` (an owner reset: stale devices signed out, then Choose A
 Password) and `fresh-sales` (a salesperson, no fees step; with
-`PREVIEW_ADMIN=sales:<email>`).
+`PREVIEW_ADMIN=sales:<email>`). With `DESK_PREVIEW_MEMBER` unset the mock
+still holds a fixture team for the team screen (three requests, five members,
+one with no access, all at example.test addresses), and signing in on the
+preview form with the address of a member whose account the mock holds (one
+an approval just created, say) signs in as that member: that is how the team
+walk meets Choose A Password as the person approved. None of it is reachable
+in production (preview is off there, so the service client is the real one).
 
 **9. Tests and the end-to-end check.** The tests are in "Tests you must
-write": Onboarding, Password reset, VTR-61 and Fees (the owner meets the fees
-at first sign-in and nobody else does; only the owner sets them). The
+write": Onboarding, Team, Password reset, VTR-61 and Fees (the owner meets the
+fees at first sign-in and nobody else does; only the owner sets them). The
 end-to-end check walks the whole unit at 1440x900 and 390x844, a fresh
 server for each preview member, 0 page errors and 0 contrast failures
-(premium-dealer-build `scripts/desk-walk/onboard.cjs` and `reset.cjs`;
-"Verification", Fees A and B):
+(premium-dealer-build `scripts/desk-walk/onboard.cjs`, `reset.cjs` and
+`team.cjs`; "Verification", Fees A and B):
 
 - `fresh-temporary-password` (`FEES=<walk input>`): Choose A Password, the
   name, the signature, Your Fees, Done, Handle A Sale (the 10-character floor
@@ -703,6 +811,22 @@ server for each preview member, 0 page errors and 0 contrast failures
   with the drawn signature.
 - `fresh-cannot-sign` is walked with `onboard.cjs ... cannot-sign`; every
   other member with the default `cleared`.
+- The team screen (`team.cjs`, a fresh server per size with
+  `DESK_PREVIEW_MEMBER` unset): as the owner, `/admin/team` landing on the
+  screen, approve a request as Sales (Owner offered, "starts not cleared to
+  sign", a temporary password shown once), deny one with the hold, turn
+  signing on for a member, Correct Name (a refused name first), reset a member
+  (no temporary password: the account exists), the last active owner's Remove
+  Access refused by the server, the history naming each change and who made
+  it, and the signature page's link landing on the screen; as a manager,
+  Owner not offered, the clearance and name controls disabled and refused by
+  the server when pressed anyway, and Approve Again for a removed Sales
+  member as Registration keeping them not cleared (said beside the button)
+  with a new temporary password for their existing account; then the
+  approved member signs in with the temporary
+  password and meets Choose A Password, the name, no signature screen and
+  Handle A Sale, and the reset member meets Choose A Password. It prints TEAM
+  WALK OK and exits 1 on any failure.
 
 ### The website on paper versus the desk's own address
 
@@ -744,9 +868,11 @@ All under the site's existing admin sign-in.
 | `GET /api/documents/agreements/[id]/pdf` | Renders a filed document to PDF. Staff session or a valid signing token for that deal. |
 | `GET /api/admin/sales/[dealId]/packet-status` | Public-safe packet facts for the desk's live refresh. |
 
-Onboarding's routes (`/admin/signup`, `/admin/account/onboarding`,
-`/admin/account/signature`, `/admin/dealership/fees` and its `/notice`) are
-listed with it in "First sign-in: onboarding", item 7; Government Fees
+Onboarding's routes (`/admin/signup`, the team screen
+`/admin/dealership/team` with `/admin/team` resolving to it,
+`/admin/account/onboarding`, `/admin/account/signature`,
+`/admin/dealership/fees` and its `/notice`) are listed with it in "First
+sign-in: onboarding", item 7; Government Fees
 (`/admin/sales/[dealId]/government-fees`) is in "## Fees".
 
 Server actions, one per decision: `startSale`, `setDealLanguage`,
@@ -1960,6 +2086,12 @@ Sales** beneath it (and **Sale Times** and **Promises** if built).
 - Rate-limit `/api/capture` and `signPacketDocument` per token.
 - No secret, key or licence data in client bundles, logs or URLs other than
   the opaque token.
+- **The team's rules are the server's and the database's** ("First sign-in:
+  onboarding", item 1): every team action asks them again with the role
+  read from the roster, and the team guards trigger refuses the same changes
+  to a session that goes around the desk. Removing a member's access also
+  marks the auth account inactive, so older metadata never stands in for the
+  roster.
 - **A password reset signs out every device** (owner's decision
   10/02/2026). Every owner path that resets an account or issues it a
   temporary password stamps `app_metadata.password_reset_at` (ISO) and logs
@@ -2101,6 +2233,34 @@ Sales** beneath it (and **Sale Times** and **Promises** if built).
   session's own row. The admin layout redirects an unfinished member (and
   one still on a temporary password) to the page, and the page never sends
   such an account away.
+- Team (the team screen, "First sign-in: onboarding", items 1, 4, 6 and 7):
+  the route opens for Owner and Manager only, `/admin/team` resolves to it,
+  and the owner-alert email's link and the signature page's "Open Team
+  Access" land on a real page; each refusal at the action layer, through the
+  real access check (a role without `team:manage`; Owner only from an owner;
+  no change to an owner's row by a non-owner; the last active owner never
+  removed or demoted; nobody resets or removes themselves; no re-approval of
+  an active member; clearance and name Owner only), and in the database on
+  Postgres (`set role authenticated`: a manager's session refused each,
+  and refused changing a row's account, address, stored signature or
+  finished onboarding, or turning it back into a request; a member refused
+  deleting their own row; the last owner held even for the service role;
+  no signed-in session, an owner's included, writes a Team History line);
+  every approval issues a temporary password, replacing the password of an
+  account that already exists (one registered at the address first
+  included); a manager's Remove Access then Approve Again keeps the
+  clearance an owner set, either way, and an owner's approval or any
+  approval of a new request writes the role's default; a reset keeps the
+  person's clearance, sets the flag, stamps `password_reset_at` and ends
+  older sessions, with no temporary password for an existing account; the
+  approval and denial lines name who acted, with the status and role
+  before, and the row's note names the manager who denied; an access change
+  whose line cannot be written says so; Correct Name refuses exactly what
+  the name step refuses and keeps the name as typed; a corrected name does
+  not change a filed copy; a clearance or name change is on record (who,
+  from and to) or put back, and when the put-back fails too the owner is
+  told it stands unrecorded, never "not made"; the preview team is walkable
+  and none of it reaches production.
 - The 130-U seller line: `<Legal Name> (<First Last>)` in one line or two at
   the 7.25pt floor, with the filer's saved signature; the filer's name and
   member id recorded on the filed row, and a filed copy re-rendering that
@@ -2260,7 +2420,8 @@ Sales** beneath it (and **Sale Times** and **Promises** if built).
 5. **Fees** ("## Fees"; `scripts/desk-walk/onboard.cjs` and `fees.cjs`), at
    both sizes, 0 page errors and 0 contrast failures. A and B are part of
    onboarding's end-to-end check ("First sign-in: onboarding", item 9),
-   which also walks `fresh-cannot-sign` and `fresh-reset`. The doc fee typed in a
+   which also walks `fresh-cannot-sign`, `fresh-reset` and the team screen
+   (`team.cjs`). The doc fee typed in a
    walk is a walk input (the owner's figure, or one the user approved,
    labelled as a demo input), never invented:
    - **A, owner onboarding** (`DESK_PREVIEW_MEMBER=fresh`, or
@@ -2312,8 +2473,11 @@ route list, the migrations as files (do not run them against production),
 screenshots of all five walks at both sizes, the rasterised packet pages, and
 the test output. End the PR with the owner's manual steps: run the
 migrations, create the private buckets, set the admin session secret and the
-SMS credentials, confirm the fee and tax lines, upload the dealer's
-signature, and approve any Spanish translation.
+SMS credentials, turn off public sign-up in Supabase (Authentication, Sign In
+/ Providers, "Allow new users to sign up": the desk creates every account
+itself, and an account registered at a future employee's address is never
+needed), confirm the fee and tax lines, upload the dealer's signature, and
+approve any Spanish translation.
 
 **Never:** invent a dealer fact or a legal number; change the wording of an
 official form; put the dealer financing contract on a bank deal; print a

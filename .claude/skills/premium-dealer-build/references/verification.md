@@ -79,6 +79,36 @@ them, or recordly-demo's `scripts/desk/theme.cjs` reads them.
   `FEES=<walk input>`. Then one filed 130-U
   and one printed VTR-61 read `<Legal Name> (<First Last>)` with the drawn
   signature.
+- The team walk (SOP, First sign-in: onboarding, items 1, 4, 6 and 9): at
+  1440×900 and 390×844, each on a FRESH server started WITHOUT
+  `DESK_PREVIEW_MEMBER` (the mock's fixture team; what the walk changes lasts
+  for the server's life), `node team.cjs <out> <w> <h>` with the THEME_*
+  values. As the owner (preview cookie `owner:owner@example.dev`):
+  `/admin/team` lands on `/admin/dealership/team`, Team sits beside Your Fees
+  in the rail or the More sheet, a request approved as Sales (Owner offered,
+  "starts not cleared to sign", a temporary password shown once), one denied
+  with the hold, signing turned on for a member, Correct Name (a refused name,
+  then one kept as typed), a member reset (no temporary password: the account
+  exists), the last active owner's Remove Access refused by the server, the
+  history naming each change and who made it, and the signature page's "Open
+  Team Access" landing on the screen. As a manager
+  (`manager:manager@example.dev`): Owner not offered, Your Fees absent, the
+  clearance and name controls disabled and refused by the server when
+  pressed anyway (the walk calls the control's own handler), an owner not
+  removable; then Approve Again for Rob Hayes (removed, Sales, not cleared)
+  as Registration: the screen says he stays not cleared, as an owner left
+  him, the answer says "Signing stays off" and that his old password no
+  longer works, a new temporary password is shown once, his row reads Not
+  Cleared To Sign, and the history names the manager. Then the approved
+  member signs in on the form with the temporary password (the preview signs
+  in as the roster member whose account the mock holds) and meets Choose A
+  Password, the name, no signature screen and Handle A Sale; the reset
+  member meets Choose A Password, then Draw Your Signature (the reset sends
+  him through onboarding, and signing was turned on for him with no
+  signature on file; turning signing on alone sends a finished member to
+  Your Signature, not onboarding). It prints `THEME OK`, `PAGE ERRORS 0`,
+  `CONTRAST FAILURES 0` and `TEAM WALK OK`, or `TEAM WALK FAILED (n)` and
+  exits 1.
 - The fees walk (SOP, Verification, Fees; A to F), at both sizes, on a
   fresh server per size (the preview mock keeps what onboarding saved for
   the server's life). Every server needs `ADMIN_SESSION_SECRET` and

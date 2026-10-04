@@ -146,6 +146,48 @@ async function previewAppMetadata(user: User): Promise<Record<string, unknown>> 
   }
 }
 
+/**
+ * The preview roster member whose address the preview session signed in
+ * with, when the mock holds an auth account for that member: the session then
+ * IS that member (their account id, its app_metadata, their roster row and
+ * role), as a real sign-in would be.
+ *
+ * Preview only, like the two readers above (the caller is inside the preview
+ * branch, where the service client is the in-memory mock). It is what lets a
+ * walk approve a request on the team screen and then sign in as the person
+ * approved and meet Choose A Password. Any other address, an account the mock
+ * does not hold, or a row tied to the preview's own id changes nothing.
+ */
+async function previewRosterAccount(
+  built: User,
+): Promise<{ user: User; member: TeamMember; role: TeamRole | null } | null> {
+  const email = normalizedEmail(built.email);
+  if (!email) return null;
+  try {
+    const service = createServiceClient();
+    const { data: row } = await service.from("team_members").select("*").eq("email", email).maybeSingle();
+    const member = (row as TeamMember | null) ?? null;
+    if (!member?.auth_user_id || member.auth_user_id === built.id) return null;
+    const { data } = await service.auth.admin.getUserById(member.auth_user_id);
+    const account = data?.user;
+    if (!account || normalizedEmail(account.email) !== email) return null;
+    return {
+      user: {
+        ...built,
+        id: account.id,
+        email,
+        app_metadata: { ...(account.app_metadata ?? {}) },
+        user_metadata: { ...(account.user_metadata ?? {}) },
+      } as User,
+      member,
+      // The roster decides, as it does outside preview: no active row, no role.
+      role: isActiveTeamMember(member) ? member.role : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function getCurrentAdminAccess(
   options: {
     /**
@@ -163,10 +205,13 @@ export async function getCurrentAdminAccess(
     if (previewValue) {
       const preview = parseLocalAdminPreviewValue(previewValue);
       const built = createLocalAdminUser(preview.email, preview.role);
-      const user: User = {
-        ...built,
-        app_metadata: { ...built.app_metadata, ...(await previewAppMetadata(built)) },
-      };
+      const roster = await previewRosterAccount(built);
+      const user: User = roster
+        ? roster.user
+        : {
+            ...built,
+            app_metadata: { ...built.app_metadata, ...(await previewAppMetadata(built)) },
+          };
       /*
         Preview's stand-in for the device cookie: when this browser signed in
         (tj-local-admin-signed-in). Read only when the preview account has a
@@ -182,12 +227,13 @@ export async function getCurrentAdminAccess(
       ) {
         return signedOutByReset();
       }
+      const role = roster ? roster.role : preview.role;
       return {
         user,
-        member: await previewTeamMember(user),
-        role: preview.role,
+        member: roster ? roster.member : await previewTeamMember(user),
+        role,
         service: null,
-        isConfiguredOwner: preview.role === "owner",
+        isConfiguredOwner: role === "owner",
       };
     }
   }
