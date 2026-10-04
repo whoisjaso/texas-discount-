@@ -17,7 +17,7 @@
 // DESK_BASE picks the server (default http://localhost:5190).
 const { chromium } = require(process.env.PWPATH);
 const fs = require('fs');
-const { BASE, guard, at } = require('./desk-base.cjs');
+const { BASE, guard, at, assertTheme } = require('./desk-base.cjs');
 const { AUDIT } = require('./audit-fn.cjs');
 
 (async () => {
@@ -46,6 +46,7 @@ const { AUDIT } = require('./audit-fn.cjs');
   };
   const shot = async (p, label) => {
     await p.waitForTimeout(700);
+    if (n === 0) await assertTheme(p); // no screenshot is trusted before the theme passes
     await p.screenshot({ path: `${out}/reset-${String(n++).padStart(2, '0')}-${label}.png`, fullPage: true });
     for (const f of await p.evaluate(AUDIT)) failures.push(label + ': ' + f);
   };
@@ -88,17 +89,21 @@ const { AUDIT } = require('./audit-fn.cjs');
     console.log('AFTER SIGN-IN ->', p.url().replace(BASE, ''), '::', JSON.stringify(q));
     expect(/Choose A Password/.test(q), `a fresh sign-in reached ${JSON.stringify(q)}, not Choose A Password`);
     await shot(p, 'choose-a-password');
-    await p.locator('input[name=password]').fill('a preview password of mine');
-    await p.locator('input[name=confirmPassword]').fill('a preview password of mine');
-    await p.getByRole('button', { name: 'Save Password', exact: true }).click();
-    await p.locator('h1#onboarding-question').filter({ hasNotText: 'Choose A Password' }).waitFor({ timeout: 60000 });
-    console.log('PASSWORD SAVED ->', JSON.stringify((await p.locator('h1#onboarding-question').innerText()).replace(/\s+/g, ' ')));
-    await shot(p, 'after-password');
+    if (/Choose A Password/.test(q)) { // otherwise the FAILED above stands and the verdict still prints
+      await p.locator('input[name=password]').fill('a preview password of mine');
+      await p.locator('input[name=confirmPassword]').fill('a preview password of mine');
+      await p.getByRole('button', { name: 'Save Password', exact: true }).click();
+      await p.locator('h1#onboarding-question').filter({ hasNotText: 'Choose A Password' }).waitFor({ timeout: 60000 });
+      console.log('PASSWORD SAVED ->', JSON.stringify((await p.locator('h1#onboarding-question').innerText()).replace(/\s+/g, ' ')));
+      await shot(p, 'after-password');
+    }
     await ctx.close();
   }
 
   console.log('PAGE ERRORS', errors.length);
   console.log('CONTRAST FAILURES', failures.length); for (const f of [...new Set(failures)].slice(0, 10)) console.log('  ', f);
+  expect(!errors.length, `${errors.length} page error(s)`);
+  expect(!failures.length, `${failures.length} contrast failure(s)`);
   console.log(failed.length ? `RESET WALK FAILED (${failed.length})` : 'RESET WALK OK');
   if (failed.length) process.exitCode = 1;
   await b.close();

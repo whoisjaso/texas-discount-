@@ -6,9 +6,10 @@
 // open sale with nothing filed: the fees walk (fees.cjs) needs one.
 const { chromium } = require(process.env.PWPATH);
 const fs = require('fs');
-const { BASE, guard, at, previewCookies } = require('./desk-base.cjs');
+const { BASE, guard, at, previewCookies, assertTheme } = require('./desk-base.cjs');
 const { AUDIT } = require('./audit-fn.cjs');
-const failures = [];
+const failures = []; // contrast failures only
+const problems = []; // an expectation not seen, a File the desk refused
 (async () => {
   const [out, scenarioPath, W, H] = process.argv.slice(2);
   const sc = JSON.parse(fs.readFileSync(scenarioPath, 'utf8'));
@@ -19,7 +20,8 @@ const failures = [];
   await guard(ctx);
   const p = await ctx.newPage();
   const log = (...a) => console.log(...a);
-  p.on('pageerror', e => log('PAGEERR', e.message.slice(0, 200)));
+  const errors = [];
+  p.on('pageerror', e => { errors.push(e.message.slice(0, 200)); log('PAGEERR', e.message.slice(0, 200)); });
   let n = 0;
   const shot = async (label) => {
     await p.waitForTimeout(700);
@@ -41,6 +43,9 @@ const failures = [];
     await p.goto(dealUrl + '/guide', { waitUntil: 'networkidle', timeout: 180000 });
     await settle();
     log('RESUME', dealUrl.replace(BASE, ''), '->', p.url().replace(BASE, ''));
+    // Start A Sale is skipped, so its chosen-card check never runs: assert
+    // the theme here, before the first screenshot of the resumed corridor.
+    await assertTheme(p);
   } else {
     // ---- Start A Sale
     await p.goto(at('/admin/sales/new'), { waitUntil: 'networkidle', timeout: 180000 });
@@ -140,7 +145,7 @@ const failures = [];
     if (want) {
       const seen = await p.getByText(want, { exact: false }).count();
       log(seen ? `EXPECT OK ${step} :: ${want}` : `EXPECT FAILED ${step} :: ${want}`);
-      if (!seen) failures.push(`${step}: expected "${want}" on screen`);
+      if (!seen) problems.push(`${step}: expected "${want}" on screen`);
     }
     const a = sc.answers[step] ?? sc.answers[step.split('/').pop()];
     if (step.startsWith('document:') || ['title', 'titleWork'].includes(step)) {
@@ -158,7 +163,8 @@ const failures = [];
       if (await fileBtn.isDisabled().catch(() => false)) {
         const why = ((await p.locator('[role=alert]:not(#__next-route-announcer__)').allInnerTexts().catch(() => [])) || []).join(' | ').replace(/\s+/g, ' ');
         log('FILE BLOCKED', step, JSON.stringify(why));
-        failures.push(`${step}: File blocked: ${why}`);
+        problems.push(`${step}: File blocked: ${why}`);
+        ended = `file blocked at ${step}`;
         break;
       }
       await fileBtn.click();
@@ -180,6 +186,12 @@ const failures = [];
       else if (act.text) { await clickText(act.text); }
       else if (act.link) { await p.getByRole('link', { name: act.link }).first().click(); }
       else if (act.press) { await p.keyboard.press(act.press); }
+      else if (act.hold) {
+        // A Hold To Confirm read-back (the desk's DeskConfirm): pressed and
+        // held past its data-hold-ms, then released, as Start A Sale's is.
+        const hb = await btn(act.hold, act.exact ?? false).boundingBox();
+        await p.mouse.move(hb.x + hb.width / 2, hb.y + hb.height / 2); await p.mouse.down(); await p.waitForTimeout(act.ms ?? 2600); await p.mouse.up();
+      }
       await p.waitForTimeout(500);
     }
     await p.waitForURL((u) => u.href !== url, { timeout: 90000 }).catch(() => {});
@@ -198,8 +210,16 @@ const failures = [];
     deskCommit: (process.env.DESK_DIR && git(['log', '-1', '--format=%h', ...corridor])) || 'unknown',
     dirty: process.env.DESK_DIR ? git(['status', '--porcelain', ...corridor]).split('\n').filter(Boolean).length : null,
     scenario: scenarioPath, deal: dealUrl.replace(BASE, ''), viewport: [Number(W), Number(H)],
-    ended, screens: walked, contrastFailures: failures.length, at: new Date().toISOString(),
+    ended, screens: walked, contrastFailures: failures.length, problems, at: new Date().toISOString(),
   }, null, 1) + '\n');
+  log('PAGE ERRORS', errors.length);
   log('CONTRAST FAILURES', failures.length); for (const f of [...new Set(failures)].slice(0, 15)) log('  ', f);
+  for (const f of problems) log('PROBLEM', f);
+  // The verdict: the packet reached (or the STOP_AT step), every scenario
+  // expectation seen, nothing blocked, 0 contrast failures, 0 page errors.
+  const reached = ended === 'packet' || (process.env.STOP_AT && ended === `stopped at ${process.env.STOP_AT}`);
+  const ok = reached && !errors.length && !failures.length && !problems.length;
+  log(ok ? `SALE WALK OK (${ended})` : `SALE WALK FAILED (${ended}; ${errors.length} page error(s); ${failures.length} contrast failure(s); ${problems.length} problem(s))`);
+  if (!ok) process.exitCode = 1;
   await b.close();
 })().catch(e => { console.error('FAIL', e.message.split('\n')[0]); process.exit(1); });

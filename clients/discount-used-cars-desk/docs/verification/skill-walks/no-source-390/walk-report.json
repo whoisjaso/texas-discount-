@@ -1,0 +1,39 @@
+{
+ "deskCommit": "27d1632",
+ "dirty": 0,
+ "scenario": "/home/user/texas-discount-/.claude/skills/premium-dealer-build/scripts/desk-walk/scenarios/no-source.json",
+ "deal": "/admin/sales/preview-deals-12",
+ "viewport": [
+  390,
+  844
+ ],
+ "ended": "packet",
+ "screens": [
+  "funding",
+  "paid",
+  "price",
+  "plan:registration",
+  "plate",
+  "plan:title-signer",
+  "plan:inspection",
+  "plan:insurance",
+  "document:billOfSale",
+  "billOfSale/odometerStatus",
+  "billOfSale/paymentMethod",
+  "billOfSale/tradeIn",
+  "billOfSale/conditionType",
+  "billOfSale/review",
+  "document:billOfSale",
+  "document:form130U",
+  "form130U/applicationType",
+  "form130U/applicantType",
+  "form130U/after:applicantType",
+  "form130U/emptyWeight",
+  "form130U/review",
+  "document:form130U",
+  "title"
+ ],
+ "contrastFailures": 0,
+ "problems": [],
+ "at": "2026-10-04T00:39:35.013Z"
+}

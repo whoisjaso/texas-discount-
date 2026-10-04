@@ -23,7 +23,7 @@
 // the preview in as an owner).
 const { chromium } = require(process.env.PWPATH);
 const fs = require('fs');
-const { BASE, guard, at, previewCookies } = require('./desk-base.cjs');
+const { BASE, guard, at, previewCookies, assertTheme } = require('./desk-base.cjs');
 const { AUDIT } = require('./audit-fn.cjs');
 
 const NEW_PASSWORD = process.env.NEW_PASSWORD || 'a preview password of mine';
@@ -40,6 +40,7 @@ const NEW_PASSWORD = process.env.NEW_PASSWORD || 'a preview password of mine';
   let n = 0;
   const shot = async (label) => {
     await p.waitForTimeout(800);
+    if (n === 0) await assertTheme(p); // no screenshot is trusted before the theme passes
     const h1 = (await p.locator('h1').first().innerText().catch(() => '')).replace(/\s+/g, ' ');
     await p.screenshot({ path: `${out}/onboard-${String(n++).padStart(2, '0')}-${label}.png`, fullPage: true });
     const bad = await p.evaluate(AUDIT);
@@ -105,7 +106,8 @@ const NEW_PASSWORD = process.env.NEW_PASSWORD || 'a preview password of mine';
   const done = question().filter({ hasText: 'You Are All Set' });
   await Promise.race([fees.waitFor({ timeout: 60000 }), done.waitFor({ timeout: 60000 })]);
   const FEES = process.env.FEES;
-  if (await fees.isVisible().catch(() => false)) {
+  const metFees = await fees.isVisible().catch(() => false);
+  if (metFees) {
     if (FEES === 'none') throw new Error('Your Fees was shown to a member who should never see it');
     if (!FEES) throw new Error('Your Fees is on screen: pass FEES=<dollars> or FEES=later (the walk never invents a doc fee)');
     await walkFees(p, shot, FEES);
@@ -119,6 +121,27 @@ const NEW_PASSWORD = process.env.NEW_PASSWORD || 'a preview password of mine';
   await p.waitForLoadState('networkidle').catch(() => {});
   console.log('AFTER START WORKING ->', p.url().replace(BASE, ''));
   await shot('handle-a-sale');
+  // Your Fees in the navigation (references/verification.md: absent from the
+  // sidebar and the phone's More sheet for a member without it; the owner's
+  // lists it): the rail at desktop, the More sheet on a phone.
+  {
+    const visibleFeesLinks = (root) => p.evaluate((sel) => [...document.querySelectorAll(`${sel} a[href="/admin/dealership/fees"]`)]
+      .filter((a) => a.getClientRects().length > 0 && getComputedStyle(a).visibility !== 'hidden').length, root);
+    let listed;
+    if (+W < 768) {
+      await p.getByRole('button', { name: 'More', exact: true }).click();
+      const sheet = p.locator('dialog[aria-label="More admin navigation"]');
+      await sheet.waitFor({ timeout: 30000 });
+      listed = await visibleFeesLinks('dialog[aria-label="More admin navigation"]');
+      await shot('more-sheet');
+      await sheet.getByRole('button', { name: 'Close', exact: true }).click();
+    } else {
+      listed = await visibleFeesLinks('nav[aria-label="Admin"]');
+    }
+    console.log(`YOUR FEES IN THE ${+W < 768 ? 'MORE SHEET' : 'SIDEBAR'} -> ${listed}`);
+    if (FEES === 'none' && listed) { console.log('FAILED Your Fees is listed for a member who never meets the step'); process.exitCode = 1; }
+    if (metFees && !listed) { console.log('FAILED Your Fees is missing from the owner\'s navigation'); process.exitCode = 1; }
+  }
   if (FEES === 'none') {
     await p.goto(at('/admin/dealership/fees'), { waitUntil: 'networkidle', timeout: 180000 });
     const shown = await p.locator('[data-fees-settings]').count();
@@ -128,6 +151,9 @@ const NEW_PASSWORD = process.env.NEW_PASSWORD || 'a preview password of mine';
   }
   console.log('PAGE ERRORS', errors.length);
   console.log('CONTRAST FAILURES', failures.length); for (const f of [...new Set(failures)].slice(0, 15)) console.log('  ', f);
+  const ok = !errors.length && !failures.length && process.exitCode !== 1;
+  console.log(ok ? 'ONBOARD WALK OK' : 'ONBOARD WALK FAILED');
+  if (!ok) process.exitCode = 1;
   await b.close();
 })().catch((e) => { console.error('FAIL', e.message.split('\n')[0]); process.exit(1); });
 
@@ -136,7 +162,10 @@ const NEW_PASSWORD = process.env.NEW_PASSWORD || 'a preview password of mine';
  * FEES_TRY figure refused in both languages first), deputy, inventory tax,
  * Ch. 345, then the review and Save Fees. Every yes/no is answered No: the
  * walk records no OCCC filing, deputy status or inventory tax it was not
- * given. FEES=later presses Set These Later on the first screen instead.
+ * given. FEES=later presses Set These Later on the first screen instead; with
+ * FEES_TRY as well it answers the finance screen No only to reach the doc fee
+ * screen, proves each refusal there, then presses Set These Later, which saves
+ * nothing typed in the step (the onboarding's onLater only moves on).
  */
 async function walkFees(p, shot, FEES) {
   const choice = (label) =>
@@ -145,9 +174,10 @@ async function walkFees(p, shot, FEES) {
   const screen = async (name) => {
     await p.locator(`[data-fees-screen="${name}"]`).waitFor({ timeout: 60000 });
   };
+  const tries = (process.env.FEES_TRY || '').split(',').map((v) => v.trim()).filter(Boolean);
   await screen('finance');
   await shot('fees-finance');
-  if (FEES === 'later') {
+  if (FEES === 'later' && !tries.length) {
     await p.locator('[data-fees-later]').click();
     return;
   }
@@ -156,7 +186,7 @@ async function walkFees(p, shot, FEES) {
 
   await screen('docFee');
   const box = p.locator('input[name=docFee]');
-  for (const tryFee of (process.env.FEES_TRY || '').split(',').map((v) => v.trim()).filter(Boolean)) {
+  for (const tryFee of tries) {
     await box.fill(tryFee);
     const refusal = p.locator('[data-fee-refusal]');
     await refusal.waitFor({ timeout: 30000 });
@@ -170,6 +200,11 @@ async function walkFees(p, shot, FEES) {
     await shot(`fees-refused-${tryFee}-es`);
     await p.getByRole('button', { name: 'EN', exact: true }).first().click();
     await p.waitForTimeout(500);
+  }
+  if (FEES === 'later') {
+    console.log('SET THESE LATER (no doc fee typed as the dealer\'s)');
+    await p.locator('[data-fees-later]').click();
+    return;
   }
   await box.fill(FEES);
   await p.waitForTimeout(400);

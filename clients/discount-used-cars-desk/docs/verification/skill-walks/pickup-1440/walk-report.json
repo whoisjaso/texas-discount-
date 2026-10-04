@@ -1,0 +1,36 @@
+{
+ "deskCommit": "27d1632",
+ "dirty": 0,
+ "scenario": "/home/user/texas-discount-/.claude/skills/premium-dealer-build/scripts/desk-walk/scenarios/pickup.json",
+ "deal": "/admin/sales/preview-truck-deal",
+ "viewport": [
+  1440,
+  900
+ ],
+ "ended": "file blocked at billOfSale/review",
+ "screens": [
+  "language",
+  "buyer",
+  "buyerId",
+  "funding",
+  "paid",
+  "price",
+  "plan:registration",
+  "plate",
+  "plan:title-signer",
+  "plan:inspection",
+  "plan:insurance",
+  "document:billOfSale",
+  "billOfSale/odometerStatus",
+  "billOfSale/buyerLicenseState",
+  "billOfSale/paymentMethod",
+  "billOfSale/tradeIn",
+  "billOfSale/conditionType",
+  "billOfSale/review"
+ ],
+ "contrastFailures": 0,
+ "problems": [
+  "billOfSale/review: File blocked: This document would print blank where the sale should say something. Fill these in first: Mileage, Odometer Reading."
+ ],
+ "at": "2026-10-04T00:33:43.501Z"
+}

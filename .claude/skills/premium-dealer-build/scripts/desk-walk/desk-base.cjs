@@ -61,4 +61,33 @@ function previewCookies(value) {
   return cookies;
 }
 
-module.exports = { BASE, ORIGIN, guard, at, follow, previewCookies };
+/**
+ * The client's theme on the screen in front of the walk, asserted before its
+ * first screenshot (SKILL.md 4.2: the walker trusts no screenshot until it
+ * passes). sale.cjs reads the accent off Start A Sale's chosen title card; a
+ * walk that never opens Start A Sale (onboarding, the reset, a resumed deal)
+ * reads it here as the browser computes the desk's accent role (--tj-copper,
+ * the name every fork inherits), with the page ground and the heading's font
+ * drawn on this screen. THEME_ACCENT / THEME_GROUND / THEME_FONT carry the
+ * client's values (the defaults are Discount's). Throws THEME ASSERTION FAILED
+ * with what it read; prints THEME OK.
+ */
+async function assertTheme(p) {
+  const theme = await p.evaluate(() => {
+    const probe = document.createElement('i');
+    probe.style.cssText = 'position:absolute;width:0;height:0;border-top:1px solid var(--tj-copper)';
+    document.body.appendChild(probe);
+    const accent = getComputedStyle(probe).borderTopColor;
+    probe.remove();
+    const h1 = document.querySelector('h1');
+    return { accent, ground: getComputedStyle(document.body).backgroundColor, display: h1 ? getComputedStyle(h1).fontFamily : '' };
+  });
+  const want = { accent: process.env.THEME_ACCENT || 'rgb(0, 0, 0)', ground: process.env.THEME_GROUND || 'rgb(238, 239, 242)', font: new RegExp(process.env.THEME_FONT || 'Barlow') };
+  if (theme.accent !== want.accent || theme.ground !== want.ground || !want.font.test(theme.display)) {
+    throw new Error('THEME ASSERTION FAILED ' + JSON.stringify(theme));
+  }
+  console.log('THEME OK', JSON.stringify(theme));
+  return theme;
+}
+
+module.exports = { BASE, ORIGIN, guard, at, follow, previewCookies, assertTheme };
