@@ -16,6 +16,8 @@ const base = (over: Partial<PaperworkContext> = {}): PaperworkContext => ({
   paidToday: null,
   buyerCity: "Houston",
   buyerCounty: "Harris",
+  // The car's reading, as Start A Sale records it: known, so not asked.
+  vehicleMileage: 64280,
   answers: {},
   ...over,
 });
@@ -28,6 +30,8 @@ describe("the questions are what the pages leave open", () => {
     const asked = keys("billOfSale", base());
     expect(asked).toEqual(order.filter((key) => asked.includes(key)));
     expect(asked).toEqual(["odometerStatus", "paymentMethod", "tradeIn", "conditionType"]);
+    // A car with no reading is asked it first, before the statement that swears to it.
+    expect(keys("billOfSale", base({ vehicleMileage: null })).slice(0, 2)).toEqual(["odometerReading", "odometerStatus"]);
   });
 
   it("grows the trade-in and warranty questions only when they apply", () => {

@@ -346,7 +346,8 @@ async function seed(documents: Row[], stepData: Blob = cashDeal(), salePrice = 9
     language: "en",
     step_data: stepData,
     customers: { id: "freeze-buyer", name: "Andrea Salinas", phone: "7135550188", id_number: "12345678" },
-    vehicles: { id: "freeze-car", year: 2017, make: "Ford", model: "Explorer", vin: "1FM5K8D80HGA00001", title_status: "clean", sale_price: salePrice },
+    // A filed bill of sale states a reading: the car has one (Start A Sale's).
+    vehicles: { id: "freeze-car", year: 2017, make: "Ford", model: "Explorer", vin: "1FM5K8D80HGA00001", title_status: "clean", sale_price: salePrice, mileage: 88000 },
   });
   if (documents.length) await client.from("document_agreements").insert(documents.map((row) => ({ deal_id: DEAL, ...row })));
 }
@@ -378,6 +379,8 @@ const WRITERS: Array<{ name: string; field: string; run: () => Promise<unknown>;
   { name: "saveSalePlanAnswer (inspection)", field: "inspection", run: () => saveSalePlanAnswer(DEAL, { questionId: "inspectionBy", value: "dealer" }), same: () => saveSalePlanAnswer(DEAL, { questionId: "inspectionBy", value: "done" }) },
   { name: "saveSalePlanAnswer (insurance)", field: "insurance", run: () => saveSalePlanAnswer(DEAL, { questionId: "insuranceShown", value: false }), same: () => saveSalePlanAnswer(DEAL, { questionId: "insuranceShown", value: true }) },
   { name: "savePaperworkAnswer (odometer)", field: "odometer", run: () => savePaperworkAnswer(DEAL, "billOfSale", "odometerStatus", "not_actual"), same: () => savePaperworkAnswer(DEAL, "billOfSale", "odometerStatus", "actual") },
+  // The reading itself is the car's (actions/odometer-reading.ts), held the same way.
+  { name: "savePaperworkAnswer (odometer reading)", field: "mileage", run: () => savePaperworkAnswer(DEAL, "billOfSale", "odometerReading", "90000"), same: () => savePaperworkAnswer(DEAL, "billOfSale", "odometerReading", "88,000") },
   { name: "savePaperworkAnswer (licence state)", field: "buyerId", run: () => savePaperworkAnswer(DEAL, "billOfSale", "buyerLicenseState", "OK") },
   { name: "savePaperworkAnswer (payment method)", field: "paymentMethod", run: () => savePaperworkAnswer(DEAL, "billOfSale", "paymentMethod", "Zelle"), same: () => savePaperworkAnswer(DEAL, "billOfSale", "paymentMethod", "Cash") },
   { name: "savePaperworkAnswer (trade-in)", field: "tradeIn", run: () => savePaperworkAnswer(DEAL, "billOfSale", "tradeIn", "yes"), same: () => savePaperworkAnswer(DEAL, "billOfSale", "tradeIn", "no") },
@@ -528,7 +531,8 @@ describe("before filing and after a void, everything moves", () => {
       const before = await stepDataNow();
       const result = (await writer.run()) as { ok: boolean };
       expect(result.ok, `${writer.name}: ${JSON.stringify(result)}`).toBe(true);
-      if (writer.name !== "setDealLanguage") expect(await stepDataNow(), writer.name).not.toEqual(before);
+      // The language is a column, and the odometer reading is the car's: neither moves step_data.
+      if (writer.name !== "setDealLanguage" && writer.field !== "mileage") expect(await stepDataNow(), writer.name).not.toEqual(before);
     }
   });
 

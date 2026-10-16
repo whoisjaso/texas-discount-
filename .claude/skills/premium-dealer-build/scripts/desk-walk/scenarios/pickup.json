@@ -1,5 +1,5 @@
 {
- "_note": "Box 11's pickup walk (SOP Verification: a pickup asks for a document and shows the estimate as a hint only; after a title figure, carrying capacity starts at the Registration Manual Table 2-1 minimum). It resumes the preview mock's seeded pickup sale, so run it with RESUME_DEAL=/admin/sales/preview-truck-deal (a 2018 Ford F-150 XLT with no weight on record; Start A Sale is skipped, so it needs no phone), once per fresh server. The seeded deal predates the language question and has no licence on file, so the corridor opens with language (English, the deal's own), the buyer (Daniel Ortiz, the seeded customer) and Put The Licence On File, answered by Type What The Card Says with the seeded customer's name and the licence number every walk types at Start A Sale (sale.cjs's default 12345678), then the mailing address the seed holds, read back with Hold To Confirm. The title figure 5012 is the walk input the reference build typed (desk docs/verification/VERIFICATION.md, Pickup: 'Box 11 will read 5,100 lb'). Answers for a screen the corridor no longer asks are ignored; a 'NO ANSWER FOR <step>' stop means the corridor asks something new: answer it from the screen, never with an invented fact.",
+ "_note": "Box 11's pickup walk (SOP Verification: a pickup asks for a document and shows the estimate as a hint only; after a title figure, carrying capacity starts at the Registration Manual Table 2-1 minimum). It resumes the preview mock's seeded pickup sale, so run it with RESUME_DEAL=/admin/sales/preview-truck-deal (a 2018 Ford F-150 XLT with no weight on record; Start A Sale is skipped, so it needs no phone), once per fresh server. The seeded deal predates the language question and has no licence on file, so the corridor opens with language (English, the deal's own), the buyer (Daniel Ortiz, the seeded customer) and Put The Licence On File, answered by Type What The Card Says with the seeded customer's name and the licence number every walk types at Start A Sale (sale.cjs's default 12345678), then the mailing address the seed holds, read back with Hold To Confirm. The seeded truck has no odometer reading either, so the bill of sale asks What Does The Odometer Read? first (the reading goes to the car, as Start A Sale's does); the walk types 100000, the reading sale.cjs types at Start A Sale for a car typed by VIN (its default), a walk input and not a fact about any real truck, and the mileage statement then shows 'The odometer reads 100,000 miles.' with no card pressed. The title figure 5012 is the walk input the reference build typed (desk docs/verification/VERIFICATION.md, Pickup: 'Box 11 will read 5,100 lb'). Answers for a screen the corridor no longer asks are ignored; a 'NO ANSWER FOR <step>' stop means the corridor asks something new: answer it from the screen, never with an invented fact.",
  "car": "2018 Ford F-150 XLT (the preview mock's preview-truck-deal)",
  "language": "en",
  "title": "Clean title",
@@ -76,6 +76,16 @@
   "plan:insurance": {
    "button": "Yes, Shown Today"
   },
+  "odometerReading": [
+   {
+    "fill": "main input",
+    "value": "100000"
+   },
+   {
+    "button": "Next",
+    "exact": true
+   }
+  ],
   "odometerStatus": {
    "button": "Yes, That Is The Real Mileage"
   },
@@ -107,6 +117,9 @@
     "exact": true
    },
    {
+    "see": "Box 11 will read 5,100 lb"
+   },
+   {
     "button": "Next",
     "exact": true
    }
@@ -127,6 +140,7 @@
   }
  },
  "expect": {
+  "billOfSale/odometerStatus": "The odometer reads 100,000 miles.",
   "form130U/emptyWeight": "needs the weight from a document",
   "form130U/carryingCapacity": "Table 2-1"
  }

@@ -20,10 +20,11 @@ import { WALKED_CASH, filePage, moneyOf, seedPageDeal, PAGE_DEAL } from "./helpe
 /**
  * A sworn statement or a signed date files only from an answer: the
  * mileage statement, how a salvage car leaves, the first payment date. The
- * screen still opens on "actual" for the mileage; it is never filed unseen.
+ * mileage statement opens with nothing selected, under the reading it swears
+ * to (a-sworn-statement-opens-with-nothing-selected.test.tsx).
  */
 const context = (answers: Record<string, string>, over: Partial<PaperworkContext> = {}): PaperworkContext => ({
-  funding: "cash", bodyStyle: "sedan", licenceState: "TX", paidToday: null, buyerCity: "Houston", buyerCounty: "Harris", answers, ...over,
+  funding: "cash", bodyStyle: "sedan", licenceState: "TX", paidToday: null, buyerCity: "Houston", buyerCounty: "Harris", vehicleMileage: 118340, answers, ...over,
 });
 
 beforeEach(() => {
@@ -32,8 +33,8 @@ beforeEach(() => {
 });
 
 describe("a sworn answer is never a default", () => {
-  it("starts the mileage question at actual, and files it only once answered", () => {
-    expect(paperworkDefault("billOfSale", "odometerStatus", context({}))).toBe("actual");
+  it("opens the mileage question on no answer, and files it only once answered", () => {
+    expect(paperworkDefault("billOfSale", "odometerStatus", context({}))).toBeUndefined();
     expect(paperworkAnswers("billOfSale", context({})).odometerStatus).toBeUndefined();
     expect(paperworkAnswers("billOfSale", context({ odometerStatus: "actual" })).odometerStatus).toBe("actual");
     expect(unansweredSwornFacts("billOfSale", context({})).map((fact) => fact.key)).toEqual(["odometerStatus"]);

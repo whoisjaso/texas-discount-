@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { savePaperworkAnswer } from "@/lib/actions/paperwork";
@@ -10,6 +11,8 @@ import { FreezeWayOut, useFreezeRefusal } from "@/components/admin/guide/HeldByB
 import { localizeQuestion } from "@/lib/sales/question-i18n";
 import ListPickStep from "@/components/admin/paperwork/ListPickStep";
 import MultiPickStep from "@/components/admin/paperwork/MultiPickStep";
+import { fillTemplate } from "@/lib/sales/i18n";
+import { printedOdometerReading } from "@/lib/sales/odometer-reading";
 
 /**
  * One paperwork question, answered.
@@ -31,6 +34,7 @@ export default function AnswerStep({
   current,
   nextHref,
   suggestionNote = null,
+  odometer = null,
 }: {
   dealId: string;
   documentType: string;
@@ -44,6 +48,12 @@ export default function AnswerStep({
    * for its empty weight, labelled as that and never filed unseen.
    */
   suggestionNote?: "capacityMinimum" | null;
+  /**
+   * The mileage statement's reading: what it swears to, as the paper prints
+   * it, and where it is entered or changed. With no reading on the car there
+   * is nothing to swear to, so no statement can be tapped until there is.
+   */
+  odometer?: { miles: number | null; href: string } | null;
 }) {
   const router = useRouter();
   const { t } = useFunnel();
@@ -81,7 +91,11 @@ export default function AnswerStep({
                 ? t.money.paidTodayInvalid
                 : result.code === "firstPaymentTooEarly"
                   ? t.chrome.firstPaymentTooEarly
-                  : result.error ?? t.chrome.couldNotSave),
+                  : result.code === "odometerReadingMissing" ||
+                      result.code === "odometerReadingInvalid" ||
+                      result.code === "odometerReadingNotAllowed"
+                    ? t.odometer[result.code]
+                    : result.error ?? t.chrome.couldNotSave),
         );
         setChoosing(null);
         return;
@@ -131,8 +145,29 @@ export default function AnswerStep({
       current !== "" &&
       !(worded.options ?? []).some((option) => option.value === current);
     const typing = otherOpen || offList;
+    // A sworn statement about a reading the car does not have yet.
+    const noReading = odometer !== null && odometer.miles === null;
     return (
       <div className="ed-paper-answer ed-paper-taps">
+        {odometer ? (
+          <p className="ed-paper-reading" data-odometer-reading={odometer.miles ?? ""}>
+            {odometer.miles !== null ? (
+              <>
+                {fillTemplate(t.odometer.reads, { miles: printedOdometerReading(odometer.miles) })}{" "}
+                <Link className="ed-weight-change" href={odometer.href}>
+                  {t.odometer.change}
+                </Link>
+              </>
+            ) : (
+              <>
+                {t.odometer.none}{" "}
+                <Link className="ed-weight-change" href={odometer.href}>
+                  {t.odometer.enter}
+                </Link>
+              </>
+            )}
+          </p>
+        ) : null}
         <div className="ed-pay-row">
           {(worded.options ?? []).map((option) => {
             const busy = pending && choosing === option.value;
@@ -143,7 +178,7 @@ export default function AnswerStep({
                 className="ed-pay-choice"
                 data-active={current === option.value ? "true" : undefined}
                 aria-pressed={current === option.value}
-                disabled={pending}
+                disabled={pending || noReading}
                 onClick={() => answer(option.value)}
               >
                 <span className="ed-pay-choice-label">{option.label}</span>

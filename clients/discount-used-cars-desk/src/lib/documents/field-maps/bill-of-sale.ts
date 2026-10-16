@@ -33,6 +33,9 @@ export const BILL_OF_SALE_MAP: DocumentMap = {
   documentType: "billOfSale",
   kind: "designedSheet",
   askOrder: [
+    // The reading before the statement that swears to it (asked only when
+    // the car has none: it is the vehicle row's, written at Start A Sale).
+    "billOfSale.odometerReading",
     "billOfSale.odometerStatus",
     "billOfSale.buyerLicenseState",
     "billOfSale.paymentMethod",

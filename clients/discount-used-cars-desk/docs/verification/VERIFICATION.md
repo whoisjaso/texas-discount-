@@ -137,8 +137,11 @@ as Registration. Rob Hayes's account already existed, and its old password
 no longer works. Give them the temporary password below in person: ...
 Signing stays off, as an owner left it."; a temporary password shown once;
 his row Not Cleared To Sign; the history "manager@example.dev approved Rob
-Hayes as Registration.". Diego Ramirez signed in on the form with the
-temporary password: Choose A Password, What Is Your Name?, no signature screen
+Hayes as Registration.". Diego Ramirez signed in on the form, the walk
+typing the temporary password (preview sign-in does not check passwords, so
+this proves the flow and not the password; the temporary password itself is
+proven on the owner's staging Supabase, an owner step: README, Owner's manual
+steps, step 11): Choose A Password, What Is Your Name?, no signature screen
 (Sales starts not cleared), You Are All Set, Handle A Sale. Jason Price
 signed in: Choose A Password (the reset sent him through onboarding), then
 Draw Your Signature (signing was turned on for him and he had none), then

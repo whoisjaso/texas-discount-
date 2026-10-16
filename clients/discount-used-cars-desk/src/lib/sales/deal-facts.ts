@@ -20,8 +20,10 @@ import { firstPaymentChoices } from "@/lib/sales/date-choices";
  *   known        the deal already holds it (the intake, the money step):
  *                never opened, read back on the review with Change.
  *   start        the value a screen opens on. Filed unseen when nobody
- *                walks past it, EXCEPT a mustAnswer fact.
+ *                walks past it. Never on a mustAnswer fact.
  *   mustAnswer   a sworn statement or a date the paper is signed against:
+ *                it opens with nothing selected (no start, no known value,
+ *                no suggestion; a test holds the registry to that) and
  *                filing refuses until somebody has answered it.
  *   optional     "Not applicable" is a real answer and stores a blank.
  *
@@ -57,8 +59,9 @@ const choice = (value: string, label: string, gloss?: string): PaperworkOption =
 /*
   How the odometer reading is qualified. Federal law requires this on
   transfer and there are exactly three answers. It is a sworn statement, so
-  it files only from an answer: the start is "actual", pre-selected, and
-  somebody still has to say so.
+  it opens with nothing selected, under the reading it swears to, and files
+  only from a tap. It used to open on "actual", pre-selected, on a sale
+  nobody had answered and on a car with no reading at all.
 */
 export const ODOMETER: PaperworkOption[] = [
   choice("actual", "Yes, That Is The Real Mileage"),
@@ -126,12 +129,45 @@ const LICENCE_STATE_QUESTION = "Which State Issued Their Licence?";
 /** The 130-U box 27 question exists only where box 26 has an email to send to. */
 const hasEmail = (context: PaperworkContext) => Boolean((context.buyerEmail ?? "").trim());
 
+/** The key the odometer reading is asked under, on either bill of sale. */
+export const ODOMETER_READING_KEY = "odometerReading";
+
+/*
+  The odometer reading itself, on the car. Start A Sale takes it down and
+  writes it to the vehicle row (`vehicles.mileage`), which every document
+  prints; so it is known, never asked, on a car that has one. A sale whose
+  car has none (a deal started before the reading was required, a seeded
+  one) asks it here, before the mileage statement that swears to it, and
+  the answer goes to the same column Start A Sale writes
+  (actions/odometer-reading.ts), never into the paperwork answers. The
+  review's Fix It on a blank reading, and the mileage statement's "Change
+  The Reading", reopen it.
+*/
+function odometerReadingFact(owner: "billOfSale" | "salvageBillOfSale"): DealFact {
+  return {
+    id: `${owner}.${ODOMETER_READING_KEY}`,
+    owner,
+    key: ODOMETER_READING_KEY,
+    question: "What Does The Odometer Read?",
+    kind: "number",
+    note: "Miles, as the odometer shows them today, without tenths.",
+    known: (context) =>
+      context.vehicleMileage === null || context.vehicleMileage === undefined
+        ? undefined
+        : String(context.vehicleMileage),
+    freeText: "a reading off the car's odometer",
+    stored: "vehicles.mileage",
+    freeze: "mileage",
+  };
+}
+
 /**
  * The documents' own facts. The order inside each owner is not the ask
  * order: the document's field map says that (`askOrder`).
  */
 export const DOCUMENT_FACTS: DealFact[] = [
   // ── Bill of sale ──────────────────────────────────────────────────────
+  odometerReadingFact("billOfSale"),
   {
     id: "billOfSale.odometerStatus",
     owner: "billOfSale",
@@ -139,7 +175,6 @@ export const DOCUMENT_FACTS: DealFact[] = [
     question: "Is That The Real Mileage?",
     kind: "choice",
     options: ODOMETER,
-    start: () => "actual",
     mustAnswer: true,
     freeze: "odometer",
   },
@@ -480,6 +515,7 @@ export const DOCUMENT_FACTS: DealFact[] = [
   },
 
   // ── Salvage bill of sale ──────────────────────────────────────────────
+  odometerReadingFact("salvageBillOfSale"),
   {
     id: "salvageBillOfSale.odometerStatus",
     owner: "salvageBillOfSale",
@@ -487,7 +523,6 @@ export const DOCUMENT_FACTS: DealFact[] = [
     question: "Is That The Real Mileage?",
     kind: "choice",
     options: ODOMETER,
-    start: () => "actual",
     mustAnswer: true,
     freeze: "odometer",
   },

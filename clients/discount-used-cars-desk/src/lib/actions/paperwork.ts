@@ -67,6 +67,9 @@ import { emptyWeightForFiling } from "@/lib/vehicles/empty-weight/on-the-sale";
 import { dealerChargesBlockedReason, filingFees, registersNothing, saleFeeLines } from "@/lib/dealership-fees";
 import { governmentFeesFilingProblem, type GovernmentFeesFilingProblem } from "@/lib/sales/government-fees";
 import { DOC_FEE_DOCUMENTS, isChapter345Vehicle } from "@/lib/legal/chapter-345";
+import { ODOMETER_READING_KEY } from "@/lib/sales/deal-facts";
+import { ODOMETER_READING_MESSAGES } from "@/lib/sales/odometer-reading";
+import { saveOdometerReading, type OdometerReadingCode } from "@/lib/actions/odometer-reading";
 import { FEE_OVER_FILED_MAX_MESSAGE, overLimitKind, type DealerChargesProblem } from "@/lib/sales/fee-schedule";
 
 /**
@@ -102,6 +105,8 @@ export type PaperworkState = {
     | GovernmentFeesFilingProblem
     | "chapter345Vehicle"
     | "firstPaymentTooEarly"
+    | OdometerReadingCode
+    | "odometerReadingMissing"
     | PageGateCode;
   /** On a fieldMissing or mustAnswer refusal: the boxes or questions, by name. */
   missing?: string[];
@@ -134,6 +139,16 @@ export async function savePaperworkAnswer(
   // screen's own action (actions/empty-weight.ts) writes it.
   if (documentType === "form130U" && (key === "emptyWeight" || key.startsWith("_emptyWeight"))) {
     return { ok: false, error: "Use the empty weight screen." };
+  }
+  const billOfSaleQuestion = (BILL_OF_SALE_TYPES as readonly string[]).includes(documentType);
+  /*
+    The odometer reading is the car's, not an answer: it goes to the column
+    Start A Sale writes (actions/odometer-reading.ts), never into the
+    paperwork answers, under the same check and the bill of sale's freeze.
+  */
+  if (key === ODOMETER_READING_KEY) {
+    if (!billOfSaleQuestion) return { ok: false, error: "Nothing to save." };
+    return saveOdometerReading(dealId, typedValue);
   }
 
   /*
@@ -174,6 +189,24 @@ export async function savePaperworkAnswer(
 
   try {
     const supabase = await createClient();
+    /*
+      The mileage statement swears to a reading: with none on the car there
+      is nothing to swear to, so no statement saves until the reading is
+      entered (the question before it, or Start A Sale).
+    */
+    if (key === "odometerStatus" && (BILL_OF_SALE_TYPES as readonly string[]).includes(storeDoc)) {
+      const { data: deal, error: dealError } = await supabase
+        .from("deals")
+        .select("vehicles(mileage)")
+        .eq("id", dealId)
+        .maybeSingle();
+      if (dealError) throw new Error(dealError.message);
+      const vehicles = (deal as { vehicles?: unknown } | null)?.vehicles;
+      const car = (Array.isArray(vehicles) ? vehicles[0] : vehicles) as { mileage?: unknown } | null | undefined;
+      if (car?.mileage === null || car?.mileage === undefined || car.mileage === "") {
+        return { ok: false, code: "odometerReadingMissing", error: ODOMETER_READING_MESSAGES.odometerReadingMissing };
+      }
+    }
     /*
       The first payment is a date on or after the contract's own date (the
       filed bill of sale's date of sale, else today): "Another Date" used to

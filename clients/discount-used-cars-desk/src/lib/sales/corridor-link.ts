@@ -360,7 +360,13 @@ export function corridorCompletedLink(
       // prints when, as on every corridor deal, nobody retyped it.
       vehicleMileage: text(formData.odometerReading) || facts.vehicleMileage,
       odometerReading: text(formData.odometerReading) || facts.vehicleMileage,
-      odometerStatus: text(formData.odometerStatus) || "actual",
+      /*
+        The mileage statement as answered, and nothing in its place: it is
+        sworn (deal-facts.ts mustAnswer), a filing refuses it unanswered,
+        and a preview or the review's read-back of an unanswered one shows
+        the blank, never "actual" the seller never said.
+      */
+      odometerStatus: text(formData.odometerStatus),
       salePrice: num(formData.salePrice),
       tradeInAllowance: num(formData.tradeInAllowance),
       // Only while the sale says there is a trade-in: an answer typed before
@@ -468,8 +474,9 @@ export function corridorCompletedLink(
       odometerReading: text(formData.odometerReading) || facts.vehicleMileage,
       // Box 10 states the bill of sale's mileage statement, never a default
       // of its own: "actual" here beside a bill that says "not actual" was a
-      // state form contradicting the sale it titles.
-      odometerStatus: text(formData.odometerStatus) || billAnswers.odometerStatus || "actual",
+      // state form contradicting the sale it titles. Unanswered, it is blank
+      // (the 130-U files only once it is answered).
+      odometerStatus: text(formData.odometerStatus) || billAnswers.odometerStatus || "",
       salesPrice: num(formData.salePrice),
       salePrice: num(formData.salePrice),
       tradeInAllowance: num(formData.tradeInAllowance),
@@ -584,7 +591,8 @@ export function corridorCompletedLink(
       vehicleModel: facts.vehicleModel,
       vin: facts.vehicleVin,
       vehicleMileage: text(formData.odometerReading) || facts.vehicleMileage,
-      odometerStatus: text(formData.odometerStatus) || text(bill.odometerStatus) || "actual",
+      // Sworn, so never defaulted: blank until answered (see the bill of sale).
+      odometerStatus: text(formData.odometerStatus) || text(bill.odometerStatus) || "",
       saleDate: dated,
       salePrice: price,
       tax,

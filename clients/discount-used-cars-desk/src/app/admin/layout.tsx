@@ -2,10 +2,10 @@ import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import AdminChrome from "@/components/admin/AdminChrome";
+import AccessDenied from "@/components/admin/AccessDenied";
 import { getCurrentAdminAccess } from "@/lib/admin/current-admin";
 import { roleOpensAdminRoute } from "@/lib/admin/route-permissions";
 import { getWorkspaceFromPath } from "@/lib/admin/workspace";
-import { toTitleCaseDisplay } from "@/lib/display/title-case";
 import { brand } from "@/lib/dealership-config";
 import "@/styles/admin-refinement.css";
 
@@ -27,26 +27,6 @@ function metadataName(metadata: Record<string, unknown> | undefined): string | n
     if (typeof value === "string" && value.trim()) return value.trim();
   }
   return null;
-}
-
-function AccessDenied() {
-  return (
-    <section className="px-4 py-8 md:px-8 md:py-10">
-      <div className="mx-auto max-w-3xl rounded-2xl border border-[color:var(--tj-line)] bg-[color:var(--tj-surface)] p-5 md:p-8">
-        <p className="tj-ui-label text-[11px] font-semibold text-[color:var(--tj-copper)]">
-          Permission Needed
-        </p>
-        <h1 className="mt-3 text-2xl font-semibold text-[color:var(--tj-ink)] md:text-3xl">
-          {toTitleCaseDisplay("This screen is not assigned to this role.")}
-        </h1>
-        <p className="mt-3 max-w-xl text-base leading-relaxed text-[color:var(--tj-muted)]">
-          {toTitleCaseDisplay(
-            "Ask an owner to approve the account or change the role. The dashboard will only show the tools this person is allowed to use.",
-          )}
-        </p>
-      </div>
-    </section>
-  );
 }
 
 export default async function AdminLayout({

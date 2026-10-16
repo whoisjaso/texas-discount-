@@ -27,6 +27,7 @@ export const SALVAGE_BILL_OF_SALE_MAP: DocumentMap = {
   documentType: "salvageBillOfSale",
   kind: "designedSheet",
   askOrder: [
+    "salvageBillOfSale.odometerReading",
     "salvageBillOfSale.odometerStatus",
     "salvageBillOfSale.buyerLicenseState",
     "salvageBillOfSale.paymentMethod",

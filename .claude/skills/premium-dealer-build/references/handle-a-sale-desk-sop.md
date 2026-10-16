@@ -823,10 +823,13 @@ server for each preview member, 0 page errors and 0 contrast failures
   the server when pressed anyway, and Approve Again for a removed Sales
   member as Registration keeping them not cleared (said beside the button)
   with a new temporary password for their existing account; then the
-  approved member signs in with the temporary
-  password and meets Choose A Password, the name, no signature screen and
-  Handle A Sale, and the reset member meets Choose A Password. It prints TEAM
-  WALK OK and exits 1 on any failure.
+  approved member signs in on the form, typing the temporary password, and
+  meets Choose A Password, the name, no signature screen and Handle A Sale,
+  and the reset member meets Choose A Password. Preview sign-in does not
+  check passwords, so the walk proves the flow, not the password: the
+  temporary password itself is proven on the owner's staging Supabase, an
+  owner step (the desk README's Owner's manual steps). It prints TEAM WALK OK
+  and exits 1 on any failure.
 
 ### The website on paper versus the desk's own address
 

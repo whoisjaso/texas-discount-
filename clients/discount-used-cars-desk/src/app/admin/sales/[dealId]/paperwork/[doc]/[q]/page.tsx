@@ -38,6 +38,7 @@ import {
   weightPrompt,
 } from "@/lib/vehicles/empty-weight/on-the-sale";
 import { dealership } from "@/lib/dealership-config";
+import { ODOMETER_READING_KEY } from "@/lib/sales/deal-facts";
 import { getStaffSignature } from "@/lib/actions/staff-signature";
 import { dealerStroke } from "@/lib/documents/dealer-signer";
 
@@ -206,7 +207,14 @@ export default async function PaperworkQuestionPage({ params, searchParams }: Pr
   */
   if (key.startsWith("after:")) {
     const at = questionPosition(questions, key.slice("after:".length));
-    const following = at >= 0 && at < questions.length - 1 ? questions[at + 1] : null;
+    /*
+      A question its own answer takes off the list (the odometer reading:
+      once the car has one it is known, not asked) has no place to follow
+      from, so the next one is whatever is still open, never the review
+      past questions nobody has answered.
+    */
+    const following =
+      at === -1 ? nextOpenQuestion(questions, answers) : at < questions.length - 1 ? questions[at + 1] : null;
     redirect(following ? stepHref(following.key) : stepHref(REVIEW));
   }
 
@@ -282,6 +290,22 @@ export default async function PaperworkQuestionPage({ params, searchParams }: Pr
   const capacityStart =
     question?.key === "carryingCapacity" ? carryingCapacityStart(emptyWeight, filedAnswers, answers) : null;
 
+  /*
+    The mileage statement swears to a reading, so its screen shows the one
+    that will print (the car's, as Start A Sale or the question before it
+    recorded it), with the way to change it; and with none on the car, the
+    way to enter it, and no statement to tap until it is.
+  */
+  const isBillOfSale = entry.documentType === "billOfSale" || entry.documentType === "salvageBillOfSale";
+  const readingOwner = isBillOfSale ? entry.documentType : "billOfSale";
+  const odometer =
+    question?.key === "odometerStatus"
+      ? {
+          miles: sale.vehicle?.mileage ?? null,
+          href: `/admin/sales/${encodeURIComponent(dealId)}/paperwork/${readingOwner}/${ODOMETER_READING_KEY}?change=${ODOMETER_READING_KEY}`,
+        }
+      : null;
+
   /**
    * The power of attorney's facts and its instrument decision, off the
    * sale. Everything the VTR-271 needs is already here — that is the whole
@@ -338,12 +362,16 @@ export default async function PaperworkQuestionPage({ params, searchParams }: Pr
         question={question ? asked(question, context) : null}
         current={
           question
-            ? (answers[question.key] ??
-              (capacityStart !== null ? String(capacityStart) : undefined) ??
-              paperworkDefault(entry.documentType, question.key, context) ??
-              "")
+            ? question.key === ODOMETER_READING_KEY
+              ? // The car's own reading, when a Change reopened it; else a blank box.
+                (sale.vehicle?.mileage != null ? String(sale.vehicle.mileage) : "")
+              : (answers[question.key] ??
+                (capacityStart !== null ? String(capacityStart) : undefined) ??
+                paperworkDefault(entry.documentType, question.key, context) ??
+                "")
             : ""
         }
+        odometer={odometer}
         suggestionNote={capacityStart !== null ? "capacityMinimum" : null}
         weightPrompt={question?.key === "emptyWeight" && emptyWeight ? weightPrompt(emptyWeight, answers) : null}
         nextHref={nextHref}

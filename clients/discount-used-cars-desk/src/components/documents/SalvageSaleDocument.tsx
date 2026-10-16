@@ -144,11 +144,7 @@ export default function SalvageSaleDocument({
             <div className="bos-trade-grid mt-4">
               <Field
                 label={copy.odometerLabel}
-                value={
-                  data.vehicleMileage
-                    ? `${data.vehicleMileage} · ${odometerWords(copy, data.odometerStatus)}`
-                    : odometerWords(copy, data.odometerStatus)
-                }
+                value={[data.vehicleMileage, odometerWords(copy, data.odometerStatus)].filter(Boolean).join(" · ")}
               />
               <Field
                 label={copy.salvageLicenseLabel}

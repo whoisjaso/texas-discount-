@@ -50,6 +50,7 @@ export default function PaperworkScreen({
   suggestionNote = null,
   pages = [],
   sworn = [],
+  odometer = null,
 }: {
   /**
    * Whether the filed bill of sale holds this answer, and whether this viewer
@@ -90,6 +91,8 @@ export default function PaperworkScreen({
   pages?: ReadBackPage[];
   /** The sworn statements nobody has answered, on the review. */
   sworn?: Array<{ key: string; question: string; href: string }>;
+  /** On the mileage statement: the reading it swears to, and where it is entered or changed. */
+  odometer?: { miles: number | null; href: string } | null;
 }) {
   const { t } = useFunnel();
   const [previewPending, startPreview] = useTransition();
@@ -181,6 +184,7 @@ export default function PaperworkScreen({
               current={current}
               nextHref={nextHref}
               suggestionNote={suggestionNote}
+              odometer={odometer}
             />
           ) : null}
         </div>

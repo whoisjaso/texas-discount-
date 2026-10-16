@@ -66,9 +66,11 @@ With no Supabase variables set, the desk runs on an in-memory preview mock
 facts exist.
 
 To walk a new member's first sign-in in preview, set
-`DESK_PREVIEW_MEMBER=fresh` (cleared to sign), `fresh-cannot-sign`, or
+`DESK_PREVIEW_MEMBER=fresh` (cleared to sign), `fresh-cannot-sign`,
 `fresh-temporary-password` (cleared to sign, and still on the temporary
-password an approval issues, so onboarding starts with Choose A Password).
+password an approval issues, so onboarding starts with Choose A Password),
+or `fresh-reset` (the same account after an owner reset; walk it with
+`reset.cjs`).
 The preview session then has a roster row with no name, no signature and
 onboarding not completed, and is sent to `/admin/account/onboarding` first.
 What onboarding saves lasts until the dev server restarts. Leave it empty for
@@ -80,7 +82,10 @@ members and one person with no access, all at `example.test` addresses (see
 "The team screen" below). Signing in on the preview form with the address of
 a member whose account the preview holds (one an approval just created, say)
 signs in as that member, so an approved salesperson's first sign-in can be
-walked. None of it exists in production.
+walked. Preview sign-in does not check passwords (any password
+signs in), so a preview walk proves the flow, not the password: the
+temporary password itself is proven on the owner's staging Supabase
+("Owner's manual steps", step 11). None of it exists in production.
 
 The preview "fresh" member is an Owner, so its first sign-in includes Your
 Fees (see "Dealer fees" below) after Draw Your Signature. Set
@@ -766,6 +771,12 @@ only) the markers print instead of a refusal.
      reset), which the setting does not block, and an approval replaces the
      password of any account it finds for the address. After turning it off,
      check once that an approved member can still sign in with Google.
+   - *Prove the temporary password on staging.* The preview mock's sign-in
+     does not check passwords, so the desk's walks prove the approval flow,
+     not the password. On the staging Supabase: approve a test address, sign
+     in with the temporary password shown once (it works), and with a wrong
+     one (refused); choose a password at Choose A Password, then sign in with
+     it, and once more with the temporary password (now refused).
    - *Approve each staff member on the team screen* (**Team** in the
      sidebar; "The team screen" above). Apply
      `supabase/migrations/20261004000000_team_member_guards.sql` and

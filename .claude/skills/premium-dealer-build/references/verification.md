@@ -43,7 +43,10 @@ them, or recordly-demo's `scripts/desk/theme.cjs` reads them.
   `node ceremony.cjs <out>-cer "$(cat <out>/deal.txt)" <w> <h>`.
   Set THEME_ACCENT / THEME_GROUND / THEME_FONT to the client's computed values:
   the walker refuses to trust screenshots until the theme assertion passes.
-  Every walk must end `N / N signed` with `CONTRAST FAILURES 0`. Walk
+  Every walk must end `N / N signed` with `CONTRAST FAILURES 0` and
+  `SALE WALK OK (packet)`; onboarding walks end `ONBOARD WALK OK`, the reset
+  `RESET WALK OK`, the team walk `TEAM WALK OK`; every walk prints THEME OK
+  and `PAGE ERRORS 0`. Walk
   `co-buyer` too (a scenario's `"coBuyer"` adds one at Start A Sale): its
   name must be on the bill of sale, the contract and the 130-U's box 17,
   and a sale without one must print no co-buyer box. Give each scenario its
@@ -54,9 +57,20 @@ them, or recordly-demo's `scripts/desk/theme.cjs` reads them.
   `estimate-confirm` first on a freshly started server (its Camry is also
   `cash-otd`'s), then `title-on-file`, `no-source`, and `pickup` with
   `RESUME_DEAL=/admin/sales/preview-truck-deal` (the mock's seeded pickup:
-  "needs the weight from a document" with the estimate as a hint and no
-  Confirm, a typed Texas title figure, carrying capacity starting at the
-  Table 2-1 minimum), each to `N / N signed` through the ceremony.
+  the seeded deal opens with language, buyer and Put The Licence On File,
+  its car has no odometer reading so the bill of sale asks What Does The
+  Odometer Read? before the mileage statement, then "needs the weight from a
+  document" with the estimate as a hint and no Confirm, a typed Texas title
+  figure (5012: "Box 11 will read 5,100 lb"), carrying capacity starting at
+  the Table 2-1 minimum), each to `SALE WALK OK (packet)` and `N / N signed`
+  through the ceremony. Before the pickup's walk taps the statement,
+  `EXPECT_MILES=none FIXIT=1 node odometer.cjs <out> <deal> <w> <h>` proves
+  the statement opens with no card pressed and none tappable without a
+  reading, the review's Fix It beside the blank mileage opens the reading
+  question, and the old link's address is the desk's own not-found page;
+  then, with the pickup walked to the statement (`STOP_AT=billOfSale/odometerStatus`),
+  `EXPECT_MILES=100,000 node odometer.cjs ...` proves the reading shows
+  (English and Spanish) with no card pressed. Each prints `ODOMETER WALK OK`.
 - Pull one packet with `node pdfs.cjs <out> <deal>` and read it (PyMuPDF): the
   legal name, licence, county present, the lienholder right for the funding
   type, the odometer identical across documents, no dev host, no `[Not set]`
@@ -70,13 +84,17 @@ them, or recordly-demo's `scripts/desk/theme.cjs` reads them.
   (`DESK_PREVIEW_MEMBER`): `fresh-temporary-password` (Choose A Password,
   then the rest), `fresh` (the fees bullets below), `fresh-sales`
   (`PREVIEW_ADMIN=sales:<email>`, `FEES=none`), `fresh-cannot-sign` (an
-  Owner not cleared to sign: `FEES=<walk input> onboard.cjs ... cannot-sign`;
+  Owner not cleared to sign: `FEES=<walk input> onboard.cjs ... cannot-sign`
+  (or `FEES=later` while no doc fee is approved);
   the name, Your Fees, Done, no signature screen) and `fresh-reset`
   (`reset.cjs`, its API check on `/admin/sales/preview-completed-deal` unless a
   deal path is given: the old device signed out in English and Spanish, its
   API call 401, Choose A Password after signing in again; it exits 1 when any
   of these fails). `fresh-temporary-password` meets Your Fees too:
-  `FEES=<walk input>`. Then one filed 130-U
+  `FEES=<walk input>` (or `FEES=later` while no doc fee is approved). `fresh`
+  runs `FEES_TRY=225.01` with `FEES=<walk input>`; with no approved figure,
+  `FEES_TRY=225.01 FEES=later`: the refusal is proven on the doc fee screen,
+  then Set These Later. Then one filed 130-U
   and one printed VTR-61 read `<Legal Name> (<First Last>)` with the drawn
   signature.
 - The team walk (SOP, First sign-in: onboarding, items 1, 4, 6 and 9): at
@@ -101,8 +119,10 @@ them, or recordly-demo's `scripts/desk/theme.cjs` reads them.
   longer works, a new temporary password is shown once, his row reads Not
   Cleared To Sign, and the history names the manager. Then the approved
   member signs in on the form with the temporary password (the preview signs
-  in as the roster member whose account the mock holds) and meets Choose A
-  Password, the name, no signature screen and Handle A Sale; the reset
+  in as the roster member whose account the mock holds, and preview sign-in
+  does not check passwords: the walk proves the flow, and the temporary
+  password itself is proven on the owner's staging Supabase, an owner step)
+  and meets Choose A Password, the name, no signature screen and Handle A Sale; the reset
   member meets Choose A Password, then Draw Your Signature (the reset sends
   him through onboarding, and signing was turned on for him with no
   signature on file; turning signing on alone sends a finished member to

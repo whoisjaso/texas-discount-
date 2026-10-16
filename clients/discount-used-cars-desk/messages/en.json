@@ -840,6 +840,10 @@
     },
     "paperwork": {
       "billOfSale": {
+        "odometerReading": {
+          "question": "What Does The Odometer Read?",
+          "note": "Miles, as the odometer shows them today, without tenths."
+        },
         "odometerStatus": {
           "question": "Is That The Real Mileage?",
           "options": {
@@ -1124,6 +1128,10 @@
         "startingRate": "The desk's starting rate"
       },
       "salvageBillOfSale": {
+        "odometerReading": {
+          "question": "What Does The Odometer Read?",
+          "note": "Miles, as the odometer shows them today, without tenths."
+        },
         "odometerStatus": {
           "question": "Is That The Real Mileage?",
           "options": {
@@ -1197,6 +1205,7 @@
       "orFileUnsigned": "Or file it unsigned and print for ink.",
       "buyerFallback": "Buyer",
       "labels": {
+        "odometerReading": "Odometer Reading",
         "odometerStatus": "Mileage",
         "buyerLicenseState": "Licence State",
         "paymentMethod": "Paying With",
@@ -2243,6 +2252,7 @@
       "lender": "The bill of sale is already filed with the lender it names. Void the bill of sale and file it again before changing the lender.",
       "tradeIn": "The bill of sale is already filed with the trade-in it states. Void the bill of sale and file it again before changing the trade-in.",
       "paymentMethod": "The bill of sale is already filed with how the money was paid. Void the bill of sale and file it again before changing the payment method.",
+      "mileage": "The bill of sale is already filed with the odometer reading it states. Void the bill of sale and file it again before changing the odometer reading.",
       "odometer": "The bill of sale is already filed with its mileage statement. Void the bill of sale and file it again before changing the mileage statement.",
       "warranty": "The bill of sale is already filed with the warranty it states. Void the bill of sale and file it again before changing the warranty.",
       "howLeaving": "The bill of sale is already filed with how the car leaves the lot. Void the bill of sale and file it again before changing how it leaves.",
@@ -2414,6 +2424,15 @@
         "reasonRequired": "Say why it is different from the document on file.",
         "saveFailed": "Could not save that. Try again."
       }
+    },
+    "odometer": {
+      "reads": "The odometer reads {miles} miles.",
+      "change": "Change The Reading",
+      "none": "This car has no odometer reading on the sale yet. Enter it first: the mileage statement swears to it.",
+      "enter": "Enter The Reading",
+      "odometerReadingMissing": "Enter the odometer reading first. The mileage statement swears to it.",
+      "odometerReadingInvalid": "Enter the odometer reading in miles.",
+      "odometerReadingNotAllowed": "Recording the odometer reading changes the car's record, which this role cannot do. Ask someone in sales or a manager to enter it."
     },
     "governmentFees": {
       "title": "Government Fees",

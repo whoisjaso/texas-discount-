@@ -8,8 +8,12 @@ import {
   type ConditionInput,
   type MapField,
   type Source,
+  type VehicleColumn,
 } from "@/lib/documents/field-maps/types";
-import { factById, type DealFact } from "@/lib/sales/deal-facts";
+import { ODOMETER_READING_KEY, factById, type DealFact } from "@/lib/sales/deal-facts";
+import { requiredDocumentTypes } from "@/lib/sales/deal-type";
+import { settledPlan } from "@/lib/sales/sale-plan";
+import { readSalvagePlan } from "@/lib/sales/salvage-plan";
 import { factAppliesOnSale, type PaperworkContext } from "@/lib/sales/paperwork";
 import { usDate } from "@/lib/documents/us-date";
 import { printedPhone } from "@/lib/forms/phone";
@@ -258,11 +262,40 @@ function hrefFor(source: Source, sale: SaleDetail, documentType: string): string
     return `/admin/sales/${deal}/paperwork/${encodeURIComponent(owner)}/${encodeURIComponent(fact.key)}?change=${encodeURIComponent(fact.key)}`;
   }
   if (source.from === "buyer") return `/admin/sales/${deal}/guide/buyerId`;
-  if (source.from === "vehicle" && sale.vehicle?.id) return `/admin/inventory/${encodeURIComponent(sale.vehicle.id)}`;
+  if (source.from === "vehicle") return vehicleHref(source.column, sale, documentType);
   if (source.from === "fees" && (source.line === "titleFee" || source.line === "registrationFee")) {
     return `/admin/sales/${deal}/government-fees`;
   }
   return undefined;
+}
+
+/**
+ * Where a fact read off the car is fixed on a started sale.
+ *
+ * Only the odometer reading has a screen: the bill of sale's own "What Does
+ * The Odometer Read?" (deal-facts.ts), which writes the column Start A Sale
+ * writes, on whichever bill of sale this sale owes. The year, make, model,
+ * VIN, trim, colour, body style and stock number are the car's record, and
+ * no desk screen edits them once a sale has started: no link, rather than
+ * one to a page that does not exist (it used to open /admin/inventory/<id>,
+ * which is not a route, on a missing mileage).
+ */
+function vehicleHref(column: VehicleColumn, sale: SaleDetail, documentType: string): string | undefined {
+  if (column !== "mileage") return undefined;
+  const deal = encodeURIComponent(sale.id);
+  return `/admin/sales/${deal}/paperwork/${odometerOwner(sale, documentType)}/${ODOMETER_READING_KEY}?change=${ODOMETER_READING_KEY}`;
+}
+
+/** The bill of sale that asks the reading: this one, else the one the sale owes. */
+function odometerOwner(sale: SaleDetail, documentType: string): "billOfSale" | "salvageBillOfSale" {
+  if (documentType === "billOfSale" || documentType === "salvageBillOfSale") return documentType;
+  const owed = requiredDocumentTypes(
+    sale.funding?.type ?? null,
+    settledPlan(sale.stepData),
+    sale.vehicle?.titleStatus ?? null,
+    readSalvagePlan(sale.stepData).path,
+  );
+  return owed.includes("salvageBillOfSale") ? "salvageBillOfSale" : "billOfSale";
 }
 
 /**

@@ -15,7 +15,7 @@ import { feeLinesOf, type DealFeeDisplay } from "@/lib/sales/fee-schedule";
  * it again. The down payment was the first of these (down-payment-freeze.ts,
  * which keeps its own code and sentence); this is the rest: the price, what it
  * includes, how the buyer pays, the lender, the trade-in, the payment method,
- * the mileage statement, the warranty, how a salvage car leaves, the buyer's
+ * the odometer reading and the mileage statement, the warranty, how a salvage car leaves, the buyer's
  * name, ID and address, the plan's Still To Do, the plate and the language.
  *
  * Measured as the paper reads, not as the boxes were typed: the same figure
@@ -38,6 +38,7 @@ export const FREEZE_FIELDS = [
   "lender",
   "tradeIn",
   "paymentMethod",
+  "mileage",
   "odometer",
   "warranty",
   "howLeaving",
@@ -64,6 +65,7 @@ export const FREEZE_MESSAGES: Record<FreezeField | "generic", string> = {
   lender: sentence("the lender it names", "the lender"),
   tradeIn: sentence("the trade-in it states", "the trade-in"),
   paymentMethod: sentence("how the money was paid", "the payment method"),
+  mileage: sentence("the odometer reading it states", "the odometer reading"),
   odometer: sentence("its mileage statement", "the mileage statement"),
   warranty: sentence("the warranty it states", "the warranty"),
   howLeaving: sentence("how the car leaves the lot", "how it leaves"),
@@ -279,6 +281,15 @@ export function billOfSaleStatement(
         ? `yes|${text(bill.tradeInDescription)}|${dollars(bill.tradeInAllowance)}${text(bill.tradeInVin) ? `|${text(bill.tradeInVin)}` : ""}`
         : "no",
     paymentMethod: cash ? text(answers.paymentMethod || "Cash") : "",
+    // The reading is the vehicle row's, compared at its own writer
+    // (actions/odometer-reading.ts refuses any change while one is filed).
+    mileage: "",
+    /*
+      What the filed paper states. A bill of sale files only once its
+      mileage statement is answered (mustAnswer); a copy filed before that
+      rule printed "actual" for an unanswered one, so that is what such a
+      copy states, and answering "actual" over it is no change.
+    */
     odometer: text(answers.odometerStatus || "actual"),
     warranty: salvage
       ? ""
@@ -386,7 +397,7 @@ export const BILL_OF_SALE_PRINTED_KEYS: Readonly<Record<string, string>> = {
   vin: "fixed:the vehicle row",
   vehicleDescription: "fixed:the vehicle row",
   vehicleBodyStyle: "fixed:the vehicle row",
-  vehicleMileage: "fixed:the vehicle row, written at Start A Sale",
+  vehicleMileage: "frozen:mileage (the vehicle row, written at Start A Sale or by the odometer reading question)",
   vehicleColor: "fixed:the vehicle row",
   vehicleTrim: "fixed:the vehicle row",
   vehiclePlate: "frozen:plate",
@@ -399,7 +410,7 @@ export const BILL_OF_SALE_PRINTED_KEYS: Readonly<Record<string, string>> = {
   coBuyerEmail: "fixed:printed empty",
   coBuyerLicense: "fixed:printed empty",
   coBuyerLicenseState: "fixed:printed empty",
-  odometerReading: "fixed:the vehicle row, written at Start A Sale",
+  odometerReading: "frozen:mileage (the vehicle row, written at Start A Sale or by the odometer reading question)",
   odometerStatus: "frozen:odometer",
   salePrice: "frozen:price,priceBasis,funding,tradeIn",
   tradeInAllowance: "frozen:tradeIn",

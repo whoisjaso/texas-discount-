@@ -285,12 +285,15 @@ Fees). In this order:
 
 *Check:* the SOP's Onboarding, Password reset, VTR-61 and Fees (owner onboarding, owner only) tests; then the
 guided end-to-end walk of the whole unit (SOP, onboarding item 9) at 1440 and 390: `fresh-temporary-password`
-(`FEES=<walk input>`), `fresh` (`FEES_TRY=225.01` and the walk input, then `FEES=later`), `fresh-sales`
-(`PREVIEW_ADMIN=sales:<email>`, `FEES=none`), `fresh-cannot-sign` (an Owner not cleared to sign:
-`onboard.cjs … cannot-sign` with `FEES=<walk input>`; no signature screen), `fresh-reset` (`reset.cjs`, which
-exits 1 on a missing sign-out, notice, 401 or Choose A Password), `team.cjs` (the team screen, then the approved
-member's first sign-in), each on a fresh server, 0 page errors, 0 contrast failures. The walk input is the doc
-fee recorded at Phase 0, never invented.
+(`FEES=<walk input>` (or `FEES=later` while no doc fee is approved)), `fresh` (`FEES_TRY=225.01` with
+`FEES=<walk input>`; with no approved figure, `FEES_TRY=225.01 FEES=later`: the refusal is proven on the doc fee
+screen, then Set These Later), `fresh-sales` (`PREVIEW_ADMIN=sales:<email>`, `FEES=none`), `fresh-cannot-sign`
+(an Owner not cleared to sign: `onboard.cjs … cannot-sign` with `FEES=<walk input>` (or `FEES=later` while no doc
+fee is approved); no signature screen), `fresh-reset` (`reset.cjs`, which exits 1 on a missing sign-out, notice,
+401 or Choose A Password), `team.cjs` (the team screen, then the approved member's first sign-in), each on a
+fresh server, each printing THEME OK, `PAGE ERRORS 0`, `CONTRAST FAILURES 0` and its OK line (`ONBOARD WALK OK`,
+`RESET WALK OK`, `TEAM WALK OK`). The walk input is the doc fee recorded at Phase 0 or one the user approved,
+never invented; with neither, the owner walks use `FEES=later` and no fee is typed as the dealer's.
 
 **4.4 Start A Sale and the corridor.** SOP: The architecture, in six rules; Routes; Start A Sale; VIN
 decoding; The buyer's ID; The corridor; Funding; The sale plan; Salvage; Bilingual. One record, answers in

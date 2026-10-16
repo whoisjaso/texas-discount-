@@ -103,7 +103,9 @@ describe("the filesystem never outruns the table", () => {
       if (entry.isDirectory()) {
         yield* pages(at, `${urlBase}/${entry.name}`);
       } else if (entry.name === "page.tsx") {
-        yield urlBase;
+        // The catch-all (`[...missing]`) is not a screen: it answers any
+        // address no screen does with the desk's not-found page.
+        if (!urlBase.includes("[...")) yield urlBase;
       }
     }
   }

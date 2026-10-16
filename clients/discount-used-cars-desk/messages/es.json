@@ -840,6 +840,10 @@
     },
     "paperwork": {
       "billOfSale": {
+        "odometerReading": {
+          "question": "¿Qué marca el odómetro?",
+          "note": "Las millas que marca hoy el odómetro, sin décimas."
+        },
         "odometerStatus": {
           "question": "¿Ese es el millaje real?",
           "options": {
@@ -1124,6 +1128,10 @@
         "startingRate": "La tasa inicial"
       },
       "salvageBillOfSale": {
+        "odometerReading": {
+          "question": "¿Qué marca el odómetro?",
+          "note": "Las millas que marca hoy el odómetro, sin décimas."
+        },
         "odometerStatus": {
           "question": "¿Ese es el millaje real?",
           "options": {
@@ -1197,6 +1205,7 @@
       "orFileUnsigned": "O regístrelo sin firma e imprima para firmar con pluma.",
       "buyerFallback": "Comprador",
       "labels": {
+        "odometerReading": "Lectura del odómetro",
         "odometerStatus": "Millaje",
         "buyerLicenseState": "Estado de la licencia",
         "paymentMethod": "Pagan con",
@@ -2243,6 +2252,7 @@
       "lender": "La factura de venta ya está archivada con la financiera que nombra. Anule la factura de venta y vuelva a archivarla antes de cambiar la financiera.",
       "tradeIn": "La factura de venta ya está archivada con el trade-in que indica. Anule la factura de venta y vuelva a archivarla antes de cambiar el trade-in.",
       "paymentMethod": "La factura de venta ya está archivada con el método de pago que indica. Anule la factura de venta y vuelva a archivarla antes de cambiar el método de pago.",
+      "mileage": "La factura de venta ya está archivada con la lectura del odómetro que indica. Anule la factura de venta y vuelva a archivarla antes de cambiar la lectura del odómetro.",
       "odometer": "La factura de venta ya está archivada con su declaración de millaje. Anule la factura de venta y vuelva a archivarla antes de cambiar la declaración de millaje.",
       "warranty": "La factura de venta ya está archivada con la garantía que indica. Anule la factura de venta y vuelva a archivarla antes de cambiar la garantía.",
       "howLeaving": "La factura de venta ya está archivada con la forma en que el carro sale del lote. Anule la factura de venta y vuelva a archivarla antes de cambiarla.",
@@ -2414,6 +2424,15 @@
         "reasonRequired": "Diga por qué es diferente del documento registrado.",
         "saveFailed": "No se pudo guardar. Inténtelo de nuevo."
       }
+    },
+    "odometer": {
+      "reads": "El odómetro marca {miles} millas.",
+      "change": "Cambiar la lectura",
+      "none": "Este carro todavía no tiene lectura del odómetro en la venta. Escríbala primero: la declaración de millaje la jura.",
+      "enter": "Escribir la lectura",
+      "odometerReadingMissing": "Escriba primero la lectura del odómetro. La declaración de millaje la jura.",
+      "odometerReadingInvalid": "Escriba las millas del odómetro.",
+      "odometerReadingNotAllowed": "Registrar la lectura del odómetro cambia el registro del carro, y este puesto no puede hacerlo. Pida a alguien de ventas o a un gerente que la escriba."
     },
     "governmentFees": {
       "title": "Cargos del Gobierno",

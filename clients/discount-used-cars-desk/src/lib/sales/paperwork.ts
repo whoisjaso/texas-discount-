@@ -189,6 +189,12 @@ export type PaperworkContext = {
   contractDate?: string;
   /** The vehicle row's `weight_lbs`, as callers have always passed it. */
   vehicleWeight?: number | null;
+  /**
+   * The vehicle row's odometer reading (`vehicles.mileage`, written at Start
+   * A Sale), in miles. Null when the car has none: then the bill of sale
+   * asks it before the mileage statement (deal-facts.ts).
+   */
+  vehicleMileage?: number | null;
   /** Box 11 on this sale (empty-weight/on-the-sale.ts). */
   emptyWeight?: EmptyWeightContext | null;
   /** A question the review's Change link reopened, e.g. "emptyWeight". */

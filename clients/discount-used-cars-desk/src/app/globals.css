@@ -10579,8 +10579,20 @@ input.ed-money-input {
 }
 
 .ed-paper-taps > .ed-paper-note,
-.ed-paper-taps > .ed-paper-error {
+.ed-paper-taps > .ed-paper-error,
+.ed-paper-taps > .ed-paper-reading {
   align-self: center;
+}
+
+/* The reading a mileage statement swears to, above its three taps: the
+   figure the paper prints, in the ink colour, with the way to change it. */
+.ed-paper-reading {
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--tj-ink);
+  text-align: center;
+  max-width: 40ch;
+  margin: 0;
 }
 
 .ed-paper-field {

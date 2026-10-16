@@ -90,8 +90,18 @@ export function probe(
 
   if (documentType === "form130U") {
     const data = buildAgreementData(decoded, {}, null);
+    /*
+      Box 10 ticks nothing for actual mileage, so the form cannot tell an
+      unanswered statement from "actual", and the builder reads a missing
+      one as "A" for the copies filed before the statement was sworn. The
+      read-back can: an unanswered statement is blank, and its row says so
+      with the way to answer it.
+    */
+    const statedDd = decoded.dd as Record<string, unknown>;
+    const stated = String(statedDd.odometerStatus ?? statedDd.odometerBrand ?? "").trim() !== "";
     return {
       ...data,
+      odometer_brand: stated ? data.odometer_brand : "",
       dealer_gdn: DEALER.gdn,
       previous_owner_name: form130UValue(data, "20 Previous Owner Name or Entity Name City State"),
       e_reminder: form130UValue(data, "Yes Provide Email in 26") === true ? "yes" : "",

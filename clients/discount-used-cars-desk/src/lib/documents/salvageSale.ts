@@ -320,8 +320,10 @@ export function salvageVehicleParts(data: SalvageSaleData): { year: string; make
   };
 }
 
+/** The mileage statement's words; none for a statement nobody made (it is sworn, never assumed). */
 export function odometerWords(copy: SalvageSaleCopy, status: SalvageSaleData["odometerStatus"]): string {
   if (status === "exceeds") return copy.odometerExceeds;
   if (status === "not_actual") return copy.odometerNotActual;
-  return copy.odometerActual;
+  if (status === "actual") return copy.odometerActual;
+  return "";
 }

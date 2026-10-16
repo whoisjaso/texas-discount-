@@ -431,6 +431,14 @@ function embedDealRelations(row: MockRow): MockRow {
   if (!out.vehicles && typeof deal.vehicle_id === "string") {
     out.vehicles =
       allRows("vehicles").find((r) => (r as { id?: unknown }).id === deal.vehicle_id) ?? null;
+  } else if (out.vehicles && typeof out.vehicles === "object" && !Array.isArray(out.vehicles)) {
+    /*
+      A fixture deal carries its car inline. The database joins the row as
+      it stands, so a write to that car (the odometer reading a sale with
+      none records, a weight read off its title) shows on the deal here too,
+      as it would there.
+    */
+    out.vehicles = withWrites("vehicles", out.vehicles as MockRow);
   }
   return out;
 }

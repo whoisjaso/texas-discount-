@@ -22,9 +22,12 @@ import type { DealFeeLines } from "@/lib/sales/fee-schedule";
  */
 export function saleContextExtras(
   sale: SaleDetail,
-): Pick<PaperworkContext, "idKind" | "intakeCounty" | "buyerEmail" | "contractDate" | "allAnswers"> {
+): Pick<PaperworkContext, "idKind" | "intakeCounty" | "buyerEmail" | "contractDate" | "allAnswers" | "vehicleMileage"> {
   const mailing = readBuyerId(sale.stepData).mailing;
   return {
+    // The reading the bill of sale swears to, off the vehicle row: known
+    // when the car has one, asked when it has none (deal-facts.ts).
+    vehicleMileage: sale.vehicle?.mileage ?? null,
     idKind: sale.buyer?.idKind ?? null,
     intakeCounty: (mailing.county ?? "").trim(),
     buyerEmail: sale.buyer?.email ?? "",

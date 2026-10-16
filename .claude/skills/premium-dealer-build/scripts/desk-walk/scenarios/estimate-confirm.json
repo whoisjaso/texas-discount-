@@ -88,6 +88,7 @@
   }
  },
  "expect": {
+  "billOfSale/odometerStatus": "The odometer reads 89,432 miles.",
   "form130U/review": "Estimate (EPA test data), confirmed by"
  }
 }

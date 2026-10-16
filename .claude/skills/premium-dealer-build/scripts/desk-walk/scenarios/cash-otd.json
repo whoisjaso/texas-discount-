@@ -97,5 +97,8 @@
   "renewalReminders": {
    "text": "No"
   }
+ },
+ "expect": {
+  "billOfSale/odometerStatus": "The odometer reads 89,432 miles."
  }
 }

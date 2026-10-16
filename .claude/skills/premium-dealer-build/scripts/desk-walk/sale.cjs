@@ -186,6 +186,14 @@ const problems = []; // an expectation not seen, a File the desk refused
       else if (act.text) { await clickText(act.text); }
       else if (act.link) { await p.getByRole('link', { name: act.link }).first().click(); }
       else if (act.press) { await p.keyboard.press(act.press); }
+      else if (act.see) {
+        // Text the screen must show at this point of the answer (box 11's live
+        // "Box 11 will read …" once a figure and its document are given).
+        await p.waitForTimeout(400);
+        const seen = await p.getByText(act.see, { exact: false }).count();
+        log(seen ? `EXPECT OK ${step} :: ${act.see}` : `EXPECT FAILED ${step} :: ${act.see}`);
+        if (!seen) problems.push(`${step}: expected "${act.see}" on screen`);
+      }
       else if (act.hold) {
         // A Hold To Confirm read-back (the desk's DeskConfirm): pressed and
         // held past its data-hold-ms, then released, as Start A Sale's is.
